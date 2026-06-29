@@ -1,1 +1,20 @@
-/* Per-project overrides for Time Freedom Calculator. Shared design system lives in ../../style.css */
+/* Project 013 · Time-Freedom Calculator — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.weekbar{display:flex;height:40px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line);margin:12px 0 6px}
+.weekbar span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:var(--fs-xs);font-weight:700;overflow:hidden;white-space:nowrap;transition:width .3s}
+.wb-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--fs-xs);color:var(--muted);margin:4px 0 10px}
+.wb-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.bigfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:14px 0}
+.bigfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.bigfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bigfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.bigfig .f.warn b{color:#c0612a}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}
+@media(max-width:560px){.compare{grid-template-columns:1fr}}
+.ccard{border:1px solid var(--line);border-radius:var(--radius);padding:12px 15px;background:var(--surface)}
+.ccard.now{border-top:4px solid var(--info)}.ccard.care{border-top:4px solid var(--accent)}
+.ccard h4{margin:0 0 6px;font-size:var(--fs-base)}.ccard .big{font-size:var(--fs-xl);font-weight:800;color:var(--accent-2);font-variant-numeric:tabular-nums}
+.ideas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.idea{border:1px solid var(--line);border-radius:var(--radius-pill);padding:5px 12px;font-size:var(--fs-sm);background:var(--surface-2);color:var(--muted)}

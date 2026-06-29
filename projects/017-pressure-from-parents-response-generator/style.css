@@ -1,1 +1,19 @@
-/* Per-project overrides for Pressure From Parents Response Generator. Shared design system lives in ../../style.css */
+/* Project 017 · Pressure-from-Parents Response Generator — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.dial .lab{display:flex;justify-content:space-between;font-size:var(--fs-sm);font-weight:600;margin-bottom:4px}
+.dial .lab .l{color:var(--info)}.dial .lab .r{color:var(--accent-2)}
+.dial input[type=range]{width:100%;accent-color:var(--accent)}
+.worry{border:1px solid var(--line);border-radius:var(--radius-sm);margin:8px 0;background:var(--surface);overflow:hidden}
+.worry summary{cursor:pointer;list-style:none;padding:11px 15px;font-weight:600;display:flex;gap:8px;align-items:center}
+.worry summary::-webkit-details-marker{display:none}
+.worry summary .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+.worry[open] summary .chev{transform:rotate(90deg)}.worry[open]{border-color:var(--accent)}
+.worry .body{padding:0 15px 13px;font-size:var(--fs-sm)}
+.worry .body .lbl{font-weight:700;color:var(--accent-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;display:block;margin-top:8px}
+.worry .ack{border-left:3px solid var(--info);background:var(--info-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:7px 11px;margin-top:6px}
+.struct{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+@media(max-width:560px){.struct{grid-template-columns:1fr}}
+.struct .s{border:1px solid var(--line);border-top:4px solid var(--info);border-radius:var(--radius-sm);padding:10px 13px;background:var(--surface-2);font-size:var(--fs-sm)}
+.struct .s b{display:block;color:var(--accent-2);margin-bottom:3px}

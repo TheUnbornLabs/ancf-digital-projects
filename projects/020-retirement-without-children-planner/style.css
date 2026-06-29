@@ -1,1 +1,21 @@
-/* Per-project overrides for Retirement Without Children Planner. Shared design system lives in ../../style.css */
+/* Project 020 · Retirement Without Children Planner — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:560px){.inputs{grid-template-columns:1fr}}
+.inputs .cur{position:relative}.inputs .cur input{width:100%;padding-left:22px}
+.inputs .cur::before{content:attr(data-sym);position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:var(--fs-sm)}
+.bigfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.bigfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.bigfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bigfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.bigfig .f.good b{color:#1c7a3e}.bigfig .f.short b{color:#c0612a}
+.growth{width:100%;height:auto;max-width:560px;display:block;margin:10px 0}
+.g-area{fill:var(--accent-soft)}.g-line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.g-target{stroke:#1c7a3e;stroke-width:1.5;stroke-dasharray:5 4}.g-axis{stroke:var(--line)}.g-lbl{fill:var(--muted);font-size:11px}.g-dot{fill:var(--accent)}
+.verdict{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:13px 16px;margin-top:6px}.verdict b{color:var(--accent-2)}
+.caregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 0}
+.carecat{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);padding:10px 13px;background:var(--surface)}
+.carecat h4{margin:0 0 6px;font-size:var(--fs-sm)}
+.readbar{height:12px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden;margin:10px 0}
+.readbar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--info),#1c7a3e);transition:width .35s}

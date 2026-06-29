@@ -1,59 +1,61 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sleep Loss Simulator · ANCF Digital Projects</title><meta name="description" content="An illustrative model of cumulative sleep debt over a period of reduced nightly sleep, shown over time. Educational only, not medical advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Sleep Loss Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sleep-Loss Simulator · ANCF Digital Projects</title><meta name="description" content="An illustrative model of how a nightly sleep shortfall during early caregiving accumulates into a cumulative sleep debt, by phase, with a timeline chart and relatable equivalents. Not medical advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Sleep-Loss Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../013-time-freedom-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../015-life-goals-priority-mapper/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 014</span><h2>Sleep Loss Simulator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
-<p class="lead">Early caregiving often means months of reduced sleep. This simple model shows how a nightly shortfall <strong>adds up over time</strong> into a cumulative "sleep debt". It is purely illustrative — every family's experience differs, and many find the trade-off well worth it.</p>
+<div class="proj-head"><span class="num">PROJECT 014</span><h2>Sleep-Loss Simulator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~10 min · illustrative model</span></div></div>
+<p class="lead">Early caregiving often means months of reduced sleep. This simple model shows how a nightly shortfall adds up over time into a cumulative <strong>sleep debt</strong>. It's purely illustrative — every baby and family is different, and many parents will tell you it's a price they'd pay again gladly. The point isn't to frighten or to argue; it's to make one real, under-discussed cost visible so it can be planned for.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#learn">① About the model</a><a href="#sim">② The simulator</a><a href="#equiv">③ What it adds up to</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<p class="disclaimer">Educational illustration only — <strong>not medical advice</strong>. Sleep needs and effects vary by person. If sleep problems are affecting your health, please speak with a qualified professional.</p>
+<h3 id="learn" style="scroll-margin-top:70px">① About the model</h3>
+<div class="panel"><div class="term"><b>Sleep debt</b> — the running total of sleep you miss versus what your body needs. It builds fastest in the newborn months and eases as a child sleeps longer. This model multiplies an average nightly shortfall by the nights in each phase. It is not a medical tool and not a prediction for any real family.</div>
+<div class="phaseinfo" id="phaseinfo"></div>
+<p class="note">Adjust the nightly shortfall for each phase below to match what you expect or have heard; the defaults are rough, commonly-cited ballparks.</p></div>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How a small nightly shortfall compounds over weeks and months.</li>
-<li>How to express sleep debt in relatable units (full nights).</li>
-<li>Why cumulative effects can be larger than they feel night to night.</li>
-<li>That this is illustrative, and rest can be recovered and supported.</li>
-</ul></div>
-
-<div class="panel"><h3>1. The model</h3>
-<div class="slider-row"><div class="lab"><label for="reduce">Sleep lost per night</label><output id="o-reduce">2 h</output></div><input type="range" id="reduce" min="0" max="6" step="0.5" value="2"></div>
-<div class="slider-row"><div class="lab"><label for="months">Over how many months</label><output id="o-months">6</output></div><input type="range" id="months" min="1" max="36" step="1" value="6"></div>
-<div class="meter-grid" style="margin-top:6px">
-<div class="meter-card"><div class="lab"><span>Total hours lost</span><b id="totHrs">0</b></div></div>
-<div class="meter-card"><div class="lab"><span>≈ full nights (8 h)</span><b id="totNights">0</b></div></div>
-<div class="meter-card"><div class="lab"><span>≈ full days (24 h)</span><b id="totDays">0</b></div></div>
+<h3 id="sim" style="scroll-margin-top:70px">② The simulator</h3>
+<div class="panel">
+<div id="sliders"></div>
+<div class="slider-row"><div class="lab"><label for="months">Model the first…</label><output id="o-months">24 months</output></div><input type="range" id="months" min="3" max="60" step="1" value="24"></div>
+<svg class="growth" id="growth" role="img" aria-label="Cumulative sleep debt over the early months."></svg>
+<div class="bigfig">
+<div class="f"><b id="figDebt">0</b><span>cumulative hours of lost sleep</span></div>
+<div class="f"><b id="figNights">0</b><span>equivalent full nights (8 h)</span></div>
+<div class="f"><b id="figAvg">0</b><span>average nightly shortfall now</span></div>
 </div>
-<svg class="chart" id="debtChart" role="img" aria-label="Bar chart of cumulative sleep debt in full nights at 1, 3, 6, and 12 months."></svg>
-<p class="chart-cap">Bar chart: cumulative sleep debt (in full 8-hour nights) at 1, 3, 6, and 12 months, at your chosen nightly shortfall.</p>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A small nightly shortfall over many months…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Stays small overall</div><div class="opt" data-q="0" data-i="1">Adds up into a large cumulative total</div><div class="opt" data-q="0" data-i="2">Cancels itself out</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. This simulator is…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">A medical assessment</div><div class="opt" data-q="1" data-i="1">An illustrative thinking tool</div><div class="opt" data-q="1" data-i="2">A prediction for any specific person</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="equiv" style="scroll-margin-top:70px">③ What it adds up to</h3>
+<div class="panel">
+<p class="note">A few ways to feel the size of the number — all rough, all illustrative.</p>
+<div class="equiv" id="equivBox"></div>
+<p class="note">Bodies are resilient: sleep debt isn't permanent, naps and partner-sharing help, and most families recover as children grow. This is a peak load, not a life sentence — and for many, the cause of the lost sleep is also the joy of their life.</p>
+</div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. Sleep debt builds fastest during…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">The toddler years</div><div class="opt" data-q="0" data-i="1">The newborn months</div><div class="opt" data-q="0" data-i="2">It never builds</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. This model is…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">A precise medical prediction</div><div class="opt" data-q="1" data-i="1">An illustrative ballpark</div><div class="opt" data-q="1" data-i="2">A guarantee</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. Sleep debt is best understood as…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Permanent damage</div><div class="opt" data-q="2" data-i="1">A temporary peak that eases as children grow</div><div class="opt" data-q="2" data-i="2">Irrelevant</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">How much does rest and recovery factor into your own thinking — and what support would help?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">How much does the sleep cost weigh for you — a dealbreaker, a worthwhile price, or barely a factor?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Cumulative effects can be far larger than they feel night to night — which is exactly why support, shared load, and recovery matter so much. This is a prompt for honest planning and compassion, not a reason for fear or guilt.</p></div>
+<p>Sleep is a real, rarely-budgeted cost of early caregiving — and like most costs, it's most manageable when it's expected rather than a shock. Seeing the rough shape of it helps parents plan support, and helps anyone weighing the choice add an honest line to the ledger. It's a peak that passes; naming it just makes it easier to carry or to weigh.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../013-time-freedom-calculator/index.html">Time Freedom Calculator<span>The wider time picture</span></a>
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protecting your wellbeing</span></a>
-<a href="../083-healthcare-conversation-checklist/index.html">Healthcare Conversation Checklist<span>Talking to a professional</span></a>
-<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>Another real factor</span></a>
+<a href="../013-time-freedom-calculator/index.html">Time-Freedom Calculator<span>The broader time cost</span></a>
+<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>The money cost</span></a>
+<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>The other side</span></a>
+<a href="../005-is-this-my-choice-reflection-tool/index.html">Is This My Choice?<span>Weigh it all up</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../013-time-freedom-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../015-life-goals-priority-mapper/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -2,11 +2,8 @@
 
 *Project 011 · Category: Calculators · Difficulty: Beginner*
 
-Estimate annual discretionary money a childfree household might allocate differently.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+An editable sandbox model of funds a childfree budget may free up — a planning aid, never a
+scoreboard. Modules: currency + regional presets; eight editable monthly categories with month/
+year/18-year totals; a reallocation planner (split the freed money across buckets); and a
+compound-growth projection of a "freedom fund" with an SVG chart. Vanilla JS on the shared
+toolkit; verified with a headless DOM test (9/9). Not financial advice.

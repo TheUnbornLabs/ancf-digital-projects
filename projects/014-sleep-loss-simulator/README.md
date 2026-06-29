@@ -1,12 +1,8 @@
-# Sleep Loss Simulator
+# Sleep-Loss Simulator
 
 *Project 014 · Category: Calculators · Difficulty: Beginner*
 
-Model cumulative sleep debt over a period of reduced nightly sleep.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+An illustrative model of cumulative sleep debt during early caregiving. Adjustable nightly
+shortfall across four phases (newborn → beyond), a months slider, an SVG cumulative-debt chart,
+and relatable equivalents (full nights, 24h days, working weeks). Non-alarmist and explicitly not
+medical advice. Vanilla JS; DOM test 9/9.

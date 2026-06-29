@@ -1,54 +1,67 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marriage and Children Conversation Tool · ANCF Digital Projects</title><meta name="description" content="Map where you and a partner align on key questions about children, see an alignment chart, and prepare honest talking points."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Marriage and Children Conversation Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marriage &amp; Children Conversation Tool · ANCF Digital Projects</title><meta name="description" content="Map where you and your partner align on the children question across seven key topics, see an alignment radar and where you differ, follow a guided conversation agenda, and find honest help for a real mismatch."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Marriage &amp; Children Conversation Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../017-pressure-from-parents-response-generator/index.html">← Previous</a><a class="btn btn-primary" href="../019-childfree-couple-planning-board/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 018</span><h2>Marriage and Children Conversation Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~10 min</span></div></div>
-<p class="lead">Few conversations matter more for a couple than the one about children. This tool helps you map where you and your partner align across the key questions, see it as a chart, and prepare honest talking points — so the conversation is clearer and kinder.</p>
+<div class="proj-head"><span class="num">PROJECT 018</span><h2>Marriage &amp; Children Conversation Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~20 min · couple tool</span></div></div>
+<p class="lead">Few conversations matter more for a couple than the one about children. This tool helps you <strong>map where you and your partner align</strong> across the key questions, see it clearly, and prepare for an honest, kind talk — including real help for the hardest case, where you don't agree. Best done together; everything stays on this device.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#learn">① Before you start</a><a href="#map">② Map your alignment</a><a href="#diff">③ Where you differ</a><a href="#agenda">④ The conversation</a><a href="#mismatch">⑤ If you don't agree</a><a href="#reflect">⑥ Reflection</a></nav>
 
-<p class="disclaimer">A preparation aid for reflection, not relationship, legal, or mental health advice. For one person's use; share results only if you both choose to.</p>
+<h3 id="learn" style="scroll-margin-top:70px">① Before you start</h3>
+<div class="panel"><div class="term"><b>The aim</b> — not to score the relationship, but to make the implicit explicit. Many couples discover they agree more than they feared, or surface a real difference early enough to handle it with care. Answer honestly; a tool can only help if it's told the truth.</div>
+<div class="names"><div><label class="field" for="nameA">Partner A name (optional)</label><input type="text" id="nameA" placeholder="You"></div><div><label class="field" for="nameB">Partner B name (optional)</label><input type="text" id="nameB" placeholder="Partner"></div></div>
+<p class="note">Take turns, or fill it in side by side. Nothing is uploaded.</p></div>
 
-<div class="learn"><h3>What you will learn</h3>
+<h3 id="map" style="scroll-margin-top:70px">② Map your alignment</h3>
+<div class="panel">
+<p class="note">For each question, both partners pick the option closest to their honest view.</p>
+<div id="questions"></div>
+<div class="alignfig"><div class="f"><b id="alignPct">—</b><span>overall alignment</span></div></div>
+<svg class="chart" id="radar" role="img" aria-label="Radar of your agreement across the seven questions." style="max-width:360px;margin:6px auto"></svg>
+<p class="chart-cap">Radar: how closely you agree on each question (bigger = more aligned).</p>
+</div>
+
+<h3 id="diff" style="scroll-margin-top:70px">③ Where you differ</h3>
+<div class="panel"><div class="diffs" id="diffs"></div></div>
+
+<h3 id="agenda" style="scroll-margin-top:70px">④ The conversation</h3>
+<div class="panel">
+<p class="note">A gentle agenda for the actual talk. Add your own notes; they're saved on this device.</p>
+<div class="agenda">
+<div class="step"><b>1. Set the tone.</b> "I love you and I want us to be honest about this, with no pressure either way."</div>
+<div class="step"><b>2. Share, don't sell.</b> Each says their view and the feeling under it, uninterrupted.</div>
+<div class="step"><b>3. Find the overlap.</b> Start with the questions you align on — most couples have many.</div>
+<div class="step"><b>4. Name the gaps.</b> Use section ③; treat them as shared problems, not opposing sides.</div>
+<div class="step"><b>5. Decide the next step,</b> not the whole future. Another talk, more thinking, or help from a professional.</div>
+</div>
+<label class="field" for="notes">Our notes &amp; agreements</label><textarea id="notes" placeholder="What you discussed, what you agreed, what to revisit…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy our summary</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+</div>
+
+<h3 id="mismatch" style="scroll-margin-top:70px">⑤ If you don't agree</h3>
+<div class="panel"><div class="learn"><h3>The hard, honest part</h3>
 <ul>
-<li>The core questions a couple benefits from discussing.</li>
-<li>Where you currently align, differ, or are unsure (as a chart).</li>
-<li>How "readiness" grows as you think each topic through.</li>
-<li>How to turn it into talking points you can bring to the conversation.</li>
-</ul></div>
+<li><strong>A child isn't a compromise.</strong> "Half a child" doesn't exist; one person ends up living the other's answer. That's worth facing squarely, not papering over.</li>
+<li><strong>Wearing someone down isn't winning.</strong> A "yes" extracted by pressure, or a resentful "fine," tends to cost the relationship later — and is unfair to a child.</li>
+<li><strong>Timing differences aren't the same as a true mismatch.</strong> "Not yet" and "not ever" are very different; name which one you each mean.</li>
+<li><strong>Get help early.</strong> A couples counselor is not a last resort; for a difference this size, it's wisdom. (See also The Childfree Life, Ch. 22.)</li>
+<li><strong>Sometimes loving people part over this</strong> — kindly, and without either being the villain. That, too, can be the most respectful outcome.</li>
+</ul></div></div>
 
-<div class="panel"><h3>1. Map your alignment</h3>
-<p class="note">For each statement, set your own leaning and your sense of your partner's. Yes / Unsure / No. Saved on this device.</p>
-<div id="topics"></div>
-<div class="meter-card" style="margin-top:10px"><div class="lab"><span>Topics thought through</span><b id="readyPct">0%</b></div><div class="meter"><span id="readyBar"></span></div></div>
-<svg class="chart" id="alignChart" role="img" aria-label="Bar chart of how many topics are aligned, unsure, or differing."></svg>
-<p class="chart-cap">Bar chart: aligned / unsure / differing across topics you've set both views on.</p>
-</div>
-
-<div class="panel"><h3>2. Talking points &amp; notes</h3>
-<label class="field" for="notes">Notes for the conversation (what matters most to you, questions to ask)</label>
-<textarea id="notes" placeholder="e.g. I want us to decide together, without pressure either way…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy talking points</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
-</div>
-
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. The healthiest aim for this conversation is…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">To win</div><div class="opt" data-q="0" data-i="1">To understand each other honestly</div><div class="opt" data-q="0" data-i="2">To avoid it</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. A genuine difference on having children is…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Always fixable by compromise</div><div class="opt" data-q="1" data-i="1">Serious and worth facing honestly, together</div><div class="opt" data-q="1" data-i="2">Not important</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="reflect" style="scroll-margin-top:70px">⑥ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What's the one question you most need to talk through together — and what do you hope to hear?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="rStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>This is about understanding, not winning. Some differences resolve with time and care; others are real and deserve honesty rather than avoidance. Either way, naming where you stand — kindly and clearly — is the foundation of a fair decision made together.</p></div>
+<p>The children question rewards couples who face it early, honestly, and together — as teammates solving a shared puzzle, not opponents defending positions. Alignment is a gift; a difference found early is still far better than one found late. Either way, the conversation itself is an act of love.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../019-childfree-couple-planning-board/index.html">Childfree Couple Planning Board<span>Plan a shared life</span></a>
-<a href="../085-couple-compatibility-questions/index.html">Couple Compatibility Questions<span>Deeper conversation starters</span></a>
-<a href="../005-is-this-my-choice-reflection-tool/index.html">"Is This My Choice?"<span>Know your own view first</span></a>
-<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy Explainer<span>Both partners' autonomy</span></a>
+<a href="../019-childfree-couple-planning-board/index.html">Couple Planning Board<span>Build a shared vision</span></a>
+<a href="../005-is-this-my-choice-reflection-tool/index.html">Is This My Choice?<span>Know your own view first</span></a>
+<a href="../002-childfree-life-intro-guide/book/ch22.html">The Childfree Life (Ch. 22)<span>When partners disagree</span></a>
+<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy<span>Both choices matter</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../017-pressure-from-parents-response-generator/index.html">← Previous</a><a class="btn btn-primary" href="../019-childfree-couple-planning-board/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

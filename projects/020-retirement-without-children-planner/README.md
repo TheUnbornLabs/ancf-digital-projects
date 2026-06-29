@@ -2,11 +2,9 @@
 
 *Project 020 · Category: Calculators · Difficulty: Intermediate*
 
-A simple model of savings needed for later-life support without relying on children.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Two halves of later-life security. A compound savings projection (age, retirement age, current
+savings, monthly contribution, return, optional target) with an SVG growth chart, target line,
+and a gap/surplus verdict that suggests the monthly saving to close a gap. Plus a care-network
+builder (people / legal & medical / money & home) with a readiness reading — the real answer to
+"who will look after you?". Currency-aware, on-device, not financial advice. Vanilla JS;
+DOM test 9/9.

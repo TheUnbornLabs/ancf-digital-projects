@@ -1,12 +1,9 @@
-# Marriage and Children Conversation Tool
+# Marriage & Children Conversation Tool
 
 *Project 018 · Category: Community Tools · Difficulty: Intermediate*
 
-Prepare honest talking points for discussing children with a partner.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A couple tool for the children question. Both partners pick a stance across seven key questions
+(wanting kids, timing, number, caregiving, careers, fertility, how settled); the tool computes
+overall alignment, draws an agreement radar, highlights the biggest gaps, offers a guided
+conversation agenda with saved notes, and gives honest guidance for a true mismatch. Vanilla JS;
+DOM test 8/8.

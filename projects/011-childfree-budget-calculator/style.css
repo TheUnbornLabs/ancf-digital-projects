@@ -1,1 +1,23 @@
-/* Per-project overrides for Childfree Budget Calculator. Shared design system lives in ../../style.css */
+/* Project 011 · Childfree Budget Calculator — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.preset{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:var(--radius-pill);padding:6px 13px;font-size:var(--fs-sm);font-weight:600}
+.preset:hover,.preset.active{border-color:var(--accent);color:var(--ink)}
+.preset.active{background:var(--accent);color:#fff}
+.catrow{display:grid;grid-template-columns:1fr 120px;gap:10px;align-items:center;margin:7px 0}
+.catrow label{font-size:var(--fs-sm)}
+.catrow .cur{position:relative}
+.catrow .cur input{width:100%;padding-left:22px}
+.catrow .cur::before{content:attr(data-sym);position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:var(--fs-sm)}
+.bigfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.bigfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.bigfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bigfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.alloc{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.growth{width:100%;height:auto;max-width:560px;display:block;margin:10px 0}
+.g-area{fill:var(--accent-soft)}.g-line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.g-axis{stroke:var(--line)}.g-lbl{fill:var(--muted);font-size:11px}.g-dot{fill:var(--accent)}
+.curpick{display:inline-flex;gap:6px;align-items:center;margin:6px 0}
+.curpick select{width:auto;padding:6px 10px}

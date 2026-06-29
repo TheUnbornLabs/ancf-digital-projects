@@ -1,62 +1,79 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Time Freedom Calculator · ANCF Digital Projects</title><meta name="description" content="A transparent model of how your 168 weekly hours divide — and how much discretionary time remains. Adjust every figure to your own reality."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Time Freedom Calculator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Time-Freedom Calculator · ANCF Digital Projects</title><meta name="description" content="A 168-hour week allocator: see how your week divides, how much discretionary time remains, how caregiving changes it, and what your free hours add up to over years — with a week visualizer and lifetime projection."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Time-Freedom Calculator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../012-parenthood-cost-estimator/index.html">← Previous</a><a class="btn btn-primary" href="../014-sleep-loss-simulator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 013</span><h2>Time Freedom Calculator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
-<p class="lead">Every week holds 168 hours. This tool shows how yours divide and how much <strong>discretionary time</strong> remains under different commitments — including caregiving. Drag the sliders to your own reality; nothing here says how anyone <em>should</em> spend their time.</p>
+<div class="proj-head"><span class="num">PROJECT 013</span><h2>Time-Freedom Calculator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~12 min · editable model</span></div></div>
+<p class="lead">Every week holds <strong>168 hours</strong>. This tool shows how yours divide, how much discretionary time is left, how adding caregiving changes the picture, and what your free hours add up to over a year, a decade, a lifetime. Drag the sliders to your own reality. Time isn't the only thing that matters in any life choice — but it's one of the most honest, and the easiest to overlook.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#learn">① The idea</a><a href="#week">② Your week</a><a href="#caregiving">③ The caregiving effect</a><a href="#project">④ Over a lifetime</a><a href="#quiz">⑤ Quick check</a><a href="#reflect">⑥ Reflection</a></nav>
 
-<p class="disclaimer">An illustration for reflection only. Time use is personal and changes constantly — these are rough figures, not a judgement.</p>
+<h3 id="learn" style="scroll-margin-top:70px">① The idea</h3>
+<div class="panel"><div class="term"><b>Discretionary time</b> — the hours left after the non-negotiables: sleep, work, commuting, chores, personal care, eating, and any caregiving. It's the raw material of rest, relationships, creativity, and growth — and it's finite. Seeing it as a number makes trade-offs visible.</div>
+<p class="note">Nothing is uploaded; your week is saved only on this device.</p></div>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How the fixed 168 hours of a week get allocated.</li>
-<li>How much discretionary time is left after commitments.</li>
-<li>How adding caregiving hours changes the picture.</li>
-<li>How weekly hours scale across a whole year.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Your week (hours)</h3>
-<p class="note">Set hours per week for each. Discretionary time is whatever's left of 168. Saved on this device.</p>
-<div id="week">
-<div class="slider-row"><div class="lab"><label for="h-sleep">Sleep</label><output id="o-sleep">56</output></div><input type="range" id="h-sleep" data-label="Sleep" min="0" max="80" step="1" value="56"></div>
-<div class="slider-row"><div class="lab"><label for="h-work">Work / study</label><output id="o-work">40</output></div><input type="range" id="h-work" data-label="Work/study" min="0" max="90" step="1" value="40"></div>
-<div class="slider-row"><div class="lab"><label for="h-care">Caregiving</label><output id="o-care">0</output></div><input type="range" id="h-care" data-label="Caregiving" min="0" max="90" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="h-chores">Chores / errands</label><output id="o-chores">14</output></div><input type="range" id="h-chores" data-label="Chores" min="0" max="40" step="1" value="14"></div>
-<div class="slider-row"><div class="lab"><label for="h-commute">Commuting</label><output id="o-commute">5</output></div><input type="range" id="h-commute" data-label="Commuting" min="0" max="30" step="1" value="5"></div>
+<h3 id="week" style="scroll-margin-top:70px">② Your week (hours)</h3>
+<div class="panel">
+<p class="note">Set roughly how many hours a typical week goes to each. The bar and the discretionary figure update live.</p>
+<div id="sliders"></div>
+<div class="weekbar" id="weekbar" aria-hidden="true"></div>
+<div class="wb-legend" id="legend"></div>
+<div class="bigfig">
+<div class="f"><b id="figCommitted">0</b><span>committed hours / week</span></div>
+<div class="f" id="discBox"><b id="figDisc">0</b><span>discretionary hours / week</span></div>
+<div class="f"><b id="figDay">0</b><span>discretionary hours / day</span></div>
 </div>
-<div class="meter-card" style="margin-top:6px"><div class="lab"><span>Discretionary time</span><b id="discHrs">0 h/wk</b></div><div class="meter"><span id="discBar"></span></div></div>
-<p class="note" id="discNote" role="status" aria-live="polite" style="margin-top:8px"></p>
-<svg class="chart" id="weekChart" role="img" aria-label="Bar chart of how your weekly hours divide, including discretionary time."></svg>
-<p class="chart-cap">Bar chart: where your 168 weekly hours go.</p>
+<p class="note" id="weekNote"></p>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. "Discretionary time" here means…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Time left after your set commitments</div><div class="opt" data-q="0" data-i="1">Wasted time</div><div class="opt" data-q="0" data-i="2">Sleep</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Adding caregiving hours…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Has no effect</div><div class="opt" data-q="1" data-i="1">Reduces discretionary time, all else equal</div><div class="opt" data-q="1" data-i="2">Creates more hours in the week</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="caregiving" style="scroll-margin-top:70px">③ The caregiving effect</h3>
+<div class="panel">
+<p class="note">Early caregiving is time-intensive. Move the slider to add weekly caregiving hours on top of your week above, and watch discretionary time respond. (Caregiving brings its own rewards — this only shows the time side.)</p>
+<div class="slider-row"><div class="lab"><label for="care">Added caregiving hours / week</label><output id="o-care">0</output></div><input type="range" id="care" min="0" max="80" step="2" value="0"></div>
+<div class="compare">
+<div class="ccard now"><h4>Without added caregiving</h4><div class="big" id="cmpNow">0 h</div><span class="note">discretionary / week</span></div>
+<div class="ccard care"><h4>With caregiving added</h4><div class="big" id="cmpCare">0 h</div><span class="note">discretionary / week</span></div>
+</div>
+<p class="note" id="careNote"></p>
+</div>
+
+<h3 id="project" style="scroll-margin-top:70px">④ What it adds up to</h3>
+<div class="panel">
+<p class="note">Your current discretionary hours, projected forward. Free time compounds quietly — small weekly differences become enormous over years.</p>
+<div class="slider-row"><div class="lab"><label for="years">Project over</label><output id="o-years">10 yrs</output></div><input type="range" id="years" min="1" max="40" step="1" value="10"></div>
+<div class="bigfig">
+<div class="f"><b id="figYearH">0</b><span>discretionary hours / year</span></div>
+<div class="f"><b id="figTotalH">0</b><span>over the period</span></div>
+<div class="f"><b id="figDays">0</b><span>equivalent full (24h) days</span></div>
+</div>
+<p class="note">For scale, here's roughly what that block of time could hold:</p>
+<div class="ideas" id="ideas"></div>
+</div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">⑤ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A week holds…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">100 hours</div><div class="opt" data-q="0" data-i="1">168 hours</div><div class="opt" data-q="0" data-i="2">200 hours</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Discretionary time is what's left after…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Only work</div><div class="opt" data-q="1" data-i="1">All the non-negotiables, including caregiving</div><div class="opt" data-q="1" data-i="2">Sleep alone</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. Small weekly differences in free time…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Never add up</div><div class="opt" data-q="2" data-i="1">Compound into large amounts over years</div><div class="opt" data-q="2" data-i="2">Are irrelevant</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">If you gained (or lost) several discretionary hours a week, what would change for you?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑥ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">If you protected even a few of your discretionary hours each week, what would you spend them on?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my week</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Time, like money, is one real factor among many — and caregiving time is often given gladly. The aim is a clear, honest picture of your week, not a claim that more free hours always means a better life.</p></div>
+<p>Time is the one budget no one can top up. Whatever you choose, the question worth asking isn't only "how many free hours do I have?" but "am I spending them on purpose?" Seeing the week as 168 finite hours turns a vague sense of busyness into something you can actually steer.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../014-sleep-loss-simulator/index.html">Sleep Loss Simulator<span>One specific cost of care</span></a>
-<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>Money, not time</span></a>
-<a href="../015-life-goals-priority-mapper/index.html">Life Goals Priority Mapper<span>What to do with the time</span></a>
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protecting your peace</span></a>
+<a href="../014-sleep-loss-simulator/index.html">Sleep-Loss Simulator<span>A specific time cost</span></a>
+<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>The money side</span></a>
+<a href="../015-life-goals-priority-mapper/index.html">Life-Goals Mapper<span>Spend the time well</span></a>
+<a href="../002-childfree-life-intro-guide/book/ch13.html">The Childfree Life (Ch. 13)<span>Time &amp; freedom</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../012-parenthood-cost-estimator/index.html">← Previous</a><a class="btn btn-primary" href="../014-sleep-loss-simulator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

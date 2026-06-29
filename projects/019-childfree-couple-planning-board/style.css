@@ -1,1 +1,19 @@
-/* Per-project overrides for Childfree Couple Planning Board. Shared design system lives in ../../style.css */
+/* Project 019 · Childfree Couple Planning Board — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--sp-3);margin:10px 0}
+.area{border:1px solid var(--line);border-top:4px solid var(--info);border-radius:var(--radius-sm);padding:13px 15px;background:var(--surface)}
+.area h4{margin:0 0 4px;display:flex;align-items:center;gap:8px;font-size:var(--fs-base)}
+.area .tag{font-size:var(--fs-xs);color:var(--muted);margin:0 0 8px}
+.area .items{display:flex;flex-direction:column;gap:5px;margin:6px 0}
+.area .it{display:flex;gap:8px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 9px;font-size:var(--fs-sm)}
+.area .it span{flex:1}.area .it button{cursor:pointer;border:none;background:none;color:var(--muted);font-size:1rem;padding:0 3px}
+.area .addr{display:flex;gap:6px;margin-top:6px}.area .addr input{flex:1;padding:6px 9px;font-size:var(--fs-sm)}
+.area .addr button{padding:6px 11px;font-size:var(--fs-xs)}
+.sparks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.spark{cursor:pointer;border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:var(--radius-pill);padding:3px 10px;font-size:var(--fs-xs)}
+.spark:hover{border-color:var(--accent);color:var(--ink)}
+.vision{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:14px 16px;margin:10px 0}
+.vision .field{margin-top:8px}
+.visionout{font-size:var(--fs-lg);font-weight:600;color:var(--ink);margin-top:10px;font-style:italic}

@@ -1,1 +1,15 @@
-/* Per-project overrides for Sleep Loss Simulator. Shared design system lives in ../../style.css */
+/* Project 014 · Sleep-Loss Simulator — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.bigfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.bigfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.bigfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bigfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.growth{width:100%;height:auto;max-width:560px;display:block;margin:10px 0}
+.g-area{fill:var(--accent-soft)}.g-line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.g-axis{stroke:var(--line)}.g-lbl{fill:var(--muted);font-size:11px}.g-dot{fill:var(--accent)}
+.phaseinfo{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
+.pi{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);padding:10px 13px;background:var(--surface-2)}
+.pi h4{margin:0 0 3px;font-size:var(--fs-sm)}.pi p{margin:0;font-size:var(--fs-xs);color:var(--muted)}
+.equiv{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin:10px 0;font-size:var(--fs-sm)}

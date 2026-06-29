@@ -1,1 +1,24 @@
-/* Per-project overrides for Life Goals Priority Mapper. Shared design system lives in ../../style.css */
+/* Project 015 · Life-Goals Priority Mapper — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.addrow input{flex:1 1 240px}
+.glist{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.gitem{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 12px;background:var(--surface)}
+@media(max-width:600px){.gitem{grid-template-columns:1fr;gap:6px}}
+.gitem .gt{font-weight:600;font-size:var(--fs-sm)}
+.gitem select{padding:5px 8px;font-size:var(--fs-xs);width:auto}
+.gitem .del{cursor:pointer;border:none;background:none;color:var(--muted);font-size:1.1rem;padding:0 4px}
+.horizons{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+@media(max-width:600px){.horizons{grid-template-columns:1fr}}
+.hcol{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:var(--surface-2);min-height:60px}
+.hcol h4{margin:0 0 6px;font-size:var(--fs-sm);border-bottom:2px solid var(--accent);padding-bottom:4px}
+.hcol .chip{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 9px;font-size:var(--fs-xs);margin:4px 0}
+.matrix2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.qcell{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;min-height:80px;background:var(--surface)}
+.qcell.q1{border-top:4px solid #1c7a3e}.qcell.q2{border-top:4px solid var(--accent)}.qcell.q3{border-top:4px solid var(--info)}.qcell.q4{border-top:4px solid #c0612a}
+.qcell h4{margin:0 0 5px;font-size:var(--fs-sm)}.qcell .sub{font-size:var(--fs-xs);color:var(--muted);margin:0 0 6px}
+.qcell .chip{display:inline-block;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);padding:3px 9px;font-size:var(--fs-xs);margin:2px}
+.focus{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:14px 16px;margin-top:10px}
+.focus b{color:var(--accent-2)}.focus ol{margin:6px 0 0;padding-left:20px}.focus li{margin:4px 0}
+.empty{color:var(--muted);font-size:var(--fs-sm);padding:8px}

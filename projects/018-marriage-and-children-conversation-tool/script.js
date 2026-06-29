@@ -1,77 +1,70 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var TOPICS=[
- ['t1','We want children at all'],
- ['t2','We would want them relatively soon'],
- ['t3','We would want more than one'],
- ['t4','We would share care equally'],
- ['t5','We are comfortable with the finances'],
- ['t6','We are okay with the impact on careers'],
- ['t7','We know what we would do if we disagree']
-];
-var wrap=document.getElementById('topics');
-var state=A.getJSON?(A.getJSON('align',{})||{}):{};
-function sel(id,who,val){
-  var s='<select data-t="'+id+'" data-who="'+who+'" aria-label="'+who+' view on '+id+'">';
-  [['','—'],['yes','Yes'],['unsure','Unsure'],['no','No']].forEach(function(o){s+='<option value="'+o[0]+'"'+(val===o[0]?' selected':'')+'>'+o[1]+'</option>';});
-  return s+'</select>';
-}
-if(wrap){
-  var html='';
-  TOPICS.forEach(function(t){
-    var st=state[t[0]]||{};
-    html+='<div style="margin:12px 0"><div style="font-weight:600;font-size:var(--fs-sm);margin-bottom:6px">'+t[1]+'</div><div class="row"><div><label class="field" style="margin-top:0">You</label>'+sel(t[0],'you',st.you||'')+'</div><div><label class="field" style="margin-top:0">Partner</label>'+sel(t[0],'partner',st.partner||'')+'</div></div></div>';
-  });
-  wrap.innerHTML=html;
-}
-var readyBar=document.getElementById('readyBar'),readyPct=document.getElementById('readyPct'),chart=document.getElementById('alignChart');
-function compute(){
-  var both=0,aligned=0,unsure=0,differ=0;
-  TOPICS.forEach(function(t){
-    var st=state[t[0]]||{};
-    if(st.you&&st.partner){both++;
-      if(st.you===st.partner&&st.you!=='unsure')aligned++;
-      else if(st.you==='unsure'||st.partner==='unsure')unsure++;
-      else differ++;
+/* Project 018 · Marriage & Children Conversation Tool — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var QS=[
+    {k:'want',short:'Wanting kids',q:'Do you want to have children?',opts:['Strongly no','Lean no','Unsure','Lean yes','Strongly yes']},
+    {k:'timing',short:'Timing',q:'If yes, when?',opts:['Never','Far off / maybe','Someday, unsure','Within a few years','Soon']},
+    {k:'number',short:'How many',q:'Ideally, how many children?',opts:['None','One, maybe','One or two','Two','Three or more']},
+    {k:'care',short:'Caregiving',q:'How should caregiving be shared?',opts:['I\'d do little','Mostly partner','50/50','Mostly me','I\'d do most']},
+    {k:'career',short:'Careers',q:'Whose career flexes around a child?',opts:['Mine fully','Mine mostly','Both equally','Partner\'s mostly','Partner\'s fully']},
+    {k:'fertility',short:'If it\'s hard',q:'If conceiving were difficult, how far would you go?',opts:['Not at all','Adopt only','Some treatment','Most options','Whatever it takes']},
+    {k:'firmness',short:'How settled',q:'How settled is your view right now?',opts:['Completely settled','Mostly settled','Genuinely open','Mostly settled (other way)','Completely settled (other way)']}
+  ];
+  var st = (A.getJSON?A.getJSON('couple',{}):{}) || {};
+  (function(){
+    var box=$('questions'); if(!box) return;
+    box.innerHTML=QS.map(function(q){
+      function sel(side){ var v=st[q.k]&&st[q.k][side]!=null?st[q.k][side]:2; return '<select data-k="'+q.k+'" data-s="'+side+'">'+q.opts.map(function(o,i){ return '<option value="'+i+'"'+(i===v?' selected':'')+'>'+esc(o)+'</option>'; }).join('')+'</select>'; }
+      return '<div class="qblock" data-k="'+q.k+'"><p class="q">'+esc(q.q)+'</p><div class="pair"><div><div class="who" id="whoA-'+q.k+'">Partner A</div>'+sel('a')+'</div><div><div class="who" id="whoB-'+q.k+'">Partner B</div>'+sel('b')+'</div></div><div class="gap" id="gap-'+q.k+'"></div></div>';
+    }).join('');
+    box.querySelectorAll('select').forEach(function(s){ s.addEventListener('change',function(){ var k=s.getAttribute('data-k'); st[k]=st[k]||{}; st[k][s.getAttribute('data-s')]=+s.value; if(A.setJSON) A.setJSON('couple',st); recompute(); }); });
+  })();
+
+  function names(){ var a=($('nameA')&&$('nameA').value.trim())||'Partner A'; var b=($('nameB')&&$('nameB').value.trim())||'Partner B'; return [a,b]; }
+
+  function recompute(){
+    var nm=names();
+    QS.forEach(function(q){ var wa=$('whoA-'+q.k), wb=$('whoB-'+q.k); if(wa)wa.textContent=nm[0]; if(wb)wb.textContent=nm[1]; });
+    var items=[], gaps=[];
+    QS.forEach(function(q){
+      var a=st[q.k]&&st[q.k].a!=null?st[q.k].a:2, b=st[q.k]&&st[q.k].b!=null?st[q.k].b:2;
+      var gap=Math.abs(a-b), agree=Math.round((1-gap/4)*100);
+      items.push({label:q.short,value:agree});
+      var g=$('gap-'+q.k);
+      if(g){ if(gap===0){ g.className='gap agree'; g.textContent='✓ You\'re aligned here.'; } else { g.className='gap diff'; g.textContent='△ Gap of '+gap+': '+nm[0]+' says "'+q.opts[a]+'", '+nm[1]+' says "'+q.opts[b]+'".'; } }
+      if(gap>=2) gaps.push({q:q,a:a,b:b,gap:gap});
+    });
+    var overall=Math.round(items.reduce(function(s,i){return s+i.value;},0)/items.length);
+    if($('alignPct')) $('alignPct').textContent=overall+'%';
+    if(A.radar) A.radar($('radar'),items);
+    var db=$('diffs');
+    if(db){
+      gaps.sort(function(x,y){return y.gap-x.gap;});
+      if(!gaps.length){ db.innerHTML='<p class="note">No major gaps right now — you\'re closely aligned across the board. Use the agenda below to confirm and plan together.</p>'; }
+      else { db.innerHTML='<p class="note">Your biggest differences, worth gentle conversation:</p>'+gaps.map(function(x){ return '<div class="diffrow"><b>'+esc(x.q.short)+':</b> '+nm[0]+' leans "'+esc(x.q.opts[x.a])+'", '+nm[1]+' leans "'+esc(x.q.opts[x.b])+'". Treat this as a shared puzzle, not a contest — and if it\'s the "wanting kids" or "how settled" question, take section ⑤ seriously.</div>'; }).join(''); }
     }
-  });
-  if(A.meter)A.meter(readyBar,both/TOPICS.length*100);if(readyPct)readyPct.textContent=Math.round(both/TOPICS.length*100)+'%';
-  if(A.barChart)A.barChart(chart,[{label:'Aligned',value:aligned},{label:'Unsure',value:unsure},{label:'Differ',value:differ}],{max:Math.max(1,TOPICS.length),fmt:function(v){return v;},title:'Alignment'});
-}
-if(wrap)wrap.addEventListener('change',function(e){
-  var s=e.target;if(s.tagName!=='SELECT')return;var id=s.getAttribute('data-t'),who=s.getAttribute('data-who');
-  state[id]=state[id]||{};state[id][who]=s.value;if(A.setJSON)A.setJSON('align',state);compute();
-});
-compute();
+  }
+  ['nameA','nameB'].forEach(function(id){ var el=$(id); if(el){ var s=A.get?A.get(id,''):''; if(s)el.value=s; el.addEventListener('input',function(){ A.set&&A.set(id,el.value); recompute(); }); } });
+  recompute();
 
-var notes=document.getElementById('notes'),status=document.getElementById('status'),timer=null;
-function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-if(notes&&A.get){notes.value=A.get('notes','');notes.addEventListener('input',function(){A.set('notes',notes.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('notes',notes.value);flash('Saved ✓');});
-if(copyBtn)copyBtn.addEventListener('click',function(){
-  var lines=['Children conversation — my talking points',''];
-  TOPICS.forEach(function(t){var st=state[t[0]]||{};lines.push(t[1]+': you '+(st.you||'—')+', partner '+(st.partner||'—'));});
-  if(notes&&notes.value.trim())lines.push('','Notes:',notes.value.trim());
-  if(A.copy)A.copy(lines.join('\n'),copyBtn);
-});
-if(clearBtn)clearBtn.addEventListener('click',function(){
-  if(!window.confirm('Clear all entries on this device?'))return;
-  state={};if(A.remove){A.remove('align');A.remove('notes');}if(notes)notes.value='';
-  if(wrap)wrap.querySelectorAll('select').forEach(function(s){s.value='';});compute();flash('Cleared.');
-});
-
-/* ---------- Quiz ---------- */
-var Q=[{a:1,e:'The aim is honest mutual understanding, not winning or avoidance.'},{a:1,e:'A real difference on children is serious and deserves honesty, faced together — not papered over.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;Q.forEach(function(it,i){document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+Q.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 018 script error',e);}
+  /* agenda notes + reflection */
+  (function(){
+    var notes=$('notes'), status=$('saveStatus'), timer=null;
+    function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(notes&&A.get){ notes.value=A.get('notes',''); notes.addEventListener('input',function(){ A.set('notes',notes.value); }); }
+    var s=$('saveBtn'),cp=$('copyBtn');
+    if(s) s.addEventListener('click',function(){ if(notes&&A.set)A.set('notes',notes.value); flash('Saved ✓'); });
+    if(cp) cp.addEventListener('click',function(){ var nm=names(); var L=['Children conversation — our map','','Overall alignment: '+($('alignPct')?$('alignPct').textContent:''),'']; QS.forEach(function(q){ var a=st[q.k]&&st[q.k].a!=null?st[q.k].a:2,b=st[q.k]&&st[q.k].b!=null?st[q.k].b:2; L.push(q.short+': '+nm[0]+'="'+q.opts[a]+'", '+nm[1]+'="'+q.opts[b]+'"'+(a===b?' ✓':' △')); }); if(notes&&notes.value.trim()){ L.push('','Notes:',notes.value.trim()); } if(A.copy) A.copy(L.join('\n'),cp); });
+  })();
+  (function(){
+    var ta=$('r1'), status=$('rStatus'), timer=null;
+    function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear');
+    if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); });
+  })();
+} catch(e){ console.error('project 018 script error', e); }
 });

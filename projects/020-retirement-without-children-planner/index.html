@@ -1,79 +1,71 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Retirement Without Children Planner · ANCF Digital Projects</title><meta name="description" content="A transparent projection of savings for later life without relying on children — with a growth chart and a target meter. An illustration, not financial advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Retirement Without Children Planner</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Retirement Without Children Planner · ANCF Digital Projects</title><meta name="description" content="Answer 'who will look after you?' with a plan: a compound savings projection toward later-life security with a gap check, plus a care-network builder and readiness check for the support money can't buy. Not financial advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Retirement Without Children Planner</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../019-childfree-couple-planning-board/index.html">← Previous</a><a class="btn btn-primary" href="../021-antinatalist-quote-archive/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 020</span><h2>Retirement Without Children Planner</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
-<p class="lead">"Who will look after you when you're old?" is better answered by planning than by having children. This simple projector estimates how savings might grow toward later-life security — through your own savings, community, and services rather than relying on anyone.</p>
+<div class="proj-head"><span class="num">PROJECT 020</span><h2>Retirement Without Children Planner</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Intermediate · ~18 min · planner</span></div></div>
+<p class="lead">"Who will look after you when you're old?" is better answered by <strong>planning</strong> than by having children — who are, in any case, never a guarantee of care. This planner does two things: it projects how savings might grow toward later-life security, and it helps you build the <strong>care network</strong> that money alone can't provide. Not financial advice — a tool for thinking ahead.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#learn">① The real question</a><a href="#inputs">② Your inputs</a><a href="#projection">③ Projection</a><a href="#care">④ Beyond money</a><a href="#quiz">⑤ Quick check</a><a href="#reflect">⑥ Reflection</a></nav>
 
-<p class="disclaimer">An illustration for reflection, <strong>not financial advice</strong>. Real returns vary and are never guaranteed; inflation and taxes are not modelled. For decisions, consult a qualified, independent adviser.</p>
+<h3 id="learn" style="scroll-margin-top:70px">① The real question</h3>
+<div class="panel"><div class="term"><b>Two kinds of security</b> — later-life wellbeing rests on <em>resources</em> (savings, insurance, a home) and on <em>relationships</em> (people and services who show up). Children are an unreliable route to either; a deliberate plan beats a hopeful one. This tool takes both halves seriously.</div>
+<div style="margin-top:8px"><label for="cur" style="font-weight:600;font-size:var(--fs-sm)">Currency </label><select id="cur" style="width:auto;padding:5px 9px"><option value="$">$ USD</option><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="₹">₹ INR</option><option value="A$">A$ AUD</option><option value="C$">C$ CAD</option></select></div></div>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How current savings plus monthly contributions can compound over time.</li>
-<li>How your projected pot grows across the years to retirement.</li>
-<li>How a projection compares against a target you set.</li>
-<li>Why planning — not children — is the dependable route to later-life security.</li>
-</ul></div>
+<h3 id="inputs" style="scroll-margin-top:70px">② Your inputs</h3>
+<div class="panel"><div class="inputs">
+<div><label class="field" for="age">Current age</label><input type="number" id="age" min="18" max="80" value="35"></div>
+<div><label class="field" for="ret">Target retirement age</label><input type="number" id="ret" min="40" max="90" value="65"></div>
+<div><label class="field" for="now">Savings so far</label><span class="cur" data-sym="$"><input type="number" id="now" min="0" step="1000" value="20000"></span></div>
+<div><label class="field" for="contrib">Monthly contribution</label><span class="cur" data-sym="$"><input type="number" id="contrib" min="0" step="50" value="500"></span></div>
+<div><label class="field" for="target">Target nest egg (0 to skip)</label><span class="cur" data-sym="$"><input type="number" id="target" min="0" step="10000" value="500000"></span></div>
+<div><label class="field" for="rate">Average annual return</label><div class="slider-row"><div class="lab"><label for="rate" class="note">growth</label><output id="o-rate">6%</output></div><input type="range" id="rate" min="0" max="12" step="0.5" value="6"></div></div>
+</div></div>
 
-<div class="panel"><h3>1. Your inputs</h3>
-<div class="row">
-<div><label class="field" for="age">Current age</label><input type="number" id="age" min="16" max="90" step="1" value="30"></div>
-<div><label class="field" for="retire">Retirement age</label><input type="number" id="retire" min="40" max="95" step="1" value="65"></div>
-<div><label class="field" for="savings">Current savings</label><input type="number" id="savings" min="0" step="1" value="10000"></div>
-<div><label class="field" for="monthly">Monthly contribution</label><input type="number" id="monthly" min="0" step="1" value="300"></div>
+<h3 id="projection" style="scroll-margin-top:70px">③ Projection</h3>
+<div class="panel">
+<svg class="growth" id="growth" role="img" aria-label="Projected savings growth to retirement."></svg>
+<div class="bigfig">
+<div class="f"><b id="figContrib">0</b><span>total you'll contribute</span></div>
+<div class="f"><b id="figGrowth">0</b><span>growth on top</span></div>
+<div class="f" id="balBox"><b id="figBal">0</b><span>projected at retirement</span></div>
 </div>
-<div class="slider-row"><div class="lab"><label for="rate">Assumed annual return</label><output id="o-rate">5%</output></div><input type="range" id="rate" min="0" max="10" step="1" value="5"></div>
-<div><label class="field" for="target">Target pot (optional)</label><input type="number" id="target" min="0" step="1" placeholder="e.g. 500000"></div>
-</div>
-
-<div class="panel"><h3>2. Projection</h3>
-<div class="meter-grid">
-<div class="meter-card"><div class="lab"><span>Projected pot at retirement</span><b id="potOut">0</b></div></div>
-<div class="meter-card"><div class="lab"><span>You will have contributed</span><b id="contribOut">0</b></div></div>
-<div class="meter-card"><div class="lab"><span>Growth on top</span><b id="growthOut">0</b></div></div>
-</div>
-<div id="targetWrap" style="display:none;margin-top:8px"><div class="meter-card"><div class="lab"><span>Progress to target</span><b id="targetPct">0%</b></div><div class="meter"><span id="targetBar"></span></div></div></div>
-<svg class="chart" id="growthChart" role="img" aria-label="Bar chart of projected pot at intervals up to retirement."></svg>
-<p class="chart-cap">Bar chart: projected pot at points along the way to retirement.</p>
+<div class="verdict" id="verdict" role="status" aria-live="polite"></div>
+<p class="disclaimer">Not financial advice. Assumes steady contributions and a constant return, which real markets never deliver, and ignores inflation, tax, fees, and pensions/benefits. For real planning, see a qualified professional.</p>
 </div>
 
-<div class="panel"><h3>3. Beyond money</h3>
-<p class="note">Security in later life is more than a number. Children are not a reliable retirement plan; deliberate planning is.</p>
-<div class="kv">
-<strong>Community</strong><span>Friendships, neighbours, and chosen family — actively built over time.</span>
-<strong>Services</strong><span>Pensions, insurance, healthcare, and care services you arrange for yourself.</span>
-<strong>Home</strong><span>Housing that suits ageing, or plans to adapt or downsize.</span>
-<strong>Documents</strong><span>A will, power of attorney, and care wishes recorded in advance.</span>
-</div>
+<h3 id="care" style="scroll-margin-top:70px">④ Beyond money — your care network</h3>
+<div class="panel">
+<p class="note">Money is only half of it. Tick the supports you already have or are building. This is the answer to "who will look after you?" — a deliberately built web, not a single bet.</p>
+<div class="caregrid" id="careGrid"></div>
+<div class="readbar" aria-hidden="true"><span id="careBar"></span></div>
+<p class="note" id="careNote" role="status" aria-live="polite"></p>
 </div>
 
-<div class="panel"><h3>4. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. The most dependable route to later-life security is…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Having children to rely on</div><div class="opt" data-q="0" data-i="1">Deliberate financial and social planning</div><div class="opt" data-q="0" data-i="2">Hoping for the best</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. This projection…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Guarantees a return</div><div class="opt" data-q="1" data-i="1">Is illustrative; real returns vary</div><div class="opt" data-q="1" data-i="2">Includes tax and inflation</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">⑤ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. Children are, for later-life care…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">A guaranteed plan</div><div class="opt" data-q="0" data-i="1">An unreliable bet — planning beats hoping</div><div class="opt" data-q="0" data-i="2">The only option</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Later-life security rests on…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Money only</div><div class="opt" data-q="1" data-i="1">Both resources and relationships</div><div class="opt" data-q="1" data-i="2">Luck</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. The projection here…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Is a guarantee</div><div class="opt" data-q="2" data-i="1">Is a rough illustration, not financial advice</div><div class="opt" data-q="2" data-i="2">Includes tax and inflation precisely</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>5. Your reflection</h3>
-<label class="field" for="reflect">What is one step — financial or social — you could take this year toward later-life security?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑥ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What's one money step and one relationship step you could take this year toward a secure later life?</label>
+<textarea id="r1" placeholder="e.g. set up an automatic transfer; reconnect with an old friend; draft a will…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my plan</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Later-life security comes from planning — savings, community, services, and clear documents — not from expecting children to provide it. Whatever your numbers, the dependable move is to plan deliberately and build a support network on purpose.</p></div>
+<p>The honest answer to "who will look after you?" isn't "my children" — it's "the plan and the people I build." Resources grow with small, steady steps; a care network grows with attention to relationships over years. Both are within your hands far more than a roll of the genetic dice ever was.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>What you can set aside</span></a>
-<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>The other side</span></a>
-<a href="../081-legal-rights-awareness-page/index.html">Legal Rights Awareness<span>Wills &amp; documents context</span></a>
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Wellbeing planning</span></a>
+<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>Fund the plan</span></a>
+<a href="../002-childfree-life-intro-guide/book/ch16.html">The Childfree Life (Ch. 16)<span>Aging well without kids</span></a>
+<a href="../002-childfree-life-intro-guide/book/ch18.html">The Childfree Life (Ch. 18)<span>Care networks</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>"Who'll care for you?"</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../019-childfree-couple-planning-board/index.html">← Previous</a><a class="btn btn-primary" href="../021-antinatalist-quote-archive/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -1,12 +1,8 @@
-# Life Goals Priority Mapper
+# Life-Goals Priority Mapper
 
 *Project 015 · Category: Writing Tools · Difficulty: Beginner*
 
-Sort your life goals into now / soon / someday columns. Saved on your device.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Add goals, set each one's horizon (Now/Soon/Someday), importance, and effort, and the tool maps
+them by horizon and across an importance-vs-effort matrix (quick wins / big bets / nice-to-haves
+/ reconsider), then suggests where to start. Add/edit/delete, persisted on-device, exportable.
+Vanilla JS; DOM test 9/9.

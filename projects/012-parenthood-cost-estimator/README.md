@@ -2,11 +2,7 @@
 
 *Project 012 · Category: Calculators · Difficulty: Beginner*
 
-A neutral, editable estimate of cumulative child-rearing costs over years.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A neutral, editable estimator of the cost of raising a child across six phases (pregnancy →
+young adult), with currency + lean/typical/generous presets, totals to 18 and ~22, an SVG
+cumulative-cost-by-age chart, and a phase breakdown. A planning aid, not a judgment. Vanilla JS;
+DOM test 8/8.

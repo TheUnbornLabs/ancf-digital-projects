@@ -1,1 +1,23 @@
-/* Per-project overrides for Marriage and Children Conversation Tool. Shared design system lives in ../../style.css */
+/* Project 018 · Marriage & Children Conversation Tool — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+@media(max-width:480px){.names{grid-template-columns:1fr}}
+.qblock{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 15px;margin:9px 0;background:var(--surface)}
+.qblock .q{font-weight:600;margin:0 0 8px}
+.qblock .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.qblock .pair{grid-template-columns:1fr}}
+.qblock .who{font-size:var(--fs-xs);color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.qblock select{width:100%}
+.qblock .gap{margin-top:8px;font-size:var(--fs-sm)}
+.qblock .gap.agree{color:#1c7a3e}.qblock .gap.diff{color:var(--accent-2)}
+.alignfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.alignfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.alignfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums}
+.alignfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.diffs{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.diffrow{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:9px 13px;font-size:var(--fs-sm)}
+.agenda{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.agenda .step{border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 13px;background:var(--surface-2);font-size:var(--fs-sm)}
+.agenda .step b{color:var(--accent-2)}

@@ -1,1 +1,25 @@
-/* Per-project overrides for Parenthood Cost Estimator. Shared design system lives in ../../style.css */
+/* Project 012 · Parenthood Cost Estimator — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.preset{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:var(--radius-pill);padding:6px 13px;font-size:var(--fs-sm);font-weight:600}
+.preset:hover,.preset.active{border-color:var(--accent);color:var(--ink)}.preset.active{background:var(--accent);color:#fff}
+.phaserow{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;margin:7px 0}
+.phaserow .meta{font-size:var(--fs-sm)}.phaserow .meta small{color:var(--muted);display:block}
+.phaserow .cur{position:relative}.phaserow .cur input{width:100%;padding-left:22px}
+.phaserow .cur::before{content:attr(data-sym);position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:var(--fs-sm)}
+.bigfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.bigfig .f{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface-2);text-align:center}
+.bigfig .f b{display:block;font-size:var(--fs-2xl);color:var(--accent-2);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bigfig .f span{font-size:var(--fs-xs);color:var(--muted)}
+.growth{width:100%;height:auto;max-width:560px;display:block;margin:10px 0}
+.g-area{fill:var(--accent-soft)}.g-line{fill:none;stroke:var(--accent);stroke-width:2.5}
+.g-axis{stroke:var(--line)}.g-lbl{fill:var(--muted);font-size:11px}.g-dot{fill:var(--accent)}
+.pbreak{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.pbar{display:grid;grid-template-columns:130px 1fr auto;gap:10px;align-items:center}
+.pbar .nm{font-size:var(--fs-sm);font-weight:600}
+.pbar .track{height:16px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}
+.pbar .fill{height:100%;background:linear-gradient(90deg,var(--info),var(--accent));width:0;transition:width .4s}
+.pbar .v{font-variant-numeric:tabular-nums;font-size:var(--fs-sm);color:var(--accent-2);font-weight:700}
+.curpick{display:inline-flex;gap:6px;align-items:center;margin:6px 0}.curpick select{width:auto;padding:6px 10px}

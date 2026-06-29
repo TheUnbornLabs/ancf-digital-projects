@@ -2,11 +2,7 @@
 
 *Project 016 · Category: Childfree Life · Difficulty: Beginner*
 
-A gentle checklist for protecting your peace around family-pressure season.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A gentle toolkit for protecting your peace around repeated family questions. A before/during/
+after peace plan with per-phase progress; a filterable, copyable kit of calm exit-lines (deflect/
+redirect/boundary/escape); a guided box-breathing grounder; and a personal anchor (ally, exit,
+reward), all saved on-device and exportable. Vanilla JS; DOM test 10/10.

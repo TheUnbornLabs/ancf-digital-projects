@@ -111,7 +111,7 @@
       "title": "Childfree Budget Calculator",
       "category": "Calculators",
       "difficulty": "Beginner",
-      "description": "Estimate annual discretionary money a childfree household might allocate differently.",
+      "description": "A fully editable model of funds a childfree budget may free up: monthly category estimates with regional presets, a reallocation planner across buckets, and a compound-growth projection of a 'freedom fund'. Estimates only.",
       "path": "projects/011-childfree-budget-calculator/index.html"
     },
     {
@@ -120,7 +120,7 @@
       "title": "Parenthood Cost Estimator",
       "category": "Calculators",
       "difficulty": "Beginner",
-      "description": "A neutral, editable estimate of cumulative child-rearing costs over years.",
+      "description": "A neutral, editable estimator of the cost of raising a child across six life phases, with regional presets, a cumulative-cost chart by age, and a phase-by-phase breakdown. Estimates only — money is not the point.",
       "path": "projects/012-parenthood-cost-estimator/index.html"
     },
     {
@@ -129,7 +129,7 @@
       "title": "Time Freedom Calculator",
       "category": "Calculators",
       "difficulty": "Beginner",
-      "description": "Estimate weekly discretionary hours under different care commitments.",
+      "description": "A 168-hour week allocator: see how your week divides, how much discretionary time remains, how caregiving changes it, and what your free hours add up to over years — with a week visualizer and lifetime projection.",
       "path": "projects/013-time-freedom-calculator/index.html"
     },
     {
@@ -138,7 +138,7 @@
       "title": "Sleep Loss Simulator",
       "category": "Calculators",
       "difficulty": "Beginner",
-      "description": "Model cumulative sleep debt over a period of reduced nightly sleep.",
+      "description": "An illustrative model of how a nightly sleep shortfall during early caregiving accumulates into a cumulative sleep debt, by phase, with a timeline chart and relatable equivalents. Not medical advice.",
       "path": "projects/014-sleep-loss-simulator/index.html"
     },
     {
@@ -147,7 +147,7 @@
       "title": "Life Goals Priority Mapper",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Sort your life goals into now / soon / someday columns. Saved on your device.",
+      "description": "Add the goals that matter to you, sort them across three horizons (Now/Soon/Someday) and an importance-vs-effort matrix, and get a clear suggestion of where to start. A planning tool; everything stays on your device.",
       "path": "projects/015-life-goals-priority-mapper/index.html"
     },
     {
@@ -156,7 +156,7 @@
       "title": "Personal Peace Checklist",
       "category": "Childfree Life",
       "difficulty": "Beginner",
-      "description": "A gentle checklist for protecting your peace around family-pressure season.",
+      "description": "A gentle toolkit for protecting your peace around repeated questions: a before/during/after peace plan with progress, a kit of calm exit-lines, a guided box-breathing grounder, and a personal support anchor.",
       "path": "projects/016-personal-peace-checklist/index.html"
     },
     {
@@ -165,7 +165,7 @@
       "title": "Pressure From Parents Response Generator",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Draft warm, respectful replies to parental pressure about children.",
+      "description": "Draft a reply to parental pressure that honors their love while holding your line: a warmth-to-firmness dial generator, an 'acknowledge-then-hold' structure, and a mapper for the fear underneath their words.",
       "path": "projects/017-pressure-from-parents-response-generator/index.html"
     },
     {
@@ -174,7 +174,7 @@
       "title": "Marriage and Children Conversation Tool",
       "category": "Community Tools",
       "difficulty": "Intermediate",
-      "description": "Prepare honest talking points for discussing children with a partner.",
+      "description": "Map where you and your partner align on the children question across seven key topics, see an alignment radar and where you differ, follow a guided conversation agenda, and find honest help for a real mismatch.",
       "path": "projects/018-marriage-and-children-conversation-tool/index.html"
     },
     {
@@ -183,7 +183,7 @@
       "title": "Childfree Couple Planning Board",
       "category": "Childfree Life",
       "difficulty": "Beginner",
-      "description": "A shared planning board for a childfree couple’s shared and personal goals.",
+      "description": "An editable vision board for a couple (or anyone) to name what they're building together across six areas of life, sparked by suggestions, with a shared-vision statement builder. Everything stays on your device.",
       "path": "projects/019-childfree-couple-planning-board/index.html"
     },
     {
@@ -192,7 +192,7 @@
       "title": "Retirement Without Children Planner",
       "category": "Calculators",
       "difficulty": "Intermediate",
-      "description": "A simple model of savings needed for later-life support without relying on children.",
+      "description": "Answer 'who will look after you?' with a plan: a compound savings projection toward later-life security with a target/gap check, plus a care-network builder and readiness check for the support money can't buy.",
       "path": "projects/020-retirement-without-children-planner/index.html"
     },
     {

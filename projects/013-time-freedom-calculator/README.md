@@ -1,12 +1,8 @@
-# Time Freedom Calculator
+# Time-Freedom Calculator
 
 *Project 013 · Category: Calculators · Difficulty: Beginner*
 
-Estimate weekly discretionary hours under different care commitments.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A 168-hour-week allocator. Sliders for seven commitments build a live week visualizer and a
+discretionary-time figure; a caregiving slider shows the trade-off side by side; and a lifetime
+projection turns weekly free hours into yearly/lifetime totals (with scale comparisons). Vanilla
+JS; DOM test 9/9.
