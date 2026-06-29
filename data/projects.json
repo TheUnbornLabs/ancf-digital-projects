@@ -21,7 +21,7 @@
       "title": "Antinatalism Intro Guide",
       "category": "Philosophy",
       "difficulty": "Beginner",
-      "description": "A calm, plain-language introduction to what antinatalism is \u2014 and is not.",
+      "description": "A calm, plain-language introduction to what antinatalism is — and is not. Now includes The Antinatalism Reader: a full 43-chapter companion book.",
       "path": "projects/001-antinatalism-intro-guide/index.html"
     },
     {
@@ -30,7 +30,7 @@
       "title": "Childfree Life Intro Guide",
       "category": "Childfree Life",
       "difficulty": "Beginner",
-      "description": "An introduction to choosing a life without children \u2014 practically and emotionally.",
+      "description": "An introduction to choosing a life without children — practically and emotionally.",
       "path": "projects/002-childfree-life-intro-guide/index.html"
     },
     {
@@ -54,7 +54,7 @@
     {
       "number": 5,
       "slug": "005-is-this-my-choice-reflection-tool",
-      "title": "\u201cIs This My Choice?\u201d Reflection Tool",
+      "title": "“Is This My Choice?” Reflection Tool",
       "category": "Childfree Life",
       "difficulty": "Beginner",
       "description": "Private writing prompts to separate your own wishes from inherited expectations.",
@@ -99,7 +99,7 @@
     {
       "number": 10,
       "slug": "010-no-means-no-family-boundary-tool",
-      "title": "\u201cNo Means No\u201d Family Boundary Tool",
+      "title": "“No Means No” Family Boundary Tool",
       "category": "Community Tools",
       "difficulty": "Beginner",
       "description": "Generate calm, firm boundary statements for repeated family questions.",
@@ -183,7 +183,7 @@
       "title": "Childfree Couple Planning Board",
       "category": "Childfree Life",
       "difficulty": "Beginner",
-      "description": "A shared planning board for a childfree couple\u2019s shared and personal goals.",
+      "description": "A shared planning board for a childfree couple’s shared and personal goals.",
       "path": "projects/019-childfree-couple-planning-board/index.html"
     },
     {
@@ -237,7 +237,7 @@
       "title": "Benatar Argument Explainer",
       "category": "Philosophy",
       "difficulty": "Advanced",
-      "description": "A clear, fair summary of the well-known asymmetry argument \u2014 and its critics.",
+      "description": "A clear, fair summary of the well-known asymmetry argument — and its critics.",
       "path": "projects/025-benatar-argument-explainer/index.html"
     },
     {
@@ -282,7 +282,7 @@
       "title": "Economic Pressure Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How economic forces shape family decisions \u2014 without shaming anyone\u2019s choices.",
+      "description": "How economic forces shape family decisions — without shaming anyone’s choices.",
       "path": "projects/030-economic-pressure-explainer/index.html"
     },
     {
@@ -291,7 +291,7 @@
       "title": "Comic Strip Prompt Generator",
       "category": "Comics",
       "difficulty": "Beginner",
-      "description": "Generate gentle, metaphor-based comic ideas \u2014 never mocking real groups.",
+      "description": "Generate gentle, metaphor-based comic ideas — never mocking real groups.",
       "path": "projects/031-comic-strip-prompt-generator/index.html"
     },
     {
@@ -300,7 +300,7 @@
       "title": "Instagram Caption Generator",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Create thoughtful captions about childfree/antinatalist themes \u2014 respectful by design.",
+      "description": "Create thoughtful captions about childfree/antinatalist themes — respectful by design.",
       "path": "projects/032-instagram-caption-generator/index.html"
     },
     {
@@ -309,7 +309,7 @@
       "title": "Debate Reply Generator",
       "category": "Writing Tools",
       "difficulty": "Intermediate",
-      "description": "Draft calm, non-hostile replies to common arguments \u2014 aimed at ideas, not people.",
+      "description": "Draft calm, non-hostile replies to common arguments — aimed at ideas, not people.",
       "path": "projects/033-debate-reply-generator/index.html"
     },
     {
@@ -324,7 +324,7 @@
     {
       "number": 35,
       "slug": "035-when-are-you-having-kids-reply-tool",
-      "title": "\u201cWhen Are You Having Kids?\u201d Reply Tool",
+      "title": "“When Are You Having Kids?” Reply Tool",
       "category": "Community Tools",
       "difficulty": "Beginner",
       "description": "Instant, kind one-liners for the most common question of all.",
@@ -426,7 +426,7 @@
       "title": "Social Shame Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How shame operates around reproductive choices \u2014 and how to loosen its grip.",
+      "description": "How shame operates around reproductive choices — and how to loosen its grip.",
       "path": "projects/046-social-shame-explainer/index.html"
     },
     {
@@ -543,7 +543,7 @@
       "title": "Nietzsche Misuse Explainer",
       "category": "Philosophy",
       "difficulty": "Advanced",
-      "description": "How Nietzsche is often misquoted in these debates \u2014 and a fairer reading.",
+      "description": "How Nietzsche is often misquoted in these debates — and a fairer reading.",
       "path": "projects/059-nietzsche-misuse-explainer/index.html"
     },
     {
@@ -612,7 +612,7 @@
     {
       "number": 67,
       "slug": "067-auntie-uncle-chase-arcade-game",
-      "title": "\u201cAuntie Uncle Chase\u201d Arcade Game",
+      "title": "“Auntie Uncle Chase” Arcade Game",
       "category": "Games",
       "difficulty": "Beginner",
       "description": "Collect 'freedom tokens' while gently avoiding the well-meaning chasers.",
@@ -741,7 +741,7 @@
       "title": "Legal Rights Awareness Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "General awareness of rights related to reproductive autonomy \u2014 not legal advice.",
+      "description": "General awareness of rights related to reproductive autonomy — not legal advice.",
       "path": "projects/081-legal-rights-awareness-page/index.html"
     },
     {
@@ -750,7 +750,7 @@
       "title": "Workplace Childfree Bias Notes",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "Notes on subtle workplace assumptions about parenthood \u2014 and staying professional.",
+      "description": "Notes on subtle workplace assumptions about parenthood — and staying professional.",
       "path": "projects/082-workplace-childfree-bias-notes/index.html"
     },
     {
@@ -849,7 +849,7 @@
       "title": "South Asian Pronatalism Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "A careful explainer on pronatalist pressures in South Asian contexts \u2014 without stereotyping.",
+      "description": "A careful explainer on pronatalist pressures in South Asian contexts — without stereotyping.",
       "path": "projects/093-south-asian-pronatalism-explainer/index.html"
     },
     {
@@ -858,7 +858,7 @@
       "title": "Women and Reproductive Pressure Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How reproductive pressure specifically affects women \u2014 with full respect for mothers.",
+      "description": "How reproductive pressure specifically affects women — with full respect for mothers.",
       "path": "projects/094-women-and-reproductive-pressure-page/index.html"
     },
     {
@@ -867,7 +867,7 @@
       "title": "Men and Provider Pressure Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How provider and 'legacy' pressures affect men \u2014 with empathy.",
+      "description": "How provider and 'legacy' pressures affect men — with empathy.",
       "path": "projects/095-men-and-provider-pressure-page/index.html"
     },
     {
@@ -894,7 +894,7 @@
       "title": "Poverty and Parenthood Pressure Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How poverty shapes family pressures \u2014 critiquing systems, never poor people.",
+      "description": "How poverty shapes family pressures — critiquing systems, never poor people.",
       "path": "projects/098-poverty-and-parenthood-pressure-explainer/index.html"
     },
     {
