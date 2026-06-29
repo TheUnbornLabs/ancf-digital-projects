@@ -56,8 +56,8 @@
       "slug": "005-is-this-my-choice-reflection-tool",
       "title": "“Is This My Choice?” Reflection Tool",
       "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "Private writing prompts to separate your own wishes from inherited expectations.",
+      "difficulty": "Intermediate",
+      "description": "A decision-clarity studio for telling your own wishes from inherited pressure: a desire-vs-pressure map, a values clarifier, a whose-voice-is-it sorter, clarity signals, five classic perspective tools, and a private clarity report.",
       "path": "projects/005-is-this-my-choice-reflection-tool/index.html"
     },
     {
@@ -65,8 +65,8 @@
       "slug": "006-reproductive-autonomy-explainer",
       "title": "Reproductive Autonomy Explainer",
       "category": "Ethics",
-      "difficulty": "Beginner",
-      "description": "What reproductive autonomy means and why it applies to everyone.",
+      "difficulty": "Intermediate",
+      "description": "A 360-degree explainer on reproductive autonomy: the conditions a free choice needs, how coercion runs in both directions, a short history of reproductive rights, a personal autonomy self-check, scenarios, and an autonomy-respecting response generator.",
       "path": "projects/006-reproductive-autonomy-explainer/index.html"
     },
     {
@@ -75,7 +75,7 @@
       "title": "Consent and Birth Philosophy Page",
       "category": "Philosophy",
       "difficulty": "Intermediate",
-      "description": "An accessible look at the consent argument in birth ethics.",
+      "description": "An interactive look at the consent argument in birth ethics: build the argument premise by premise, explore three senses of consent, Shiffrin's gold-coins analogy, an objection explorer, and a position finder.",
       "path": "projects/007-consent-and-birth-philosophy-page/index.html"
     },
     {
@@ -84,7 +84,7 @@
       "title": "Suffering Risk Thought Experiment",
       "category": "Philosophy",
       "difficulty": "Intermediate",
-      "description": "A structured thought experiment about risk, certainty, and bringing life into the world.",
+      "description": "A structured thought experiment about risk and bringing life into the world: a probabilistic life-outcome simulator with a veil-of-ignorance test, the decision frames philosophers use, thought-experiment cards, and a where's-your-line tool.",
       "path": "projects/008-suffering-risk-thought-experiment/index.html"
     },
     {
@@ -93,7 +93,7 @@
       "title": "Adoption vs Birth Ethics Explainer",
       "category": "Ethics",
       "difficulty": "Intermediate",
-      "description": "A balanced comparison of ethical considerations around adoption and biological birth.",
+      "description": "A balanced comparison of ethical considerations around adoption and biological birth: five paths to caring for children, the existing-need vs created-need contrast, an honest look at adoption, and a priorities mapper that ranks paths to your values.",
       "path": "projects/009-adoption-vs-birth-ethics-explainer/index.html"
     },
     {
@@ -101,8 +101,8 @@
       "slug": "010-no-means-no-family-boundary-tool",
       "title": "“No Means No” Family Boundary Tool",
       "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "Generate calm, firm boundary statements for repeated family questions.",
+      "difficulty": "Intermediate",
+      "description": "A 360-degree boundary toolkit for repeated family questions: understand the FOG of pressure, generate calm boundary scripts, decode emotional blackmail, climb an escalation ladder, and rehearse holding the line.",
       "path": "projects/010-no-means-no-family-boundary-tool/index.html"
     },
     {

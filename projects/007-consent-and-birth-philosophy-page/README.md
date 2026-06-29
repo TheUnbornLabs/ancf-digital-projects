@@ -1,12 +1,17 @@
-# Consent and Birth Philosophy Page
+# Consent & Birth Philosophy
 
 *Project 007 · Category: Philosophy · Difficulty: Intermediate*
 
-An accessible look at the consent argument in birth ethics.
+An accessible, interactive treatment of the consent argument in birth ethics — whether consent
+can matter when no one yet exists to give it. It argues for no conclusion, only understanding.
 
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
+Modules: the puzzle; an interactive **argument-builder** (accept/reject each premise and see
+where you land); three senses of consent (prior, hypothetical, dispositional); Shiffrin's
+gold-coins analogy as the strongest version; a five-objection explorer with replies (non-identity,
+no-subject, hypothetical consent, life-as-benefit, wrong-framework); a position finder; a quiz;
+and reflection.
 
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
+Vanilla JS on the shared `../../ancf-ui.js` toolkit; verified with a headless DOM test (10/10).
 
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+> This project is for education and reflection only. It is not medical, legal, financial, or
+> mental health advice.

@@ -1,1 +1,41 @@
-/* Per-project overrides for Suffering Risk Thought Experiment. Shared design system lives in ../../style.css */
+/* Project 008 · Suffering-Risk Thought Experiment — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+
+/* distribution bar */
+.dist{display:flex;height:42px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line);margin:14px 0 6px}
+.dist span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:var(--fs-xs);font-weight:700;transition:width .3s;overflow:hidden;white-space:nowrap}
+.dist .d-flourish{background:#1c7a3e}
+.dist .d-good{background:#5ab07a}
+.dist .d-mixed{background:#b4a000}
+.dist .d-hard{background:#c0612a}
+.dist .d-severe{background:#b3122a}
+.dist-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--fs-xs);color:var(--muted);margin:4px 0 10px}
+.dist-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.outcome-slider .lab b{font-variant-numeric:tabular-nums;color:var(--accent-2)}
+.simreads{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0}
+.simread{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px;background:var(--surface-2);text-align:center}
+.simread b{display:block;font-size:var(--fs-xl);color:var(--accent-2);font-variant-numeric:tabular-nums}
+.simread span{font-size:var(--fs-xs);color:var(--muted)}
+.veil{border:2px solid var(--info);background:var(--info-soft);border-radius:var(--radius);padding:14px 16px;margin-top:12px}
+.veil b{color:var(--info)}
+
+/* frame + tc cards */
+.fcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.fcard{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface-2);cursor:pointer;transition:.15s}
+.fcard:hover,.fcard.open{border-color:var(--accent)}
+.fcard h4{margin:0 0 4px;font-size:var(--fs-base)}
+.fcard .who{font-size:var(--fs-xs);color:var(--muted)}
+.fcard .more{display:none;font-size:var(--fs-sm);margin-top:8px}
+.fcard.open .more{display:block}
+
+.tcdeck{display:flex;flex-direction:column;gap:10px}
+.tcard{border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface)}
+.tcard .q{font-weight:600;margin:0 0 8px}
+.tcard .reveal{display:none;font-size:var(--fs-sm);color:var(--muted);border-left:3px solid var(--accent);padding-left:10px;margin-top:8px}
+.tcard.open .reveal{display:block}
+.tcard textarea{min-height:60px}
+
+.lineout{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:12px 16px;margin-top:10px}
+.lineout b{color:var(--accent-2)}

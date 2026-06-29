@@ -1,1 +1,44 @@
-/* Per-project overrides for “No Means No” Family Boundary Tool. Shared design system lives in ../../style.css */
+/* Project 010 · "No Means No" Family Boundary Tool — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+
+.fog{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);margin:var(--sp-3) 0}
+@media(max-width:520px){.fog{grid-template-columns:1fr}}
+.fogc{border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface-2);text-align:center}
+.fogc .l{font-size:1.6rem;font-weight:800;color:var(--accent-2)}
+.fogc h4{margin:4px 0}
+.fogc p{font-size:var(--fs-sm);color:var(--muted);margin:0}
+
+.gen-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.gen-grid{grid-template-columns:1fr}}
+
+/* decoder */
+.samples{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.sample-btn{cursor:pointer;border:1px dashed var(--line);background:var(--surface-2);color:var(--muted);border-radius:var(--radius-sm);padding:6px 12px;font-size:var(--fs-sm)}
+.sample-btn:hover{border-color:var(--accent);color:var(--ink)}
+.finding{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--radius-sm);padding:12px 15px;margin:10px 0;background:var(--surface)}
+.finding .tac{font-weight:800;color:var(--accent-2)}
+.finding .what{font-size:var(--fs-sm);color:var(--muted);margin:5px 0}
+.finding .resp{background:var(--accent-soft);border-radius:var(--radius-sm);padding:7px 11px;font-size:var(--fs-sm);margin-top:5px}
+.dec-empty{color:var(--muted);font-size:var(--fs-sm)}
+
+/* escalation ladder */
+.ladder{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.rung{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden;cursor:pointer}
+.rung .top{display:flex;align-items:center;gap:12px;padding:12px 15px}
+.rung .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+.rung .ti{font-weight:700;flex:1}
+.rung .more{display:none;padding:0 15px 13px 55px;font-size:var(--fs-sm);color:var(--muted)}
+.rung.open .more{display:block}
+.rung.open{border-color:var(--accent)}
+.rung .more .say{display:block;background:var(--accent-soft);border-radius:var(--radius-sm);padding:7px 11px;margin-top:6px;color:var(--ink)}
+
+/* rehearsal */
+.reh{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--surface-2)}
+.reh .npc{font-style:italic;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;margin:8px 0}
+.reh .choices{display:flex;flex-direction:column;gap:8px}
+.reh .choice{text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;background:var(--surface);font-size:var(--fs-sm)}
+.reh .choice:hover{border-color:var(--accent)}
+.reh .outcome{margin-top:10px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--accent-soft);border:1px dashed var(--accent);font-size:var(--fs-sm)}
+.reh .step-n{font-size:var(--fs-xs);color:var(--muted);font-weight:700;letter-spacing:.05em;text-transform:uppercase}

@@ -1,12 +1,17 @@
-# Suffering Risk Thought Experiment
+# Suffering-Risk Thought Experiment
 
 *Project 008 · Category: Philosophy · Difficulty: Intermediate*
 
-A structured thought experiment about risk, certainty, and bringing life into the world.
+A reflection exercise (not a forecast) on the hardest version of the risk argument: how much
+risk of suffering is acceptable when you decide for a future person who cannot choose?
 
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
+Modules: the setup; a **probabilistic risk simulator** (set life-outcome odds, see a normalized
+distribution, expected value, downside and worst-case mass, plus a veil-of-ignorance verdict);
+the decision frames philosophers use (expected value, maximin/Rawls, precaution, Weinberg's
+risk-as-imposition); five thought-experiment cards with note capture; a "where's your line"
+slider; a quiz; and reflection. All numbers are illustrative aids, not predictions.
 
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
+Vanilla JS on the shared `../../ancf-ui.js` toolkit; verified with a headless DOM test (12/12).
 
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+> This project is for education and reflection only. It is not medical, legal, financial, or
+> mental health advice.

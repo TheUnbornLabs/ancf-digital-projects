@@ -1,1 +1,38 @@
-/* Per-project overrides for Adoption vs Birth Ethics Explainer. Shared design system lives in ../../style.css */
+/* Project 009 · Adoption vs Birth Ethics — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+
+/* path comparison cards */
+.paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.pathc{border:1px solid var(--line);border-top:4px solid var(--info);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden}
+.pathc summary{cursor:pointer;list-style:none;padding:13px 16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.pathc summary::-webkit-details-marker{display:none}
+.pathc summary .ico{font-size:1.2rem}
+.pathc summary .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+.pathc[open] summary .chev{transform:rotate(90deg)}
+.pathc[open]{border-color:var(--accent)}
+.pathc .body{padding:0 16px 14px;font-size:var(--fs-sm)}
+.pathc .body .lbl{font-weight:700;color:var(--accent-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;display:block;margin-top:8px}
+.pathc .limit{border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:6px 10px;margin-top:6px}
+
+/* existing vs created */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin:var(--sp-3) 0}
+@media(max-width:620px){.twocol{grid-template-columns:1fr}}
+.tcol{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface)}
+.tcol.existing{border-top:4px solid #1c7a3e}
+.tcol.created{border-top:4px solid var(--accent)}
+.tcol h4{margin:0 0 6px}
+.tcol ul{margin:6px 0 0;padding-left:18px}.tcol li{margin:5px 0;font-size:var(--fs-sm)}
+
+/* priorities mapper */
+.pri-rows .slider-row{margin:11px 0}
+.rankbars{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.rankbar{display:grid;grid-template-columns:130px 1fr auto;gap:10px;align-items:center}
+.rankbar .nm{font-weight:700;font-size:var(--fs-sm)}
+.rankbar .track{height:18px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}
+.rankbar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0;transition:width .4s}
+.rankbar .pct{font-variant-numeric:tabular-nums;color:var(--accent-2);font-weight:700;font-size:var(--fs-sm)}
+.pri-note{border:1px solid var(--info);background:var(--info-soft);border-radius:var(--radius);padding:12px 16px;margin-top:10px;font-size:var(--fs-sm)}
+
+.note-box{border-left:3px solid var(--info);background:var(--info-soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin:10px 0}
