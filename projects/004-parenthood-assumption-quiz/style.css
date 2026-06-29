@@ -1,1 +1,99 @@
-/* Per-project overrides for Parenthood Assumption Quiz. Shared design system lives in ../../style.css */
+/* ============================================================
+   Project 004 · Parenthood Assumption Quiz — heavy upgrade
+   Shared design system: ../../style.css  ·  toolkit: ../../ancf-ui.js
+   ============================================================ */
+
+/* in-page section jump menu */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);
+  padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+
+/* family pills */
+.fam{display:inline-block;font-size:var(--fs-xs);font-weight:700;border-radius:var(--radius-pill);
+  padding:3px 10px;background:var(--info-soft);color:var(--info);letter-spacing:.02em}
+.fam.f-tradition{background:rgba(150,100,40,.16);color:#8a6428}
+.fam.f-fear{background:rgba(80,80,90,.16);color:#5a5a66}
+.fam.f-status{background:rgba(120,80,180,.14);color:#7a52b4}
+.fam.f-duty{background:rgba(150,60,60,.14);color:#9a3c3c}
+.fam.f-legacy{background:rgba(60,110,170,.14);color:#3c6eaa}
+.fam.f-gender{background:rgba(190,60,120,.14);color:#b03c78}
+.fam.f-economic{background:rgba(120,120,40,.16);color:#7a7a28}
+.fam.f-natural{background:rgba(28,122,62,.14);color:#1c7a3e}
+.fam.f-fulfillment{background:rgba(180,120,0,.14);color:#a86b00}
+.fam.f-normalcy{background:var(--accent-soft);color:var(--accent-2)}
+[data-theme="dark"] .fam.f-tradition{color:#d6a866}
+[data-theme="dark"] .fam.f-status{color:#b69be0}
+[data-theme="dark"] .fam.f-legacy{color:#7faae0}
+[data-theme="dark"] .fam.f-gender{color:#e58ab8}
+[data-theme="dark"] .fam.f-economic{color:#cccc66}
+[data-theme="dark"] .fam.f-natural{color:#5bd58c}
+[data-theme="dark"] .fam.f-fulfillment{color:#e0a94d}
+
+/* ---- decoder cards ---- */
+.deck{display:grid;gap:12px}
+.dcard{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);padding:14px 16px}
+.dcard .saying{font-size:var(--fs-lg);font-weight:600;margin:0 0 10px}
+.dcard .opts{display:flex;flex-wrap:wrap;gap:8px}
+.dcard .pickbtn{cursor:pointer;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-pill);
+  padding:6px 13px;font-size:var(--fs-sm);font-weight:600;color:var(--muted)}
+.dcard .pickbtn:hover{border-color:var(--accent);color:var(--ink)}
+.dcard .pickbtn.ok{background:rgba(28,122,62,.14);border-color:#1c7a3e;color:#1c7a3e}
+.dcard .pickbtn.no{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-2)}
+.dcard .reveal{display:none;margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:var(--fs-sm)}
+.dcard.done .reveal{display:block}
+.dcard .reveal .lbl{font-weight:700;color:var(--accent-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
+.deck-progress{font-size:var(--fs-sm);color:var(--muted);margin:6px 2px}
+
+/* ---- assumption library ---- */
+.lib-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 12px}
+.lib-controls .search{flex:1 1 220px}
+.libchips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.libchip{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  padding:5px 12px;border-radius:var(--radius-pill);font-size:var(--fs-sm);font-weight:600;user-select:none}
+.libchip:hover{border-color:var(--accent);color:var(--ink)}
+.libchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.assum{border:1px solid var(--line);border-radius:var(--radius-sm);margin:10px 0;background:var(--surface);overflow:hidden}
+.assum summary{cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:600;list-style:none}
+.assum summary::-webkit-details-marker{display:none}
+.assum summary .ph{flex:1;min-width:160px}
+.assum summary .chev{color:var(--muted);transition:transform .2s}
+.assum[open] summary .chev{transform:rotate(90deg)}
+.assum[open]{border-color:var(--accent)}
+.assum .body{padding:0 16px 14px;font-size:var(--fs-sm)}
+.assum .body .lbl{font-weight:700;color:var(--accent-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
+.assum .body p{margin:8px 0}
+.assum .examine{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+@media(max-width:560px){.assum .examine{grid-template-columns:1fr}}
+.assum .examine .side{border-radius:var(--radius-sm);padding:8px 12px}
+.assum .examine .truth{background:rgba(28,122,62,.10);border-left:3px solid #1c7a3e}
+.assum .examine .doubt{background:var(--accent-soft);border-left:3px solid var(--accent)}
+.assum .examine .side b{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em}
+.assum .qn{background:var(--info-soft);border-left:3px solid var(--info);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:8px 12px;margin-top:8px;font-style:italic}
+.lib-empty{color:var(--muted);padding:18px;text-align:center}
+.lib-count{font-size:var(--fs-sm);color:var(--muted);margin:4px 2px}
+
+/* ---- belief examiner (stepper) ---- */
+.examiner{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);padding:16px}
+.ex-step{margin-bottom:4px}
+.ex-q{font-weight:600;margin:0 0 10px}
+.ex-progress{height:8px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden;margin:0 0 14px}
+.ex-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .3s}
+.ex-choices{display:flex;flex-direction:column;gap:8px}
+.ex-choice{text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:11px 14px;background:var(--surface);transition:.15s;font-size:var(--fs-sm)}
+.ex-choice:hover{border-color:var(--accent)}
+.ex-choice.sel{border-color:var(--accent);background:var(--accent-soft)}
+.ex-nav{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.ex-summary{border:1px solid var(--accent);border-radius:var(--radius);background:var(--surface);padding:16px;margin-top:6px}
+.ex-summary h4{margin:0 0 8px;color:var(--accent-2)}
+.ex-summary .line{padding:6px 0;border-bottom:1px solid var(--line)}
+.ex-summary .line:last-child{border-bottom:none}
+.ex-summary .line b{display:block;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+
+/* ---- trace roots ---- */
+.trace-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.trace-grid .check{align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 12px;background:var(--surface)}
+
+/* profile note */
+.insight{margin-top:8px}
