@@ -178,6 +178,65 @@ canvas{max-width:100%;background:#000;border-radius:var(--radius-sm);display:blo
 .note{font-size:var(--fs-sm);color:var(--muted)}
 ul.clean{padding-left:18px}
 
+/* ---------- shared learning components (toolkit) ---------- */
+.learn{background:var(--info-soft);border:1px solid var(--line);border-left:4px solid var(--info);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:var(--sp-4) var(--sp-5);margin:var(--sp-4) 0}
+.learn h3{margin-top:0}
+.learn ul{margin:0;padding-left:18px}
+.learn li{margin:4px 0}
+.takeaway{background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);
+  padding:var(--sp-5);margin:var(--sp-5) 0}
+.takeaway h3{margin-top:0;color:var(--accent-2)}
+.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-3)}
+.related a{display:block;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;
+  background:var(--surface);color:var(--ink);font-weight:700;font-size:var(--fs-sm)}
+.related a:hover{border-color:var(--accent);text-decoration:none}
+.related a span{display:block;color:var(--muted);font-weight:400;font-size:var(--fs-xs);margin-top:3px}
+/* meters / score bars */
+.meter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.meter-card{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;background:var(--surface-2)}
+.meter-card .lab{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-sm);font-weight:600;margin-bottom:7px}
+.meter-card .lab b{color:var(--accent-2);font-variant-numeric:tabular-nums}
+.meter{height:12px;border-radius:var(--pill);background:var(--line);overflow:hidden}
+.meter>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .35s ease}
+/* slider rows */
+.slider-row{margin:14px 0}
+.slider-row .lab{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:var(--fs-sm);margin-bottom:4px}
+.slider-row .lab output{font-variant-numeric:tabular-nums;font-weight:800;color:var(--accent-2)}
+.slider-row input[type=range]{width:100%;accent-color:var(--accent)}
+/* SVG charts */
+.chart{width:100%;height:auto;max-width:440px;display:block;margin:10px 0}
+.bc-lbl{fill:var(--ink);font-size:13px;font-weight:600}
+.bc-track{fill:var(--line)}
+.bc-bar{fill:var(--accent)}
+.bc-val{fill:var(--muted);font-size:12px;font-weight:700}
+.rd-ring{fill:none;stroke:var(--line)}
+.rd-spoke{stroke:var(--line)}
+.rd-lbl{fill:var(--muted);font-size:11px}
+.rd-area{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.chart-cap{font-size:var(--fs-xs);color:var(--muted);margin:6px 0 0}
+/* 2x2 matrix */
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.matrix{grid-template-columns:1fr}}
+.matrix .cell{border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;background:var(--surface-2);cursor:pointer;transition:.15s}
+.matrix .cell:hover,.matrix .cell:focus-visible{border-color:var(--accent)}
+.matrix .cell b{display:block;margin-bottom:4px}
+.matrix .cell .verdict{font-weight:800}
+.tag-good{color:#1c7a3e} [data-theme="dark"] .tag-good{color:#5bd58c}
+.tag-bad{color:var(--accent-2)}
+.matrix .cell .more{font-size:var(--fs-sm);color:var(--muted);margin-top:6px;display:none}
+.matrix .cell.open .more{display:block}
+/* decision / scenario blocks */
+.decision{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  padding:12px 16px;margin:10px 0;background:var(--surface-2)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.argmap{width:100%;height:auto;max-width:460px;display:block;margin:8px auto}
+.am-node{fill:var(--surface-2);stroke:var(--accent);stroke-width:1.5}
+.am-core{fill:var(--accent)}
+.am-line{stroke:var(--line);stroke-width:2}
+.am-t{fill:var(--ink);font-size:12px;font-weight:600}
+.am-ct{fill:#fff;font-size:12px;font-weight:800}
+
 /* ---------- motion / accessibility ---------- */
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important}
