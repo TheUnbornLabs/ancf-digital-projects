@@ -1,1 +1,41 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parenthood Cost Estimator · ANCF Digital Projects</title><meta name="description" content="A neutral, editable estimate of cumulative child-rearing costs over years."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Parenthood Cost Estimator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 012</span><h2>Parenthood Cost Estimator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">This presents commonly cited average ranges as an editable model. Real costs vary enormously by place and family. It is an illustration only.</p><div class="panel"><label class="field" for="yearly">Estimated yearly cost per child</label><input type="number" id="yearly" value="9000" min="0" max="1000000" step="100"><label class="field" for="years">Years of support</label><input type="number" id="years" value="18" min="0" max="30" step="1"><label class="field" for="kids">Number of children</label><input type="number" id="kids" value="1" min="0" max="12" step="1"><button class="btn btn-primary" id="calcBtn" style="margin-top:14px">Calculate</button><div class="result" id="calcOut">Enter values and press Calculate.</div><p class="note" style="margin-top:12px">Formula / logic:</p><div class="formula">total = yearly * years * kids</div></div><div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parenthood Cost Estimator · ANCF Digital Projects</title><meta name="description" content="A neutral, editable, live estimate of cumulative child-rearing costs — flat and inflation-adjusted — with per-child and monthly breakdowns. An illustration only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Parenthood Cost Estimator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 012</span><h2>Parenthood Cost Estimator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner</span></div></div>
+<p class="lead">An editable model of the cumulative direct cost of raising children. Real costs vary enormously by place, family, and choices, so treat every figure as a starting point you replace with your own. It updates live and stays entirely in your browser. This is an illustration only — and cost is just one of many things people rightly weigh.</p>
+
+<div class="panel"><h3>Your numbers</h3>
+<div class="row">
+<div><label class="field" for="yearly">Estimated yearly cost per child (today's prices)</label><input type="number" id="yearly" value="9000" min="0" max="100000000" step="100"></div>
+<div><label class="field" for="years">Years of support</label><input type="number" id="years" value="18" min="0" max="30" step="1"></div>
+</div>
+<div class="row">
+<div><label class="field" for="kids">Number of children</label><input type="number" id="kids" value="1" min="0" max="12" step="1"></div>
+<div><label class="field" for="inflation">Assumed annual cost inflation (%)</label><input type="number" id="inflation" value="3" min="0" max="20" step="0.5"></div>
+</div>
+<div class="result" id="calcOut" role="status" aria-live="polite">Enter values to see your estimate.</div>
+<p class="note" style="margin-top:12px">How it's calculated:</p>
+<div class="formula">flat_total = yearly × years × kids
+inflation_adjusted (per child) = yearly × ((1 + i)ʸᵉᵃʳˢ − 1) / i   ·   i = inflation / 100
+average_monthly = flat_total / (years × 12)</div>
+</div>
+
+<div class="panel"><h3>What this does — and doesn't — include</h3>
+<p>It covers recurring <em>direct</em> costs (food, clothing, activities, day-to-day care). It does <strong>not</strong> attempt to include things that vary too much to average honestly:</p>
+<ul class="clean">
+<li>Lost income or career impact from caregiving</li>
+<li>Housing upsizing, childcare, or higher education</li>
+<li>Government support, benefits, or tax credits that reduce costs</li>
+<li>The many non-financial joys and challenges, which no calculator can score</li>
+</ul>
+<p class="note">So real-world figures could be meaningfully higher or lower. This is a thinking tool, not a budget.</p>
+</div>
+
+<div class="panel"><h3>Assumptions &amp; caveats</h3>
+<details><summary>Why an inflation-adjusted figure?</summary><div><p>Costs tend to rise over the years you'd be supporting a child. The adjusted total grows each year's cost by your inflation rate, so it is usually higher than the flat figure. Set inflation to 0 to compare.</p></div></details>
+<details><summary>This is not a judgement on parenthood</summary><div><p>Plenty of people consider the cost well worth it; plenty weigh it heavily. The tool takes no side — it just helps you see one part of the picture in your own numbers.</p></div></details>
+<details><summary>Use local figures</summary><div><p>Average costs differ hugely between countries and households. Replacing the defaults with figures for your own situation makes the estimate far more meaningful.</p></div></details>
+</div>
+
+<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
