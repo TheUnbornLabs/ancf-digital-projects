@@ -1,1 +1,130 @@
-/* Per-project overrides for Pronatalism Pressure Detector. Shared design system lives in ../../style.css */
+/* ============================================================
+   Project 003 · Pronatalism Pressure Detector — heavy upgrade
+   Shared design system: ../../style.css  ·  toolkit: ../../ancf-ui.js
+   ============================================================ */
+
+/* in-page section jump menu */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);
+  padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+
+/* the four levels diagram */
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--sp-3);margin:var(--sp-4) 0}
+.level{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);
+  padding:14px 16px;background:var(--surface-2);cursor:pointer;transition:.15s}
+.level:hover,.level.open{border-color:var(--accent);box-shadow:var(--shadow)}
+.level h4{margin:0 0 4px;font-size:var(--fs-base)}
+.level .tagline{font-size:var(--fs-sm);color:var(--muted);margin:0}
+.level .detail{font-size:var(--fs-sm);margin:10px 0 0;display:none}
+.level.open .detail{display:block}
+.level .ico{font-size:1.3rem;line-height:1;margin-bottom:6px;display:block}
+
+/* generic pill tag */
+.tagpill{display:inline-block;font-size:var(--fs-xs);font-weight:700;border-radius:var(--radius-pill);
+  padding:3px 10px;background:var(--info-soft);color:var(--info);letter-spacing:.02em}
+.tagpill.cat-timing{background:rgba(180,120,0,.14);color:#a86b00}
+.tagpill.cat-legacy{background:rgba(120,80,180,.14);color:#7a52b4}
+.tagpill.cat-selfish{background:var(--accent-soft);color:var(--accent-2)}
+.tagpill.cat-regret{background:rgba(47,107,115,.14);color:var(--info)}
+.tagpill.cat-natural{background:rgba(28,122,62,.14);color:#1c7a3e}
+.tagpill.cat-duty{background:rgba(150,60,60,.14);color:#9a3c3c}
+.tagpill.cat-fear{background:rgba(80,80,90,.16);color:#5a5a66}
+.tagpill.cat-gender{background:rgba(190,60,120,.14);color:#b03c78}
+.tagpill.cat-norm{background:rgba(60,110,170,.14);color:#3c6eaa}
+.tagpill.cat-economic{background:rgba(120,120,40,.16);color:#7a7a28}
+[data-theme="dark"] .tagpill.cat-timing{color:#e0a94d}
+[data-theme="dark"] .tagpill.cat-legacy{color:#b69be0}
+[data-theme="dark"] .tagpill.cat-natural{color:#5bd58c}
+[data-theme="dark"] .tagpill.cat-duty{color:#e58a8a}
+[data-theme="dark"] .tagpill.cat-gender{color:#e58ab8}
+[data-theme="dark"] .tagpill.cat-norm{color:#7faae0}
+[data-theme="dark"] .tagpill.cat-economic{color:#cccc66}
+
+/* ---- detector ---- */
+.detector-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.samples{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.sample-btn{cursor:pointer;border:1px dashed var(--line);background:var(--surface-2);color:var(--muted);
+  border-radius:var(--radius-sm);padding:6px 12px;font-size:var(--fs-sm)}
+.sample-btn:hover{border-color:var(--accent);color:var(--ink)}
+.highlighted{line-height:2;font-size:var(--fs-base);background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:14px 16px;margin:12px 0;white-space:pre-wrap}
+.hl{border-radius:5px;padding:1px 4px;font-weight:600;cursor:help;border-bottom:2px solid currentColor}
+.hl.cat-timing{background:rgba(180,120,0,.18)}
+.hl.cat-legacy{background:rgba(120,80,180,.18)}
+.hl.cat-selfish{background:var(--accent-soft)}
+.hl.cat-regret{background:rgba(47,107,115,.16)}
+.hl.cat-natural{background:rgba(28,122,62,.16)}
+.hl.cat-duty{background:rgba(150,60,60,.16)}
+.hl.cat-fear{background:rgba(80,80,90,.18)}
+.hl.cat-gender{background:rgba(190,60,120,.16)}
+.hl.cat-norm{background:rgba(60,110,170,.16)}
+.hl.cat-economic{background:rgba(120,120,40,.18)}
+.hl.cat-coercion{background:var(--accent);color:#fff;border-bottom-color:#fff}
+
+/* temperature gauge */
+.temp{display:flex;align-items:center;gap:12px;margin:14px 0}
+.temp .track{flex:1;height:14px;border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,#2f6b73,#b4a000,#b3122a);position:relative;opacity:.85}
+.temp .needle{position:absolute;top:-5px;width:4px;height:24px;border-radius:3px;background:var(--ink);
+  box-shadow:0 0 0 2px var(--surface);transition:left .4s ease;left:0}
+.temp .lab{font-size:var(--fs-xs);color:var(--muted);min-width:74px;text-align:center;font-weight:700}
+
+/* detector finding cards */
+.finding{border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 16px;margin:10px 0;background:var(--surface)}
+.finding .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.finding .quote{font-style:italic;color:var(--muted)}
+.finding .mini{font-size:var(--fs-sm);margin:6px 0}
+.finding .mini b{color:var(--ink)}
+.finding .resp{background:var(--accent-soft);border-radius:var(--radius-sm);padding:8px 12px;margin-top:6px;font-size:var(--fs-sm)}
+
+/* ---- trope field guide ---- */
+.guide-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 14px}
+.guide-controls .search{flex:1 1 220px}
+.filterchips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.fchip{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  padding:5px 12px;border-radius:var(--radius-pill);font-size:var(--fs-sm);font-weight:600;user-select:none}
+.fchip:hover{border-color:var(--accent);color:var(--ink)}
+.fchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.trope{border:1px solid var(--line);border-radius:var(--radius-sm);margin:10px 0;background:var(--surface);overflow:hidden}
+.trope summary{cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:600;list-style:none}
+.trope summary::-webkit-details-marker{display:none}
+.trope summary .phrase{flex:1;min-width:160px}
+.trope summary .chev{color:var(--muted);transition:transform .2s}
+.trope[open] summary .chev{transform:rotate(90deg)}
+.trope[open]{border-color:var(--accent)}
+.trope .body{padding:0 16px 14px;font-size:var(--fs-sm)}
+.trope .body p{margin:8px 0}
+.trope .body .lbl{font-weight:700;color:var(--accent-2);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.06em}
+.trope .replies{display:grid;gap:8px;margin-top:8px}
+.trope .replies .r{border-left:3px solid var(--info);background:var(--surface-2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:8px 12px}
+.trope .replies .r b{color:var(--info)}
+.guide-empty{color:var(--muted);padding:18px;text-align:center}
+.guide-count{font-size:var(--fs-sm);color:var(--muted);margin:4px 2px}
+
+/* ---- coercion self-check ---- */
+.flagcheck .check{align-items:center}
+.safebox{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:16px 18px;margin-top:12px}
+.safebox h4{margin:0 0 6px;color:var(--accent-2)}
+.okbox{border:1px solid var(--line);border-left:4px solid #1c7a3e;background:rgba(28,122,62,.08);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:14px 16px;margin-top:12px}
+
+/* ---- response composer ---- */
+.composer-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.composer-grid{grid-template-columns:1fr}}
+
+/* ---- scenario simulator ---- */
+.scene{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--surface-2);margin:12px 0}
+.scene .npc{font-style:italic;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px 14px;margin:8px 0}
+.scene .choices{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.scene .choice{text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:11px 14px;background:var(--surface);transition:.15s;font-size:var(--fs-sm)}
+.scene .choice:hover{border-color:var(--accent)}
+.scene .outcome{margin-top:10px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--accent-soft);
+  border:1px dashed var(--accent);font-size:var(--fs-sm)}
+.scene .coach{font-size:var(--fs-sm);color:var(--muted);margin-top:8px}
+.scene-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.scene-tab{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);
+  padding:7px 12px;font-size:var(--fs-sm);font-weight:600;color:var(--muted)}
+.scene-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
