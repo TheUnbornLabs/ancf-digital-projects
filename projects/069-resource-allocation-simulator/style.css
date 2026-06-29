@@ -1,1 +1,5 @@
 /* Per-project overrides for Resource Allocation Simulator. Shared design system lives in ../../style.css */
+.seg-row{display:flex;gap:4px;flex-wrap:wrap}
+.seg{flex:1 1 40px;min-width:36px;text-align:center;padding:10px 4px;border-radius:8px;background:rgba(139,0,0,.12);
+  border:1px solid var(--accent);font-size:.82rem;color:var(--ink)}
+[data-theme="dark"] .seg{background:rgba(226,58,82,.16)}

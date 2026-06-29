@@ -1,1 +1,2 @@
-/* Per-project overrides for “Auntie Uncle Chase” Arcade Game. Shared design system lives in ../../style.css */
+/* Per-project overrides for Auntie Uncle Chase. Shared design system lives in ../../style.css */
+#game{width:100%;max-width:340px;height:auto;margin:0 auto;touch-action:none}
