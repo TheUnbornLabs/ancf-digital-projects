@@ -1,1 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Bio Generator · ANCF Digital Projects</title><meta name="description" content="Generate a friendly profile bio that reflects a childfree identity."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Bio Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../071-personal-manifesto-builder/index.html">← Previous</a><a class="btn btn-primary" href="../073-antinatalist-statement-builder/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 072</span><h2>Childfree Bio Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">Pick a vibe and interests to draft a short bio. Edit freely.</p><div class="panel"><label class="field" for="vibe">Vibe</label><select id="vibe"><option value="Adventurous">Adventurous</option><option value="Cozy">Cozy</option><option value="Intellectual">Intellectual</option></select><label class="field" for="interest">Top interest</label><select id="interest"><option value="travel">travel</option><option value="books">books</option><option value="art">art</option><option value="the outdoors">the outdoors</option><option value="cooking">cooking</option></select><button class="btn btn-primary" id="genBtn" style="margin-top:14px">Generate</button><div class="result" id="genOut">Your text will appear here.</div><button class="btn copy" id="copyBtn">Copy to clipboard</button></div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../071-personal-manifesto-builder/index.html">← Previous</a><a class="btn btn-primary" href="../073-antinatalist-statement-builder/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Bio Generator · ANCF Digital Projects</title><meta name="description" content="Generate a friendly profile bio that reflects a childfree identity — pick a vibe and interest, get variations, and edit freely."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Bio Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../071-personal-manifesto-builder/index.html">← Previous</a><a class="btn btn-primary" href="../073-antinatalist-statement-builder/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 072</span><h2>Childfree Bio Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
+<p class="lead">A short, friendly profile bio for dating apps, socials, or anywhere you want to be upfront and warm about a childfree life. Pick a vibe and interest, generate a few, then make it yours.</p>
+
+<div class="panel"><h3>1. Draft a bio</h3>
+<div class="row">
+<div><label class="field" for="vibe">Vibe</label><select id="vibe">
+<option value="adventurous">Adventurous</option>
+<option value="cozy">Cozy</option>
+<option value="intellectual">Intellectual</option>
+<option value="playful">Playful</option>
+</select></div>
+<div><label class="field" for="interest">Top interest</label><select id="interest">
+<option value="travel">travel</option>
+<option value="books">books</option>
+<option value="art">art</option>
+<option value="the outdoors">the outdoors</option>
+<option value="cooking">cooking</option>
+<option value="music">music</option>
+</select></div>
+</div>
+<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
+<div class="result" id="genOut" role="status" aria-live="polite">Your bio will appear here.</div>
+<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+</div>
+
+<div class="panel"><h3>2. Make it yours</h3>
+<label class="field" for="custom">Swap in your real details — specifics make a bio shine. Saved on this device.</label>
+<textarea id="custom" placeholder="Your version… (generated text lands here; edit freely.)"></textarea>
+<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+</div>
+
+<div class="panel"><h3>3. Tips</h3>
+<details><summary>Lead with you, not a label</summary><div><p>"Childfree" can be one honest detail among many, not the headline. Let your interests carry the bio.</p></div></details>
+<details><summary>Be upfront, kindly</summary><div><p>If it matters for dating, saying it plainly saves everyone time — and a warm tone keeps it inviting rather than defensive.</p></div></details>
+<details><summary>Specifics beat adjectives</summary><div><p>"I make a mean dal and over-plan road trips" says more than "fun and adventurous." Add one real, concrete thing.</p></div></details>
+</div>
+
+<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../071-personal-manifesto-builder/index.html">← Previous</a><a class="btn btn-primary" href="../073-antinatalist-statement-builder/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
