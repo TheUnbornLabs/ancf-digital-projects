@@ -1,9 +1,17 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
 var k='ancf-'+location.pathname;
-var N=4;
+var N=6;
 var fields=[];
 var status=document.getElementById('saveStatus');
+var rfBar=document.getElementById('rfBar');
+var rfCount=document.getElementById('rfCount');
+function renderProgress(){
+  var n=0;
+  fields.forEach(function(t){if((t.value||'').trim())n++;});
+  if(rfBar)rfBar.style.width=Math.round(n/N*100)+'%';
+  if(rfCount)rfCount.textContent=n+' of '+N+' prompts written so far.';
+}
 function setStatus(msg){if(status)status.textContent=msg;}
 var timer=null;
 function flash(msg){
@@ -24,10 +32,11 @@ for(var i=0;i<N;i++){
     try{t.value=localStorage.getItem(k+i)||'';}catch(e){}
     t.addEventListener('input',function(){
       try{localStorage.setItem(k+i,t.value);}catch(e){}
-      flash('Saved ✓');
+      flash('Saved ✓');renderProgress();
     });
   })(i);
 }
+renderProgress();
 
 var copyBtn=document.getElementById('copyBtn');
 if(copyBtn)copyBtn.addEventListener('click',function(){
@@ -54,9 +63,9 @@ function fallback(text,done){
 
 var clearAllBtn=document.getElementById('clearAllBtn');
 if(clearAllBtn)clearAllBtn.addEventListener('click',function(){
-  if(!window.confirm('Clear all four reflections on this device? This cannot be undone.'))return;
+  if(!window.confirm('Clear all your reflections on this device? This cannot be undone.'))return;
   fields.forEach(function(t,i){t.value='';try{localStorage.removeItem(k+i);}catch(e){}});
-  flash('All cleared.');
+  flash('All cleared.');renderProgress();
   if(fields[0])fields[0].focus();
 });
 }catch(e){console.error('project script error',e);}

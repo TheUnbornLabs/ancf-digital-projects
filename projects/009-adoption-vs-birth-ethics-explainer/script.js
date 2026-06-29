@@ -38,5 +38,41 @@ function fallbackCopy(text,done){
     document.execCommand('copy');document.body.removeChild(t);done();
   }catch(e){flash('Copy not supported — select the text manually.');}
 }
+
+/* ---------- "What weighs on you?" checklist ---------- */
+var weighList=document.getElementById('weighList');
+if(weighList){
+  var wBoxes=weighList.querySelectorAll('input[type=checkbox]');
+  var wCount=document.getElementById('weighCount');
+  var wStatus=document.getElementById('weighStatus');
+  var wStore={};
+  try{wStore=JSON.parse(localStorage.getItem(KEY+':weigh')||'{}')||{};}catch(e){wStore={};}
+  var wTimer=null;
+  function wFlash(msg){if(!wStatus)return;wStatus.textContent=msg;if(wTimer)clearTimeout(wTimer);wTimer=setTimeout(function(){wStatus.textContent='';},1600);}
+  function wRender(){
+    var n=0;wBoxes.forEach(function(b){if(b.checked)n++;});
+    if(wCount)wCount.textContent=n+' selected.';
+  }
+  wBoxes.forEach(function(b){
+    var key=b.getAttribute('data-key');
+    b.checked=!!wStore[key];
+    b.addEventListener('change',function(){
+      wStore[key]=b.checked;
+      try{localStorage.setItem(KEY+':weigh',JSON.stringify(wStore));}catch(e){}
+      wRender();
+    });
+  });
+  wRender();
+  var wCopy=document.getElementById('weighCopy');
+  if(wCopy)wCopy.addEventListener('click',function(){
+    var picked=[];
+    wBoxes.forEach(function(b){if(b.checked)picked.push('• '+b.parentNode.textContent.trim());});
+    if(!picked.length){wFlash('Tick a few first.');return;}
+    var text='What weighs on me (adoption vs birth):\n'+picked.join('\n');
+    function done(){wFlash('Copied ✓');}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});}
+    else{fallbackCopy(text,done);}
+  });
+}
 }catch(e){console.error('project script error',e);}
 });

@@ -42,5 +42,37 @@ function fallbackCopy(text,done){
     document.execCommand('copy');document.body.removeChild(t);done();
   }catch(e){flash('Copy not supported — select the text manually.');}
 }
+
+/* ---------- Free-choice self-check ---------- */
+var fcList=document.getElementById('fcList');
+if(fcList){
+  var fcBoxes=fcList.querySelectorAll('input[type=checkbox]');
+  var fcBar=document.getElementById('fcBar');
+  var fcCount=document.getElementById('fcCount');
+  var fcMsg=document.getElementById('fcMsg');
+  var fcStore={};
+  try{fcStore=JSON.parse(localStorage.getItem(KEY+':fc')||'{}')||{};}catch(e){fcStore={};}
+  function fcRender(){
+    var n=0;
+    fcBoxes.forEach(function(b){if(b.checked)n++;});
+    if(fcBar)fcBar.style.width=Math.round(n/fcBoxes.length*100)+'%';
+    if(fcCount)fcCount.textContent=n+' of '+fcBoxes.length+' conditions ticked.';
+    if(fcMsg){
+      if(n===fcBoxes.length)fcMsg.textContent='Every condition feels in place — that points to a genuinely free choice.';
+      else if(n===0)fcMsg.textContent='';
+      else fcMsg.textContent='The unticked items are where your freedom may be under pressure — worth naming, not blaming yourself for.';
+    }
+  }
+  fcBoxes.forEach(function(b){
+    var key=b.getAttribute('data-key');
+    b.checked=!!fcStore[key];
+    b.addEventListener('change',function(){
+      fcStore[key]=b.checked;
+      try{localStorage.setItem(KEY+':fc',JSON.stringify(fcStore));}catch(e){}
+      fcRender();
+    });
+  });
+  fcRender();
+}
 }catch(e){console.error('project script error',e);}
 });

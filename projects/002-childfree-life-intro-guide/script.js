@@ -69,6 +69,19 @@ if(list){
     });
   });
   render();
+  var mCopy=document.getElementById('meaningCopy');
+  var mStatus=document.getElementById('meaningStatus');
+  var mTimer=null;
+  function mFlash(msg){if(!mStatus)return;mStatus.textContent=msg;if(mTimer)clearTimeout(mTimer);mTimer=setTimeout(function(){mStatus.textContent='';},1600);}
+  if(mCopy){mCopy.addEventListener('click',function(){
+    var picked=[];
+    boxes.forEach(function(b){if(b.checked){var lbl=b.parentNode.textContent.trim();picked.push('• '+lbl);}});
+    if(!picked.length){mFlash('Tick a few first.');return;}
+    var text='My sources of meaning:\n'+picked.join('\n');
+    function done(){mFlash('Copied ✓');}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});}
+    else{fallbackCopy(text,done);}
+  });}
 }
 }catch(e){console.error('project script error',e);}
 });

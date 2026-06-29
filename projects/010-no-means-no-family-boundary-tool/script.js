@@ -13,7 +13,9 @@ var situations={
   changemind:"I've thought about this carefully — it isn't a phase.",
   careold:"Children aren't a retirement plan; I'm looking after my future in other ways.",
   ownkids:"I understand it was different for you. For me, this is the right choice.",
-  duty:"I respect where this comes from, and I've made a considered decision for my own life."
+  duty:"I respect where this comes from, and I've made a considered decision for my own life.",
+  compare:"I'm not in a competition with anyone — this is my life, and my choice is my own.",
+  public:"I'd rather not get into this here. Let's catch up properly another time."
 };
 var cores={
   warm:["and I'd be grateful if {p} could respect it.","and it would mean a lot if {p} let it rest."],

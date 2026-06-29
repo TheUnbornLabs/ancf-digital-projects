@@ -17,13 +17,15 @@ var out=document.getElementById('detOut');
 var btn=document.getElementById('detBtn');
 var examples=document.getElementById('examples');
 
+var lastReplies=[];
 function analyse(){
   var t=(ta.value||'').toLowerCase();
+  lastReplies=[];
   if(!t.trim()){out.textContent='No analysis yet — paste or pick an example above.';return;}
   var hits=[];
   P.forEach(function(p){
     var re=new RegExp(p[0],'i');
-    if(re.test(t))hits.push('• '+p[1]+'\n   You could say: '+p[2]);
+    if(re.test(t)){hits.push('• '+p[1]+'\n   You could say: '+p[2]);lastReplies.push(p[2]);}
   });
   if(hits.length){
     out.textContent=hits.length+' pattern'+(hits.length>1?'s':'')+' worth noticing:\n\n'+hits.join('\n\n')+'\n\nRemember: naming a pattern is for your clarity, not for blaming the speaker.';
@@ -34,6 +36,21 @@ function analyse(){
 
 if(btn)btn.addEventListener('click',analyse);
 if(ta)ta.addEventListener('input',analyse);
+
+var copyBtn=document.getElementById('detCopy');
+var clearBtn=document.getElementById('detClear');
+var status=document.getElementById('detStatus');
+var sTimer=null;
+function flash(msg){if(!status)return;status.textContent=msg;if(sTimer)clearTimeout(sTimer);sTimer=setTimeout(function(){status.textContent='';},1600);}
+function fallbackCopy(text,done){try{var x=document.createElement('textarea');x.value=text;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.focus();x.select();document.execCommand('copy');document.body.removeChild(x);done();}catch(e){flash('Copy not supported — select manually.');}}
+if(copyBtn)copyBtn.addEventListener('click',function(){
+  if(!lastReplies.length){flash('Nothing to copy yet.');return;}
+  var text=lastReplies.join('\n');
+  function done(){flash('Copied ✓');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});}
+  else{fallbackCopy(text,done);}
+});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta){ta.value='';}lastReplies=[];out.textContent='No analysis yet — paste or pick an example above.';flash('Cleared.');if(ta)ta.focus();});
 if(examples)examples.addEventListener('click',function(e){
   var b=e.target.closest('[data-ex]');
   if(!b)return;

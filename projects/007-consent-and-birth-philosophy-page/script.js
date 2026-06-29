@@ -54,6 +54,27 @@ if(wrap){
     });
   });
   paint();summarise();
+
+  var labels=['P1 — A future person cannot consent to being born','P2 — Birth reliably exposes a person to some risk of serious harm','P3 — Imposing un-consented risk of serious harm normally needs justification','P4 — "It will probably be a good life" may not, alone, justify that risk','C — Therefore, creating a new person is ethically weighty'];
+  var argStatus=document.getElementById('argStatus');
+  var argTimer=null;
+  function argFlash(msg){if(!argStatus)return;argStatus.textContent=msg;if(argTimer)clearTimeout(argTimer);argTimer=setTimeout(function(){argStatus.textContent='';},1600);}
+  function argFallback(text,done){try{var x=document.createElement('textarea');x.value=text;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.focus();x.select();document.execCommand('copy');document.body.removeChild(x);done();}catch(e){argFlash('Copy not supported — select manually.');}}
+  var argCopy=document.getElementById('argCopy');
+  if(argCopy)argCopy.addEventListener('click',function(){
+    if(!Object.keys(state).length){argFlash('Mark some steps first.');return;}
+    var lines=['My position on the consent argument:',''];
+    for(var i=0;i<5;i++){lines.push(labels[i]+'\n   → '+(state[i]?state[i].toUpperCase():'not marked'));}
+    var text=lines.join('\n');
+    function done(){argFlash('Copied ✓');}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){argFallback(text,done);});}
+    else{argFallback(text,done);}
+  });
+  var argReset=document.getElementById('argReset');
+  if(argReset)argReset.addEventListener('click',function(){
+    state={};try{localStorage.removeItem(KEY+':arg');}catch(e){}
+    paint();summarise();argFlash('Reset.');
+  });
 }
 
 /* ---------- Reflection tool ---------- */

@@ -12,6 +12,14 @@ var picks={};
 var opts=document.querySelectorAll('.opt');
 var totalQ=document.querySelectorAll('.quiz-q').length;
 
+var bar=document.getElementById('quizBar');
+var prog=document.getElementById('quizProgress');
+function renderProgress(){
+  var n=Object.keys(picks).length;
+  if(bar)bar.style.width=Math.round(n/totalQ*100)+'%';
+  if(prog)prog.textContent=n+' of '+totalQ+' answered.';
+}
+
 function select(o){
   var q=o.dataset.q;
   document.querySelectorAll('.opt[data-q="'+q+'"]').forEach(function(x){
@@ -19,6 +27,7 @@ function select(o){
   });
   o.classList.add('sel');o.setAttribute('aria-pressed','true');
   picks[q]=+o.dataset.i;
+  renderProgress();
 }
 
 // Make divs keyboard-accessible (role, focusable, Enter/Space)
@@ -65,7 +74,9 @@ if(resetBtn)resetBtn.addEventListener('click',function(){
   document.querySelectorAll('.explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});
   r.style.display='none';r.textContent='';
   resetBtn.style.display='none';
+  renderProgress();
   if(opts[0])opts[0].focus();
 });
+renderProgress();
 }catch(e){console.error('project script error',e);}
 });

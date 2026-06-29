@@ -19,8 +19,9 @@ if(slider&&out){
     else note='You accept even a near-certain hard life. Worth asking what, for you, would ever be too much risk to impose on another.';
     return head+' '+note;
   }
+  var riskBar=document.getElementById('riskBar');
   try{var saved=localStorage.getItem(KEY+':risk');if(saved!==null)slider.value=saved;}catch(e){}
-  function update(){out.textContent=describe(slider.value);try{localStorage.setItem(KEY+':risk',slider.value);}catch(e){}}
+  function update(){out.textContent=describe(slider.value);if(riskBar)riskBar.style.width=(+slider.value)+'%';try{localStorage.setItem(KEY+':risk',slider.value);}catch(e){}}
   slider.addEventListener('input',update);
   update();
 }

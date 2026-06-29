@@ -64,3 +64,36 @@ Each project's rebuild applied, together:
 5. **Git:** ~25 commits, one batch of ~5 projects each, on `main`.
 6. **Publishing:** GitHub Pages, branch `main`, `/ (root)`, `.nojekyll` present.
 7. **Public URL:** https://theunbornlabs.github.io/ancf-digital-projects/
+
+## Deepening pass — batch 001–010 (2026-06-29)
+
+A focused "deepen content + interactivity" pass over the first ten projects,
+building on the completed passes 01–10. Each change preserves the ethics rules,
+accessibility patterns, disclaimers, and local-only data handling.
+
+- **001 Antinatalism Intro Guide** — added a four-card visual of Benatar's
+  asymmetry (with a fair critic's reply); panels renumbered 1–8.
+- **002 Childfree Life Intro Guide** — added a balanced "Thinking it through"
+  decision panel; the sources-of-meaning inventory now exports a copyable summary.
+- **003 Pronatalism Pressure Detector** — added a "curiosity / pressure / coercion"
+  distinction panel; detector now offers "copy the calm replies" and a clear button.
+- **004 Parenthood Assumption Quiz** — added an "assumptions in everyday phrases"
+  reference; quiz now shows a live answered-progress bar.
+- **005 "Is This My Choice?"** — added an "is it mine, or inherited?" panel, two new
+  reflection prompts (now six), and a writing-progress indicator.
+- **006 Reproductive Autonomy Explainer** — added a key-terms glossary and an
+  interactive free-choice self-check with progress and reflective feedback.
+- **007 Consent & Birth Philosophy** — added a "three senses of consent" panel;
+  premise-checker now has "copy my position" and reset.
+- **008 Suffering-Risk Thought Experiment** — added a visual fill to the risk slider
+  and a "key distinctions" panel (risk/uncertainty, harm/wrong, precaution/paralysis).
+- **009 Adoption vs Birth Ethics** — added an interactive "what weighs on you?"
+  considerations checklist with copyable priorities (its first non-textarea tool).
+- **010 "No Means No" Boundary Tool** — added two new situations (comparison, in
+  public) and a caring "when it's more than pressure" safety panel with support signposting.
+
+**Verification:** all 10 `index.html` and the 9 edited `script.js` confirmed
+structurally complete and balanced; panel numbering sequential; disclaimers intact
+on all 100 projects; Prev/Next/Home links untouched. (Note: the sandbox `node --check`
+mount served stale copies of freshly edited files this session, so script validity was
+confirmed by direct host inspection instead.)
