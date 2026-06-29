@@ -12,6 +12,16 @@
   var grid=document.getElementById('grid'),search=document.getElementById('search'),
       count=document.getElementById('count'),chips=[].slice.call(document.querySelectorAll('.chip'));
   var DATA=window.__PROJECTS__||[];var active='All',q='';
+  var statsEl=document.getElementById('stats');
+  if(statsEl){
+    var cats={};DATA.forEach(function(p){cats[p.category]=1;});
+    var nCats=Object.keys(cats).length;
+    statsEl.innerHTML=
+      '<div class="stat"><b>'+DATA.length+'</b><span>Projects</span></div>'+
+      '<div class="stat"><b>'+nCats+'</b><span>Categories</span></div>'+
+      '<div class="stat"><b>100%</b><span>Static &amp; offline</span></div>'+
+      '<div class="stat"><b>0</b><span>Ads &amp; trackers</span></div>';
+  }
   function render(){
     var list=DATA.filter(function(p){
       var mc=(active==='All'||p.category===active);

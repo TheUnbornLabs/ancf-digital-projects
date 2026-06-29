@@ -97,3 +97,32 @@ structurally complete and balanced; panel numbering sequential; disclaimers inta
 on all 100 projects; Prev/Next/Home links untouched. (Note: the sandbox `node --check`
 mount served stale copies of freshly edited files this session, so script validity was
 confirmed by direct host inspection instead.)
+
+## Professional UI / shared design-system pass (2026-06-29)
+
+A visual/layout pass driven from the **shared** files so all pages benefit; no project
+content was rewritten. See `notes/ui-redesign-brief.md` for the full brief.
+
+- **style.css (rebuilt, classes preserved):** added a rem-based type scale and spacing
+  scale; one consistent button system; global `:focus-visible` rings; a `prefers-reduced-
+  motion` block; refined cards (uniform height, motion-safe hover-lift, focus styles);
+  a hero/stats system; a sticky, blurred toolbar (static under 700px so it never covers
+  content on mobile); a muted-teal secondary accent; a multi-column footer; and refreshed
+  project-page chrome (`.panel .proj-head .lead .kv .disclaimer .progress .opt` etc.) so
+  all 100 project pages inherit the polish.
+- **index.html:** stronger hero (headline + subtitle + two CTAs: "Browse projects",
+  "Categories"); a computed stats strip; search + filters moved into a sticky toolbar
+  (`#browse`); structured footer (brand / Explore / About / Source incl. GitHub link);
+  added `aria-label` to the theme toggle.
+- **home.js:** computes and renders the stats strip (project count, category count,
+  static/offline, ads/trackers) from `window.__PROJECTS__`; card rendering and filters
+  unchanged (cards were already whole-card `<a>` links — good for a11y).
+
+**Constraints honoured:** no build step, no frameworks, no external font/CDN requests
+(kept `system-ui`), dark mode preserved and extended, GitHub Pages compatible.
+
+**Verification:** `home.js` re-read and confirmed valid/balanced; an inline preview of the
+new homepage (light + dark) was rendered for sign-off. node/git verification via the
+sandbox bash mount was unreliable this session (stale cache), so JS/HTML integrity was
+checked by direct host inspection.
+
