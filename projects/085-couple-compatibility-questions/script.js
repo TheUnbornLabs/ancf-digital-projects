@@ -1,5 +1,31 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var Q=[{"answer": 1, "explain": "Open, regular conversation matters more than any single 'right' answer."}, {"answer": 1, "explain": "A united, kind front protects the relationship."}, {"answer": 1, "explain": "Shared vision, revisited over time, supports lasting alignment."}],picks={};document.querySelectorAll('.opt').forEach(function(o){o.addEventListener('click',function(){var q=o.dataset.q;document.querySelectorAll('.opt[data-q="'+q+'"]').forEach(function(x){x.classList.remove('sel');});o.classList.add('sel');picks[q]=+o.dataset.i;});});document.getElementById('quizScore').addEventListener('click',function(){var s=0;Q.forEach(function(it,i){var sel=picks[i];document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.dataset.i;x.classList.remove('ok','no');if(j===it.answer)x.classList.add('ok');else if(j===sel)x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex&&it.explain){ex.style.display='block';ex.textContent=it.explain;}if(sel===it.answer)s++;});var r=document.getElementById('quizResult');r.style.display='block';r.textContent='You reflected on '+s+' of '+Q.length+' in line with the explained view. There are no wrong people here — only ideas to weigh.';});
+var KEY='ancf-'+location.pathname;
+// Option-reveals-note (no scoring)
+var opts=document.querySelectorAll('#quiz .opt');
+function select(o){
+  var q=o.getAttribute('data-q');
+  document.querySelectorAll('#quiz .opt[data-q="'+q+'"]').forEach(function(z){z.classList.remove('sel');z.setAttribute('aria-pressed','false');});
+  o.classList.add('sel');o.setAttribute('aria-pressed','true');
+  var ex=document.querySelector('#quiz .explain[data-q="'+q+'"]');
+  if(ex){ex.style.display='block';ex.textContent='To discuss: '+(o.getAttribute('data-note')||'');}
+}
+opts.forEach(function(o){
+  o.setAttribute('role','button');o.setAttribute('tabindex','0');o.setAttribute('aria-pressed','false');
+  o.addEventListener('click',function(){select(o);});
+  o.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();select(o);}});
+});
+
+// Shared notes
+var ta=document.getElementById('notes');
+var status=document.getElementById('saveStatus');
+var timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta){try{ta.value=localStorage.getItem(KEY)||'';}catch(e){}ta.addEventListener('input',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}flash('Saved ✓');});}
+var copyBtn=document.getElementById('copyBtn');
+if(copyBtn)copyBtn.addEventListener('click',function(){var text=(ta.value||'').trim();if(!text){flash('Nothing to copy yet.');return;}function done(){flash('Copied ✓');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}});
+function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
+var clearBtn=document.getElementById('clearBtn');
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your notes on this device?'))return;ta.value='';try{localStorage.removeItem(KEY);}catch(e){}flash('Cleared.');ta.focus();});
 }catch(e){console.error('project script error',e);}
 });
