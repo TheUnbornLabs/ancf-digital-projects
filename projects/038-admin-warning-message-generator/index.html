@@ -1,1 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Warning Message Generator · ANCF Digital Projects</title><meta name="description" content="Compose firm-but-fair moderation warnings that de-escalate."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Admin Warning Message Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 038</span><h2>Admin Warning Message Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div><p class="lead">Generate a private warning a moderator can send. It names the behaviour, not the person’s worth.</p><div class="panel"><label class="field" for="issue">Issue</label><select id="issue"><option value="Disrespect toward a group">Disrespect toward a group</option><option value="Off-topic spam">Off-topic spam</option><option value="Harassment of a member">Harassment of a member</option><option value="Encouraging harm">Encouraging harm</option></select><label class="field" for="step">Step</label><select id="step"><option value="First reminder">First reminder</option><option value="Final warning">Final warning</option></select><button class="btn btn-primary" id="genBtn" style="margin-top:14px">Generate</button><div class="result" id="genOut">Your text will appear here.</div><button class="btn copy" id="copyBtn">Copy to clipboard</button></div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Warning Message Generator · ANCF Digital Projects</title><meta name="description" content="Compose firm-but-fair private moderation warnings that name the behaviour, not the person's worth — by issue and step — with an editable box and de-escalation tips."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Admin Warning Message Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 038</span><h2>Admin Warning Message Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
+<p class="lead">A good moderation warning is firm, fair, and private. It names the <em>behaviour</em>, never the person's worth, and it gives a clear path forward. Pick an issue and step to draft one, then adapt it to your community's voice.</p>
+
+<div class="panel"><h3>1. Generate a warning</h3>
+<div class="row">
+<div><label class="field" for="issue">Issue</label><select id="issue">
+<option value="group">Disrespect toward a group</option>
+<option value="spam">Off-topic spam</option>
+<option value="harass">Harassment of a member</option>
+<option value="harm">Encouraging harm</option>
+<option value="hostile">Hostile / personal attacks</option>
+</select></div>
+<div><label class="field" for="step">Step</label><select id="step">
+<option value="first">First reminder</option>
+<option value="final">Final warning</option>
+</select></div>
+</div>
+<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button></div>
+<div class="result" id="genOut" role="status" aria-live="polite">Your warning message will appear here.</div>
+<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+</div>
+
+<div class="panel"><h3>2. Make it yours</h3>
+<label class="field" for="custom">Add the specifics (which message, which rule) and your team's voice. Saved on this device.</label>
+<textarea id="custom" placeholder="Your version… (generated warning lands here; edit freely.)"></textarea>
+<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+</div>
+
+<div class="panel"><h3>3. De-escalation tips</h3>
+<details><summary>Send it privately</summary><div><p>Public call-outs shame and harden people. A private DM lets someone correct course without losing face.</p></div></details>
+<details><summary>Name the behaviour, not the person</summary><div><p>"This message broke rule 1" works; "you're a bad person" doesn't. Keep it about the action and the rule.</p></div></details>
+<details><summary>Be clear about consequences</summary><div><p>State plainly what happens next if it continues — predictability is fairer than surprise removals.</p></div></details>
+<details><summary>For self-harm, lead with care</summary><div><p>If someone expresses thoughts of self-harm, this is not a discipline issue. Respond with warmth, share support resources, and never warn or punish them for it.</p></div></details>
+</div>
+
+<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>

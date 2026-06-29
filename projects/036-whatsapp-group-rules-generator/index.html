@@ -1,1 +1,39 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WhatsApp Group Rules Generator · ANCF Digital Projects</title><meta name="description" content="Generate clear, inclusive rules for an online childfree/antinatalist community group."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>WhatsApp Group Rules Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../035-when-are-you-having-kids-reply-tool/index.html">← Previous</a><a class="btn btn-primary" href="../037-community-notice-generator/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 036</span><h2>WhatsApp Group Rules Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">Pick a focus to draft safe, moderation-friendly group rules you can adapt.</p><div class="panel"><label class="field" for="focus">Group focus</label><select id="focus"><option value="Support &amp; venting">Support &amp; venting</option><option value="Philosophy discussion">Philosophy discussion</option><option value="Local meetups">Local meetups</option></select><label class="field" for="strict">Moderation level</label><select id="strict"><option value="Relaxed">Relaxed</option><option value="Standard">Standard</option><option value="Strict">Strict</option></select><button class="btn btn-primary" id="genBtn" style="margin-top:14px">Generate</button><div class="result" id="genOut">Your text will appear here.</div><button class="btn copy" id="copyBtn">Copy to clipboard</button></div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../035-when-are-you-having-kids-reply-tool/index.html">← Previous</a><a class="btn btn-primary" href="../037-community-notice-generator/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WhatsApp Group Rules Generator · ANCF Digital Projects</title><meta name="description" content="Generate clear, inclusive, safety-first rules for an online childfree/antinatalist group — tailored by focus and moderation level — with an editable box and moderation tips."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>WhatsApp Group Rules Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../035-when-are-you-having-kids-reply-tool/index.html">← Previous</a><a class="btn btn-primary" href="../037-community-notice-generator/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 036</span><h2>WhatsApp Group Rules Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
+<p class="lead">Good rules make a group feel safe and welcoming. Pick your focus and moderation level to draft clear, inclusive, safety-first rules — then edit them to fit your community. Works for WhatsApp, Telegram, Discord, or any group.</p>
+
+<div class="panel"><h3>1. Generate your rules</h3>
+<div class="row">
+<div><label class="field" for="focus">Group focus</label><select id="focus">
+<option value="Support &amp; venting">Support &amp; venting</option>
+<option value="Philosophy discussion">Philosophy discussion</option>
+<option value="Local meetups">Local meetups</option>
+<option value="General community">General community</option>
+</select></div>
+<div><label class="field" for="strict">Moderation level</label><select id="strict">
+<option value="Relaxed">Relaxed</option>
+<option value="Standard">Standard</option>
+<option value="Strict">Strict</option>
+</select></div>
+</div>
+<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button></div>
+<div class="result" id="genOut" role="status" aria-live="polite">Your rules will appear here.</div>
+<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+</div>
+
+<div class="panel"><h3>2. Make them yours</h3>
+<label class="field" for="custom">Add your group's name, specific topics, or extra rules. Saved on this device.</label>
+<textarea id="custom" placeholder="Your version… (generated rules land here; edit freely.)"></textarea>
+<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+</div>
+
+<div class="panel"><h3>3. Moderation tips</h3>
+<details><summary>Pin the rules and the welcome</summary><div><p>New members should see the rules and a warm welcome before they post. A pinned message does both.</p></div></details>
+<details><summary>Protect every group</summary><div><p>Strong rules explicitly bar hate toward parents, children, women, men, castes, religions, ethnic groups, disabled people, and LGBTQ+ people. Safety is for everyone, including those who disagree.</p></div></details>
+<details><summary>Have a crisis line ready</summary><div><p>Decide in advance how the team responds if someone expresses thoughts of self-harm: respond with care, share support resources, and never shame. (See the crisis-safe policy project later in this collection.)</p></div></details>
+</div>
+
+<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../035-when-are-you-having-kids-reply-tool/index.html">← Previous</a><a class="btn btn-primary" href="../037-community-notice-generator/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
