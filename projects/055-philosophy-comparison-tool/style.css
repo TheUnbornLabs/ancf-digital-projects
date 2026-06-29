@@ -1,1 +1,8 @@
 /* Per-project overrides for Philosophy Comparison Tool. Shared design system lives in ../../style.css */
+table.cmp{width:100%;border-collapse:collapse;margin:6px 0;font-size:.92rem}
+table.cmp th,table.cmp td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+table.cmp thead th{background:rgba(139,0,0,.06);color:var(--accent-2);white-space:nowrap}
+table.cmp tbody th{background:rgba(139,0,0,.04)}
+[data-theme="dark"] table.cmp thead th{background:rgba(226,58,82,.12)}
+.cmp-card h3{margin:0 0 6px;font-size:1rem}
+.cmp-card .kv{font-size:.9rem}
