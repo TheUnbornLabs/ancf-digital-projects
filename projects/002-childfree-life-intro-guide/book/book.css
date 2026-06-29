@@ -1,0 +1,107 @@
+/* ============================================================
+   The Antinatalism Reader — book layout
+   Builds on the shared design system in ../../../style.css
+   ============================================================ */
+
+/* reading progress bar under the sticky header */
+.readbar{position:fixed;left:0;top:0;height:4px;width:100%;z-index:40;
+  background:transparent;pointer-events:none}
+.readbar>span{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .12s linear}
+
+/* narrow, book-like measure for body reading */
+.book-main{max-width:760px}
+.book-main p{font-size:1.06rem}
+.book-main h2{font-size:var(--fs-2xl)}
+.book-main h3{font-size:var(--fs-xl);margin-top:var(--sp-6)}
+.book-main h4{font-size:var(--fs-lg);margin:var(--sp-5) 0 var(--sp-2)}
+
+/* ---- chapter header ---- */
+.ch-head{padding:var(--sp-6) 0 var(--sp-2);border-bottom:1px solid var(--line);margin-bottom:var(--sp-5)}
+.ch-part{font-size:var(--fs-xs);font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--info)}
+.ch-num{font-size:var(--fs-xs);font-weight:800;letter-spacing:.12em;color:var(--accent-2);margin-left:8px}
+.ch-head h2{margin:var(--sp-2) 0 var(--sp-3);font-size:var(--fs-3xl);letter-spacing:-.02em;line-height:1.15}
+.ch-standfirst{color:var(--muted);font-size:var(--fs-lg);max-width:66ch;margin:0}
+
+/* ---- epigraph ---- */
+.epigraph{margin:var(--sp-5) 0;padding-left:var(--sp-5);border-left:3px solid var(--line);color:var(--muted)}
+.epigraph p{font-style:italic;margin:0 0 6px}
+.epigraph cite{font-style:normal;font-size:var(--fs-sm);font-weight:700;color:var(--ink)}
+
+/* ---- pull quote ---- */
+.pullquote{font-size:var(--fs-xl);line-height:1.35;font-weight:600;color:var(--ink);
+  border-top:2px solid var(--accent);border-bottom:2px solid var(--accent);
+  padding:var(--sp-4) 0;margin:var(--sp-6) 0;max-width:36ch}
+
+/* ---- key term box ---- */
+.term{background:var(--info-soft);border:1px solid var(--line);border-left:4px solid var(--info);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:var(--sp-3) var(--sp-4);margin:var(--sp-4) 0}
+.term b{color:var(--ink)}
+
+/* ---- objection / reply callouts ---- */
+.objection,.reply{border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:var(--sp-3) var(--sp-4);margin:var(--sp-3) 0;background:var(--surface-2)}
+.objection{border-left:4px solid var(--accent)}
+.reply{border-left:4px solid var(--info)}
+.objection .tag,.reply .tag{display:block;font-size:var(--fs-xs);font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.objection .tag{color:var(--accent-2)}
+.reply .tag{color:var(--info)}
+
+/* ---- "in plain words" ---- */
+.plain{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:var(--radius-sm);
+  padding:var(--sp-3) var(--sp-4);margin:var(--sp-4) 0}
+.plain b{color:var(--accent-2)}
+
+/* ---- chapter summary / recap ---- */
+.recap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:var(--sp-5);margin:var(--sp-6) 0;box-shadow:var(--shadow)}
+.recap h3{margin-top:0;color:var(--accent-2);font-size:var(--fs-lg)}
+.recap ul{margin:0;padding-left:18px}
+.recap li{margin:6px 0}
+
+/* ---- references ---- */
+.refs{font-size:var(--fs-sm);color:var(--muted);margin:var(--sp-6) 0 0;border-top:1px solid var(--line);padding-top:var(--sp-4)}
+.refs h3{font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:.07em;color:var(--ink);margin:0 0 var(--sp-2)}
+.refs ol{margin:0;padding-left:20px}
+.refs li{margin:5px 0}
+
+/* ---- chapter nav (prev / contents / next) ---- */
+.ch-nav{display:flex;gap:var(--sp-3);align-items:stretch;margin:var(--sp-6) 0;flex-wrap:wrap}
+.ch-nav a{flex:1 1 0;min-width:180px;display:flex;flex-direction:column;gap:3px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 16px;background:var(--surface);
+  color:var(--ink);transition:.15s}
+.ch-nav a:hover{border-color:var(--accent);text-decoration:none;transform:translateY(-2px)}
+.ch-nav a.next{text-align:right}
+.ch-nav .dir{font-size:var(--fs-xs);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ch-nav .ttl{font-weight:700;font-size:var(--fs-sm)}
+.ch-nav a.toc-link{flex:0 0 auto;min-width:0;justify-content:center;align-items:center;background:var(--surface-2)}
+.ch-nav a.disabled{opacity:.4;pointer-events:none}
+
+/* ---- TOC (book index) ---- */
+.cover{text-align:center;padding:var(--sp-7) 0 var(--sp-6);border-bottom:1px solid var(--line)}
+.cover .kicker{font-size:var(--fs-xs);font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2)}
+.cover h2{font-size:clamp(2.2rem,6vw,3.4rem);margin:var(--sp-3) 0;letter-spacing:-.03em;line-height:1.05}
+.cover .sub{font-size:var(--fs-lg);color:var(--muted);max-width:60ch;margin:0 auto var(--sp-5)}
+.cover .meta-line{font-size:var(--fs-sm);color:var(--muted)}
+
+.toc-part{margin:var(--sp-6) 0 var(--sp-3)}
+.toc-part .label{font-size:var(--fs-xs);font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--info)}
+.toc-part h3{margin:4px 0 var(--sp-3);font-size:var(--fs-xl);border-bottom:2px solid var(--accent);padding-bottom:6px}
+.toc-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.toc-list a{display:flex;gap:14px;align-items:baseline;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:12px 16px;background:var(--surface);color:var(--ink);transition:.15s}
+.toc-list a:hover{border-color:var(--accent);text-decoration:none;transform:translateX(3px)}
+.toc-list .n{flex:0 0 auto;font-weight:800;color:var(--accent-2);font-variant-numeric:tabular-nums;min-width:2.2em}
+.toc-list .t{font-weight:700}
+.toc-list .d{display:block;color:var(--muted);font-weight:400;font-size:var(--fs-sm);margin-top:2px}
+
+/* mini "where am I" rail under chapter title */
+.crumbs{font-size:var(--fs-xs);color:var(--muted);margin:var(--sp-3) 0 0}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-2)}
+
+@media(max-width:560px){
+  .ch-nav a{flex:1 1 100%}
+  .book-main p{font-size:1.02rem}
+}
