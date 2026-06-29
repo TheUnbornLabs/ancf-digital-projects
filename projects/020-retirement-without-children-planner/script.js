@@ -1,13 +1,21 @@
-/* Project 020 · Retirement Without Children Planner — interactive logic */
+/* Project 020 · Retirement Without Children Planner — interactive logic (country-aware) */
 document.addEventListener('DOMContentLoaded', function () {
 try {
-  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
-  var sym='$'; function fmt(n){ n=Math.round(n); return sym+n.toLocaleString('en-US'); }
+  var A=window.ANCF||{}; var CC=window.ANCFCountries; function $(id){return document.getElementById(id);}
+  var country = CC ? CC.get(A.get?A.get('country','IN'):'IN') : {cur:'$',locale:'en-US',r020:{now:20000,contrib:500,target:600000},note:'',name:'India'};
+  function fmt(n){ return CC?CC.fmt(country,n):('$'+Math.round(n)); }
   function num(id,def){ var e=$(id); var v=e?parseFloat(e.value):def; return isNaN(v)?def:v; }
+
+  (function(){ var sel=$('country'); if(!sel||!CC) return;
+    sel.innerHTML=CC.list.map(function(c){ return '<option value="'+c.code+'"'+(c.code===country.code?' selected':'')+'>'+c.name+' ('+c.cur.trim()+')</option>'; }).join('');
+    sel.addEventListener('change',function(){ country=CC.get(sel.value); if(A.set)A.set('country',country.code); setDefaults(); updateNote(); recompute(); });
+  })();
+  function updateNote(){ var n=$('ctxNote'); if(n) n.innerHTML='<b>'+country.name+':</b> '+(country.note||'')+' Figures are in '+country.cur.trim()+'; the defaults are rough starting points — use your own.'; }
+  function setDefaults(){ if($('now'))$('now').value=country.r020.now; if($('contrib'))$('contrib').value=country.r020.contrib; if($('target'))$('target').value=country.r020.target; }
 
   function drawProj(months, P0, c, rMonthly, target){
     var svg=$('growth'); if(!svg) return {final:P0,contrib:P0};
-    var W=560,H=220,padL=52,padB=26,padT=10,padR=10;
+    var W=560,H=220,padL=64,padB=26,padT=10,padR=10;
     var pts=[],bal=P0,contrib=P0;
     for(var m=0;m<=months;m++){ if(m>0){ bal=bal*(1+rMonthly)+c; contrib+=c; } pts.push(bal); }
     var max=Math.max(pts[pts.length-1]||1, target||0)||1;
@@ -24,9 +32,8 @@ try {
     svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.innerHTML=g;
     return {final:bal, contrib:contrib};
   }
-
   function recompute(){
-    var c=$('cur'); if(c) sym=c.value; document.querySelectorAll('.inputs .cur').forEach(function(e){ e.setAttribute('data-sym',sym); });
+    document.querySelectorAll('.inputs .cur').forEach(function(e){ e.setAttribute('data-sym',country.cur); });
     var age=num('age',35), ret=num('ret',65), P0=num('now',0), contrib=num('contrib',0), target=num('target',0), rate=num('rate',6);
     if($('o-rate')) $('o-rate').textContent=rate+'%';
     var years=Math.max(0,ret-age), months=years*12, rM=rate/100/12;
@@ -40,16 +47,19 @@ try {
       if(years<=0){ v.innerHTML='<b>Set your retirement age above your current age</b> to see a projection.'; }
       else if(target<=0){ v.innerHTML='In <b>'+years+' years</b>, steady saving could grow to about <b>'+fmt(res.final)+'</b> — of which roughly <b>'+fmt(Math.max(0,res.final-res.contrib))+'</b> is growth you didn\'t have to earn. Add a target above to check it against a goal.'; }
       else if(res.final>=target){ v.innerHTML='On these assumptions you\'d reach about <b>'+fmt(res.final)+'</b> by '+ret+' — <b>clearing your '+fmt(target)+' target</b> with '+fmt(res.final-target)+' to spare. Real life is bumpier, but the trajectory is sound. Keep going.'; }
-      else { var gap=target-res.final; var extra=months>0?(gap*(rM)/ (Math.pow(1+rM,months)-1)):0; v.innerHTML='You\'d reach about <b>'+fmt(res.final)+'</b> — roughly <b>'+fmt(gap)+' short</b> of your '+fmt(target)+' target. Closing it could mean saving about <b>'+fmt(contrib+extra)+'/month</b> instead, retiring a little later, or adjusting the target. A gap seen early is a gap you can close.'; }
+      else { var gap=target-res.final; var extra=months>0?(gap*rM/(Math.pow(1+rM,months)-1)):0; v.innerHTML='You\'d reach about <b>'+fmt(res.final)+'</b> — roughly <b>'+fmt(gap)+' short</b> of your '+fmt(target)+' target. Closing it could mean saving about <b>'+fmt(contrib+extra)+'/month</b> instead, retiring a little later, or adjusting the target. A gap seen early is a gap you can close.'; }
     }
-    if(A.setJSON) A.setJSON('retire',{age:age,ret:ret,now:P0,contrib:contrib,target:target,rate:rate,sym:sym});
+    if(A.setJSON) A.setJSON('retire',{age:age,ret:ret,now:P0,contrib:contrib,target:target,rate:rate,country:country.code});
   }
   ['age','ret','now','contrib','target'].forEach(function(id){ var e=$(id); if(e) e.addEventListener('input',recompute); });
   var rt=$('rate'); if(rt) rt.addEventListener('input',recompute);
-  var cu=$('cur'); if(cu) cu.addEventListener('change',recompute);
-  (function(){ var s=A.getJSON?A.getJSON('retire',null):null; if(s){ ['age','ret','now','contrib','target','rate'].forEach(function(k){ if($(k)&&s[k]!=null)$(k).value=s[k]; }); if(s.sym&&$('cur'))$('cur').value=s.sym; } recompute(); })();
+  (function(){ var s=A.getJSON?A.getJSON('retire',null):null;
+    if(s){ ['age','ret','now','contrib','target','rate'].forEach(function(k){ if($(k)&&s[k]!=null)$(k).value=s[k]; }); }
+    else { setDefaults(); }
+    updateNote(); recompute();
+  })();
 
-  /* 4 · care network */
+  /* care network */
   (function(){
     var CARE=[
       {h:'People',items:['Close friends across different ages','Chosen family / a few I can truly rely on','Good relationships with neighbors','An active community, club, or faith group']},
@@ -67,7 +77,6 @@ try {
     upd();
   })();
 
-  /* quiz */
   (function(){
     var Q=[{a:1},{a:1},{a:1}], E=['Children are an unreliable route to care; a deliberate plan beats hoping.','It rests on both resources (money) and relationships (people and services).','It\'s a rough illustration, not financial advice — it ignores tax, inflation, and fees.'];
     var picks={}, total=document.querySelectorAll('#quizbox .quiz-q').length;
@@ -85,7 +94,7 @@ try {
     var s=$('saveBtn'),cp=$('copyBtn'),cl=$('clearBtn');
     if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
     if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); });
-    if(cp) cp.addEventListener('click',function(){ var L=['Retirement-without-children plan ('+sym+')','','Projected at retirement: '+($('figBal')?$('figBal').textContent:''),($('verdict')?$('verdict').textContent.replace(/\s+/g,' ').trim():''),'','My next steps:','  '+((ta&&ta.value.trim())?ta.value.trim():'(blank)')]; if(A.copy) A.copy(L.join('\n'),cp); });
+    if(cp) cp.addEventListener('click',function(){ var L=['Retirement plan ('+country.name+', '+country.cur.trim()+')','','Projected at retirement: '+($('figBal')?$('figBal').textContent:''),($('verdict')?$('verdict').textContent.replace(/\s+/g,' ').trim():''),'','My next steps:','  '+((ta&&ta.value.trim())?ta.value.trim():'(blank)')]; if(A.copy) A.copy(L.join('\n'),cp); });
   })();
 } catch(e){ console.error('project 020 script error', e); }
 });
