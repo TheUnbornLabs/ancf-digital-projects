@@ -1,1 +1,2 @@
-/* Per-project overrides for Pong Game: Choice vs Pressure. Shared design system lives in ../../style.css */
+/* Per-project overrides for Pong Game. Shared design system lives in ../../style.css */
+#game{width:100%;max-width:380px;height:auto;margin:0 auto;touch-action:none}
