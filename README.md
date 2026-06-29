@@ -4,6 +4,10 @@
 
 An open, ad-free, tracking-free static website collecting 100 small, self-contained projects that explore antinatalism and childfree life as ethical, philosophical, personal, and social positions.
 
+**Live site:** https://theunbornlabs.github.io/ancf-digital-projects/
+
+Every one of the 100 projects is a real interactive mini-tool, guide, quiz, calculator, generator, or game — not a static paragraph page. All run client-side with no backend and no tracking.
+
 ## Mission
 
 To present antinatalism and childfree life respectfully and rationally — as rights-based, educational, and reflective positions. Every project supports reproductive autonomy and treats children, parents, women, men, families, religions, castes, ethnic groups, people in poverty, disabled people, and LGBTQ+ people with dignity. There is no hate speech, no harassment, and no encouragement of self-harm.
