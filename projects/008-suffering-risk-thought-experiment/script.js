@@ -1,77 +1,57 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var N=4;
+var A=window.ANCF||{};
 
-/* ---------- Risk slider ---------- */
-var slider=document.getElementById('riskSlider');
-var out=document.getElementById('riskOut');
-if(slider&&out){
-  function describe(v){
-    v=+v;
-    var head='You would accept up to about a '+v+'% chance of a seriously hard life.';
-    var note;
-    if(v===0)note='You accept no real risk at all — a strongly precautionary stance. Ask yourself: is a zero-risk life even possible to offer?';
-    else if(v<=15)note='A low tolerance: the possibility of severe suffering weighs heavily for you, even against a likely good life.';
-    else if(v<=40)note='A cautious middle: you accept some risk, but the chance of serious harm clearly gives you pause.';
-    else if(v<=70)note='You lean toward the expected-value view: a good life is likely enough to justify a real chance of a hard one.';
-    else if(v<100)note='A high tolerance: you trust that meaning and agency can outweigh substantial risk.';
-    else note='You accept even a near-certain hard life. Worth asking what, for you, would ever be too much risk to impose on another.';
-    return head+' '+note;
+/* ---------- Risk simulator ---------- */
+var inputs=[].slice.call(document.querySelectorAll('#sim input[type=range]'));
+function val(id){var e=document.getElementById(id);return e?+e.value:0;}
+var outChart=document.getElementById('outChart'),rbChart=document.getElementById('rbChart'),
+    tenBar=document.getElementById('tenBar'),tenPct=document.getElementById('tenPct'),tenNote=document.getElementById('tenNote');
+function update(){
+  inputs.forEach(function(inp){var out=document.getElementById(inp.id.replace('r-','o-'));if(out)out.textContent=inp.value+'%';});
+  var suffer=val('r-suffer'),hard=val('r-hardship'),happy=val('r-happy'),unc=val('r-uncertain');
+  if(A.barChart)A.barChart(outChart,[{label:'Serious suffering',value:suffer},{label:'Ordinary hardship',value:hard},{label:'Strong happiness',value:happy}],{max:100,fmt:function(v){return v+'%';},title:'Outcome chances'});
+  var risk=suffer*1.0+hard*0.5,benefit=happy*1.0;
+  if(A.barChart)A.barChart(rbChart,[{label:'Weighted risk',value:Math.round(risk)},{label:'Benefit',value:Math.round(benefit)}],{max:Math.max(150,risk,benefit),fmt:function(v){return v;},title:'Risk vs benefit'});
+  var tension=(risk+benefit)>0?Math.round(risk/(risk+benefit)*100):0;
+  if(A.meter)A.meter(tenBar,tension);if(tenPct)tenPct.textContent=tension+'%';
+  if(tenNote){
+    var base;
+    if(tension>=60)base='On this weighting, risk dominates the picture.';
+    else if(tension>=45)base='Risk and benefit sit in close tension here.';
+    else base='On this weighting, the benefit side dominates.';
+    var u=unc>=70?' With uncertainty this high, remember the numbers themselves are shaky — humility is warranted.':(unc<=30?' With low uncertainty, you are treating these estimates as fairly firm — worth asking if that confidence is earned.':'');
+    tenNote.textContent=base+u;
   }
-  var riskBar=document.getElementById('riskBar');
-  try{var saved=localStorage.getItem(KEY+':risk');if(saved!==null)slider.value=saved;}catch(e){}
-  function update(){out.textContent=describe(slider.value);if(riskBar)riskBar.style.width=(+slider.value)+'%';try{localStorage.setItem(KEY+':risk',slider.value);}catch(e){}}
-  slider.addEventListener('input',update);
-  update();
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('sim',store);
 }
+if(inputs.length){var s=A.getJSON?A.getJSON('sim',null):null;inputs.forEach(function(inp){if(s&&s[inp.id]!=null)inp.value=s[inp.id];inp.addEventListener('input',update);});update();}
 
-/* ---------- Guided prompts (multi-textarea) ---------- */
-var fields=[];
-var prompts=[];
-var status=document.getElementById('saveStatus');
-var timer=null;
-function flash(msg){
-  if(!status)return;status.textContent=msg;
-  if(timer)clearTimeout(timer);
-  timer=setTimeout(function(){status.textContent='Saved only on this device.';},1400);
-}
-for(var i=0;i<N;i++){
-  var lbl=document.querySelector('label[for="rf'+i+'"]');
-  prompts.push(lbl?lbl.textContent:('Prompt '+(i+1)));
-  (function(i){
-    var t=document.getElementById('rf'+i);
-    if(!t)return;
-    fields.push(t);
-    try{t.value=localStorage.getItem(KEY+i)||'';}catch(e){}
-    t.addEventListener('input',function(){try{localStorage.setItem(KEY+i,t.value);}catch(e){}flash('Saved ✓');});
-  })(i);
-}
-var copyBtn=document.getElementById('copyBtn');
+/* ---------- Quiz ---------- */
+var Q=[{a:1,e:'Risk = estimable odds; uncertainty = you genuinely cannot estimate them. They may carry different moral weight.'},{a:1,e:'Precaution avoids imposing any real risk of severe harm, even when the expected value looks favourable.'},{a:1,e:'It is a reflection tool for thinking — not a forecast, and not medical advice.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;Q.forEach(function(it,i){document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+Q.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+/* ---------- Reflection + summary ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash('Saved ✓');});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';if(A.remove)A.remove('reflect');flash('Cleared.');ta.focus();});
 if(copyBtn)copyBtn.addEventListener('click',function(){
-  var lines=['Suffering-Risk Thought Experiment — my reflections',''];
-  if(slider)lines.push('Risk tolerance set to: '+slider.value+'%','');
-  fields.forEach(function(t,i){lines.push(prompts[i],(t.value||'').trim()||'(left blank)','');});
-  var text=lines.join('\n');
-  function done(){flash('Copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallback(text,done);});
-  }else{fallback(text,done);}
+  var lines=['Suffering-risk thought experiment — my summary',''];
+  inputs.forEach(function(inp){lines.push('  • '+inp.getAttribute('data-axis')+': '+inp.value+'%');});
+  lines.push('','My reflection:',(ta&&ta.value.trim())?ta.value.trim():'(left blank)');
+  lines.push('','(Reflection only — not a prediction.)');
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
 });
-function fallback(text,done){
-  try{
-    var ta=document.createElement('textarea');
-    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.focus();ta.select();
-    document.execCommand('copy');document.body.removeChild(ta);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
-var clearAllBtn=document.getElementById('clearAllBtn');
-if(clearAllBtn)clearAllBtn.addEventListener('click',function(){
-  if(!window.confirm('Clear all four reflections on this device? This cannot be undone.'))return;
-  fields.forEach(function(t,i){t.value='';try{localStorage.removeItem(KEY+i);}catch(e){}});
-  flash('All cleared.');
-  if(fields[0])fields[0].focus();
-});
-}catch(e){console.error('project script error',e);}
+}catch(e){console.error('project 008 script error',e);}
 });

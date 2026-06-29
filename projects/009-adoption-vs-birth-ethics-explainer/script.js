@@ -1,78 +1,62 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var ta=document.getElementById('reflect');
-var status=document.getElementById('saveStatus');
-var saveBtn=document.getElementById('saveBtn');
-var copyBtn=document.getElementById('copyBtn');
-var clearBtn=document.getElementById('clearBtn');
-var timer=null;
-function flash(msg){
-  if(!status)return;
-  status.textContent=msg;
-  if(timer)clearTimeout(timer);
-  timer=setTimeout(function(){status.textContent='';},1600);
-}
-if(ta){
-  try{ta.value=localStorage.getItem(KEY)||'';}catch(e){}
-  ta.addEventListener('input',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}});
-}
-if(saveBtn)saveBtn.addEventListener('click',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}flash('Saved ✓');});
-if(clearBtn)clearBtn.addEventListener('click',function(){
-  if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;
-  ta.value='';try{localStorage.removeItem(KEY);}catch(e){}flash('Cleared.');ta.focus();
-});
-if(copyBtn)copyBtn.addEventListener('click',function(){
-  var text=(ta.value||'').trim();
-  if(!text){flash('Nothing to copy yet.');return;}
-  function done(){flash('Copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});
-  }else{fallbackCopy(text,done);}
-});
-function fallbackCopy(text,done){
-  try{
-    var t=document.createElement('textarea');
-    t.value=text;t.style.position='fixed';t.style.opacity='0';
-    document.body.appendChild(t);t.focus();t.select();
-    document.execCommand('copy');document.body.removeChild(t);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
+var A=window.ANCF||{};
 
-/* ---------- "What weighs on you?" checklist ---------- */
-var weighList=document.getElementById('weighList');
-if(weighList){
-  var wBoxes=weighList.querySelectorAll('input[type=checkbox]');
-  var wCount=document.getElementById('weighCount');
-  var wStatus=document.getElementById('weighStatus');
-  var wStore={};
-  try{wStore=JSON.parse(localStorage.getItem(KEY+':weigh')||'{}')||{};}catch(e){wStore={};}
-  var wTimer=null;
-  function wFlash(msg){if(!wStatus)return;wStatus.textContent=msg;if(wTimer)clearTimeout(wTimer);wTimer=setTimeout(function(){wStatus.textContent='';},1600);}
-  function wRender(){
-    var n=0;wBoxes.forEach(function(b){if(b.checked)n++;});
-    if(wCount)wCount.textContent=n+' selected.';
+/* ---------- Existing-need bar chart (illustrative, static) ---------- */
+var needChart=document.getElementById('needChart');
+if(needChart&&A.barChart)A.barChart(needChart,[
+  {label:'Biological birth',value:0},{label:'Adoption',value:90},{label:'Fostering',value:85},{label:'Mentorship',value:60},{label:'Supporting',value:70}
+],{max:100,fmt:function(v){return v+'%';},title:'Responds to existing need'});
+
+/* ---------- Care-priority reflection tree ---------- */
+var questions=[
+ {q:"Right now, are you more drawn to caring for someone who already exists, or to creating a new life?",opts:[{t:"Someone who exists",k:"existing"},{t:"Creating a new life",k:"new"}]},
+ {q:"Would you want a full-time parenting role, or to support without parenting?",opts:[{t:"Full parenting role",k:"parent"},{t:"Support without parenting",k:"support"}]},
+ {q:"How much complexity could you take on right now?",opts:[{t:"Quite a lot",k:"high"},{t:"Only a little",k:"low"}]}
+];
+var step=0,ans=[];
+var treeQ=document.getElementById('treeQ'),treeBtns=document.getElementById('treeBtns'),treeOut=document.getElementById('treeOut'),treeReset=document.getElementById('treeReset');
+function renderTree(){
+  if(step<questions.length){
+    var qq=questions[step];treeQ.textContent=qq.q;treeBtns.innerHTML='';
+    qq.opts.forEach(function(o){var b=document.createElement('button');b.className='btn';b.type='button';b.textContent=o.t;b.addEventListener('click',function(){ans[step]=o.k;step++;renderTree();});treeBtns.appendChild(b);});
+    treeOut.style.display='none';treeReset.style.display=ans.length?'inline-block':'none';
+  }else{
+    treeQ.textContent='Where your priorities lean today:';treeBtns.innerHTML='';
+    var msg;
+    if(ans[1]==='support')msg='Supporting without parenting — mentorship, volunteering, or caring for family already here. Accessible and genuinely meaningful.';
+    else if(ans[0]==='new')msg='A full parenting role with a child you bring into the world (biological birth) — worth holding alongside the consent and suffering-risk questions this collection explores.';
+    else if(ans[2]==='high')msg='Parenting a child who already exists (adoption or fostering) — paths that meet a real need and ask real complexity in return.';
+    else msg='You lean toward parenting an existing child but are wary of complexity — it may help to learn, at your own pace, what support adoption and fostering systems actually offer.';
+    treeOut.textContent=msg+' This reflects only today’s leaning — not a recommendation, and not a duty.';
+    treeOut.style.display='block';treeReset.style.display='inline-block';
   }
-  wBoxes.forEach(function(b){
-    var key=b.getAttribute('data-key');
-    b.checked=!!wStore[key];
-    b.addEventListener('change',function(){
-      wStore[key]=b.checked;
-      try{localStorage.setItem(KEY+':weigh',JSON.stringify(wStore));}catch(e){}
-      wRender();
-    });
-  });
-  wRender();
-  var wCopy=document.getElementById('weighCopy');
-  if(wCopy)wCopy.addEventListener('click',function(){
-    var picked=[];
-    wBoxes.forEach(function(b){if(b.checked)picked.push('• '+b.parentNode.textContent.trim());});
-    if(!picked.length){wFlash('Tick a few first.');return;}
-    var text='What weighs on me (adoption vs birth):\n'+picked.join('\n');
-    function done(){wFlash('Copied ✓');}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});}
-    else{fallbackCopy(text,done);}
-  });
 }
-}catch(e){console.error('project script error',e);}
+if(treeReset)treeReset.addEventListener('click',function(){step=0;ans=[];renderTree();});
+if(treeQ)renderTree();
+
+/* ---------- Resource allocation ---------- */
+var inputs=[].slice.call(document.querySelectorAll('#alloc input[type=range]'));
+var allocChart=document.getElementById('allocChart');
+function drawAlloc(){
+  var items=inputs.map(function(inp){return {label:inp.getAttribute('data-axis'),value:+inp.value};});
+  if(A.barChart)A.barChart(allocChart,items,{max:10,title:'Care allocation'});
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('alloc',store);
+}
+if(inputs.length){var s=A.getJSON?A.getJSON('alloc',null):null;inputs.forEach(function(inp){if(s&&s[inp.id]!=null)inp.value=s[inp.id];var out=document.getElementById(inp.id.replace('a-','o-'));if(out)out.textContent=inp.value;inp.addEventListener('input',function(){if(out)out.textContent=inp.value;drawAlloc();});});drawAlloc();}
+
+/* ---------- Reflection + summary ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash('Saved ✓');});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';if(A.remove)A.remove('reflect');flash('Cleared.');ta.focus();});
+if(copyBtn)copyBtn.addEventListener('click',function(){
+  var lines=['Adoption vs birth — my summary',''];
+  if(inputs.length){lines.push('My care allocation:');inputs.forEach(function(inp){lines.push('  • '+inp.getAttribute('data-axis')+': '+inp.value+'/10');});}
+  lines.push('','My reflection:',(ta&&ta.value.trim())?ta.value.trim():'(left blank)');
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
+});
+}catch(e){console.error('project 009 script error',e);}
 });

@@ -1,35 +1,88 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pronatalism Pressure Detector · ANCF Digital Projects</title><meta name="description" content="Paste a message and see which common pronatalist pressure patterns appear, for reflection."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pronatalism Pressure Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../002-childfree-life-intro-guide/index.html">← Previous</a><a class="btn btn-primary" href="../004-parenthood-assumption-quiz/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 003</span><h2>Pronatalism Pressure Detector</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">Pronatalism is the social assumption that everyone should have children. This tool highlights familiar pressure phrasings so you can name them. It never judges the speaker — people often mean well.</p>
-<div class="panel"><h3>What is pronatalism?</h3><p><strong>Pronatalism</strong> is the cultural assumption that having children is the normal, expected, and superior path — so much so that <em>not</em> having them is treated as something to explain or correct. It is usually invisible: it lives in offhand comments, "when are you having kids?", films, tax language, and well-meant advice.</p><p>Naming a pattern is not about blaming the person who used it. Most pronatalist pressure comes from people who care about you and are simply repeating what their culture taught them. The point of this tool is <em>clarity</em> — once you can name a pattern, it loses its power to make you feel small.</p></div>
-<div class="panel"><h3>Curiosity, pressure, or coercion?</h3>
-<p class="note">Not every question about children is pressure. It helps to tell three different things apart before deciding how to respond.</p>
-<div class="kv">
-<strong>Curiosity</strong><span>A genuine, open question that accepts your answer. "Do you think you'll want kids?" — and then they actually listen. No response needed beyond honesty.</span>
-<strong>Pressure</strong><span>A question with a built-in expectation, or a repeated nudge after you've answered. The patterns below mostly live here. A calm boundary works best.</span>
-<strong>Coercion</strong><span>Threats, ultimatums, controlling your body or choices, or relentless pressure that ignores your "no." This is no longer a conversation — and your autonomy is not up for negotiation.</span>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pronatalism Pressure Detector · ANCF Digital Projects</title><meta name="description" content="Map the reproductive pressure you feel across six sources, see a severity meter and chart of the strongest source, and generate a respectful boundary line."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pronatalism Pressure Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../002-childfree-life-intro-guide/index.html">← Previous</a><a class="btn btn-primary" href="../004-parenthood-assumption-quiz/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 003</span><h2>Pronatalism Pressure Detector</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">Pronatalism is the social assumption that everyone should have children. This tool helps you <strong>map where that pressure is coming from</strong>, see which source weighs heaviest, and craft a calm boundary. It never judges the people applying pressure — most mean well — and it never tells you what to choose.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The six common <strong>sources</strong> of reproductive pressure.</li>
+<li>How to rate and compare the pressure you personally feel from each.</li>
+<li>How to read a severity score without catastrophising or dismissing it.</li>
+<li>How to write a respectful boundary line you can actually say.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Rate your pressure by source</h3>
+<p class="note">For each source, set how much pressure you feel right now: 0 none · 1 mild · 2 moderate · 3 strong · 4 severe. Saved on this device. This is reflection, not a diagnosis.</p>
+<div id="sources">
+<div class="slider-row"><div class="lab"><label for="s-family">Family pressure</label><output id="o-family">none</output></div><input type="range" id="s-family" data-axis="Family" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="s-cultural">Cultural pressure</label><output id="o-cultural">none</output></div><input type="range" id="s-cultural" data-axis="Cultural" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="s-religious">Religious pressure</label><output id="o-religious">none</output></div><input type="range" id="s-religious" data-axis="Religious" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="s-economic">Economic pressure</label><output id="o-economic">none</output></div><input type="range" id="s-economic" data-axis="Economic" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="s-gender">Gender-role pressure</label><output id="o-gender">none</output></div><input type="range" id="s-gender" data-axis="Gender-role" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="s-fear">Fear-based pressure</label><output id="o-fear">none</output></div><input type="range" id="s-fear" data-axis="Fear-based" min="0" max="4" step="1" value="0"></div>
 </div>
-<p class="note">If something has crossed into the third column, you are allowed to step back from the conversation entirely.</p>
 </div>
-<div class="panel"><h3>Try the detector</h3><label class="field" for="det">Paste a message to reflect on</label><textarea id="det" placeholder="e.g. ‘You’ll change your mind once you’re older…’"></textarea>
-<div class="proj-nav"><button class="btn btn-primary" id="detBtn" type="button">Analyse text</button><span class="note">…or it updates as you type.</span></div>
-<p class="note" style="margin-bottom:4px">Try an example:</p>
-<div class="filters" id="examples">
-<button class="chip" type="button" data-ex="You'll change your mind when you're older — everyone does.">“You'll change your mind…”</button>
-<button class="chip" type="button" data-ex="Who will look after you when you're old? It's only natural to want kids.">“Who will look after you?”</button>
-<button class="chip" type="button" data-ex="Don't you think that's a bit selfish? You're not a real family without children.">“Isn't that selfish?”</button>
-<button class="chip" type="button" data-ex="Your body clock is ticking, you're running out of time.">“Your body clock is ticking…”</button>
+
+<div class="panel"><h3>2. Your pressure profile</h3>
+<div class="meter-card"><div class="lab"><span>Overall severity</span><b id="sevPct">0%</b></div><div class="meter"><span id="sevBar"></span></div></div>
+<p class="note" id="sevNote" role="status" aria-live="polite" style="margin-top:10px">Set the sliders above to see your profile.</p>
+<svg class="chart" id="srcChart" role="img" aria-label="Bar chart of pressure rating by source."></svg>
+<p class="chart-cap" id="srcCap">Bar chart: your pressure rating (0–4) for each source.</p>
 </div>
-<div class="result" id="detOut" role="status" aria-live="polite">No analysis yet — paste or pick an example above.</div>
-<div class="proj-nav"><button class="btn" id="detCopy" type="button">Copy the calm replies</button><button class="btn" id="detClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="detStatus" role="status" aria-live="polite"></span></div>
-<p class="note">This tool only highlights patterns for reflection. It does not judge people, and a phrase being flagged does not mean the speaker meant harm.</p></div>
-<div class="panel"><h3>The patterns this tool looks for</h3><p class="note">A reference you can read even without pasting anything. Tap each to expand.</p>
-<details><summary>"You'll change your mind"</summary><div><p>Treats your decision as not real or not final. A calm reply: "I've thought about this carefully — it's not a phase."</p></div></details>
-<details><summary>"Who'll look after you when you're old?"</summary><div><p>Frames children as retirement insurance. A reply: "I'd rather build friendships and savings I can count on."</p></div></details>
-<details><summary>"Isn't that selfish?"</summary><div><p>Moralises a personal choice. A reply: "Choosing what's right for my life isn't selfish."</p></div></details>
-<details><summary>"It's only natural / meant to be"</summary><div><p>Appeals to destiny instead of your reasons. A reply: "People build meaningful lives in many different ways."</p></div></details>
-<details><summary>"Everyone does it / it's normal"</summary><div><p>Appeals to majority pressure. A reply: "Common isn't the same as right for me."</p></div></details>
-<details><summary>"Your body clock is ticking"</summary><div><p>Creates time pressure. A reply: "My timeline is mine to manage."</p></div></details>
-<details><summary>"You're not a real family / not fulfilled"</summary><div><p>Ties your worth to parenthood. A reply: "My worth doesn't depend on having children."</p></div></details>
-<details><summary>"You'll regret it / you'll be lonely"</summary><div><p>Predicts future regret to create fear. A reply: "I'm comfortable with my choice and its trade-offs."</p></div></details>
+
+<div class="panel"><h3>3. A suggested response</h3>
+<p class="note">Based on your strongest source and overall level — a starting point, not a rule.</p>
+<div class="result" id="responseBox" role="status" aria-live="polite">Rate a few sources above to see a suggestion.</div>
 </div>
-<div class="panel"><h3>In closing</h3><p>Pressure usually comes wrapped in love. You can name a pattern, hold your boundary, and still keep the relationship — clarity and kindness are not opposites.</p></div>
-<p class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</p><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../002-childfree-life-intro-guide/index.html">← Previous</a><a class="btn btn-primary" href="../004-parenthood-assumption-quiz/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+
+<div class="panel"><h3>4. Boundary-line generator</h3>
+<p class="note">Pick the source and a tone, and generate a respectful line you can adapt in your own words.</p>
+<div class="row">
+<div><label class="field" for="bSource">Source</label><select id="bSource"><option value="Family">Family</option><option value="Cultural">Cultural</option><option value="Religious">Religious</option><option value="Economic">Economic</option><option value="Gender-role">Gender-role</option><option value="Fear-based">Fear-based</option></select></div>
+<div><label class="field" for="bTone">Tone</label><select id="bTone"><option value="gentle">Gentle</option><option value="firm">Firm</option><option value="final">Final</option></select></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="bGen" type="button">Generate line</button><button class="btn" id="bCopy" type="button">Copy line</button></div>
+<div class="result" id="bOut" role="status" aria-live="polite">Your boundary line will appear here.</div>
+</div>
+
+<div class="panel"><h3>5. Quick check</h3>
+<p class="note">Three questions on telling pressure apart. Pick one each, then see the explanations.</p>
+<div id="quiz">
+<div class="quiz-q"><strong>1. A genuine, open question that accepts your answer is…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Pressure</div>
+<div class="opt" data-q="0" data-i="1">Curiosity</div>
+<div class="opt" data-q="0" data-i="2">Coercion</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Threats, ultimatums, or ignoring your clear "no" are…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Curiosity</div>
+<div class="opt" data-q="1" data-i="1">Coercion</div>
+<div class="opt" data-q="1" data-i="2">Harmless</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. Naming a pressure pattern is mainly for…</strong><div class="opts">
+<div class="opt" data-q="2" data-i="0">Blaming the speaker</div>
+<div class="opt" data-q="2" data-i="1">Your own clarity</div>
+<div class="opt" data-q="2" data-i="2">Winning an argument</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>6. Your reflection</h3>
+<label class="field" for="reflect">Which source surprised you most — and what is one small boundary you could set this week?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear reflection</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Pressure usually comes wrapped in love. Naming its source is not about blaming anyone — it is about seeing clearly, so you can hold a calm boundary and still keep the relationship. If pressure ever turns into threats or control, that is coercion, and stepping back is a valid, self-respecting response.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Generate &amp; hold boundaries</span></a>
+<a href="../041-pronatalist-phrase-translator/index.html">Pronatalist Phrase Translator<span>What a phrase assumes underneath</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">"When Are You Having Kids?" Reply Tool<span>Kind one-liners</span></a>
+<a href="../047-cultural-pressure-map/index.html">Cultural Pressure Map<span>Where pressure comes from</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../002-childfree-life-intro-guide/index.html">← Previous</a><a class="btn btn-primary" href="../004-parenthood-assumption-quiz/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

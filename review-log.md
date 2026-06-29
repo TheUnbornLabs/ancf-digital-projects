@@ -126,3 +126,47 @@ new homepage (light + dark) was rendered for sign-off. node/git verification via
 sandbox bash mount was unreliable this session (stale cache), so JS/HTML integrity was
 checked by direct host inspection.
 
+## Deep interactive rebuild — projects 001–010 (2026-06-29)
+
+A full, system-first rebuild of the first ten projects to a richer educational standard.
+Each project now follows a consistent template: educator intro, "What you will learn",
+≥1 interactive tool, ≥1 visual (SVG bar/radar chart, meter, matrix, or flowchart), a quiz
+or scenario with explanations, a saved reflection, a copy/export summary, a key-takeaway
+box, related-project links, and the standard disclaimer.
+
+- **New shared toolkit `ancf-ui.js`** (vanilla, dependency-free; `node --check` passes):
+  namespaced localStorage (get/set/JSON/remove), clipboard with fallback + transient button
+  label, `meter()`, `barChart()` and `radar()` SVG renderers, and a keyboard-accessible
+  `initOptions()` quiz helper. Loaded via `<script src="../../ancf-ui.js">` in all ten pages.
+- **Shared CSS components** added to `style.css`: `.learn`, `.takeaway`, `.related`,
+  `.meter`/`.meter-card`, `.slider-row`, bar/radar chart classes, interactive `.matrix`,
+  `.decision`, and argument-map node styles — all themed for light/dark and motion-safe.
+- **001** argument-map SVG, tap-to-reveal asymmetry matrix, suffering-risk slider+meter,
+  self-understanding radar, quiz, export summary.
+- **002** 8-domain balance radar, myth/reality flip cards, values checklist, life-statement
+  generator, quiz.
+- **003** six-source pressure self-assessment → severity meter + source bar chart +
+  score-based response + boundary-line generator.
+- **004** spot-the-assumption quiz, assumption-type bar chart, "where did it come from?" tracker.
+- **005** pressure-vs-desire bar chart, autonomy meter, internal/external voice tool,
+  clarity checklist, scenario, copyable clarity report.
+- **006** principle cards, scenario simulator (respected/violated), rights checklist,
+  autonomy-safe response generator.
+- **007** consent logic flowchart (SVG), ethical-tension radar, objection explorer, glossary, quiz.
+- **008** four-factor risk simulator, outcome bar chart, risk/benefit tension meter,
+  thought-experiment cards, with a prominent "reflection, not prediction" warning.
+- **009** five-path comparison matrix, existing-need bar chart, care-priority reflection tree,
+  resource-allocation chart, non-judgmental disclaimer.
+- **010** tone-based boundary script generator (WhatsApp-ready), emotional-blackmail detector
+  with intensity meter, five-rung escalation ladder, saved custom line, quiz.
+
+**Constraints honoured:** static HTML/CSS/JS only; no backend, no paid APIs, no tracking,
+no external chart libraries (all charts are vanilla SVG); GitHub Pages compatible; mobile-
+first; keyboard-accessible controls with focus states; chart captions/aria-labels provided.
+
+**Verification:** `ancf-ui.js` passes `node --check`; each project `index.html`/`script.js`
+written against the shared toolkit and confirmed by host inspection. The sandbox bash mount
+again served stale copies of edited files, so per-file `node --check` on the edited project
+scripts could not be run there; integrity was checked by direct reads. Recommended manual
+pass after deploy: open 001–010, check the browser console, and test save/copy/clear at ~360px.
+

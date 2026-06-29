@@ -1,62 +1,75 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-// pattern: [regex, what it does, a calm reframe you could use]
-var P=[
-["change your mind|too young to (know|decide)|just a phase","Assumes your decision isn't real or final.","“I've thought about this carefully — it's not a phase.”"],
-["who will (look after|care for) you|when you('| a)re old","Frames children as retirement insurance.","“I'd rather build friendships and savings I can count on.”"],
-["selfish|self-?cent(er|re)d","Moralises a personal choice.","“Choosing what's right for my life isn't selfish.”"],
-["god|nature|natural|meant to|supposed to","Appeals to destiny rather than your reasons.","“People build meaningful lives in many different ways.”"],
-["everyone (does|has)|normal|what people do","Appeals to majority pressure.","“Common isn't the same as right for me.”"],
-["body clock|running out of time|tick(ing)?","Time-pressure framing.","“My timeline is mine to manage.”"],
-["incomplete|not a real (woman|man|family)|fulfilled","Ties your worth to parenthood.","“My worth doesn't depend on having children.”"],
-["regret|you'll be lonely|who('| wi)ll visit","Predicts future regret to create fear.","“I'm comfortable with my choice and its trade-offs.”"]
-];
+var A=window.ANCF||{};
+var WORDS=['none','mild','moderate','strong','severe'];
 
-var ta=document.getElementById('det');
-var out=document.getElementById('detOut');
-var btn=document.getElementById('detBtn');
-var examples=document.getElementById('examples');
-
-var lastReplies=[];
-function analyse(){
-  var t=(ta.value||'').toLowerCase();
-  lastReplies=[];
-  if(!t.trim()){out.textContent='No analysis yet — paste or pick an example above.';return;}
-  var hits=[];
-  P.forEach(function(p){
-    var re=new RegExp(p[0],'i');
-    if(re.test(t)){hits.push('• '+p[1]+'\n   You could say: '+p[2]);lastReplies.push(p[2]);}
+/* ---------- Source ratings → meter + chart + response ---------- */
+var inputs=[].slice.call(document.querySelectorAll('#sources input[type=range]'));
+var sevBar=document.getElementById('sevBar'),sevPct=document.getElementById('sevPct'),sevNote=document.getElementById('sevNote');
+var srcChart=document.getElementById('srcChart'),responseBox=document.getElementById('responseBox');
+function update(){
+  var total=0,maxItem=null,maxVal=-1,items=[];
+  inputs.forEach(function(inp){
+    var v=+inp.value;total+=v;items.push({label:inp.getAttribute('data-axis'),value:v});
+    var out=document.getElementById(inp.id.replace('s-','o-'));if(out)out.textContent=WORDS[v];
+    if(v>maxVal){maxVal=v;maxItem=inp.getAttribute('data-axis');}
   });
-  if(hits.length){
-    out.textContent=hits.length+' pattern'+(hits.length>1?'s':'')+' worth noticing:\n\n'+hits.join('\n\n')+'\n\nRemember: naming a pattern is for your clarity, not for blaming the speaker.';
-  }else{
-    out.textContent='No flagged patterns found. That does not mean the message is good or bad — trust your own judgement too.';
+  var maxTotal=inputs.length*4,pct=Math.round(total/maxTotal*100);
+  if(A.meter)A.meter(sevBar,pct);if(sevPct)sevPct.textContent=pct+'%';
+  if(A.barChart)A.barChart(srcChart,items,{max:4,fmt:function(v){return WORDS[v];},title:'Pressure rating by source'});
+  if(sevNote){
+    if(total===0)sevNote.textContent='No notable pressure recorded right now — a calm place to be.';
+    else if(pct<30)sevNote.textContent='Low overall pressure. Strongest source: '+maxItem+'.';
+    else if(pct<60)sevNote.textContent='Moderate overall pressure, weighing most from: '+maxItem+'.';
+    else sevNote.textContent='High overall pressure, heaviest from: '+maxItem+'. Be gentle with yourself.';
   }
+  if(responseBox){
+    if(total===0)responseBox.textContent='Rate a few sources above to see a suggestion.';
+    else if(pct<30)responseBox.textContent='A light touch is probably enough: a calm one-liner and a change of subject. Strongest source — '+maxItem+'.';
+    else if(pct<60)responseBox.textContent='Consider a clear, repeatable boundary for '+maxItem+' pressure. You do not owe anyone a justification. Use the generator below.';
+    else responseBox.textContent='With pressure this strong (mainly '+maxItem+'), a firm, repeated boundary helps — and if it ever includes threats or control over your choices, that is coercion, and stepping back is valid. You deserve support.';
+  }
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('sources',store);
+}
+if(inputs.length){
+  var s=A.getJSON?A.getJSON('sources',null):null;
+  inputs.forEach(function(inp){if(s&&s[inp.id]!=null)inp.value=s[inp.id];inp.addEventListener('input',update);});
+  update();
 }
 
-if(btn)btn.addEventListener('click',analyse);
-if(ta)ta.addEventListener('input',analyse);
+/* ---------- Boundary-line generator ---------- */
+var ack={Family:"I know this comes from a place of love,",Cultural:"I know this is what tends to be expected,",Religious:"I respect that this matters deeply to you,",Economic:"I hear the practical worries behind this,","Gender-role":"I know there are expectations about what I 'should' do,","Fear-based":"I know you worry about my future,"};
+var toneLine={gentle:"and I've made a decision that's right for me. I'd be grateful if we could let it rest. I'm always happy to talk about other things.",firm:"and my decision is made. I'm not going to keep discussing it.",final:"and this is settled. Please don't raise it again."};
+var bGen=document.getElementById('bGen'),bOut=document.getElementById('bOut'),bCopy=document.getElementById('bCopy'),bSource=document.getElementById('bSource'),bTone=document.getElementById('bTone');
+function buildBoundary(){return (ack[bSource.value]||'I appreciate your concern,')+' '+(toneLine[bTone.value]||toneLine.firm);}
+if(bGen)bGen.addEventListener('click',function(){bOut.textContent=buildBoundary();});
+if(bCopy)bCopy.addEventListener('click',function(){A.copy&&A.copy(bOut.textContent&&bOut.textContent.indexOf('appear')===-1?bOut.textContent:buildBoundary(),bCopy);});
 
-var copyBtn=document.getElementById('detCopy');
-var clearBtn=document.getElementById('detClear');
-var status=document.getElementById('detStatus');
-var sTimer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(sTimer)clearTimeout(sTimer);sTimer=setTimeout(function(){status.textContent='';},1600);}
-function fallbackCopy(text,done){try{var x=document.createElement('textarea');x.value=text;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.focus();x.select();document.execCommand('copy');document.body.removeChild(x);done();}catch(e){flash('Copy not supported — select manually.');}}
+/* ---------- Quiz ---------- */
+var Q=[{a:1,e:'An open question that accepts your answer is curiosity, not pressure.'},{a:1,e:'Threats, ultimatums, or ignoring a clear no are coercion — no longer a conversation.'},{a:1,e:'Naming a pattern is for your own clarity, not to blame or to win.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;Q.forEach(function(it,i){document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+Q.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+/* ---------- Reflection + summary ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash('Saved ✓');});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';if(A.remove)A.remove('reflect');flash('Cleared.');ta.focus();});
 if(copyBtn)copyBtn.addEventListener('click',function(){
-  if(!lastReplies.length){flash('Nothing to copy yet.');return;}
-  var text=lastReplies.join('\n');
-  function done(){flash('Copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});}
-  else{fallbackCopy(text,done);}
+  var lines=['Pronatalism pressure — my summary',''];
+  inputs.forEach(function(inp){lines.push('  • '+inp.getAttribute('data-axis')+': '+WORDS[+inp.value]);});
+  if(bOut&&bOut.textContent&&bOut.textContent.indexOf('appear')===-1)lines.push('','My boundary line:',bOut.textContent);
+  lines.push('','My reflection:',(ta&&ta.value.trim())?ta.value.trim():'(left blank)');
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
 });
-if(clearBtn)clearBtn.addEventListener('click',function(){if(ta){ta.value='';}lastReplies=[];out.textContent='No analysis yet — paste or pick an example above.';flash('Cleared.');if(ta)ta.focus();});
-if(examples)examples.addEventListener('click',function(e){
-  var b=e.target.closest('[data-ex]');
-  if(!b)return;
-  ta.value=b.getAttribute('data-ex');
-  analyse();
-  ta.focus();
-});
-}catch(e){console.error('project script error',e);}
+}catch(e){console.error('project 003 script error',e);}
 });

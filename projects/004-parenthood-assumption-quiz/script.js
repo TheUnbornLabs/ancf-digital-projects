@@ -1,82 +1,62 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
+var A=window.ANCF||{};
+
+/* ---------- Spot-the-assumption quiz ---------- */
 var Q=[
-{"answer":1,"explain":"Curiosity and respect keep the relationship open; the others assume the choice is a mistake."},
-{"answer":1,"explain":"A couple, friends, or a person and their community can all be a family."},
-{"answer":1,"explain":"It is a legitimate, stable choice that deserves the same respect as choosing to parent."},
-{"answer":1,"explain":"The comment bundles two assumptions: that 'family' requires children, and that a real career crowds out a full life."},
-{"answer":1,"explain":"Leaving room for the unknown — choice, timing, infertility, or loss — is the kindest default."},
-{"answer":2,"explain":"Acknowledging without minimising or silver-lining respects their experience; the other replies, though well-meant, can sting."}
+ {a:0,e:'"It\'s just what people do" appeals to tradition — habit standing in for a reason.'},
+ {a:1,e:'This leans on fear of loneliness, framing children as insurance against being alone.'},
+ {a:0,e:'It ties adulthood and worth to a life script — an appeal to status.'},
+ {a:0,e:'"Continue the line" frames birth as an obligation owed to others — duty.'},
+ {a:1,e:'It ties a person\'s completeness to gender — a gender-role assumption.'}
 ];
-var picks={};
-var opts=document.querySelectorAll('.opt');
-var totalQ=document.querySelectorAll('.quiz-q').length;
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;Q.forEach(function(it,i){document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You named '+sc+' of '+Q.length+' assumptions as explained. Every phrase can carry more than one — the point is to notice them.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
 
-var bar=document.getElementById('quizBar');
-var prog=document.getElementById('quizProgress');
-function renderProgress(){
-  var n=Object.keys(picks).length;
-  if(bar)bar.style.width=Math.round(n/totalQ*100)+'%';
-  if(prog)prog.textContent=n+' of '+totalQ+' answered.';
+/* ---------- Assumption-type bar chart ---------- */
+var inputs=[].slice.call(document.querySelectorAll('#types input[type=range]'));
+var chart=document.getElementById('typeChart');
+function strongest(){var mv=-1,ml=null;inputs.forEach(function(inp){if(+inp.value>mv){mv=+inp.value;ml=inp.getAttribute('data-axis');}});return mv>0?ml:null;}
+function drawTypes(){
+  var items=inputs.map(function(inp){return {label:inp.getAttribute('data-axis'),value:+inp.value};});
+  if(A.barChart)A.barChart(chart,items,{max:4,title:'Assumption strength'});
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('types',store);
+}
+if(inputs.length){
+  var ts=A.getJSON?A.getJSON('types',null):null;
+  inputs.forEach(function(inp){if(ts&&ts[inp.id]!=null)inp.value=ts[inp.id];var out=document.getElementById(inp.id.replace('t-','o-'));if(out)out.textContent=inp.value;inp.addEventListener('input',function(){if(out)out.textContent=inp.value;drawTypes();});});
+  drawTypes();
 }
 
-function select(o){
-  var q=o.dataset.q;
-  document.querySelectorAll('.opt[data-q="'+q+'"]').forEach(function(x){
-    x.classList.remove('sel');x.setAttribute('aria-pressed','false');
-  });
-  o.classList.add('sel');o.setAttribute('aria-pressed','true');
-  picks[q]=+o.dataset.i;
-  renderProgress();
+/* ---------- "Where did it come from?" checklist ---------- */
+var srcWrap=document.getElementById('sources');
+var boxes=srcWrap?[].slice.call(srcWrap.querySelectorAll('input[type=checkbox]')):[];
+if(boxes.length){
+  var st=A.getJSON?A.getJSON('origins',{}):{};st=st||{};
+  boxes.forEach(function(b){var k=b.getAttribute('data-key');b.checked=!!st[k];b.addEventListener('change',function(){st[k]=b.checked;if(A.setJSON)A.setJSON('origins',st);});});
 }
 
-// Make divs keyboard-accessible (role, focusable, Enter/Space)
-opts.forEach(function(o){
-  o.setAttribute('role','button');
-  o.setAttribute('tabindex','0');
-  o.setAttribute('aria-pressed','false');
-  o.addEventListener('click',function(){select(o);});
-  o.addEventListener('keydown',function(e){
-    if(e.key==='Enter'||e.key===' '){e.preventDefault();select(o);}
-  });
+/* ---------- Reflection + insight summary ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash('Saved ✓');});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';if(A.remove)A.remove('reflect');flash('Cleared.');ta.focus();});
+if(copyBtn)copyBtn.addEventListener('click',function(){
+  var lines=['Parenthood assumptions — my insight summary',''];
+  var s=strongest();lines.push('Strongest assumption for me: '+(s||'(none rated yet)'));
+  var picked=boxes.filter(function(b){return b.checked;}).map(function(b){return b.parentNode.textContent.trim();});
+  lines.push('Likely sources: '+(picked.length?picked.join(', '):'(none ticked)'));
+  lines.push('','My reflection:',(ta&&ta.value.trim())?ta.value.trim():'(left blank)');
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
 });
-
-var scoreBtn=document.getElementById('quizScore');
-var resetBtn=document.getElementById('quizReset');
-var r=document.getElementById('quizResult');
-
-scoreBtn.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){
-    r.style.display='block';
-    r.textContent='Pick an answer for all '+totalQ+' questions first — there are no wrong choices, just first reactions.';
-    return;
-  }
-  var s=0;
-  Q.forEach(function(it,i){
-    var sel=picks[i];
-    document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){
-      var j=+x.dataset.i;x.classList.remove('ok','no');
-      if(j===it.answer)x.classList.add('ok');
-      else if(j===sel)x.classList.add('no');
-    });
-    var ex=document.querySelector('.explain[data-q="'+i+'"]');
-    if(ex&&it.explain){ex.style.display='block';ex.textContent=it.explain;}
-    if(sel===it.answer)s++;
-  });
-  r.style.display='block';
-  r.textContent='You reflected on '+s+' of '+Q.length+' in line with the explained view. There are no wrong people here — only ideas to weigh.';
-  if(resetBtn)resetBtn.style.display='inline-block';
-});
-
-if(resetBtn)resetBtn.addEventListener('click',function(){
-  picks={};
-  opts.forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});
-  document.querySelectorAll('.explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});
-  r.style.display='none';r.textContent='';
-  resetBtn.style.display='none';
-  renderProgress();
-  if(opts[0])opts[0].focus();
-});
-renderProgress();
-}catch(e){console.error('project script error',e);}
+}catch(e){console.error('project 004 script error',e);}
 });

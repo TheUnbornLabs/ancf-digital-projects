@@ -1,119 +1,45 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
+var A=window.ANCF||{};
 
-/* ---------- Premise checker ---------- */
-var wrap=document.getElementById('argcheck');
-var summary=document.getElementById('argSummary');
-if(wrap){
-  var opts=wrap.querySelectorAll('.opt');
-  var state={};
-  try{state=JSON.parse(localStorage.getItem(KEY+':arg')||'{}')||{};}catch(e){state={};}
-  var NUM_PREMISES=4; // P1-P4; index 4 is the conclusion C
-
-  function paint(){
-    opts.forEach(function(o){
-      var p=o.getAttribute('data-p'),v=o.getAttribute('data-v');
-      var on=state[p]===v;
-      o.classList.toggle('sel',on);
-      o.setAttribute('aria-pressed',on?'true':'false');
-    });
-  }
-  function summarise(){
-    var answered=Object.keys(state).length;
-    if(answered===0){summary.textContent='Mark the steps above to see a summary of your position.';return;}
-    var acceptedPremises=0;
-    for(var i=0;i<NUM_PREMISES;i++){if(state[i]==='accept')acceptedPremises++;}
-    var concl=state[4];
-    var msg='You have marked '+answered+' of 5 steps. You accept '+acceptedPremises+' of the 4 premises';
-    msg+=concl?(', and you '+concl+' the conclusion.'):'.';
-    if(acceptedPremises===NUM_PREMISES&&concl==='reject'){
-      msg+=' Accepting every premise but rejecting the conclusion is a recognised (and much-debated) move — worth asking which premise you would weaken.';
-    }else if(acceptedPremises===NUM_PREMISES&&concl==='accept'){
-      msg+=' Your view is internally consistent with the argument as stated.';
-    }else if(acceptedPremises<NUM_PREMISES&&concl==='accept'){
-      msg+=' You reach the conclusion without granting every premise — perhaps another route convinces you.';
-    }else{
-      msg+=' There is no wrong answer here; the value is in seeing exactly where you get off the train.';
-    }
-    summary.textContent=msg;
-  }
-  function choose(o){
-    var p=o.getAttribute('data-p'),v=o.getAttribute('data-v');
-    state[p]=v;
-    try{localStorage.setItem(KEY+':arg',JSON.stringify(state));}catch(e){}
-    paint();summarise();
-  }
-  opts.forEach(function(o){
-    o.setAttribute('role','button');
-    o.setAttribute('tabindex','0');
-    o.setAttribute('aria-pressed','false');
-    o.addEventListener('click',function(){choose(o);});
-    o.addEventListener('keydown',function(e){
-      if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(o);}
-    });
-  });
-  paint();summarise();
-
-  var labels=['P1 — A future person cannot consent to being born','P2 — Birth reliably exposes a person to some risk of serious harm','P3 — Imposing un-consented risk of serious harm normally needs justification','P4 — "It will probably be a good life" may not, alone, justify that risk','C — Therefore, creating a new person is ethically weighty'];
-  var argStatus=document.getElementById('argStatus');
-  var argTimer=null;
-  function argFlash(msg){if(!argStatus)return;argStatus.textContent=msg;if(argTimer)clearTimeout(argTimer);argTimer=setTimeout(function(){argStatus.textContent='';},1600);}
-  function argFallback(text,done){try{var x=document.createElement('textarea');x.value=text;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.focus();x.select();document.execCommand('copy');document.body.removeChild(x);done();}catch(e){argFlash('Copy not supported — select manually.');}}
-  var argCopy=document.getElementById('argCopy');
-  if(argCopy)argCopy.addEventListener('click',function(){
-    if(!Object.keys(state).length){argFlash('Mark some steps first.');return;}
-    var lines=['My position on the consent argument:',''];
-    for(var i=0;i<5;i++){lines.push(labels[i]+'\n   → '+(state[i]?state[i].toUpperCase():'not marked'));}
-    var text=lines.join('\n');
-    function done(){argFlash('Copied ✓');}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){argFallback(text,done);});}
-    else{argFallback(text,done);}
-  });
-  var argReset=document.getElementById('argReset');
-  if(argReset)argReset.addEventListener('click',function(){
-    state={};try{localStorage.removeItem(KEY+':arg');}catch(e){}
-    paint();summarise();argFlash('Reset.');
-  });
+/* ---------- Ethical-tension radar ---------- */
+var radar=document.getElementById('tenRadar');
+var inputs=[].slice.call(document.querySelectorAll('#tension input[type=range]'));
+function draw(){
+  var items=inputs.map(function(inp){return {label:inp.getAttribute('data-axis'),value:+inp.value};});
+  if(A.radar)A.radar(radar,items);
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('tension',store);
+}
+if(inputs.length){
+  var ts=A.getJSON?A.getJSON('tension',null):null;
+  inputs.forEach(function(inp){if(ts&&ts[inp.id]!=null)inp.value=ts[inp.id];var out=document.getElementById(inp.id.replace('x-','o-'));if(out)out.textContent=inp.value+'%';inp.addEventListener('input',function(){if(out)out.textContent=inp.value+'%';draw();});});
+  draw();
 }
 
-/* ---------- Reflection tool ---------- */
-var ta=document.getElementById('reflect');
-var status=document.getElementById('saveStatus');
-var saveBtn=document.getElementById('saveBtn');
-var copyBtn=document.getElementById('copyBtn');
-var clearBtn=document.getElementById('clearBtn');
-var timer=null;
-function flash(msg){
-  if(!status)return;
-  status.textContent=msg;
-  if(timer)clearTimeout(timer);
-  timer=setTimeout(function(){status.textContent='';},1600);
-}
-if(ta){
-  try{ta.value=localStorage.getItem(KEY)||'';}catch(e){}
-  ta.addEventListener('input',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}});
-}
-if(saveBtn)saveBtn.addEventListener('click',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}flash('Saved ✓');});
-if(clearBtn)clearBtn.addEventListener('click',function(){
-  if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;
-  ta.value='';try{localStorage.removeItem(KEY);}catch(e){}flash('Cleared.');ta.focus();
+/* ---------- Quiz ---------- */
+var Q=[{a:1,e:'Actual consent needs an existing person; before birth there is none.'},{a:0,e:'A person exists only because they were born, so comparing them to "never existing" is philosophically tricky — the non-identity problem.'},{a:1,e:'A fair treatment presents the strongest objections, not just one side.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;Q.forEach(function(it,i){document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+Q.length+' with the explained view.';if(rB)rB.style.display='inline-block';
 });
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+/* ---------- Reflection + summary ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash('Saved ✓');});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';if(A.remove)A.remove('reflect');flash('Cleared.');ta.focus();});
 if(copyBtn)copyBtn.addEventListener('click',function(){
-  var text=(ta.value||'').trim();
-  if(!text){flash('Nothing to copy yet.');return;}
-  function done(){flash('Copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});
-  }else{fallbackCopy(text,done);}
+  var lines=['Consent & birth — my summary',''];
+  if(inputs.length){lines.push('My weighting:');inputs.forEach(function(inp){lines.push('  • '+inp.getAttribute('data-axis')+': '+inp.value+'%');});}
+  lines.push('','My reflection:',(ta&&ta.value.trim())?ta.value.trim():'(left blank)');
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
 });
-function fallbackCopy(text,done){
-  try{
-    var t=document.createElement('textarea');
-    t.value=text;t.style.position='fixed';t.style.opacity='0';
-    document.body.appendChild(t);t.focus();t.select();
-    document.execCommand('copy');document.body.removeChild(t);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
-}catch(e){console.error('project script error',e);}
+}catch(e){console.error('project 007 script error',e);}
 });

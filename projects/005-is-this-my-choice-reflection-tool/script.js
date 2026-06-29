@@ -1,72 +1,71 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var k='ancf-'+location.pathname;
-var N=6;
-var fields=[];
-var status=document.getElementById('saveStatus');
-var rfBar=document.getElementById('rfBar');
-var rfCount=document.getElementById('rfCount');
-function renderProgress(){
-  var n=0;
-  fields.forEach(function(t){if((t.value||'').trim())n++;});
-  if(rfBar)rfBar.style.width=Math.round(n/N*100)+'%';
-  if(rfCount)rfCount.textContent=n+' of '+N+' prompts written so far.';
+var A=window.ANCF||{};
+
+/* ---------- Pressure vs desire + autonomy ---------- */
+var desire=document.getElementById('desire'),pressure=document.getElementById('pressure'),
+    oD=document.getElementById('o-desire'),oP=document.getElementById('o-pressure'),
+    pdChart=document.getElementById('pdChart'),autoBar=document.getElementById('autoBar'),
+    autoPct=document.getElementById('autoPct'),autoNote=document.getElementById('autoNote');
+function pdUpdate(){
+  var d=+desire.value,p=+pressure.value;
+  if(oD)oD.textContent=d+'%';if(oP)oP.textContent=p+'%';
+  if(A.barChart)A.barChart(pdChart,[{label:'Desire',value:d},{label:'Pressure',value:p}],{max:100,fmt:function(v){return v+'%';},title:'Desire vs pressure'});
+  var autonomy=Math.round((d+(100-p))/2);
+  if(A.meter)A.meter(autoBar,autonomy);if(autoPct)autoPct.textContent=autonomy+'%';
+  if(autoNote){
+    if(autonomy>=70)autoNote.textContent='This reads as strongly your own choice — clear desire with manageable pressure.';
+    else if(autonomy>=45)autoNote.textContent='Mixed: real desire, but outside pressure is shaping things. Worth separating the voices below.';
+    else autoNote.textContent='Pressure is outweighing your own desire here. Be gentle — the voice tool below may help you find your own again.';
+  }
+  if(A.set){A.set('desire',String(d));A.set('pressure',String(p));}
 }
-function setStatus(msg){if(status)status.textContent=msg;}
-var timer=null;
-function flash(msg){
-  setStatus(msg);
-  if(timer)clearTimeout(timer);
-  timer=setTimeout(function(){setStatus('Saved only on this device.');},1400);
+if(desire&&pressure){
+  var sd=A.get?A.get('desire',''):'';if(sd!=='')desire.value=sd;
+  var sp=A.get?A.get('pressure',''):'';if(sp!=='')pressure.value=sp;
+  pdUpdate();desire.addEventListener('input',pdUpdate);pressure.addEventListener('input',pdUpdate);
 }
 
-// Prompt labels, for the copy/export feature
-var prompts=[];
-for(var i=0;i<N;i++){
-  var lbl=document.querySelector('label[for="rf'+i+'"]');
-  prompts.push(lbl?lbl.textContent:('Prompt '+(i+1)));
-  (function(i){
-    var t=document.getElementById('rf'+i);
-    if(!t)return;
-    fields.push(t);
-    try{t.value=localStorage.getItem(k+i)||'';}catch(e){}
-    t.addEventListener('input',function(){
-      try{localStorage.setItem(k+i,t.value);}catch(e){}
-      flash('Saved ✓');renderProgress();
-    });
-  })(i);
-}
-renderProgress();
+/* ---------- Voices ---------- */
+var vIn=document.getElementById('vIn'),vOut=document.getElementById('vOut');
+if(vIn&&A.get){vIn.value=A.get('vIn','');vIn.addEventListener('input',function(){A.set('vIn',vIn.value);});}
+if(vOut&&A.get){vOut.value=A.get('vOut','');vOut.addEventListener('input',function(){A.set('vOut',vOut.value);});}
 
-var copyBtn=document.getElementById('copyBtn');
+/* ---------- Clarity checklist ---------- */
+var clarWrap=document.getElementById('clarity');
+var boxes=clarWrap?[].slice.call(clarWrap.querySelectorAll('input[type=checkbox]')):[];
+var clarBar=document.getElementById('clarBar'),clarCount=document.getElementById('clarCount');
+function clarRender(){var n=0;boxes.forEach(function(b){if(b.checked)n++;});if(A.meter)A.meter(clarBar,n/boxes.length*100);if(clarCount)clarCount.textContent=n+' of '+boxes.length+' signs of clarity present.';}
+if(boxes.length){
+  var cs=A.getJSON?A.getJSON('clarity',{}):{};cs=cs||{};
+  boxes.forEach(function(b){var k=b.getAttribute('data-key');b.checked=!!cs[k];b.addEventListener('change',function(){cs[k]=b.checked;if(A.setJSON)A.setJSON('clarity',cs);clarRender();});});
+  clarRender();
+}
+
+/* ---------- Report: save / copy / clear ---------- */
+var ta=document.getElementById('reflect'),status=document.getElementById('saveStatus'),timer=null;
+function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='Saved only on this device.';},1500);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set){A.set('reflect',ta.value);}flash('Saved ✓');});
 if(copyBtn)copyBtn.addEventListener('click',function(){
-  var lines=[];
-  fields.forEach(function(t,i){
-    lines.push(prompts[i]);
-    lines.push((t.value||'').trim()||'(left blank)');
-    lines.push('');
-  });
-  var text='“Is This My Choice?” — my reflections\n\n'+lines.join('\n');
-  function done(){flash('Copied to clipboard ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallback(text,done);});
-  }else{fallback(text,done);}
+  var d=desire?+desire.value:0,p=pressure?+pressure.value:0,autonomy=Math.round((d+(100-p))/2);
+  var lines=['"Is This My Choice?" — my clarity report',''];
+  lines.push('Inner desire: '+d+'%   Outside pressure: '+p+'%   Autonomy reading: '+autonomy+'%');
+  var n=boxes.filter(function(b){return b.checked;}).length;lines.push('Signs of clarity present: '+n+' of '+boxes.length);
+  if(vIn&&vIn.value.trim())lines.push('','My own voice:',vIn.value.trim());
+  if(vOut&&vOut.value.trim())lines.push('','External voices:',vOut.value.trim());
+  if(ta&&ta.value.trim())lines.push('','My notes:',ta.value.trim());
+  if(A.copy)A.copy(lines.join('\n'),copyBtn);
 });
-function fallback(text,done){
-  try{
-    var ta=document.createElement('textarea');
-    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.focus();ta.select();
-    document.execCommand('copy');document.body.removeChild(ta);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
-
-var clearAllBtn=document.getElementById('clearAllBtn');
-if(clearAllBtn)clearAllBtn.addEventListener('click',function(){
-  if(!window.confirm('Clear all your reflections on this device? This cannot be undone.'))return;
-  fields.forEach(function(t,i){t.value='';try{localStorage.removeItem(k+i);}catch(e){}});
-  flash('All cleared.');renderProgress();
-  if(fields[0])fields[0].focus();
+if(clearBtn)clearBtn.addEventListener('click',function(){
+  if(!window.confirm('Clear everything on this device? This cannot be undone.'))return;
+  [ta,vIn,vOut].forEach(function(t){if(t)t.value='';});
+  ['reflect','vIn','vOut','desire','pressure'].forEach(function(k){if(A.remove)A.remove(k);});
+  if(A.remove)A.remove('clarity');
+  boxes.forEach(function(b){b.checked=false;});clarRender();
+  if(desire)desire.value=50;if(pressure)pressure.value=50;pdUpdate();
+  flash('All cleared.');
 });
-}catch(e){console.error('project script error',e);}
+}catch(e){console.error('project 005 script error',e);}
 });

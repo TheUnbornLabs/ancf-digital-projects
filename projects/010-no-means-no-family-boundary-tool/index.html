@@ -1,61 +1,80 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“No Means No” Family Boundary Tool · ANCF Digital Projects</title><meta name="description" content="Generate calm, firm, respectful boundary statements for repeated family questions — tailored by tone, relationship, and situation, with techniques for holding them."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“No Means No” Family Boundary Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“No Means No” Family Boundary Tool · ANCF Digital Projects</title><meta name="description" content="Generate tone-based boundary scripts and a WhatsApp-ready message, scan for emotional-blackmail patterns, and follow an escalation ladder."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“No Means No” Family Boundary Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../009-adoption-vs-birth-ethics-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../011-childfree-budget-calculator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 010</span><h2>“No Means No” Family Boundary Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Repeated questions about your choice not to have children can wear you down. Pick a tone, a relationship, and the situation, and this tool drafts a calm, firm boundary you can adapt in your own words — then learn a few techniques for holding it.</p>
+<div class="proj-head"><span class="num">PROJECT 010</span><h2>“No Means No” Family Boundary Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~9 min</span></div></div>
+<p class="lead">Repeated questions about your choice not to have children can wear you down. This tool drafts a calm boundary in the tone you choose, helps you spot emotional blackmail, and gives you a clear escalation ladder — so you can hold your line while protecting the relationship where you can.</p>
 
-<div class="panel"><h3>1. Draft your boundary</h3>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How to phrase a boundary in four tones: gentle, firm, final, or for repeated pressure.</li>
+<li>How to recognise the patterns of emotional blackmail.</li>
+<li>A five-rung escalation ladder, from explaining to seeking support.</li>
+<li>How to keep a WhatsApp-ready message you can reuse.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Boundary script generator</h3>
 <div class="row">
-<div><label class="field" for="tone">Tone</label><select id="tone">
-<option value="warm">Warm but firm</option>
-<option value="brief">Brief and clear</option>
-<option value="humor">Lightly humorous</option>
-</select></div>
-<div><label class="field" for="who">Who you're speaking to</label><select id="who">
-<option value="parent">A parent</option>
-<option value="relative">A relative</option>
-<option value="group">A family group</option>
-<option value="friend">A friend</option>
-</select></div>
+<div><label class="field" for="tone">Tone</label><select id="tone"><option value="gentle">Gentle</option><option value="firm">Firm</option><option value="final">Final</option><option value="repeated">Repeated-pressure</option></select></div>
+<div><label class="field" for="situation">The situation</label><select id="situation"><option value="general">General "when are you having kids?"</option><option value="timeline">Pressing for a timeline</option><option value="changemind">"You'll change your mind"</option><option value="careold">"Who'll look after you when you're old?"</option><option value="duty">Framing it as a family/cultural duty</option><option value="public">Raising it in front of others</option></select></div>
 </div>
-<label class="field" for="situation">The situation</label><select id="situation">
-<option value="general">General "when are you having kids?"</option>
-<option value="timeline">Pressing for a timeline</option>
-<option value="changemind">"You'll change your mind"</option>
-<option value="careold">"Who'll look after you when you're old?"</option>
-<option value="ownkids">"It's different when they're your own"</option>
-<option value="duty">Framing it as a family/cultural duty</option>
-<option value="compare">Comparing you to siblings or others with kids</option>
-<option value="public">Raising it in front of other people</option>
-</select>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy message</button></div>
 <div class="result" id="genOut" role="status" aria-live="polite">Your suggested wording will appear here.</div>
-<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+<p class="note">The message is phrased to be WhatsApp/text-ready — short and copy-pasteable.</p>
 </div>
 
 <div class="panel"><h3>2. Make it yours</h3>
-<label class="field" for="custom">Edit the wording until it sounds like you. The most effective boundary is one you can say naturally.</label>
+<label class="field" for="custom">Edit until it sounds like you, then save. The most effective boundary is one you can say naturally.</label>
 <textarea id="custom" placeholder="Your version… (generated text lands here; edit freely. Saved on this device.)"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="btn-row"><button class="btn" id="copyCustom" type="button">Copy my version</button><button class="btn" id="saveCustom" type="button">Save my line</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
-<div class="panel"><h3>3. How to hold a boundary</h3>
-<p class="note">A boundary is not a single sentence; it's a stance you can repeat. A few techniques:</p>
-<details><summary>The broken record</summary><div><p>You don't need a new argument each time. Calmly repeat the same short line: "I've made my decision, and I'd like to move on." Repetition <em>is</em> the technique.</p></div></details>
-<details><summary>Don't J.A.D.E.</summary><div><p>You are not required to <strong>J</strong>ustify, <strong>A</strong>rgue, <strong>D</strong>efend, or <strong>E</strong>xplain. Over-explaining invites debate. A boundary is a statement, not a request for permission.</p></div></details>
-<details><summary>Name it, then redirect</summary><div><p>"I notice this keeps coming up. I'm not going to discuss it — tell me about your week instead." Acknowledging the pattern can defuse it.</p></div></details>
-<details><summary>The escalation ladder</summary><div><p>Start gentle. If it continues: state the boundary plainly. If it still continues: name a consequence you can keep — "If it keeps coming up, I'll change the subject or head out." Then follow through, calmly.</p></div></details>
-<details><summary>It's okay to step back</summary><div><p>If someone repeatedly ignores your boundary, taking space is a valid, loving response — to yourself. Distance is not the same as cutting off.</p></div></details>
+<div class="panel"><h3>3. Emotional-blackmail detector</h3>
+<p class="note">Paste a message to reflect on. The tool flags common guilt/obligation/fear patterns. A flag is for your clarity — it does not prove anyone meant harm.</p>
+<label class="field" for="bbText">Message to scan</label>
+<textarea id="bbText" placeholder="e.g. “After everything we’ve done for you, the least you could do is give us grandchildren.”"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="bbBtn" type="button">Scan message</button><button class="btn" id="bbClear" type="button">Clear</button></div>
+<div class="meter-card" style="margin-top:8px"><div class="lab"><span>Pattern intensity</span><b id="bbPct">0%</b></div><div class="meter"><span id="bbBar"></span></div></div>
+<div class="result" id="bbOut" role="status" aria-live="polite" style="margin-top:10px">No scan yet.</div>
 </div>
 
-<div class="panel"><h3>When it's more than pressure</h3>
-<p>Most family questions, even tiring ones, come from people who care. But repeated questioning sometimes shades into something heavier: threats, control over your money or living situation, attempts to override decisions about your own body, or pressure that does not stop no matter how clearly you say no. That is no longer ordinary pressure.</p>
-<p>If that is your situation, the techniques above may not be enough on their own — and that is not a failure on your part. It can help to talk it through with someone you trust, or a qualified professional who can support you. You deserve to feel safe in your own relationships, and reaching for support is a sign of strength, not weakness.</p>
+<div class="panel"><h3>4. The escalation ladder</h3>
+<p class="note">Start at the bottom rung. Move up only as needed — each step is calm and reversible.</p>
+<div class="decision"><strong>1. Explain once.</strong> State your boundary clearly, one time. You don't owe a debate.</div>
+<div class="decision"><strong>2. Repeat (broken record).</strong> Calmly repeat the same short line, without new arguments.</div>
+<div class="decision"><strong>3. Limit the topic.</strong> "I'm not discussing this — let's talk about something else."</div>
+<div class="decision"><strong>4. Leave the conversation.</strong> "I'm going to step away for now." Then follow through, kindly.</div>
+<div class="decision"><strong>5. Seek support.</strong> If pressure is relentless or turns to threats or control, talk to someone you trust or a professional. You deserve support.</div>
 </div>
 
-<div class="panel"><h3>In closing</h3>
-<p>A good boundary is calm, short, and repeatable — and it protects the relationship as much as it protects you. You are allowed to decide what you will and won't discuss. Saying "no" kindly, and meaning it, is a complete sentence.</p>
+<div class="panel"><h3>5. Quick check</h3>
+<p class="note">Two questions on holding a boundary. Pick one each, then read the explanations.</p>
+<div id="quiz">
+<div class="quiz-q"><strong>1. "Don't J.A.D.E." means you don't have to…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Justify, Argue, Defend, or Explain</div><div class="opt" data-q="0" data-i="1">Be polite</div><div class="opt" data-q="0" data-i="2">Have a boundary</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. If pressure turns into threats or control, the healthiest move is to…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Argue harder</div><div class="opt" data-q="1" data-i="1">Step back and seek support</div><div class="opt" data-q="1" data-i="2">Give in</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>6. Your reflection</h3>
+<label class="field" for="reflect">Which boundary do you most want to hold — and what makes it hard?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button><button class="btn" id="copyRef" type="button">Copy</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>A good boundary is calm, short, and repeatable — and it protects the relationship as much as it protects you. Saying "no" kindly, and meaning it, is a complete sentence. If a boundary is met with threats or control rather than disappointment, that is no longer ordinary pressure, and reaching for support is strength, not failure.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Name the pressure source</span></a>
+<a href="../042-emotional-blackmail-detector/index.html">Emotional Blackmail Detector<span>Spot guilt patterns</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">"When Are You Having Kids?" Reply Tool<span>Quick kind replies</span></a>
+<a href="../049-elder-advice-response-tool/index.html">Elder Advice Response Tool<span>Honour elders, keep your line</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../009-adoption-vs-birth-ethics-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../011-childfree-budget-calculator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

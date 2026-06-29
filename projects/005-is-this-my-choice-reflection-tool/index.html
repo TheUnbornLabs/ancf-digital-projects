@@ -1,16 +1,71 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“Is This My Choice?” Reflection Tool · ANCF Digital Projects</title><meta name="description" content="Private writing prompts to separate your own wishes from inherited expectations."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“Is This My Choice?” Reflection Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../004-parenthood-assumption-quiz/index.html">← Previous</a><a class="btn btn-primary" href="../006-reproductive-autonomy-explainer/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 005</span><h2>“Is This My Choice?” Reflection Tool</h2><div><span class="cat">Childfree Life</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">These prompts are just for you. Nothing is sent anywhere; your words stay on this device. Answer as honestly as feels safe.</p>
-<div class="panel"><h3>Why separate your wishes from inherited expectations?</h3><p>Most of us absorb a "default script" about children long before we ever examine it — from family, culture, religion, and friends. That script is not wrong, but it is not automatically <em>yours</em>. The aim of this exercise is simple: to tell the difference between what <strong>you</strong> want and what you have been told to want.</p><p>There are no correct answers, and nothing here decides anything for you. Writing a feeling down often makes it easier to see clearly. Move through the prompts at your own pace.</p></div>
-<div class="panel"><h3>Is it mine, or inherited?</h3>
-<p class="note">A wish can be genuinely yours, genuinely inherited, or both at once. These contrasts aren't a verdict — just clues to hold lightly as you write.</p>
-<div class="kv">
-<strong>Often inherited</strong><span>Comes with words like "should," "supposed to," or "everyone." Tends to ease when you imagine no one judging.</span>
-<strong>Often your own</strong><span>Stays steady whether or not anyone approves. Survives the question "and what do <em>I</em> actually want?"</span>
-<strong>Inherited fear</strong><span>Driven by imagined disappointment from others, or a vague dread of "missing out" defined by someone else.</span>
-<strong>Your own caution</strong><span>Based on your real circumstances, values, and honest self-knowledge — not on a script handed to you.</span>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“Is This My Choice?” Reflection Tool · ANCF Digital Projects</title><meta name="description" content="Separate your own wishes from inherited expectations: a pressure-vs-desire graph, an autonomy meter, an internal-vs-external voice tool, a clarity checklist, and a saved clarity report."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“Is This My Choice?” Reflection Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../004-parenthood-assumption-quiz/index.html">← Previous</a><a class="btn btn-primary" href="../006-reproductive-autonomy-explainer/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 005</span><h2>“Is This My Choice?” Reflection Tool</h2><div><span class="cat">Childfree Life</span> <span class="note">· Difficulty: Beginner · ~9 min</span></div></div>
+<p class="lead">This tool helps you tell the difference between what <strong>you</strong> want and what you have been told to want. Everything stays on this device. There are no correct answers — only a clearer view of your own decision.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How your <strong>desire</strong> and the <strong>pressure</strong> you feel compare, side by side.</li>
+<li>An autonomy reading: how much this choice feels like yours right now.</li>
+<li>How to separate your internal voice from the external voices around you.</li>
+<li>Which signs of decision-clarity are already present for you.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Pressure vs desire</h3>
+<p class="note">Set each slider honestly. Saved on this device.</p>
+<div class="slider-row"><div class="lab"><label for="desire">How much I want this, from inside</label><output id="o-desire">50%</output></div><input type="range" id="desire" min="0" max="100" step="5" value="50"></div>
+<div class="slider-row"><div class="lab"><label for="pressure">How much outside pressure I feel</label><output id="o-pressure">50%</output></div><input type="range" id="pressure" min="0" max="100" step="5" value="50"></div>
+<svg class="chart" id="pdChart" role="img" aria-label="Bar chart comparing your inner desire with the outside pressure you feel."></svg>
+<p class="chart-cap">Bar chart: your inner desire compared with outside pressure.</p>
+<div class="meter-card" style="margin-top:10px"><div class="lab"><span>Autonomy reading</span><b id="autoPct">50%</b></div><div class="meter"><span id="autoBar"></span></div></div>
+<p class="note" id="autoNote" role="status" aria-live="polite" style="margin-top:8px"></p>
 </div>
-<p class="note">Most people find a mix. Untangling them is the work; you don't have to finish it today.</p>
+
+<div class="panel"><h3>2. Internal voice vs external voice</h3>
+<p class="note">Write the two apart. Seeing them side by side often reveals which is really yours.</p>
+<div class="row">
+<div><label class="field" for="vIn">My own voice says…</label><textarea id="vIn" placeholder="What do I actually feel and want?"></textarea></div>
+<div><label class="field" for="vOut">External voices say…</label><textarea id="vOut" placeholder="What do family, culture, or fear say I 'should' do?"></textarea></div>
 </div>
-<div class="panel"><label class="field" for="rf0">If no one I love had any opinion about it, what would I want about having children?</label><textarea id="rf0" placeholder="Your reflection (saved on this device)…"></textarea></div><div class="panel"><label class="field" for="rf1">Whose voice do I hear when I imagine being judged for my choice?</label><textarea id="rf1" placeholder="Your reflection (saved on this device)…"></textarea></div><div class="panel"><label class="field" for="rf2">What would change in my daily life if I fully trusted my own decision?</label><textarea id="rf2" placeholder="Your reflection (saved on this device)…"></textarea></div><div class="panel"><label class="field" for="rf3">What is one small step that would honour what I actually want?</label><textarea id="rf3" placeholder="Your reflection (saved on this device)…"></textarea></div><div class="panel"><label class="field" for="rf4">What am I afraid people would think — and how likely is that fear to actually come true?</label><textarea id="rf4" placeholder="Your reflection (saved on this device)…"></textarea></div><div class="panel"><label class="field" for="rf5">A year from now, having honoured this choice, what do I picture noticing about my life?</label><textarea id="rf5" placeholder="Your reflection (saved on this device)…"></textarea></div>
-<div class="panel"><div class="progress" aria-hidden="true"><span id="rfBar"></span></div><p class="note" id="rfCount" role="status" aria-live="polite">0 of 6 prompts written so far.</p><div class="proj-nav"><button class="btn" id="copyBtn" type="button">Copy my answers</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved only on this device.</span></div><p class="note">Tip: your notes live in this browser only. If you use private/incognito mode, they clear when you close the tab — use “Copy my answers” to keep them somewhere safe.</p></div>
-<div class="panel"><h3>A gentle closing</h3><p>Whatever you wrote, notice this: you took time to ask what <em>you</em> actually want. That is what reproductive autonomy looks like in practice — not a particular answer, but the freedom to reach your own. You can return to these prompts whenever the question feels alive again.</p><p class="note">If these reflections stir up distress that feels hard to carry alone, please consider reaching out to someone you trust or a qualified professional. You deserve support.</p></div>
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../004-parenthood-assumption-quiz/index.html">← Previous</a><a class="btn btn-primary" href="../006-reproductive-autonomy-explainer/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</div>
+
+<div class="panel"><h3>3. Decision-clarity checklist</h3>
+<p class="note">Tick what feels true right now. This is a clarity reading, not a pass/fail. Saved on this device.</p>
+<div id="clarity">
+<label class="check"><input type="checkbox" data-key="know"> I can say clearly what I want.</label>
+<label class="check"><input type="checkbox" data-key="reasons"> I can state my reasons in my own words.</label>
+<label class="check"><input type="checkbox" data-key="steady"> My answer stays steady whether or not others approve.</label>
+<label class="check"><input type="checkbox" data-key="opposite"> I've honestly considered the strongest opposite case.</label>
+<label class="check"><input type="checkbox" data-key="owe"> I don't feel I owe anyone a justification.</label>
+<label class="check"><input type="checkbox" data-key="revisit"> I can revisit this gently later without fear.</label>
+</div>
+<div class="meter" aria-hidden="true"><span id="clarBar"></span></div>
+<p class="note" id="clarCount" role="status" aria-live="polite">0 of 6 signs of clarity present.</p>
+</div>
+
+<div class="panel"><h3>4. Scenario</h3>
+<div class="decision"><p><strong>Imagine:</strong> you make this decision and tell no one at all. No approval, no disapproval — just you and the choice.</p><p class="note">Notice your body's first reaction. Relief usually points toward your own voice; dread often points toward an external one. Sit with whichever shows up — there is no wrong answer.</p></div>
+</div>
+
+<div class="panel"><h3>5. Your clarity report</h3>
+<label class="field" for="reflect">Anything you want to add in your own words?</label>
+<textarea id="reflect" placeholder="Optional — your own notes."></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my clarity report</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved only on this device.</span></div>
+<p class="note">The report gathers your desire/pressure, autonomy reading, clarity signs, and notes. Saved on this device only.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Autonomy is not a particular answer — it is the freedom to reach your own. Whatever you concluded, you took time to ask what <em>you</em> actually want, and that is the whole practice. You can return whenever the question feels alive again.</p>
+<p class="note">If these reflections stir up distress that feels hard to carry alone, please consider reaching out to someone you trust or a qualified professional. You deserve support.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy Explainer<span>What a free choice needs</span></a>
+<a href="../002-childfree-life-intro-guide/index.html">Childfree Life Intro Guide<span>Map your values</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protect your peace</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Name the pressure</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../004-parenthood-assumption-quiz/index.html">← Previous</a><a class="btn btn-primary" href="../006-reproductive-autonomy-explainer/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

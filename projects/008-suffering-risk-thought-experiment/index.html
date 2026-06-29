@@ -1,60 +1,85 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Suffering Risk Thought Experiment · ANCF Digital Projects</title><meta name="description" content="A structured thought experiment about risk, certainty, and creating a life — with an interactive risk-tolerance slider and guided prompts."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Suffering Risk Thought Experiment</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Suffering Risk Thought Experiment · ANCF Digital Projects</title><meta name="description" content="A philosophical reflection on risk and creating a life: a four-factor risk simulator, a risk-vs-benefit tension graph, and thought-experiment cards."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Suffering Risk Thought Experiment</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../007-consent-and-birth-philosophy-page/index.html">← Previous</a><a class="btn btn-primary" href="../009-adoption-vs-birth-ethics-explainer/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 008</span><h2>Suffering Risk Thought Experiment</h2><div><span class="cat">Philosophy</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">This is a reflection exercise, not a test. It explores one of the hardest questions in birth ethics: when you decide for a future person who cannot choose, how much risk of suffering is acceptable? Use the slider to make the abstraction concrete, then sit with the prompts.</p>
+<div class="proj-head"><span class="num">PROJECT 008</span><h2>Suffering Risk Thought Experiment</h2><div><span class="cat">Philosophy</span> <span class="note">· Difficulty: Intermediate · ~11 min</span></div></div>
+<p class="lead">This is a reflection exercise, not a test or a forecast. It explores one of the hardest questions in birth ethics: when you decide for a future person who cannot choose, how much risk of suffering is acceptable? The simulator makes the trade-off visible instead of automatic.</p>
 
-<div class="panel"><h3>1. The set-up</h3>
-<p>Imagine you are deciding, on behalf of a person who does not yet exist, whether they will be born. You cannot ask them. You cannot guarantee a good outcome. You only know that their life will contain <em>some</em> joy and <em>some</em> suffering, in proportions you cannot control.</p>
-<p>The exercise pulls on three tensions worth naming as you think:</p>
-<ul class="clean">
-<li><strong>Certainty vs. probability</strong> — does a <em>guaranteed</em> small harm feel different from a <em>possible</em> large one?</li>
-<li><strong>Deciding for another</strong> — does choosing on someone else's behalf raise the bar compared with taking a risk yourself?</li>
-<li><strong>The veil</strong> — if you did not know <em>which</em> life you'd be born into, what risk would you accept?</li>
-</ul>
+<p class="disclaimer">This is philosophical reflection, <strong>not a prediction</strong> about any real person or pregnancy. The numbers are tools for thinking, not forecasts — and this is not medical, legal, financial, or mental health advice.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How four factors — serious suffering, ordinary hardship, strong happiness, and uncertainty — shape the picture.</li>
+<li>How a risk/benefit "tension" reads when you weight serious harm more heavily.</li>
+<li>The main philosophical lenses: expected value, precaution, and non-aggregation.</li>
+<li>Why thoughtful people disagree here without bad faith on any side.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Risk simulator</h3>
+<p class="note">Set how likely you imagine each outcome is for a hypothetical life. These are independent estimates for reflection — they need not add to 100. Saved on this device.</p>
+<div id="sim">
+<div class="slider-row"><div class="lab"><label for="r-suffer">Chance of serious suffering</label><output id="o-suffer">20%</output></div><input type="range" id="r-suffer" data-axis="Serious suffering" min="0" max="100" step="5" value="20"></div>
+<div class="slider-row"><div class="lab"><label for="r-hardship">Chance of ordinary hardship</label><output id="o-hardship">60%</output></div><input type="range" id="r-hardship" data-axis="Ordinary hardship" min="0" max="100" step="5" value="60"></div>
+<div class="slider-row"><div class="lab"><label for="r-happy">Chance of strong happiness</label><output id="o-happy">70%</output></div><input type="range" id="r-happy" data-axis="Strong happiness" min="0" max="100" step="5" value="70"></div>
+<div class="slider-row"><div class="lab"><label for="r-uncertain">Uncertainty level</label><output id="o-uncertain">50%</output></div><input type="range" id="r-uncertain" data-axis="Uncertainty" min="0" max="100" step="5" value="50"></div>
+</div>
+<svg class="chart" id="outChart" role="img" aria-label="Bar chart of the chances of serious suffering, ordinary hardship, and strong happiness."></svg>
+<p class="chart-cap">Bar chart: your estimated chances of each outcome.</p>
 </div>
 
-<div class="panel"><h3>2. The risk slider</h3>
-<label class="field" for="riskSlider">Suppose you must decide for a future person. What chance of a seriously hard life is still acceptable to you, to justify creating them?</label>
-<input type="range" id="riskSlider" min="0" max="100" step="5" value="25" aria-describedby="riskOut">
-<div class="progress" aria-hidden="true"><span id="riskBar"></span></div>
-<div class="result" id="riskOut" role="status" aria-live="polite"></div>
-<p class="note">There is no correct number. The point is to notice where your own line sits — and why moving it feels uncomfortable.</p>
+<div class="panel"><h3>2. Risk vs benefit tension</h3>
+<p class="note">This weights serious suffering most heavily, ordinary hardship less, against the pull of strong happiness. It is one way to frame the tension — not a verdict.</p>
+<svg class="chart" id="rbChart" role="img" aria-label="Bar chart comparing weighted risk against benefit."></svg>
+<div class="meter-card" style="margin-top:8px"><div class="lab"><span>Tension reading</span><b id="tenPct">0%</b></div><div class="meter"><span id="tenBar"></span></div></div>
+<p class="note" id="tenNote" role="status" aria-live="polite" style="margin-top:8px"></p>
 </div>
 
-<div class="panel"><h3>3. Guided reflection</h3>
-<p class="note">Four prompts. Sit with each and notice your reasoning, not just your conclusion. Saved on this device only.</p>
-<label class="field" for="rf0">Imagine you could guarantee a life of mostly joy but with some unavoidable pain. Would the guarantee change your view? Why?</label>
-<textarea id="rf0" placeholder="Your reflection…"></textarea>
-<label class="field" for="rf1">Now remove the guarantee — outcomes are uncertain. Does uncertainty itself carry moral weight?</label>
-<textarea id="rf1" placeholder="Your reflection…"></textarea>
-<label class="field" for="rf2">Does the possibility of great meaning offset the certainty of some suffering, in your view?</label>
-<textarea id="rf2" placeholder="Your reflection…"></textarea>
-<label class="field" for="rf3">What would you want someone to consider before making this decision for a future person?</label>
-<textarea id="rf3" placeholder="Your reflection…"></textarea>
-<div class="proj-nav"><button class="btn btn-primary" id="copyBtn" type="button">Copy my answers</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved only on this device.</span></div>
+<div class="panel"><h3>3. Thought-experiment cards</h3>
+<p class="note">Four lenses. Tap each to open.</p>
+<details><summary>The veil of ignorance</summary><div><p>If you did not know <em>which</em> life you'd be born into — the luckiest or the hardest — what level of risk would you accept before agreeing to the gamble?</p></div></details>
+<details><summary>Deciding for another</summary><div><p>Taking a risk for yourself is one thing. Does choosing on behalf of someone who cannot be asked raise the bar for justification?</p></div></details>
+<details><summary>Certainty vs probability</summary><div><p>Does a <em>guaranteed</em> small harm feel morally different from a <em>possible</em> large one, even if the "expected" amount of harm is the same?</p></div></details>
+<details><summary>Non-aggregation</summary><div><p>Can one person's joy really "cancel out" another person's severe suffering? If not, averages and expected values may miss something that matters.</p></div></details>
 </div>
 
 <div class="panel"><h3>4. Frames philosophers use</h3>
-<p class="note">Different lenses pull the answer in different directions. Tap to expand.</p>
-<details><summary>Expected value</summary><div><p>Weigh each outcome by its probability and add them up. On this view, a high chance of a good life can outweigh a small chance of a bad one — the logic behind most everyday risk-taking.</p></div></details>
-<details><summary>The precautionary view</summary><div><p>Some harms are so severe that you should avoid imposing any real risk of them, regardless of the upside. Here, "it'll probably be fine" is not enough.</p></div></details>
-<details><summary>Non-aggregation</summary><div><p>Perhaps one person's severe suffering cannot simply be "cancelled out" by another's joy. If so, averages and expected values miss something morally important.</p></div></details>
-<details><summary>Optimism &amp; agency</summary><div><p>A future person is not a passive recipient of risk — they can find meaning, reduce suffering, and shape their own life. This is a serious reply to the precautionary view.</p></div></details>
-</div>
-
-<div class="panel"><h3>Key distinctions</h3>
-<p class="note">Three pairs that sharpen the discussion — many disagreements dissolve once you say which one you mean.</p>
 <div class="kv">
-<strong>Risk vs. uncertainty</strong><span>Risk is when you can estimate the odds; uncertainty is when you genuinely cannot. Birth arguably involves both — and they may carry different moral weight.</span>
-<strong>Harm vs. wrong</strong><span>An outcome can be harmful without anyone acting wrongly, and an act can be wrong even if it happens to turn out well. The slider asks about harm; the ethics asks about wrong.</span>
-<strong>Precaution vs. paralysis</strong><span>Taking serious risks seriously is wise; refusing every risk would forbid most of life. The hard part is where to draw the line, not whether to draw one.</span>
+<strong>Expected value</strong><span>Weigh each outcome by its probability and sum. A likely good life can outweigh a small chance of a bad one.</span>
+<strong>Precaution</strong><span>Some harms are severe enough to avoid imposing any real risk of, regardless of upside.</span>
+<strong>Non-aggregation</strong><span>One person's severe suffering may not be offset by another's joy — so totals can mislead.</span>
 </div>
 </div>
 
-<div class="panel"><h3>In closing</h3>
-<p>Notice that the difficulty does not come from bad faith on any side — it comes from genuinely competing intuitions about risk, certainty, and deciding for someone else. Whatever number your slider landed on, you have just done the thing the exercise asks for: you made the trade-off visible instead of automatic.</p>
+<div class="panel"><h3>5. Quick check</h3>
+<p class="note">Three distinctions. Pick one each, then read the explanations.</p>
+<div id="quiz">
+<div class="quiz-q"><strong>1. "Risk" differs from "uncertainty" because…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">They are identical</div><div class="opt" data-q="0" data-i="1">Risk means you can estimate odds; uncertainty means you genuinely can't</div><div class="opt" data-q="0" data-i="2">Uncertainty is always larger</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The precautionary view says…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Always maximise expected value</div><div class="opt" data-q="1" data-i="1">Avoid imposing any real risk of severe harm, regardless of upside</div><div class="opt" data-q="1" data-i="2">Ignore risk entirely</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. This simulator is…</strong><div class="opts">
+<div class="opt" data-q="2" data-i="0">A prediction about a real pregnancy</div><div class="opt" data-q="2" data-i="1">A reflection tool for thinking, not a forecast</div><div class="opt" data-q="2" data-i="2">Medical advice</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>6. Your reflection</h3>
+<label class="field" for="reflect">What, for you, would be too much risk to impose on another — and why?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear reflection</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>The difficulty here does not come from bad faith on any side — it comes from genuinely competing intuitions about risk, certainty, and deciding for someone else. Whatever your sliders showed, you have done the thing the exercise asks: you made the trade-off visible instead of automatic.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../027-risk-argument-explainer/index.html">Risk Argument Explainer<span>Risk &amp; uncertainty in depth</span></a>
+<a href="../007-consent-and-birth-philosophy-page/index.html">Consent &amp; Birth Philosophy<span>Who decides the risk</span></a>
+<a href="../025-benatar-argument-explainer/index.html">Benatar Argument Explainer<span>The asymmetry</span></a>
+<a href="../001-antinatalism-intro-guide/index.html">Antinatalism Intro Guide<span>The bigger picture</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../007-consent-and-birth-philosophy-page/index.html">← Previous</a><a class="btn btn-primary" href="../009-adoption-vs-birth-ethics-explainer/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>
