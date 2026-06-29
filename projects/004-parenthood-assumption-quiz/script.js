@@ -3,7 +3,10 @@ try{
 var Q=[
 {"answer":1,"explain":"Curiosity and respect keep the relationship open; the others assume the choice is a mistake."},
 {"answer":1,"explain":"A couple, friends, or a person and their community can all be a family."},
-{"answer":1,"explain":"It is a legitimate, stable choice that deserves the same respect as choosing to parent."}
+{"answer":1,"explain":"It is a legitimate, stable choice that deserves the same respect as choosing to parent."},
+{"answer":1,"explain":"The comment bundles two assumptions: that 'family' requires children, and that a real career crowds out a full life."},
+{"answer":1,"explain":"Leaving room for the unknown — choice, timing, infertility, or loss — is the kindest default."},
+{"answer":2,"explain":"Acknowledging without minimising or silver-lining respects their experience; the other replies, though well-meant, can sting."}
 ];
 var picks={};
 var opts=document.querySelectorAll('.opt');

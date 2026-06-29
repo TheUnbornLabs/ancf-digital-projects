@@ -2,28 +2,50 @@ document.addEventListener('DOMContentLoaded',function(){
 try{
 var base='ancf-'+location.pathname;
 
-// Reflection textarea
+/* ---------- Reflection tool ---------- */
 var t=document.getElementById('reflect');
 var status=document.getElementById('saveStatus');
+var saveBtn=document.getElementById('saveBtn');
+var copyBtn=document.getElementById('copyBtn');
 var clearBtn=document.getElementById('clearBtn');
+var timer=null;
+function flash(msg){
+  if(!status)return;
+  status.textContent=msg;
+  if(timer)clearTimeout(timer);
+  timer=setTimeout(function(){status.textContent='';},1600);
+}
 if(t){
-  var k=base;
-  function setStatus(msg){if(status)status.textContent=msg;}
-  try{t.value=localStorage.getItem(k)||'';}catch(e){}
-  var timer=null;
-  t.addEventListener('input',function(){
-    try{localStorage.setItem(k,t.value);}catch(e){}
-    setStatus('Saved ✓');
-    if(timer)clearTimeout(timer);
-    timer=setTimeout(function(){setStatus('Saved only on this device.');},1200);
-  });
-  if(clearBtn){clearBtn.addEventListener('click',function(){
-    t.value='';try{localStorage.removeItem(k);}catch(e){}
-    setStatus('Cleared.');t.focus();
-  });}
+  try{t.value=localStorage.getItem(base)||'';}catch(e){}
+  t.addEventListener('input',function(){try{localStorage.setItem(base,t.value);}catch(e){}});
+}
+if(saveBtn)saveBtn.addEventListener('click',function(){
+  try{localStorage.setItem(base,t.value);}catch(e){}
+  flash('Saved ✓');
+});
+if(clearBtn)clearBtn.addEventListener('click',function(){
+  if(t.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;
+  t.value='';try{localStorage.removeItem(base);}catch(e){}
+  flash('Cleared.');t.focus();
+});
+if(copyBtn)copyBtn.addEventListener('click',function(){
+  var text=(t.value||'').trim();
+  if(!text){flash('Nothing to copy yet.');return;}
+  function done(){flash('Copied ✓');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});
+  }else{fallbackCopy(text,done);}
+});
+function fallbackCopy(text,done){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);done();
+  }catch(e){flash('Copy not supported — select the text manually.');}
 }
 
-// Sources-of-meaning self-inventory
+/* ---------- Sources-of-meaning self-inventory ---------- */
 var list=document.getElementById('meaningList');
 if(list){
   var boxes=list.querySelectorAll('input[type=checkbox]');
