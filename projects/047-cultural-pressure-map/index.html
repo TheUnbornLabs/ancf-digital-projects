@@ -1,32 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cultural Pressure Map · ANCF Digital Projects</title><meta name="description" content="An interactive map of where reproductive pressure comes from — rate how strongly each source presses on you and see your personal map. Reflective, on-device only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Cultural Pressure Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cultural Pressure Map · ANCF Digital Projects</title><meta name="description" content="An interactive map of where reproductive pressure comes from — rate how strongly each source presses on you and see your personal radar. Reflective, on-device only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Cultural Pressure Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../046-social-shame-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../048-wedding-pressure-dialogue-simulator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 047</span><h2>Cultural Pressure Map</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Pressure to have children comes from many "regions" at once. This is a reflective map of common sources — and an interactive one: rate how strongly each presses on <em>you</em> to see your own map. It's about patterns, never a claim about any specific person or culture. Everything stays on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 047</span><h2>Cultural Pressure Map</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
+<p class="lead">Reproductive pressure rarely comes from one place. This tool maps the common sources so you can see where it's strongest <em>for you</em> — turning a vague heaviness into a clear picture you can name and navigate.</p>
 
-<div class="panel"><h3>Map your pressure</h3>
-<p class="note">For each source, tap how strong it feels for you. Read the note for context. Saved on this device.</p>
-<div id="map">
-<div class="quiz-q" data-key="elders"><strong>Family elders</strong> — <span class="note">often the loudest source, usually rooted in love and worry about your future.</span><div class="opts">
-<div class="opt" data-key="elders" data-v="0">None</div><div class="opt" data-key="elders" data-v="1">Some</div><div class="opt" data-key="elders" data-v="2">Strong</div></div></div>
-<div class="quiz-q" data-key="peers"><strong>Peers &amp; timelines</strong> — <span class="note">comparison with friends' milestones can create quiet urgency.</span><div class="opts">
-<div class="opt" data-key="peers" data-v="0">None</div><div class="opt" data-key="peers" data-v="1">Some</div><div class="opt" data-key="peers" data-v="2">Strong</div></div></div>
-<div class="quiz-q" data-key="work"><strong>Workplace &amp; status</strong> — <span class="note">assumptions that "settling down" signals maturity or stability.</span><div class="opts">
-<div class="opt" data-key="work" data-v="0">None</div><div class="opt" data-key="work" data-v="1">Some</div><div class="opt" data-key="work" data-v="2">Strong</div></div></div>
-<div class="quiz-q" data-key="media"><strong>Media &amp; advertising</strong> — <span class="note">stories that equate fulfilment with parenthood.</span><div class="opts">
-<div class="opt" data-key="media" data-v="0">None</div><div class="opt" data-key="media" data-v="1">Some</div><div class="opt" data-key="media" data-v="2">Strong</div></div></div>
-<div class="quiz-q" data-key="community"><strong>Religious &amp; community norms</strong> — <span class="note">shared expectations that can feel like obligations — worth engaging respectfully.</span><div class="opts">
-<div class="opt" data-key="community" data-v="0">None</div><div class="opt" data-key="community" data-v="1">Some</div><div class="opt" data-key="community" data-v="2">Strong</div></div></div>
-<div class="quiz-q" data-key="inner"><strong>Your own inner voice</strong> — <span class="note">internalised pressure that now sounds like your own thoughts.</span><div class="opts">
-<div class="opt" data-key="inner" data-v="0">None</div><div class="opt" data-key="inner" data-v="1">Some</div><div class="opt" data-key="inner" data-v="2">Strong</div></div></div>
-</div>
-<div class="result" id="mapOut" role="status" aria-live="polite">Rate the sources above to see your map.</div>
-<div class="proj-nav"><span class="spacer"></span><button class="btn" id="resetBtn" type="button">Reset map</button></div>
-</div>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The six common sources of cultural pressure.</li>
+<li>How to rate and compare their pull on you.</li>
+<li>Why a clear map makes pressure easier to handle.</li>
+</ul></div>
 
-<div class="panel"><h3>What to do with your map</h3>
-<p>Seeing where pressure concentrates is the first step to handling it. The loudest region is usually the one to prepare for — a ready reply for elders, a muted feed if it's media, a chosen community if it's belonging. And if your strongest source is the <em>inner voice</em>, that's worth noticing too: some of what feels like your own conviction may be borrowed, and you're allowed to question it gently.</p>
+<div class="panel"><h3>1. Build your map</h3>
+<p class="note">Rate how strongly each source presses on you: 0 none → 4 strong. Saved on this device.</p>
+<div id="sources">
+<div class="slider-row"><div class="lab"><label for="m-family">Family</label><output id="o-family">0</output></div><input type="range" id="m-family" data-axis="Family" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="m-faith">Religion / community</label><output id="o-faith">0</output></div><input type="range" id="m-faith" data-axis="Community" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="m-media">Media</label><output id="o-media">0</output></div><input type="range" id="m-media" data-axis="Media" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="m-peers">Peers</label><output id="o-peers">0</output></div><input type="range" id="m-peers" data-axis="Peers" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="m-tradition">Tradition</label><output id="o-tradition">0</output></div><input type="range" id="m-tradition" data-axis="Tradition" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="m-gender">Gender norms</label><output id="o-gender">0</output></div><input type="range" id="m-gender" data-axis="Gender" min="0" max="4" step="1" value="0"></div>
+</div>
+<svg class="chart" id="mapRadar" role="img" aria-label="Radar map of how strongly each cultural source presses on you."></svg>
+<p class="chart-cap">Radar: your personal map of pressure sources.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. A pressure map helps mainly by…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Removing all pressure</div><div class="opt" data-q="0" data-i="1">Turning vague heaviness into something you can name</div><div class="opt" data-q="0" data-i="2">Blaming a group</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Pressure usually comes from…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">One single source</div><div class="opt" data-q="1" data-i="1">Several sources at once</div><div class="opt" data-q="1" data-i="2">Nowhere</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>3. Your reflection</h3>
+<label class="field" for="reflect">Which source is strongest for you — and what's one way to ease it?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>You can't navigate what you can't see. Mapping the sources turns a heavy fog into a handful of nameable pressures — and named pressure is far easier to set boundaries around.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Rate the pressure</span></a>
+<a href="../046-social-shame-explainer/index.html">Social Shame Explainer<span>How shame works</span></a>
+<a href="../045-identity-pressure-reflection-page/index.html">Identity Pressure Reflection<span>Belonging &amp; choice</span></a>
+<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Set boundaries</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../046-social-shame-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../048-wedding-pressure-dialogue-simulator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -1,18 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Platform Game: Boundary Runner · ANCF Digital Projects</title><meta name="description" content="A tiny endless runner about keeping boundaries — hop the red blocks. Big Jump button, Space, or tap, with restart and a saved best."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Platform Game: Boundary Runner</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Platform Game: Boundary Runner · ANCF Digital Projects</title><meta name="description" content="A tiny endless runner about keeping boundaries — hop the blocks. Jump button, Space, or tap, with restart and a saved best."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Platform Game: Boundary Runner</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../062-pong-game-choice-vs-pressure/index.html">← Previous</a><a class="btn btn-primary" href="../064-quiz-game-myth-vs-reality/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 063</span><h2>Platform Game: Boundary Runner</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Hop over the red blocks to "keep your boundaries" and see how far you get. A light endless runner — the blocks are pressures, not people.</p>
-<p class="note">Controls: the big Jump button below, the Space bar, or tap the game.</p>
+<div class="proj-head"><span class="num">PROJECT 063</span><h2>Platform Game: Boundary Runner</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · a 2-min break</span></div></div>
+<p class="lead">Keep running and hop over each obstacle. A tiny endless runner — and a light metaphor for clearing the little hurdles that come at you, one jump at a time.</p>
 
-<div class="game-hud"><span class="pill">Endless runner</span><span class="note" id="scoreLabel">Boundaries kept: 0</span><span class="spacer"></span><button class="btn" id="restart" type="button">Restart</button></div>
-<canvas id="game" aria-label="Endless runner: jump to clear the blocks." role="img"></canvas>
-<div class="game-controls"><button class="btn ctrl" id="jumpBtn" type="button" aria-label="Jump">Jump ⤴</button></div>
-<p class="note" id="status" role="status" aria-live="polite"></p>
+<div class="learn"><h3>How to play</h3>
+<ul>
+<li><strong>Jump:</strong> the Jump button, Space, the Up arrow, or tap the game.</li>
+<li><strong>Goal:</strong> clear the blocks; your distance is your score.</li>
+<li>It speeds up; best is saved on this device.</li>
+</ul></div>
 
-<div class="panel"><h3>The idea behind it</h3>
-<p>Each block is a moment of pressure rolling toward you. You don't fight it — you <em>clear</em> it, and keep running your own way. Every boundary kept is a small win, and the game speeds up just like real life does around the holidays.</p>
+<div class="panel"><h3>Play</h3>
+<div class="game-hud"><span>Distance: <b id="score">0</b></span><span class="spacer"></span><span>Best: <b id="best">0</b></span></div>
+<canvas id="game" width="360" height="200" aria-label="Endless runner. Press Jump or Space to hop over obstacles."></canvas>
+<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" id="jumpBtn" type="button" style="min-width:160px">Jump</button><button class="btn" id="startBtn" type="button">Start</button></div>
+<p class="note" id="msg" role="status" aria-live="polite">Press Start, then Jump (or Space) to hop.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Your reflection</h3>
+<label class="field" for="reflect">What's one small hurdle you'd like to clear this week?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>You don't clear every hurdle at once — just the next one. One steady jump at a time keeps you moving forward.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../061-mini-car-race-game/index.html">Mini Car Race<span>Dodge the blocks</span></a>
+<a href="../067-auntie-uncle-chase-arcade-game/index.html">Auntie/Uncle Chase<span>Collect &amp; dodge</span></a>
+<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>The serious version</span></a>
+<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>Choices, gamified</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../062-pong-game-choice-vs-pressure/index.html">← Previous</a><a class="btn btn-primary" href="../064-quiz-game-myth-vs-reality/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

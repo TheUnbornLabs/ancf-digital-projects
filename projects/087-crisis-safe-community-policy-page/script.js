@@ -1,54 +1,43 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-
-// Copy the full policy
-var POLICY=[
-'CRISIS-SAFE COMMUNITY POLICY (template — adapt for your group)',
+var A=window.ANCF||{};
+var TEMPLATE=[
+'Our community cares about your wellbeing.',
 '',
-'OUR STANCE',
-'We never encourage self-harm or harm to others, and we never shame anyone for struggling. We respond to distress with care and signposting. This community is not a crisis service.',
+'We talk about meaningful, sometimes heavy topics here. This is a place for support and reflection — it cannot replace professional help.',
 '',
-'IF A MEMBER IS STRUGGLING — RESPONSE STEPS',
-'1. Notice and stay calm; take it seriously.',
-'2. Respond with warmth, privately where possible: "I\'m glad you said something. You\'re not alone."',
-'3. Share general support resources (see below).',
-'4. If there is immediate danger, encourage contacting local emergency services right away.',
-'5. Do not amplify graphic content; gently limit detailed descriptions.',
-'6. Never discipline the distress — no warnings or removals for reaching out.',
-'7. Debrief the moderator team and check on each other.',
+'If you are struggling, please reach out to someone you trust or a qualified professional. You deserve support.',
 '',
-'WHAT WE DO: respond kindly and promptly; share resources; keep the space calm; support each other.',
-'WHAT WE DON\'T: diagnose; promise confidentiality we can\'t guarantee; replace professional help; punish someone for being in pain.',
+'If you or someone else may be in immediate danger, contact local emergency services or a crisis line right away:',
+'  • Emergency services: [local number]',
+'  • Crisis line(s): [local crisis line(s)]',
 '',
-'SUPPORT RESOURCES (insert real, region-appropriate lines):',
-'  - [local/national support line]',
-'  - [emergency services number]',
+'How our moderators respond: with kindness, without judgment. We will gently share support resources. We are not counsellors, and we won\'t diagnose or give clinical advice — but we will always treat you with care.',
 '',
-'This policy is guidance, not professional or legal advice.'
+'Please keep conversations supportive. Avoid graphic detail. Be gentle with yourself and others. Thank you for helping keep this a safe place. 💛'
 ].join('\n');
+var out=document.getElementById('out');
+if(out){if(A.get)out.value=A.get('policy','')||TEMPLATE;else out.value=TEMPLATE;out.addEventListener('input',function(){if(A.set)A.set('policy',out.value);});}
+var copyBtn=document.getElementById('copyBtn'),resetBtn=document.getElementById('resetBtn');
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+if(resetBtn)resetBtn.addEventListener('click',function(){if(!window.confirm('Reset to the default template?'))return;out.value=TEMPLATE;if(A.set)A.set('policy',out.value);});
 
-var copyPolicy=document.getElementById('copyPolicy');
-var copyStatus=document.getElementById('copyStatus');
-function pflash(m){if(copyStatus){copyStatus.textContent=m;setTimeout(function(){copyStatus.textContent='';},1800);}}
-if(copyPolicy)copyPolicy.addEventListener('click',function(){
-  function done(){pflash('Policy copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(POLICY).then(done,function(){pfb(POLICY,done);});}else{pfb(POLICY,done);}
+var boxes=[].slice.call(document.querySelectorAll('#docs input[type=checkbox]'));
+var bar=document.getElementById('docBar'),count=document.getElementById('docCount');
+function render(){var n=boxes.filter(function(b){return b.checked;}).length;if(A.meter)A.meter(bar,n/boxes.length*100);if(count)count.textContent=n+' of '+boxes.length+' in place.';}
+var saved=A.getJSON?A.getJSON('ready',{}):{};saved=saved||{};
+boxes.forEach(function(b){var k=b.getAttribute('data-key');if(saved[k])b.checked=true;b.addEventListener('change',function(){saved[k]=b.checked;if(A.setJSON)A.setJSON('ready',saved);render();});});
+render();
+
+var QZ=[{a:1,e:'Moderators respond kindly and connect people to real help — they aren\'t therapists.'},{a:1,e:'Pre-agreed steps help everyone respond calmly when it matters most.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
 });
-function pfb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){pflash('Copy not supported.');}}
-
-// Reflection tool
-var ta=document.getElementById('reflect');
-var status=document.getElementById('saveStatus');
-var saveBtn=document.getElementById('saveBtn');
-var copyBtn=document.getElementById('copyBtn');
-var clearBtn=document.getElementById('clearBtn');
-var timer=null;
-function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-if(ta){try{ta.value=localStorage.getItem(KEY)||'';}catch(e){}ta.addEventListener('input',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}});}
-if(saveBtn)saveBtn.addEventListener('click',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}flash('Saved ✓');});
-if(clearBtn)clearBtn.addEventListener('click',function(){if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;ta.value='';try{localStorage.removeItem(KEY);}catch(e){}flash('Cleared.');ta.focus();});
-if(copyBtn)copyBtn.addEventListener('click',function(){var text=(ta.value||'').trim();if(!text){flash('Nothing to copy yet.');return;}function done(){flash('Copied ✓');}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}});
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
-}catch(e){console.error('project script error',e);}
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 087 script error',e);}
 });

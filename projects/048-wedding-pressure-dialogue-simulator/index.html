@@ -1,28 +1,51 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wedding Pressure Dialogue Simulator · ANCF Digital Projects</title><meta name="description" content="Rehearse calm responses to wedding-season questions — each scenario with a sample reply to borrow and your own draft. Private to this device."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Wedding Pressure Dialogue Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wedding Pressure Dialogue Simulator · ANCF Digital Projects</title><meta name="description" content="Rehearse calm responses to wedding-season questions through a short branching dialogue, with feedback on each choice. Private to this device."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Wedding Pressure Dialogue Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../047-cultural-pressure-map/index.html">← Previous</a><a class="btn btn-primary" href="../049-elder-advice-response-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 048</span><h2>Wedding Pressure Dialogue Simulator</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Weddings are peak season for "when are you next?" Walk through a few common moments, peek at a sample reply if you're stuck, and draft your own calm line. Rehearsing once makes the real moment far easier. Private to this device.</p>
+<div class="proj-head"><span class="num">PROJECT 048</span><h2>Wedding Pressure Dialogue Simulator</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">Weddings are peak season for "you're next!" This short, branching simulator lets you <strong>rehearse calm responses</strong> in a safe space and see how each choice tends to land — so the real moment feels easier. There are no wrong answers, only practice.</p>
 
-<div class="panel"><h3>Scene 1 — "When are you next?"</h3>
-<p>A relative at the wedding asks when you're "next". Draft your warm, brief reply.</p>
-<details><summary>Show a sample reply</summary><div><p>"Ha! No plans on that front — we're just here to enjoy <em>this</em> wedding. How's your family doing?"</p></div></details>
-<label class="field" for="rf0">Your version</label><textarea id="rf0" placeholder="Your warm, brief reply…"></textarea>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How different responses tend to land in the moment.</li>
+<li>How to stay warm while holding a boundary.</li>
+<li>How to redirect a conversation gracefully.</li>
+</ul></div>
+
+<div class="panel"><h3>1. The dialogue</h3>
+<div class="decision" id="line"></div>
+<div class="btn-row" id="choices"></div>
+<div class="result" id="feedback" role="status" aria-live="polite" style="display:none"></div>
+<div class="btn-row"><button class="btn" id="restart" type="button" style="display:none">Start over</button></div>
 </div>
 
-<div class="panel"><h3>Scene 2 — "Your home will be so empty"</h3>
-<p>Someone jokes that your home will be "empty". How do you respond with grace?</p>
-<details><summary>Show a sample reply</summary><div><p>"Honestly, it's pretty full — of friends, plans, and a fair amount of mess. We like it that way."</p></div></details>
-<label class="field" for="rf1">Your version</label><textarea id="rf1" placeholder="Your graceful reply…"></textarea>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The warmest way to hold a boundary is to…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Snap back</div><div class="opt" data-q="0" data-i="1">Acknowledge, decline, and redirect</div><div class="opt" data-q="0" data-i="2">Over-explain</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Rehearsing responses tends to…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Make the real moment harder</div><div class="opt" data-q="1" data-i="1">Make the real moment easier</div><div class="opt" data-q="1" data-i="2">Do nothing</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>Scene 3 — Unsolicited advice from an elder</h3>
-<p>An elder offers unsolicited advice. Write a line that thanks them and holds your boundary.</p>
-<details><summary>Show a sample reply</summary><div><p>"Thank you — I know that comes from caring about me. We've thought it through, and we're happy with where we are."</p></div></details>
-<label class="field" for="rf2">Your version</label><textarea id="rf2" placeholder="Thank them, and hold your line…"></textarea>
+<div class="panel"><h3>3. Your reflection</h3>
+<label class="field" for="reflect">Write the response you'd actually want to use at the next wedding.</label>
+<textarea id="reflect" placeholder="Your line…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
 </div>
 
-<div class="panel"><div class="proj-nav"><button class="btn" id="copyBtn" type="button">Copy my replies</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved only on this device.</span></div><p class="note">Read your replies out loud once or twice — rehearsal is what makes them feel natural in the moment.</p></div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Acknowledge, decline, redirect: three small moves that keep you warm and keep your boundary. Rehearsed once or twice, they'll be ready when "you're next!" arrives.</p></div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../034-family-function-survival-script/index.html">Family Function Survival Script<span>A full plan</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">Reply Tool<span>Quick lines</span></a>
+<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Hold the line</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Prepare</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../047-cultural-pressure-map/index.html">← Previous</a><a class="btn btn-primary" href="../049-elder-advice-response-tool/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

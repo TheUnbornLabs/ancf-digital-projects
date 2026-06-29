@@ -1,28 +1,56 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Study Circle Dashboard · ANCF Digital Projects</title><meta name="description" content="A private four-column planning board for a respectful reading group — topic, questions, who-brings-what, parking lot — with starter prompts, counts, and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Study Circle Dashboard</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Study Circle Dashboard · ANCF Digital Projects</title><meta name="description" content="A private planning dashboard for a respectful reading group — topic, roles, questions, ground rules — with a readiness meter and copy-to-agenda."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Study Circle Dashboard</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../053-30-day-reading-challenge/index.html">← Previous</a><a class="btn btn-primary" href="../055-philosophy-comparison-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 054</span><h2>Study Circle Dashboard</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">A private planning board for a respectful reading group. Jot this week's topic, the questions you'll discuss, who brings what, and ideas to park for later — then copy the board to share in your group chat. Nothing leaves this device unless you copy it.</p>
+<div class="proj-head"><span class="num">PROJECT 054</span><h2>Study Circle Dashboard</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~10 min</span></div></div>
+<p class="lead">Organise a respectful reading group in one place: the topic, the roles, the questions, and the ground rules. Fill what you need, watch the readiness meter, and copy a tidy agenda to share. Saved on this device.</p>
 
-<div class="panel"><h3>How to use it</h3>
-<p>Add <strong>one item per line</strong> in each column. Tap a starter prompt to drop a question into "Discussion questions". When you're ready, "Copy our board" gives you a clean text version to paste anywhere.</p>
-<p class="note" style="margin-bottom:4px">Starter discussion questions:</p>
-<div class="filters" id="starters">
-<button class="chip" type="button" data-goal="What did this week's reading get right and wrong?">Right &amp; wrong?</button>
-<button class="chip" type="button" data-goal="Where do we disagree, and why?">Where we disagree</button>
-<button class="chip" type="button" data-goal="What's the strongest objection we can make?">Strongest objection</button>
-<button class="chip" type="button" data-goal="How does this apply to our own lives/contexts?">Apply to our lives</button>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The parts of a well-run study session.</li>
+<li>Why rotating roles keeps a circle healthy.</li>
+<li>How ground rules protect honest, kind discussion.</li>
+</ul></div>
+
+<div class="panel"><h3>Plan your session</h3>
+<div class="meter-card"><div class="lab"><span>Agenda readiness</span><b id="pct">0%</b></div><div class="meter"><span id="bar"></span></div></div>
+<div id="board" style="margin-top:12px">
+<div><label class="field" for="s-topic">This week's topic &amp; reading</label><textarea id="s-topic" data-label="Topic" placeholder="e.g. The asymmetry argument — read project 025"></textarea></div>
+<div><label class="field" for="s-roles">Roles (facilitator, notetaker, timekeeper)</label><textarea id="s-roles" data-label="Roles" placeholder="Facilitator: …  Notetaker: …  Timekeeper: …"></textarea></div>
+<div><label class="field" for="s-questions">Discussion questions</label><textarea id="s-questions" data-label="Questions" placeholder="1. …  2. …  3. …"></textarea></div>
+<div><label class="field" for="s-rules">Ground rules</label><textarea id="s-rules" data-label="Rules" placeholder="Critique ideas not people · steelman first · one voice at a time · respect every choice"></textarea></div>
+<div><label class="field" for="s-parking">Parking lot (for next time)</label><textarea id="s-parking" data-label="Parking lot" placeholder="Topics to come back to…"></textarea></div>
 </div>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy agenda</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
 </div>
 
-<div style="display:flex;gap:14px;flex-wrap:wrap">
-<div class="panel" style="flex:1 1 220px"><h3>This week's topic</h3><textarea id="col0" placeholder="One item per line…" aria-label="This week's topic"></textarea><p class="note" id="count0" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Discussion questions</h3><textarea id="col1" placeholder="One item per line…" aria-label="Discussion questions"></textarea><p class="note" id="count1" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Who brings what</h3><textarea id="col2" placeholder="One item per line…" aria-label="Who brings what"></textarea><p class="note" id="count2" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Parking lot (later)</h3><textarea id="col3" placeholder="One item per line…" aria-label="Parking lot for later"></textarea><p class="note" id="count3" role="status" aria-live="polite">0 items</p></div>
+<div class="panel"><h3>Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Rotating roles in a study circle…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Keeps it healthy and shares the load</div><div class="opt" data-q="0" data-i="1">Causes chaos</div><div class="opt" data-q="0" data-i="2">Isn't worth it</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Ground rules exist to…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Restrict everyone</div><div class="opt" data-q="1" data-i="1">Protect honest, kind discussion</div><div class="opt" data-q="1" data-i="2">Decoration</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><div class="proj-nav"><button class="btn btn-primary" id="copyBtn" type="button">Copy our board</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved on this device only.</span></div><p class="note">Keep the circle kind: critique ideas, not people, and make room for the quietest voice in the room.</p></div>
+<div class="panel"><h3>Your reflection</h3>
+<label class="field" for="reflect">What would make your circle feel safe and worthwhile?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rsaveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>A good circle is mostly preparation and trust: a clear topic, shared roles, real questions, and rules that keep it kind. Get those right and the conversation runs itself.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Discuss well</span></a>
+<a href="../052-beginner-study-plan/index.html">Beginner Study Plan<span>What to read</span></a>
+<a href="../076-debate-notes-organizer/index.html">Debate Notes Organizer<span>Capture it</span></a>
+<a href="../080-community-newsletter-template/index.html">Newsletter Template<span>Share updates</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../053-30-day-reading-challenge/index.html">← Previous</a><a class="btn btn-primary" href="../055-philosophy-comparison-tool/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

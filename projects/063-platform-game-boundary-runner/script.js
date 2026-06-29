@@ -1,47 +1,41 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var c=document.getElementById('game');if(!c)return;
-var x=c.getContext('2d');c.width=360;c.height=240;
-var gy=190,py,vy,obs,sp,score,alive,t,raf;
-var scoreLabel=document.getElementById('scoreLabel');
-var status=document.getElementById('status');
-var hi=0;try{hi=parseInt(localStorage.getItem(KEY+':hi')||'0',10)||0;}catch(e){}
-function setScore(){if(scoreLabel)scoreLabel.textContent='Boundaries kept: '+score+'  ·  Best: '+hi;}
-function setStatus(m){if(status)status.textContent=m;}
-function reset(){py=gy;vy=0;obs=[];sp=3;score=0;alive=true;t=0;setStatus('Run! Jump the red blocks.');}
-function hop(){if(alive&&py>=gy){vy=-9;}}
-document.addEventListener('keydown',function(e){if(e.code==='Space'){hop();e.preventDefault();}});
-c.addEventListener('click',hop);
-c.addEventListener('touchstart',function(e){e.preventDefault();hop();},{passive:false});
-var jb=document.getElementById('jumpBtn');if(jb)jb.addEventListener('click',hop);
-function gameOver(){
-  alive=false;
-  if(score>hi){hi=score;try{localStorage.setItem(KEY+':hi',String(hi));}catch(e){}}
-  setScore();
-  setStatus('Tripped at '+score+'. Best: '+hi+'. Press Restart.');
+var A=window.ANCF||{};
+var cv=document.getElementById('game'),ctx=cv&&cv.getContext('2d');
+var scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),msg=document.getElementById('msg');
+var W=360,H=200,ground=160,player={x:40,y:ground,vy:0,w:26,h:30,onGround:true},obs=[],score=0,speed=3.2,spawnT=0,playing=false,best=0,raf=null;
+try{best=parseInt(A.get?A.get('best','0'):'0',10)||0;}catch(e){}if(bestEl)bestEl.textContent=best;
+function reset(){player.y=ground;player.vy=0;player.onGround=true;obs=[];score=0;speed=3.2;spawnT=0;}
+function jump(){if(player.onGround){player.vy=-9.2;player.onGround=false;}}
+function draw(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0c0c0e';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.2)';ctx.beginPath();ctx.moveTo(0,ground+2);ctx.lineTo(W,ground+2);ctx.stroke();
+  ctx.fillStyle='#e23a52';obs.forEach(function(o){ctx.fillRect(o.x,ground-o.h,o.w,o.h);});
+  ctx.fillStyle='#2f9e9e';ctx.fillRect(player.x,player.y-player.h,player.w,player.h);
 }
+function over(){playing=false;if(raf)cancelAnimationFrame(raf);if(score>best){best=score;if(A.set)A.set('best',String(best));if(bestEl)bestEl.textContent=best;}if(msg)msg.textContent='Tripped! Distance '+score+'. Press Start to run again.';}
 function loop(){
-  if(!alive){
-    x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,90,c.width,60);
-    x.fillStyle='#fff';x.font='15px system-ui,sans-serif';x.textAlign='center';
-    x.fillText('Tripped on a boundary. Tap Restart.',c.width/2,124);x.textAlign='left';
-    return;
-  }
-  t++;vy+=0.6;py+=vy;if(py>gy){py=gy;vy=0;}
-  if(t%70===0){obs.push({x:c.width,w:16+Math.random()*14});sp+=0.05;}
-  x.fillStyle='#111';x.fillRect(0,0,c.width,c.height);
-  x.fillStyle='#3a3a3a';x.fillRect(0,gy+24,c.width,4);
-  obs.forEach(function(o){
-    o.x-=sp;x.fillStyle='#b3122a';x.fillRect(o.x,gy,o.w,24);
-    if(o.x<46&&o.x+o.w>22&&py>=gy-2){gameOver();}
-  });
-  obs=obs.filter(function(o){if(o.x+o.w<0){score++;setScore();return false;}return true;});
-  x.fillStyle='#f4f1ec';x.fillRect(22,py,22,24);
-  x.fillStyle='#fff';x.font='14px system-ui,sans-serif';x.fillText('Boundaries kept: '+score,10,20);
-  raf=requestAnimationFrame(loop);
+  if(!playing)return;
+  player.vy+=0.6;player.y+=player.vy;if(player.y>=ground){player.y=ground;player.vy=0;player.onGround=true;}
+  spawnT++;if(spawnT>Math.max(70-Math.floor(score/60),36)){spawnT=0;obs.push({x:W,w:16+Math.random()*14,h:18+Math.random()*22});}
+  for(var i=obs.length-1;i>=0;i--){var o=obs[i];o.x-=speed;if(o.x+o.w<0){obs.splice(i,1);continue;}
+    if(player.x<o.x+o.w&&player.x+player.w>o.x&&player.y>ground-o.h){return over();}}
+  score++;if(score%200===0)speed+=0.4;if(scoreEl)scoreEl.textContent=score;
+  draw();raf=requestAnimationFrame(loop);
 }
-document.getElementById('restart').addEventListener('click',function(){if(raf)cancelAnimationFrame(raf);reset();setScore();loop();});
-reset();setScore();loop();
-}catch(e){console.error('project script error',e);}
+function start(){if(playing)return;reset();playing=true;if(msg)msg.textContent='Run! Jump the red blocks.';draw();raf=requestAnimationFrame(loop);}
+var startBtn=document.getElementById('startBtn'),jumpBtn=document.getElementById('jumpBtn');
+if(startBtn)startBtn.addEventListener('click',start);
+if(jumpBtn)jumpBtn.addEventListener('click',function(){if(!playing)start();jump();});
+if(cv)cv.addEventListener('click',function(){if(!playing)start();jump();});
+document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W'){e.preventDefault();if(!playing)start();jump();}});
+if(ctx){reset();draw();}
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 063 script error',e);}
 });

@@ -208,3 +208,50 @@ edited files, so per-file `node --check` on the edited project scripts could not
 Recommended manual pass after deploy: open 011–020, check the console, and test inputs/save/
 copy at ~360px.
 
+## Deep rebuild — batches 021–100 (2026-06-29)
+
+All remaining projects (021 through 100) rebuilt to the same 10-point interactive standard as
+001–020: educator intro, "What you will learn", an interactive tool, a visual/meter where it
+fits, a saved reflection or board, copy/export, a keyboard-accessible quiz with explanations, a
+key takeaway, related links, and mobile-friendly layout — all on the shared `window.ANCF`
+toolkit and shared design system, local-storage only, no external libs.
+
+- **021–070** — explainers, detectors, calculators, checklists, generators, comparison tools,
+  philosophy note-cards, and a run of canvas + DOM games (saved best scores, restart/replay,
+  keyboard + on-screen controls).
+- **071–080 (writing tools)** — manifesto/bio/statement/carousel/poster/debate-notes/book-
+  summary/video-script/article-outline/newsletter builders; all editable, copyable, with
+  completion meters and built-in "opposing view" prompts where relevant.
+- **081–090 (rights, health, community safety)** — legal-rights awareness ("not legal advice"),
+  workplace-bias notes (pro-fairness, never anti-parent), healthcare-conversation and
+  sterilization-prep tools (medical-adjacent, explicit "no recommendation / not medical advice",
+  question-builders only), couple-compatibility questions, and a sensitive cluster — mental-
+  health boundary notice, crisis-safe community policy, anti-harassment rules, respectful-
+  language guide, safe-moderation checklist — all with support signposting and "[local support]"
+  placeholders rather than hard-coded helplines.
+- **091–100 (inclusion + capstone)** — global voices map (themes, explicitly not stereotypes),
+  Tamil voices page, South Asian pronatalism explainer (systems-not-people), women's and men's
+  pressure pages (balanced, respecting mothers/fathers and childfree alike), LGBTQ+ inclusion,
+  disabled people's autonomy (coercion opposed in *both* directions), poverty & parenthood
+  (critiques systems, never poor people), a future-vision board, and the final searchable
+  archive (loads `data/projects.json`, links all 100, with a closing message).
+
+**Ethics honoured throughout:** rights-based and respectful; no hatred toward parents, children,
+women, men, families, or any religious/caste/ethnic/LGBTQ+/poverty group; reproductive autonomy
+respected in both directions; strong disclaimers; sensitive topics signpost support without
+hard-coding region-specific resources.
+
+**Verification:** every file confirmed complete and well-formed by host inspection. A full
+relative-link audit across 081–100 caught and fixed three stale cross-links (018/019/040 had
+been referenced by old slugs); after the fix, every `../NNN-slug/index.html` reference resolves
+to a real folder.
+
+**Stale-mount caveat (still active):** the sandbox bash mount continues to serve *truncated*
+copies of files edited this session, so per-file `node --check` and any git commit/push run
+inside the sandbox are unreliable — and a stale `.git/index.lock` the mount won't let us delete
+currently blocks git there. The host files (via Read/Write/Edit) are the source of truth and are
+complete; they deploy through the existing host-edit → GitHub Pages pipeline. Git push from the
+sandbox was therefore deferred rather than risk committing truncated content. Recommended manual
+pass after deploy: open a few of 081–100 (especially the games-free explainer pages and the 100
+archive), check the console, and test save/copy/quiz at ~360px.
+

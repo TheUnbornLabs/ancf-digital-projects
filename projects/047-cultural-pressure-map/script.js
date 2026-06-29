@@ -1,53 +1,27 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var labels={elders:'Family elders',peers:'Peers & timelines',work:'Workplace & status',media:'Media & advertising',community:'Religious & community norms',inner:'Your own inner voice'};
-var map=document.getElementById('map');
-var out=document.getElementById('mapOut');
-if(!map)return;
-var opts=[].slice.call(map.querySelectorAll('.opt'));
-var state={};
-try{state=JSON.parse(localStorage.getItem(KEY+':map')||'{}')||{};}catch(e){state={};}
+var A=window.ANCF||{};
+var radar=document.getElementById('mapRadar');
+var inputs=[].slice.call(document.querySelectorAll('#sources input[type=range]'));
+function draw(){var items=inputs.map(function(inp){var out=document.getElementById(inp.id.replace('m-','o-'));if(out)out.textContent=inp.value;return {label:inp.getAttribute('data-axis'),value:(+inp.value)*25};});if(A.radar)A.radar(radar,items);var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('map',store);}
+if(inputs.length){var s=A.getJSON?A.getJSON('map',null):null;inputs.forEach(function(inp){if(s&&s[inp.id]!=null)inp.value=s[inp.id];inp.addEventListener('input',draw);});draw();}
 
-function paint(){
-  opts.forEach(function(o){
-    var k=o.getAttribute('data-key'),v=o.getAttribute('data-v');
-    var on=String(state[k])===v;
-    o.classList.toggle('sel',on);
-    o.setAttribute('aria-pressed',on?'true':'false');
-  });
-}
-function summarise(){
-  var rated=Object.keys(state);
-  if(!rated.length){out.textContent='Rate the sources above to see your map.';return;}
-  var strong=rated.filter(function(k){return state[k]===2;}).map(function(k){return labels[k];});
-  var some=rated.filter(function(k){return state[k]===1;}).map(function(k){return labels[k];});
-  var msg='You\'ve mapped '+rated.length+' of 6 sources. ';
-  if(strong.length){msg+='Strongest for you: '+strong.join(', ')+'. That\'s the one to prepare for first. ';}
-  else if(some.length){msg+='Some pressure from: '+some.join(', ')+'. ';}
-  else{msg+='Little pressure flagged — that\'s worth appreciating. ';}
-  if(state.inner===2){msg+='Note your strong inner voice: some of that conviction may be borrowed, and you\'re allowed to question it.';}
-  out.textContent=msg;
-}
-function choose(o){
-  var k=o.getAttribute('data-key');
-  state[k]=parseInt(o.getAttribute('data-v'),10);
-  try{localStorage.setItem(KEY+':map',JSON.stringify(state));}catch(e){}
-  paint();summarise();
-}
-opts.forEach(function(o){
-  o.setAttribute('role','button');
-  o.setAttribute('tabindex','0');
-  o.setAttribute('aria-pressed','false');
-  o.addEventListener('click',function(){choose(o);});
-  o.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(o);}});
+var QZ=[{a:1,e:'A map turns vague heaviness into specific, nameable pressures.'},{a:1,e:'Pressure usually comes from several sources at once.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
 });
-var resetBtn=document.getElementById('resetBtn');
-if(resetBtn)resetBtn.addEventListener('click',function(){
-  if(!window.confirm('Reset your map on this device?'))return;
-  state={};try{localStorage.removeItem(KEY+':map');}catch(e){}
-  paint();summarise();
-});
-paint();summarise();
-}catch(e){console.error('project script error',e);}
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 047 script error',e);}
 });

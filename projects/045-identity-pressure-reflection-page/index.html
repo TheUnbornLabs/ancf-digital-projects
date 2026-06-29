@@ -1,23 +1,65 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identity Pressure Reflection Page · ANCF Digital Projects</title><meta name="description" content="Private journaling prompts on the pull between belonging and personal choice — how identity shapes reproductive expectation, and how to hold roots and choice together."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Identity Pressure Reflection Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identity Pressure Reflection Page · ANCF Digital Projects</title><meta name="description" content="Reflect on how identity and belonging shape reproductive expectations — map which identity pressures weigh on you, and how to hold roots and choice together."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Identity Pressure Reflection Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../044-caste-community-name-warning-tool/index.html">← Previous</a><a class="btn btn-primary" href="../046-social-shame-explainer/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 045</span><h2>Identity Pressure Reflection Page</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Some of the strongest pressure to have children comes wrapped in identity — culture, faith, family role, gender. These private prompts help you notice that pull, and find a way to honour where you come from <em>and</em> your own choice. Your answers stay on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 045</span><h2>Identity Pressure Reflection Page</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~8 min</span></div></div>
+<p class="lead">Belonging is precious — and sometimes it carries expectations about children. This page helps you notice how identity (family role, gender, culture, community) shapes reproductive pressure, and how to <strong>honour your roots while still choosing your own life</strong>.</p>
 
-<div class="panel"><h3>Before you write</h3>
-<p>Belonging is a real human need, not a weakness. The aim here isn't to reject your roots — it's to tell apart what <strong>you</strong> want from what your communities expect, so any choice you make is genuinely yours. There are no right answers, and nothing here is shared anywhere.</p>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How belonging and identity can carry reproductive expectations.</li>
+<li>Which identity pressures weigh most on you (a personal map).</li>
+<li>How to hold roots and personal choice together, without betraying either.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Map your identity pressures</h3>
+<p class="note">Rate how much each weighs on you: 0 none → 4 strong. Saved on this device.</p>
+<div id="pressures">
+<div class="slider-row"><div class="lab"><label for="i-family">Family role / expectations</label><output id="o-family">0</output></div><input type="range" id="i-family" data-axis="Family role" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="i-gender">Gender-role expectations</label><output id="o-gender">0</output></div><input type="range" id="i-gender" data-axis="Gender role" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="i-culture">Cultural belonging</label><output id="o-culture">0</output></div><input type="range" id="i-culture" data-axis="Culture" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="i-faith">Religious / community belonging</label><output id="o-faith">0</output></div><input type="range" id="i-faith" data-axis="Community" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="i-peers">Peer / generational norms</label><output id="o-peers">0</output></div><input type="range" id="i-peers" data-axis="Peers" min="0" max="4" step="1" value="0"></div>
+</div>
+<svg class="chart" id="presChart" role="img" aria-label="Bar chart of how much each identity pressure weighs on you."></svg>
+<p class="chart-cap">Bar chart: your rating (0–4) of each identity pressure.</p>
 </div>
 
-<div class="panel"><label class="field" for="rf0">Which parts of my identity carry the strongest "have children" expectation?</label><textarea id="rf0" placeholder="Your reflection…"></textarea></div>
-<div class="panel"><label class="field" for="rf1">What do I gain from belonging — and what does it ask of me here?</label><textarea id="rf1" placeholder="Your reflection…"></textarea></div>
-<div class="panel"><label class="field" for="rf2">How can I honour my roots and my own choice at the same time?</label><textarea id="rf2" placeholder="Your reflection…"></textarea></div>
-
-<div class="panel"><div class="proj-nav"><button class="btn" id="copyBtn" type="button">Copy my answers</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved only on this device.</span></div><p class="note">Tip: notes live in this browser only. Use "Copy my answers" to keep them somewhere safe.</p></div>
-
-<div class="panel"><h3>Roots and choice can both be true</h3>
-<p>You don't have to choose between loving your culture and living honestly within it. Many people stay deeply connected to family and tradition while making different choices about children — and traditions themselves change, often led by people who love them enough to question one part. Honouring your roots can include trusting yourself.</p>
-<p class="note">If untangling identity and expectation brings up real distress, consider talking with someone you trust or a qualified professional. You deserve support.</p>
+<div class="panel"><h3>2. Roots and choice together</h3>
+<div class="kv">
+<strong>Both can be true</strong><span>You can love your culture and family <em>and</em> make a different choice about children.</span>
+<strong>Belonging isn't obedience</strong><span>Genuine belonging can hold disagreement; communities are living, not fixed.</span>
+<strong>You're still you</strong><span>Choosing your own path doesn't erase your identity — it adds your own chapter to it.</span>
+</div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Loving your culture and choosing differently are…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Impossible together</div><div class="opt" data-q="0" data-i="1">Both able to be true at once</div><div class="opt" data-q="0" data-i="2">A betrayal</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Genuine belonging can…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Hold disagreement</div><div class="opt" data-q="1" data-i="1">Require total obedience</div><div class="opt" data-q="1" data-i="2">Never change</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>4. Your reflection</h3>
+<label class="field" for="reflect">How can you honour where you come from while choosing where you're going?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>You are allowed to love your roots and to choose your own life. Belonging that demands you erase yourself isn't belonging — and the cultures we cherish are made of people who, in every generation, chose for themselves.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../047-cultural-pressure-map/index.html">Cultural Pressure Map<span>Where it comes from</span></a>
+<a href="../046-social-shame-explainer/index.html">Social Shame Explainer<span>How shame works</span></a>
+<a href="../029-feminist-childfree-explainer/index.html">Feminist Childfree Explainer<span>Autonomy &amp; identity</span></a>
+<a href="../005-is-this-my-choice-reflection-tool/index.html">"Is This My Choice?"<span>Find your own voice</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../044-caste-community-name-warning-tool/index.html">← Previous</a><a class="btn btn-primary" href="../046-social-shame-explainer/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

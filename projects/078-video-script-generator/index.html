@@ -1,38 +1,47 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Video Script Generator · ANCF Digital Projects</title><meta name="description" content="Draft a short, respectful explainer-video script with hook, body, and call-to-action — tailored per topic and length, with variations and an editable box."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Video Script Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Video Script Generator · ANCF Digital Projects</title><meta name="description" content="Draft a short, respectful explainer-video script with hook, body, and call-to-action — by topic and length, editable and copyable."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Video Script Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../077-book-summary-template-tool/index.html">← Previous</a><a class="btn btn-primary" href="../079-article-outline-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 078</span><h2>Video Script Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Scaffold a short, respectful explainer-video script — hook, body, tone, and a kind call-to-action. Pick a topic and length, generate, then make it your own.</p>
+<div class="proj-head"><span class="num">PROJECT 078</span><h2>Video Script Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
+<p class="lead">Draft a short, respectful explainer-video script: a hook, a clear body, and a kind call-to-action. Pick a topic and length, then edit to your voice. Built to inform, never to provoke.</p>
 
-<div class="panel"><h3>1. Draft your script</h3>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The shape of a watchable explainer: hook → body → CTA.</li>
+<li>Why the first five seconds matter most.</li>
+<li>How to close with an invitation, not a lecture.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Build a script</h3>
 <div class="row">
-<div><label class="field" for="topic">Topic</label><select id="topic">
-<option value="autonomy">Reproductive autonomy 101</option>
-<option value="childfree">Childfree, not childless</option>
-<option value="regret">Answering "you'll regret it"</option>
-<option value="boundary">Setting a kind boundary</option>
-</select></div>
-<div><label class="field" for="length">Length</label><select id="length">
-<option value="short">30 seconds</option>
-<option value="long">60 seconds</option>
-</select></div>
+<div><label class="field" for="topic">Topic</label><select id="topic"><option value="autonomy">Reproductive autonomy</option><option value="childfree">Childfree life</option><option value="argument">An antinatalist argument</option><option value="pressure">Handling pressure</option></select></div>
+<div><label class="field" for="len">Length</label><select id="len"><option value="short">Short (~30s)</option><option value="medium">Medium (~60s)</option></select></div>
 </div>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
-<div class="result" id="genOut" role="status" aria-live="polite">Your script will appear here.</div>
-<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
+<label class="field" for="out">Script (editable)</label>
+<textarea id="out" style="min-height:180px" placeholder="Your script appears here; edit freely. Saved on this device."></textarea>
 </div>
 
-<div class="panel"><h3>2. Make it yours</h3>
-<label class="field" for="custom">Write the actual lines you'll say. Saved on this device.</label>
-<textarea id="custom" placeholder="Your version… (generated scaffold lands here; edit freely.)"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The most important part of an explainer is…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">The first few seconds (the hook)</div><div class="opt" data-q="0" data-i="1">The credits</div><div class="opt" data-q="0" data-i="2">The length</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A good CTA is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A lecture</div><div class="opt" data-q="1" data-i="1">A kind invitation</div><div class="opt" data-q="1" data-i="2">A demand</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Tips</h3>
-<details><summary>Win the first 3 seconds</summary><div><p>Open with the question your viewer already has. If the hook lands, the rest gets watched.</p></div></details>
-<details><summary>One idea, said plainly</summary><div><p>Short videos can't argue everything. Pick one point and make it land.</p></div></details>
-<details><summary>End kind</summary><div><p>Close by inviting people to decide for themselves and be gentle with others — it ages better than a hot take.</p></div></details>
-</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Hook them early, make one clear point, and end with a warm invitation. A respectful explainer earns attention without demanding it.</p></div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../074-instagram-carousel-text-builder/index.html">Carousel Builder<span>For posts</span></a>
+<a href="../079-article-outline-generator/index.html">Article Outline Generator<span>Go longer</span></a>
+<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>The caption</span></a>
+<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Stay kind</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../077-book-summary-template-tool/index.html">← Previous</a><a class="btn btn-primary" href="../079-article-outline-generator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

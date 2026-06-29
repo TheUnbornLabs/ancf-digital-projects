@@ -1,88 +1,38 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-
+var A=window.ANCF||{};
 var R={
-  selfish:{
-    socratic:["Can a personal choice that harms no one really be called selfish?","Is it selfish to know yourself well enough not to parent for the wrong reasons?"],
-    calm:["Choosing the life that fits me isn't selfish — and many caring people are childfree.","Selfishness is about harming others for gain; this choice harms no one."],
-    bridge:["I hear that you value selflessness — so do I. I just express it in ways other than parenting."]
-  },
-  regret:{
-    socratic:["Would we accept 'you might regret it' as a reason for any other considered decision?","If regret is the worry, isn't it possible to regret either path?"],
-    calm:["Regret is possible in any life, including parenthood. I've made this choice with open eyes.","I'm at peace with my decision and its trade-offs."],
-    bridge:["I get that you don't want me to be unhappy. I've really thought about this, and I'm content."]
-  },
-  unnatural:{
-    socratic:["Many human choices differ from nature — what makes this one wrong rather than simply different?","Is 'natural' always the same as 'good'?"],
-    calm:["People build meaningful lives in countless ways; mine is one of them.","'Different from the default' isn't the same as wrong."],
-    bridge:["I understand it feels unusual to you. For me it's simply the honest fit."]
-  },
-  careold:{
-    socratic:["Is it fair to expect a child to be a retirement plan?","Do children guarantee care in old age — for anyone?"],
-    calm:["Children aren't a care plan; I'm building friendships, savings, and support I can rely on.","I'm planning my later years directly, which is wise for everyone."],
-    bridge:["I know you worry about my future — that's love. I'm taking real steps to be secure."]
-  },
-  duty:{
-    socratic:["Whose life bears the cost of that duty — and should that person get a say?","Can a duty be genuine if it's assigned rather than chosen?"],
-    calm:["I respect our family and traditions, and I've made a considered choice for my own life.","Honouring my family doesn't require a decision this personal to go their way."],
-    bridge:["I love this family, and I want to contribute to it — just not in this particular way."]
-  },
-  greatparent:{
-    socratic:["Is being capable of something the same as being called to it?","Could I be good at it and still know it isn't right for me?"],
-    calm:["Thank you — that's kind. Being able to do something well isn't a reason I have to.","I appreciate the faith in me; this is still a no, made with care."],
-    bridge:["That's genuinely warm of you to say. I'd channel that capacity into other parts of my life."]
-  }
+ mind:{calm:'I might, and if I do, that\'s fine — but I\'ve thought about this carefully, and right now it\'s a settled, considered choice.',curious:'What makes a considered decision count less than a guess about my future self? I\'m comfortable either way.',firm:'I\'ve decided, and "you\'ll change your mind" isn\'t an argument — it\'s a prediction. Let\'s leave it there.'},
+ care:{calm:'Children aren\'t a retirement plan; I\'m building friendships, savings, and support I can actually count on.',curious:'Is having children really the most reliable plan for old age? I\'d rather plan deliberately.',firm:'No one should be born to be a carer. I\'m planning for my future in fairer ways.'},
+ selfish:{calm:'Choosing the life that fits me isn\'t selfish — and plenty of caring people are childfree.',curious:'Which is more selfish: choosing not to parent, or having a child for the wrong reasons? Neither, maybe — it\'s personal.',firm:'Calling a personal choice "selfish" is a way to pressure, not a fact. My decision harms no one.'},
+ natural:{calm:'"Natural" isn\'t the same as "obligatory" — we choose against many natural urges every day.',curious:'If natural settled ethics, a lot of medicine and culture would be off the table. Why is this the exception?',firm:'Appeals to "nature" don\'t decide my life. People build meaningful lives in many ways.'},
+ society:{calm:'Society needs many things; no individual is obligated to supply population. I contribute in other ways.',curious:'Should anyone be born to serve a demographic target? That seems to use a person as a means.',firm:'Collective needs don\'t override one person\'s autonomy over their own body and life.'}
 };
-function pick(arr,i){return arr[((i%arr.length)+arr.length)%arr.length];}
-
-var variant=0;
-function build(){
-  var claim=document.getElementById('claim').value;
-  var style=document.getElementById('style').value;
-  var set=(R[claim]&&R[claim][style])||["I respect that you see it differently; I'd ask for the same respect I'd give your path."];
-  return pick(set,variant);
-}
-
-var out=document.getElementById('genOut');
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-
-function generate(){
-  var text=build();
-  out.textContent=text;
-  if(custom){custom.value=text;try{localStorage.setItem(KEY,custom.value);}catch(e){}}
-}
+var claim=document.getElementById('claim'),style=document.getElementById('style'),out=document.getElementById('out');
+function build(){out.value=(R[claim.value]||R.mind)[style.value]||'';if(A.set)A.set('reply',out.value);}
 var genBtn=document.getElementById('genBtn');
-var againBtn=document.getElementById('againBtn');
-if(genBtn)genBtn.addEventListener('click',function(){variant=0;generate();});
-if(againBtn)againBtn.addEventListener('click',function(){variant++;generate();});
-
-if(custom){
-  try{var saved=localStorage.getItem(KEY);if(saved){custom.value=saved;out.textContent=saved;}}catch(e){}
-  custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});
-}
-
-function copyText(text,btn,label){
-  if(!text||!text.trim()){flash('Nothing to copy yet.');return;}
-  function done(){if(btn){btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label;},1500);}}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallback(text,done);});
-  }else{fallback(text,done);}
-}
-function fallback(text,done){
-  try{
-    var t=document.createElement('textarea');
-    t.value=text;t.style.position='fixed';t.style.opacity='0';
-    document.body.appendChild(t);t.focus();t.select();
-    document.execCommand('copy');document.body.removeChild(t);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
+if(genBtn)genBtn.addEventListener('click',build);
+if(claim)claim.addEventListener('change',build);if(style)style.addEventListener('change',build);
+if(out){if(A.get)out.value=A.get('reply','');out.addEventListener('input',function(){if(A.set)A.set('reply',out.value);});if(!out.value)build();}
 var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){copyText(out.textContent,copyBtn,'Copy to clipboard');});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){copyText(custom?custom.value:'',copyCustom,'Copy my version');});
-}catch(e){console.error('project script error',e);}
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+
+var QZ=[{a:1,e:'Aim at the argument, not the person — that keeps the relationship and your dignity.'},{a:1,e:'You\'re obliged to debate no one; engaging is always your choice.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 033 script error',e);}
 });

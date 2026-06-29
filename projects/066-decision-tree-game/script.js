@@ -1,48 +1,35 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var TREE={
-  start:{q:'A relative pushes hard about kids at dinner. You…',opts:[
-    {t:'Calmly restate your boundary',p:2,to:'guilt'},
-    {t:'Argue heatedly',p:0,to:'argue'},
-    {t:'Change the subject kindly',p:1,to:'subject'}]},
-  guilt:{q:'They escalate with guilt — "after all we did for you". You…',opts:[
-    {t:'Name the guilt gently',p:2,to:'end_good'},
-    {t:'Give in to keep the peace',p:0,to:'end_giveup'},
-    {t:'Step away for a breather',p:2,to:'end_good'}]},
-  argue:{q:'It tips into a shouting match. You…',opts:[
-    {t:'Pause and lower your voice',p:1,to:'guilt'},
-    {t:'Storm off',p:0,to:'end_rough'}]},
-  subject:{q:'They circle straight back to the topic. You…',opts:[
-    {t:'Restate your boundary once, warmly',p:2,to:'guilt'},
-    {t:'Keep deflecting all night',p:1,to:'end_tired'}]},
-  end_good:{end:true,msg:'You held your boundary with warmth. Freedom intact — and so is the relationship. This is the move that works best over time.'},
-  end_giveup:{end:true,msg:'You kept the peace tonight, but the question will return. Boundaries usually need repeating — that\'s normal, not failure.'},
-  end_rough:{end:true,msg:'Heat rarely persuades anyone. Next time, the very same boundary said calmly will travel much further.'},
-  end_tired:{end:true,msg:'Deflecting works in a pinch, but a clear, kind "no" tires you out far less than a whole evening of dodging.'}
+var A=window.ANCF||{};
+var N={
+ start:{t:'Dinner with the family. Your aunt smiles: "So — when are the little ones coming?"',c:[
+   {t:'Pause, smile, deflect',p:2,n:'b1'},{t:'Snap back',p:0,n:'b2'},{t:'Start over-explaining',p:0,n:'b3'}]},
+ b1:{t:'She presses gently: "Don\'t leave it too late, dear."',c:[
+   {t:'Acknowledge her care, then set a boundary',p:2,n:'good'},{t:'Go quiet and change the subject',p:1,n:'ok'}]},
+ b2:{t:'Voices rise a little; the table goes quiet.',c:[
+   {t:'Take a breath and reset kindly',p:2,n:'ok'},{t:'Escalate the point',p:0,n:'low'}]},
+ b3:{t:'She debates each reason you give.',c:[
+   {t:'Stop, and name a boundary calmly',p:2,n:'good'},{t:'Keep justifying yourself',p:0,n:'low'}]},
+ good:{t:'You stayed warm and held your line. Everyone moved on — and so did you.',c:[]},
+ ok:{t:'A little tense, but you handled it and kept the peace. Perfectly fine.',c:[]},
+ low:{t:'It got heated this time. That happens — and you can always try a different path.',c:[]}
 };
-var pts=0,node='start';
-var label=document.getElementById('freedomLabel');
-var out=document.getElementById('fOut');
-var box=document.getElementById('choices');
-function setLabel(){if(label)label.textContent='Freedom points: '+pts;}
-function render(){
-  var n=TREE[node];
-  setLabel();
-  if(n.end){
-    out.textContent=n.msg+' (Freedom points: '+pts+')';
-    box.innerHTML='';
-    var again=document.createElement('button');again.className='btn btn-primary';again.textContent='Play again';
-    again.addEventListener('click',function(){pts=0;node='start';render();});
-    box.appendChild(again);
-    return;
-  }
-  out.textContent=n.q;box.innerHTML='';
-  n.opts.forEach(function(o){
-    var b=document.createElement('button');b.className='btn';b.style.margin='6px 6px 0 0';b.textContent=o.t;
-    b.addEventListener('click',function(){pts+=o.p;node=o.to;render();});
-    box.appendChild(b);
-  });
+var score=0;
+var scene=document.getElementById('scene'),choices=document.getElementById('choices'),ending=document.getElementById('ending'),restart=document.getElementById('restart'),pts=document.getElementById('pts');
+function render(key){
+  var n=N[key];scene.textContent=n.t;choices.innerHTML='';ending.style.display='none';
+  if(!n.c.length){ending.style.display='block';ending.textContent='Ending reached — '+score+' freedom points. '+(score>=4?'Beautifully handled!':(score>=2?'Solid work.':'Worth another go.'));restart.style.display='inline-block';return;}
+  n.c.forEach(function(ch){var b=document.createElement('button');b.className='btn';b.type='button';b.textContent=ch.t;b.addEventListener('click',function(){score+=ch.p;if(pts)pts.textContent=score;render(ch.n);});choices.appendChild(b);});
+  restart.style.display='inline-block';
 }
-render();
-}catch(e){console.error('project script error',e);}
+if(restart)restart.addEventListener('click',function(){score=0;if(pts)pts.textContent=0;render('start');});
+render('start');
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 066 script error',e);}
 });

@@ -1,73 +1,34 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
+var A=window.ANCF||{};
+var inputs=[].slice.call(document.querySelectorAll('#factors input[type=range]'));
+var chart=document.getElementById('factorChart'),hardBar=document.getElementById('hardBar'),hardPct=document.getElementById('hardPct'),hardNote=document.getElementById('hardNote');
+function update(){
+  var items=inputs.map(function(inp){var out=document.getElementById(inp.id.replace('f-','o-'));if(out)out.textContent=inp.value+'%';return {label:inp.getAttribute('data-axis'),value:+inp.value};});
+  if(A.barChart)A.barChart(chart,items,{max:100,fmt:function(v){return v+'%';},title:'Risk factors'});
+  var avg=Math.round(items.reduce(function(s,i){return s+i.value;},0)/items.length);
+  if(A.meter)A.meter(hardBar,avg);if(hardPct)hardPct.textContent=avg+'%';
+  if(hardNote){hardNote.textContent=avg>=66?'On your settings, this risk reads as hard to justify imposing on a non-consenting other.':(avg>=40?'A genuinely contested middle — reasonable people weigh these factors differently.':'On your settings, this risk reads as more readily justifiable.');}
+  var store={};inputs.forEach(function(inp){store[inp.id]=inp.value;});if(A.setJSON)A.setJSON('factors',store);
+}
+if(inputs.length){var s=A.getJSON?A.getJSON('factors',null):null;inputs.forEach(function(inp){if(s&&s[inp.id]!=null)inp.value=s[inp.id];inp.addEventListener('input',update);});update();}
 
-/* ---------- Framework lens switcher ---------- */
-var feedback={
-  ev:"EXPECTED VALUE — weighs each outcome by its probability and sums. A high chance of a good life can outweigh a small chance of a bad one. On this lens, creating a likely-happy life is usually permissible. Verdict: leans PERMISSIBLE.",
-  precaution:"PRECAUTIONARY PRINCIPLE — avoid imposing any real risk of severe, irreversible harm, whatever the upside. Because a life can contain catastrophic suffering, 'probably fine' isn't enough. Verdict: leans CAUTIOUS / against.",
-  maximin:"MAXIMIN — judge a choice by its worst possible outcome and prefer the option whose worst case is least bad. Since the worst case of a life can be very bad, and non-existence has no bad case, this lens counsels restraint. Verdict: leans against.",
-  parity:"EVERYDAY-RISK PARITY — we impose un-consented risks on future people constantly (driving them, schooling, vaccinating) and call it fine. If those are acceptable, birth may be too. Verdict: leans PERMISSIBLE."
-};
-var wrap=document.getElementById('lenses');
-var out=document.getElementById('lensOut');
-if(wrap){
-  var opts=[].slice.call(wrap.querySelectorAll('.opt'));
-  function paint(sel){
-    opts.forEach(function(o){
-      var on=o.getAttribute('data-k')===sel;
-      o.classList.toggle('sel',on);
-      o.setAttribute('aria-pressed',on?'true':'false');
-    });
-  }
-  function choose(o){
-    var k=o.getAttribute('data-k');
-    paint(k);
-    if(out)out.textContent=feedback[k]||'';
-    try{localStorage.setItem(KEY+':lens',k);}catch(e){}
-  }
-  opts.forEach(function(o){
-    o.setAttribute('role','button');
-    o.setAttribute('tabindex','0');
-    o.setAttribute('aria-pressed','false');
-    o.addEventListener('click',function(){choose(o);});
-    o.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(o);}});
-  });
-  try{var saved=localStorage.getItem(KEY+':lens');if(saved){paint(saved);if(out)out.textContent=feedback[saved]||'';}}catch(e){}
-}
+var QZ=[{a:1,e:'Deciding for someone who cannot consent raises the bar for justification.'},{a:1,e:'Precaution emphasises avoiding any real risk of severe harm, regardless of upside.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
 
-/* ---------- Reflection tool ---------- */
-var ta=document.getElementById('reflect');
-var status=document.getElementById('saveStatus');
-var saveBtn=document.getElementById('saveBtn');
-var copyBtn=document.getElementById('copyBtn');
-var clearBtn=document.getElementById('clearBtn');
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-if(ta){
-  try{ta.value=localStorage.getItem(KEY)||'';}catch(e){}
-  ta.addEventListener('input',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}});
-}
-if(saveBtn)saveBtn.addEventListener('click',function(){try{localStorage.setItem(KEY,ta.value);}catch(e){}flash('Saved ✓');});
-if(clearBtn)clearBtn.addEventListener('click',function(){
-  if(ta.value.trim()&&!window.confirm('Clear your reflection on this device?'))return;
-  ta.value='';try{localStorage.removeItem(KEY);}catch(e){}flash('Cleared.');ta.focus();
-});
-if(copyBtn)copyBtn.addEventListener('click',function(){
-  var text=(ta.value||'').trim();
-  if(!text){flash('Nothing to copy yet.');return;}
-  function done(){flash('Copied ✓');}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});
-  }else{fallbackCopy(text,done);}
-});
-function fallbackCopy(text,done){
-  try{
-    var t=document.createElement('textarea');
-    t.value=text;t.style.position='fixed';t.style.opacity='0';
-    document.body.appendChild(t);t.focus();t.select();
-    document.execCommand('copy');document.body.removeChild(t);done();
-  }catch(e){flash('Copy not supported — select the text manually.');}
-}
-}catch(e){console.error('project script error',e);}
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 027 script error',e);}
 });

@@ -1,46 +1,74 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Environmental Argument Explainer · ANCF Digital Projects</title><meta name="description" content="The ecological strand of antinatalist and childfree reasoning, fairly stated — with the crucial systems-vs-individuals caveat and a firm stand against blaming any group."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Environmental Argument Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Environmental Argument Explainer · ANCF Digital Projects</title><meta name="description" content="The ecological strand of antinatalist and childfree reasoning, fairly stated — with a considerations radar and a firm systems-not-people caveat."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Environmental Argument Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../027-risk-argument-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../029-feminist-childfree-explainer/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 028</span><h2>Environmental Argument Explainer</h2><div><span class="cat">Ethics</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Some people weigh ecology when they think about having children. This explains that motivation fairly — and, just as importantly, guards hard against the version of it that turns into blame toward parents, particular countries, or any community. Concern for the planet should never become contempt for people.</p>
+<div class="proj-head"><span class="num">PROJECT 028</span><h2>Environmental Argument Explainer</h2><div><span class="cat">Ethics</span> <span class="note">· Difficulty: Intermediate · ~10 min</span></div></div>
+<p class="lead">Some people weigh ecological limits when thinking about family size. This explainer states that reasoning fairly — and is equally clear about its limits: the biggest drivers are systems and high-consumption patterns, not individuals, and no group should ever be blamed or pressured.</p>
 
-<div class="panel"><h3>1. The reasoning, stated plainly</h3>
-<p>The thought is simple: each additional person draws on shared resources over a lifetime, so some people choose fewer or no children partly out of concern for ecological limits and the world future generations will inherit. For them it is one honest factor among several.</p>
+<p class="disclaimer">This is reflection, not a verdict or a guilt tool. It does not pressure anyone toward or away from having children, and it never blames parents, large families, or any community. Emissions and resources are distributed deeply unequally — responsibility is not.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The ecological considerations people raise — and why they're contested.</li>
+<li>Why "systems, not individuals" is the crucial framing.</li>
+<li>Why fairness and unequal responsibility matter here.</li>
+<li>How to hold ecological concern without shame or pressure.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Weigh the considerations</h3>
+<p class="note">How much weight do <em>you</em> give each consideration? There's no correct shape — it maps your own values. Saved on this device.</p>
+<div id="cons">
+<div class="slider-row"><div class="lab"><label for="c-resource">Resource use</label><output id="o-resource">50%</output></div><input type="range" id="c-resource" data-axis="Resources" min="0" max="100" step="5" value="50"></div>
+<div class="slider-row"><div class="lab"><label for="c-climate">Climate</label><output id="o-climate">50%</output></div><input type="range" id="c-climate" data-axis="Climate" min="0" max="100" step="5" value="50"></div>
+<div class="slider-row"><div class="lab"><label for="c-bio">Biodiversity</label><output id="o-bio">50%</output></div><input type="range" id="c-bio" data-axis="Biodiversity" min="0" max="100" step="5" value="50"></div>
+<div class="slider-row"><div class="lab"><label for="c-future">Future generations</label><output id="o-future">50%</output></div><input type="range" id="c-future" data-axis="Future" min="0" max="100" step="5" value="50"></div>
+<div class="slider-row"><div class="lab"><label for="c-justice">Global justice</label><output id="o-justice">50%</output></div><input type="range" id="c-justice" data-axis="Justice" min="0" max="100" step="5" value="50"></div>
+</div>
+<svg class="chart" id="consRadar" role="img" aria-label="Radar chart of how much weight you give five ecological considerations."></svg>
+<p class="chart-cap">Radar: your weighting of resources, climate, biodiversity, future generations, and justice.</p>
 </div>
 
-<div class="panel"><h3>2. The caveat that matters most</h3>
-<p>Environmental impact is driven <strong>far more by systems, policy, and consumption than by family size</strong>. Energy sources, industry, transport, and how wealthy a lifestyle is shape a footprint enormously — which is why two people can differ in impact by orders of magnitude regardless of how many children they have.</p>
-<div class="grid">
-<div class="card"><h3>Systems over individuals</h3><p class="desc">Most leverage sits with energy grids, regulation, and industry — not personal family decisions.</p></div>
-<div class="card"><h3>Consumption varies wildly</h3><p class="desc">Lifestyle and wealth affect footprint more than headcount alone; averages hide huge differences.</p></div>
-<div class="card"><h3>The future can change</h3><p class="desc">A child born into a decarbonising world has a very different footprint than one born decades ago.</p></div>
+<div class="panel"><h3>2. The crucial caveats</h3>
+<div class="kv">
+<strong>Systems first</strong><span>The dominant drivers are fossil-fuel systems and high-consumption economies — not individual family size.</span>
+<strong>Unequal footprints</strong><span>A small share of the world's population produces most emissions; responsibility tracks consumption, not headcount.</span>
+<strong>No blame</strong><span>This reasoning must never shame parents, large families, or people in any country or community.</span>
+<strong>Personal, not political</strong><span>For some it's one private reason among many; it should never become coercion or population policy targeting any group.</span>
 </div>
 </div>
 
-<div class="panel"><h3>3. Avoiding the blame trap</h3>
-<p class="note">This is where the argument can go badly wrong. It must not. Tap each line.</p>
-<details><summary>Never blame parents</summary><div><p>People who have children are not wrecking the planet. Framing them that way is both unkind and inaccurate, and this project rejects it.</p></div></details>
-<details><summary>Never blame poorer or higher-fertility nations</summary><div><p>Historically, the largest footprints come from wealthy, high-consumption populations — not from the communities that emit least. Pointing the finger at them is unjust.</p></div></details>
-<details><summary>It's a personal value, not a policy cudgel</summary><div><p>Choosing a smaller family for ecological reasons is a legitimate personal choice. Pressuring or shaming anyone else into it is coercion, which this collection opposes in every direction.</p></div></details>
-<details><summary>Hold hope, not despair</summary><div><p>Doom and self-loathing help no one. Concern works best paired with agency: support good policy, vote, and live in line with your values without contempt for others.</p></div></details>
+<div class="panel"><h3>3. The strongest objection</h3>
+<details><summary>"This individualises a systemic problem"</summary><div><p>Focusing on personal reproduction can distract from the structural changes (energy, policy, corporate practice) that actually move the needle — and can slide into blaming the wrong people. Many hold ecological values <em>and</em> reject the population framing for exactly this reason.</p></div></details>
+<details><summary>"It risks coercive or unjust uses"</summary><div><p>Historically, "population" arguments have been misused against marginalised groups. Any ecological reflection here must be firmly anti-coercive and centred on consumption and systems, not on controlling anyone's body.</p></div></details>
 </div>
 
-<div class="panel"><h3>4. A fair framing</h3>
-<p>The ecological consideration is one personal motivation among many — valid to hold, and easy to misuse. At its best it expresses care for future people and the living world. At its worst it becomes blame. Keep it as the first, and never the second.</p>
+<div class="panel"><h3>4. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The dominant drivers of ecological harm are…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Individual family sizes</div><div class="opt" data-q="0" data-i="1">High-consumption systems and economies</div><div class="opt" data-q="0" data-i="2">Any one community</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. This reflection should…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Pressure people not to have children</div><div class="opt" data-q="1" data-i="1">Never coerce or blame any group</div><div class="opt" data-q="1" data-i="2">Target specific populations</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
 <div class="panel"><h3>5. Your reflection</h3>
-<label class="field" for="reflect">Does ecology factor into your own thinking — and if so, how heavily, and how do you keep it from becoming judgement of others?</label>
+<label class="field" for="reflect">How do you hold ecological concern without it tipping into blame or pressure?</label>
 <textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="proj-nav">
-<button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button>
-<button class="btn" id="copyBtn" type="button">Copy reflection</button>
-<button class="btn" id="clearBtn" type="button">Clear reflection</button>
-<span class="spacer"></span>
-<span class="note" id="saveStatus" role="status" aria-live="polite"></span>
-</div>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
 <p class="note">Saved on this device only. Nothing is uploaded.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Ecological concern can be a sincere, private reason for some people's choices. Held well, it points at systems and high consumption — never at individuals, families, or any community — and it never becomes pressure or policy aimed at anyone's body.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../069-resource-allocation-simulator/index.html">Resource Allocation Simulator<span>See sharing dynamics</span></a>
+<a href="../098-poverty-and-parenthood-pressure-explainer/index.html">Poverty &amp; Parenthood Pressure<span>Systems, not people</span></a>
+<a href="../030-economic-pressure-explainer/index.html">Economic Pressure Explainer<span>Money &amp; choices</span></a>
+<a href="../001-antinatalism-intro-guide/index.html">Antinatalism Intro Guide<span>The wider picture</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../027-risk-argument-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../029-feminist-childfree-explainer/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

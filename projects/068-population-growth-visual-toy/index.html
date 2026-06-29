@@ -1,21 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Population Growth Visual Toy · ANCF Digital Projects</title><meta name="description" content="A slider toy showing how exponential growth behaves vs linear, with doubling time. A neutral maths visual — no claims about any group."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Population Growth Visual Toy</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Population Growth Visual Toy · ANCF Digital Projects</title><meta name="description" content="A slider toy showing how exponential growth behaves, with doubling time. A neutral maths visual — no claims about any group."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Population Growth Visual Toy</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../067-auntie-uncle-chase-arcade-game/index.html">← Previous</a><a class="btn btn-primary" href="../069-resource-allocation-simulator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 068</span><h2>Population Growth Visual Toy</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Slide the growth rate to watch an exponential curve (red) pull away from steady linear growth (grey). It's a neutral maths visual about how compounding works — <strong>not</strong> a claim about any group of people.</p>
-<p class="note">Drag the slider below to change the growth rate.</p>
+<div class="proj-head"><span class="num">PROJECT 068</span><h2>Population Growth Visual Toy</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min</span></div></div>
+<p class="lead">A simple toy for an idea that surprises almost everyone: how fast <strong>exponential growth</strong> compounds. Slide the inputs and watch the curve. It's pure maths — a neutral visual, with no claim about any country or community.</p>
 
-<div class="panel"><h3>Exponential vs. linear</h3>
-<label class="field" for="rate">Growth rate per step (%)</label>
-<input type="range" id="rate" min="0" max="12" value="3" step="0.5" style="width:100%" aria-describedby="rOut">
-<canvas id="game"></canvas>
-<div class="result" id="rOut" role="status" aria-live="polite"></div>
-<p class="note">Red = exponential (compounding). Grey = linear (same amount added each step). The "rule of 70" estimates doubling time ≈ 70 ÷ rate.</p>
+<p class="disclaimer">A maths demonstration only. It says nothing about whether populations should grow or shrink, and never targets any group. Real demographics are far more complex than a single rate.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How a steady percentage growth compounds over time.</li>
+<li>What "doubling time" means.</li>
+<li>Why exponential curves feel slow, then sudden.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Try it</h3>
+<div class="slider-row"><div class="lab"><label for="start">Starting number</label><output id="o-start">100</output></div><input type="range" id="start" min="10" max="1000" step="10" value="100"></div>
+<div class="slider-row"><div class="lab"><label for="rate">Growth per year</label><output id="o-rate">2%</output></div><input type="range" id="rate" min="0" max="8" step="0.5" value="2"></div>
+<div class="slider-row"><div class="lab"><label for="years">Years</label><output id="o-years">50</output></div><input type="range" id="years" min="0" max="100" step="5" value="50"></div>
+<div class="meter-grid">
+<div class="meter-card"><div class="lab"><span>After the period</span><b id="finalOut">0</b></div></div>
+<div class="meter-card"><div class="lab"><span>Doubling time</span><b id="dblOut">—</b></div></div>
+</div>
+<svg class="chart" id="growthChart" role="img" aria-label="Bar chart of the number at intervals across the chosen years."></svg>
+<p class="chart-cap">Bar chart: the number at points across the chosen period.</p>
 </div>
 
-<div class="panel"><h3>A important honesty note</h3>
-<p>This toy shows the <em>maths</em> of compounding, which applies to savings, bacteria, or anything that grows by a percentage. <strong>Real human population is not a simple exponential</strong>: global growth rates have been <em>falling</em> for decades, and demography depends on health, education, and choice — not a single slider. Treat this as a lesson in curves, not a statement about people.</p>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Exponential growth tends to feel…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Steady and linear</div><div class="opt" data-q="0" data-i="1">Slow at first, then sudden</div><div class="opt" data-q="0" data-i="2">Always shrinking</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. This toy is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A claim about real populations</div><div class="opt" data-q="1" data-i="1">A neutral maths demonstration</div><div class="opt" data-q="1" data-i="2">A targeting of a group</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Your reflection</h3>
+<label class="field" for="reflect">What did the curve's shape make you notice?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Exponential curves are famously unintuitive — they creep, then leap. Seeing that clearly is useful for thinking about many things; it implies nothing about what anyone should do.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../069-resource-allocation-simulator/index.html">Resource Allocation Simulator<span>Sharing a fixed pool</span></a>
+<a href="../028-environmental-argument-explainer/index.html">Environmental Argument<span>With strong caveats</span></a>
+<a href="../060-rationalism-toolkit/index.html">Rationalism Toolkit<span>Think clearly</span></a>
+<a href="../024-philosophy-timeline/index.html">Philosophy Timeline<span>Context</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../067-auntie-uncle-chase-arcade-game/index.html">← Previous</a><a class="btn btn-primary" href="../069-resource-allocation-simulator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

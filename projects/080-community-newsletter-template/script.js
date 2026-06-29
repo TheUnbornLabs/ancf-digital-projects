@@ -1,28 +1,26 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var timer=null;
+var A=window.ANCF||{};
+var fields=[].slice.call(document.querySelectorAll('#board textarea'));
+var bar=document.getElementById('bar'),pct=document.getElementById('pct');
+function render(){var n=0;fields.forEach(function(t){if((t.value||'').trim())n++;});if(A.meter)A.meter(bar,n/fields.length*100);if(pct)pct.textContent=Math.round(n/fields.length*100)+'%';}
+if(fields.length){var s=A.getJSON?A.getJSON('news',{}):{};s=s||{};fields.forEach(function(t){if(s[t.id]!=null)t.value=s[t.id];t.addEventListener('input',function(){s[t.id]=t.value;if(A.setJSON)A.setJSON('news',s);render();});});render();}
+var status=document.getElementById('status'),timer=null;
 function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-var focusLine={learning:'📚 This edition\'s pick: [a reading or tool] — why it\'s worth your time',support:'🤝 Member spotlight & support: [a story or shout-out]',events:'📅 Upcoming gatherings: [what / when / where / RSVP]'};
-function scaffold(){
-  var cad=document.getElementById('cadence').value;
-  var focus=document.getElementById('focus').value;
-  return '📰 '+cad.toUpperCase()+' NEWSLETTER — [group name], [date]\n\n'+
-    '👋 Welcome & shout-outs: [a warm hello, thank a member]\n\n'+
-    (focusLine[focus]||focusLine.learning)+'\n\n'+
-    '💬 Reflection prompt: [one short question for the week]\n\n'+
-    '🌱 Quick wins / good news: [something uplifting]\n\n'+
-    '🤝 Our values reminder: kind, respectful, ideas-not-people; no advice without disclaimers.\n\n'+
-    '🔗 Get involved / reply: [link or how to respond]\n\n'+
-    'With care,\nThe [group name] team';
-}
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved)custom.value=saved;}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
-var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',function(){if(custom.value.trim()&&!window.confirm('Replace the current text with a fresh template?'))return;custom.value=scaffold();try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Template ready ✓');custom.focus();});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){var text=(custom.value||'').trim();if(!text){flash('Generate a template first.');return;}function done(){copyCustom.textContent='Copied ✓';setTimeout(function(){copyCustom.textContent='Copy my newsletter';},1500);}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}});
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
-}catch(e){console.error('project script error',e);}
+var saveBtn=document.getElementById('saveBtn'),copyBtn=document.getElementById('copyBtn'),clearBtn=document.getElementById('clearBtn');
+if(saveBtn)saveBtn.addEventListener('click',function(){var s={};fields.forEach(function(t){s[t.id]=t.value;});if(A.setJSON)A.setJSON('news',s);flash('Saved ✓');});
+if(copyBtn)copyBtn.addEventListener('click',function(){var L=[];fields.forEach(function(t){if(t.value.trim()){L.push('— '+t.getAttribute('data-label')+' —',t.value.trim(),'');}});if(!L.length){flash('Fill something first.');return;}A.copy&&A.copy(L.join('\n'),copyBtn);});
+if(clearBtn)clearBtn.addEventListener('click',function(){if(!window.confirm('Clear the whole newsletter?'))return;fields.forEach(function(t){t.value='';});if(A.remove)A.remove('news');render();flash('Cleared.');});
+
+var QZ=[{a:0,e:'A member spotlight builds belonging.'},{a:0,e:'A good newsletter is warm and skimmable.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 080 script error',e);}
 });

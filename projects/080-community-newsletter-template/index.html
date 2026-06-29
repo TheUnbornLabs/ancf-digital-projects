@@ -1,35 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Community Newsletter Template · ANCF Digital Projects</title><meta name="description" content="Generate a friendly, reusable newsletter skeleton for a community group — by cadence and focus — into an editable box you fill in and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Community Newsletter Template</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Community Newsletter Template · ANCF Digital Projects</title><meta name="description" content="A friendly, reusable newsletter skeleton for a community group — greeting, highlight, what's next, spotlight, resource, closing — with a meter and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Community Newsletter Template</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../079-article-outline-generator/index.html">← Previous</a><a class="btn btn-primary" href="../081-legal-rights-awareness-page/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 080</span><h2>Community Newsletter Template</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">A reusable newsletter skeleton for a community group. Pick a cadence and focus, generate a template, then fill it in and copy it into your email tool. A good newsletter is short, kind, and easy to skim.</p>
+<div class="proj-head"><span class="num">PROJECT 080</span><h2>Community Newsletter Template</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">A friendly, reusable skeleton for a community newsletter — a warm greeting, a highlight, what's next, a member spotlight, a useful resource, and a kind sign-off. Fill it in, watch the meter, and copy it out.</p>
 
-<div class="panel"><h3>1. Build your template</h3>
-<div class="row">
-<div><label class="field" for="cadence">Cadence</label><select id="cadence">
-<option value="Weekly">Weekly</option>
-<option value="Monthly">Monthly</option>
-</select></div>
-<div><label class="field" for="focus">Main focus</label><select id="focus">
-<option value="learning">Learning &amp; resources</option>
-<option value="support">Community support</option>
-<option value="events">Events</option>
-</select></div>
-</div>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate template</button></div>
-</div>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The sections that make a newsletter readable and warm.</li>
+<li>Why a member spotlight builds belonging.</li>
+<li>How to close with care.</li>
+</ul></div>
 
-<div class="panel"><h3>2. Fill it in</h3>
-<label class="field" for="custom">Replace the bracketed bits with your news. Saved on this device.</label>
-<textarea id="custom" placeholder="Press 'Generate template' above to scaffold this…" style="min-height:240px"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my newsletter</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="panel"><h3>Fill the template</h3>
+<div class="meter-card"><div class="lab"><span>Newsletter ready</span><b id="pct">0%</b></div><div class="meter"><span id="bar"></span></div></div>
+<div id="board" style="margin-top:12px">
+<div><label class="field" for="n-greet">Warm greeting</label><textarea id="n-greet" data-label="Greeting" placeholder="Hello friends — a quick hello and the vibe of this issue…"></textarea></div>
+<div><label class="field" for="n-high">This month's highlight</label><textarea id="n-high" data-label="Highlight" placeholder="The one thing worth celebrating or sharing…"></textarea></div>
+<div><label class="field" for="n-next">What's next</label><textarea id="n-next" data-label="What's next" placeholder="Events, reads, or plans coming up…"></textarea></div>
+<div><label class="field" for="n-spot">Member spotlight</label><textarea id="n-spot" data-label="Spotlight" placeholder="A member, a story, a kindness worth naming…"></textarea></div>
+<div><label class="field" for="n-res">Useful resource</label><textarea id="n-res" data-label="Resource" placeholder="A link, a tool, or a tip for the community…"></textarea></div>
+<div><label class="field" for="n-close">Kind sign-off</label><textarea id="n-close" data-label="Sign-off" placeholder="A warm closing line…"></textarea></div>
 </div>
-
-<div class="panel"><h3>3. Tips</h3>
-<details><summary>Lead with one thing</summary><div><p>Put the single most useful item up top. Busy readers skim; reward the skim.</p></div></details>
-<details><summary>Keep it kind and safe</summary><div><p>Reaffirm the group's values, and add disclaimers for anything resembling medical, legal, or financial advice.</p></div></details>
-<details><summary>Always include a way in</summary><div><p>End with how to reply, join, or get help. A newsletter is a conversation, not a broadcast.</p></div></details>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy newsletter</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. A member spotlight mainly builds…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Belonging</div><div class="opt" data-q="0" data-i="1">Distance</div><div class="opt" data-q="0" data-i="2">Nothing</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A good newsletter is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Warm and skimmable</div><div class="opt" data-q="1" data-i="1">Long and dense</div><div class="opt" data-q="1" data-i="2">All links</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>A newsletter is a hug in text form: greet warmly, share a highlight, spotlight a person, point to something useful, and sign off with care. Short and warm beats long and dense every time.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../037-community-notice-generator/index.html">Notice Generator<span>Quick announcements</span></a>
+<a href="../054-study-circle-dashboard/index.html">Study Circle Dashboard<span>Organise a group</span></a>
+<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set the tone</span></a>
+<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Stay kind</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../079-article-outline-generator/index.html">← Previous</a><a class="btn btn-primary" href="../081-legal-rights-awareness-page/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

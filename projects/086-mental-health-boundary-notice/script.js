@@ -1,30 +1,35 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var lead={chat:'A caring note for our group chat:',page:'A caring note for this page:',event:'A caring note for our event:'};
+var A=window.ANCF||{};
+var open={group:'A gentle note for our group:',post:'A gentle note on this thread:',event:'A gentle note for this meetup:'};
+var ctx=document.getElementById('ctx'),warmth=document.getElementById('warmth'),out=document.getElementById('out');
 function build(){
-  var c=document.getElementById('context').value;
-  return (lead[c]||lead.chat)+'\n\n'+
-    'This is a supportive space for reflection, not a crisis service. If you or someone here is struggling, please reach out to a trusted person or a qualified professional. '+
-    'In an emergency, contact local emergency services.\n\n'+
-    'Support you can contact: [add a local/national support line]\n\n'+
-    'We ask everyone to keep conversations kind, to avoid graphic content, and to look out for one another. You matter, and support exists.';
+  var L=[open[ctx.value]||open.group,''];
+  L.push('We talk about some big, heavy topics here, and we want this to be a kind place for everyone.');
+  if(warmth.value==='full'){
+    L.push('','Please be gentle with yourself and with each other. It\'s okay to step back from a conversation any time. If something here feels like too much, that\'s a sign to take care of you first.');
+  }
+  L.push('','This space is for support and reflection — it can\'t replace professional help. If you\'re going through a hard time, please reach out to someone you trust or a qualified professional.');
+  L.push('','If you or someone else may be in immediate danger, please contact local emergency services or a crisis line right away: [local support].');
+  L.push('','Thank you for helping keep this a safe, caring place. 💛');
+  out.value=L.join('\n');if(A.set)A.set('notice',out.value);
 }
-// generator + editable box (reuse pattern)
-var out=document.getElementById('genOut');
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var timer=null;
-function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-function generate(){var t=build();out.textContent=t;if(custom){custom.value=t;try{localStorage.setItem(KEY,custom.value);}catch(e){}}}
 var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',generate);
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved){custom.value=saved;out.textContent=saved;}}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
-function copyText(text,btn,label){if(!text||!text.trim()||text.indexOf('will appear')>=0){flash('Generate first.');return;}function done(){if(btn){btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label;},1500);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}}
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
+if(genBtn)genBtn.addEventListener('click',build);
+if(ctx)ctx.addEventListener('change',build);if(warmth)warmth.addEventListener('change',build);
+if(out){if(A.get)out.value=A.get('notice','');out.addEventListener('input',function(){if(A.set)A.set('notice',out.value);});if(!out.value)build();}
 var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){copyText(out.textContent,copyBtn,'Copy to clipboard');});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){copyText(custom?custom.value:'',copyCustom,'Copy my notice');});
-}catch(e){console.error('project script error',e);}
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+
+var QZ=[{a:1,e:'A good notice conveys care and points to real support — it isn\'t a telling-off.'},{a:1,e:'A group can support people and signpost professional help, not replace it.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 086 script error',e);}
 });

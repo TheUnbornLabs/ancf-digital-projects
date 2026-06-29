@@ -1,45 +1,69 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Economic Pressure Explainer · ANCF Digital Projects</title><meta name="description" content="How money, housing, and work shape reproductive decisions across the income spectrum — neutrally, critiquing structures and never shaming families."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Economic Pressure Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Economic Pressure Explainer · ANCF Digital Projects</title><meta name="description" content="How money, housing, and work shape reproductive decisions — critiquing structures, never shaming families — with an interactive pressure map."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Economic Pressure Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../029-feminist-childfree-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../031-comic-strip-prompt-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 030</span><h2>Economic Pressure Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Money, housing, and work quietly shape reproductive decisions across the whole income spectrum. This is a neutral look at those forces — aimed at <strong>structures</strong>, never at families. No one should ever be shamed for the choices their circumstances pushed them toward.</p>
+<div class="proj-head"><span class="num">PROJECT 030</span><h2>Economic Pressure Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
+<p class="lead">Money, housing, and work shape family decisions in every direction — pushing some toward children and others away. This explainer names those forces and lets you map which weigh on you. It critiques <strong>structures</strong>, never families, and never shames anyone's choices.</p>
 
-<div class="panel"><h3>1. The factors at play</h3>
-<p class="note">These press on people differently, but almost everyone feels some of them.</p>
-<div class="grid">
-<div class="card"><h3>Housing</h3><p class="desc">The cost and stability of a home is one of the biggest practical inputs into family decisions.</p></div>
-<div class="card"><h3>Childcare</h3><p class="desc">Where childcare is scarce or expensive, it shapes whether and when people feel able to have children.</p></div>
-<div class="card"><h3>Job security</h3><p class="desc">Insecure or precarious work makes long-term commitments feel riskier for many.</p></div>
-<div class="card"><h3>Wages vs. cost of living</h3><p class="desc">When pay doesn't keep pace with prices, every major life decision gets harder.</p></div>
-<div class="card"><h3>Leave &amp; support</h3><p class="desc">Parental leave, healthcare, and social support change the real cost of raising a child.</p></div>
-<div class="card"><h3>Debt</h3><p class="desc">Student or household debt can delay or reshape plans regardless of income level.</p></div>
+<p class="disclaimer">This page critiques systems, not people. It does not pressure anyone toward or away from parenthood, and it never blames poor people or any family. Not financial advice.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The economic forces that shape reproductive decisions.</li>
+<li>Why these are structural, not personal failings.</li>
+<li>Which pressures weigh most on you (an interactive map).</li>
+<li>How to discuss economics without shaming anyone.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Map the pressures</h3>
+<p class="note">Rate how much each weighs on you: 0 none → 4 severe. Saved on this device.</p>
+<div id="pressures">
+<div class="slider-row"><div class="lab"><label for="p-housing">Housing costs</label><output id="o-housing">0</output></div><input type="range" id="p-housing" data-axis="Housing" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="p-childcare">Childcare costs</label><output id="o-childcare">0</output></div><input type="range" id="p-childcare" data-axis="Childcare" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="p-jobs">Job insecurity</label><output id="o-jobs">0</output></div><input type="range" id="p-jobs" data-axis="Job security" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="p-wages">Wages vs cost of living</label><output id="o-wages">0</output></div><input type="range" id="p-wages" data-axis="Wages" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="p-debt">Debt</label><output id="o-debt">0</output></div><input type="range" id="p-debt" data-axis="Debt" min="0" max="4" step="1" value="0"></div>
+<div class="slider-row"><div class="lab"><label for="p-support">Lack of leave / support</label><output id="o-support">0</output></div><input type="range" id="p-support" data-axis="Support" min="0" max="4" step="1" value="0"></div>
+</div>
+<svg class="chart" id="presChart" role="img" aria-label="Bar chart of how much each economic pressure weighs on you."></svg>
+<p class="chart-cap" id="presCap">Bar chart: your rating (0–4) of each pressure.</p>
+</div>
+
+<div class="panel"><h3>2. Structures, not blame</h3>
+<div class="kv">
+<strong>It's not personal failure</strong><span>Housing, wages, and care costs are set by policy and markets — not by any family doing something wrong.</span>
+<strong>Pressure runs both ways</strong><span>Economics pushes some toward children (security, support) and others away (cost, precarity).</span>
+<strong>Solidarity, not shame</strong><span>The fair target is the system. People making the best of hard constraints deserve support, not judgement.</span>
 </div>
 </div>
 
-<div class="panel"><h3>2. Pressure in both directions</h3>
-<p class="note">Economics doesn't push everyone the same way. Tap to expand.</p>
-<details><summary>Pushed toward children</summary><div><p>Some feel cultural or family pressure to have children regardless of cost, and then carry financial strain they didn't freely choose.</p></div></details>
-<details><summary>Unable to afford the family they want</summary><div><p>Others would like children but feel they cannot responsibly afford them. That is not a "childfree choice" so much as a choice removed by circumstance — and it deserves compassion, not judgement.</p></div></details>
-<details><summary>Choice vs. constraint</summary><div><p>There's a real difference between freely choosing a childfree life and feeling priced out of parenthood. Both are valid to hold, but they are not the same experience, and it helps to name which is which.</p></div></details>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. These pressures are best understood as…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Personal failings</div><div class="opt" data-q="0" data-i="1">Structural forces set by policy and markets</div><div class="opt" data-q="0" data-i="2">Nobody's concern</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The fair target of critique is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Poor families</div><div class="opt" data-q="1" data-i="1">The systems that shape choices</div><div class="opt" data-q="1" data-i="2">People with many children</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
-
-<div class="panel"><h3>3. Critique structures, not people</h3>
-<p>This is the non-negotiable framing: economic explainers must <strong>never blame poor families</strong>, or any family. Having children when money is tight is not irresponsible, and choosing not to is not selfish. The proper subject of critique is the <em>system</em> — housing costs, wages, the availability of care — not the people doing their best inside it.</p>
-<p class="note">If a line of argument ends in looking down on poorer people for their family size, it has gone wrong. This collection rejects that turn completely.</p>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
 <div class="panel"><h3>4. Your reflection</h3>
-<label class="field" for="reflect">Which economic factors feel most real in your own situation — and are they shaping a free choice or constraining one?</label>
+<label class="field" for="reflect">Which pressure weighs most on you — and what structural change would ease it?</label>
 <textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="proj-nav">
-<button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button>
-<button class="btn" id="copyBtn" type="button">Copy reflection</button>
-<button class="btn" id="clearBtn" type="button">Clear reflection</button>
-<span class="spacer"></span>
-<span class="note" id="saveStatus" role="status" aria-live="polite"></span>
-</div>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
 <p class="note">Saved on this device only. Nothing is uploaded.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Economics shapes family life profoundly — but it is a matter of systems, not personal worth. Naming the structures clearly lets us support people on every path, without a word of blame for the choices they make under real constraints.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../098-poverty-and-parenthood-pressure-explainer/index.html">Poverty &amp; Parenthood Pressure<span>Deeper, with care</span></a>
+<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>The numbers</span></a>
+<a href="../020-retirement-without-children-planner/index.html">Retirement Planner<span>Later-life security</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Name the pressure</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../029-feminist-childfree-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../031-comic-strip-prompt-generator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

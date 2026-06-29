@@ -1,31 +1,40 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var timer=null;
-function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-var extra={
-  options:'4. Which option would you recommend for someone in my situation, and why?\n5. What are the alternatives to a permanent method?',
-  risks:'4. What are the risks, the recovery time, and how permanent is each option?\n5. What does "failure rate" mean for each method?',
-  serious:'4. Can you note in my record that I asked about this and my clearly stated preference?\n5. If you can\'t help with this, can you refer me to someone who can?'
+var A=window.ANCF||{};
+var Q={
+ options:['What options are available to me, and how do they differ?'],
+ permanence:['How permanent is each option, and is reversal ever possible?'],
+ risks:['What are the risks, the recovery like, and what should I expect afterwards?'],
+ eligibility:['Am I eligible, and is there any required waiting period or timing?'],
+ access:['Where can this be done, and what would it cost?'],
+ secondopinion:['If I want a second opinion, how would I go about that?']
 };
-function scaffold(){
-  var f=document.getElementById('focus').value;
-  return 'QUESTIONS FOR MY PROVIDER\n\n'+
-    '1. What permanent and long-term contraception options are available to me?\n'+
-    '2. What are the benefits and risks of each?\n'+
-    '3. What should I expect before, during, and after?\n'+
-    (extra[f]||extra.options)+'\n'+
-    '6. What follow-up or aftercare is involved?\n\n'+
-    'My own questions:\n  - \n\n'+
-    '(For information only — your provider gives the medical guidance.)';
+var boxes=[].slice.call(document.querySelectorAll('#focus input[type=checkbox]'));
+var out=document.getElementById('out');
+function build(){
+  var L=['Questions for my provider:',''];var n=1;
+  boxes.forEach(function(b){if(b.checked){(Q[b.getAttribute('data-key')]||[]).forEach(function(q){L.push(n+'. '+q);n++;});}});
+  if(n===1){L.push('(Tick some topics above to add questions.)');}
+  L.push('','I would like time to think before deciding anything.');
+  out.value=L.join('\n');if(A.set)A.set('sterq',out.value);
 }
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved)custom.value=saved;}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
+var saved=A.getJSON?A.getJSON('focus',{}):{};saved=saved||{};
+boxes.forEach(function(b){var k=b.getAttribute('data-key');if(saved[k])b.checked=true;b.addEventListener('change',function(){saved[k]=b.checked;if(A.setJSON)A.setJSON('focus',saved);});});
 var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',function(){if(custom.value.trim()&&!window.confirm('Replace the current text with a fresh list?'))return;custom.value=scaffold();try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('List ready ✓');custom.focus();});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){var text=(custom.value||'').trim();if(!text){flash('Generate a list first.');return;}function done(){copyCustom.textContent='Copied ✓';setTimeout(function(){copyCustom.textContent='Copy my questions';},1500);}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}});
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
-}catch(e){console.error('project script error',e);}
+if(genBtn)genBtn.addEventListener('click',build);
+if(out){if(A.get)out.value=A.get('sterq','');out.addEventListener('input',function(){if(A.set)A.set('sterq',out.value);});if(!out.value)build();}
+var copyBtn=document.getElementById('copyBtn');
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+
+var QZ=[{a:1,e:'This tool only helps you prepare questions — it makes no recommendation.'},{a:1,e:'The decision belongs to you and a qualified provider.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 084 script error',e);}
 });

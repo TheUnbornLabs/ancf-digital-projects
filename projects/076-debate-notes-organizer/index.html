@@ -1,27 +1,48 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debate Notes Organizer · ANCF Digital Projects</title><meta name="description" content="Prepare for a respectful debate by sorting notes into my claims, their strongest points, evidence, and common ground — with counts, copy, and starters. On your device."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Debate Notes Organizer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debate Notes Organizer · ANCF Digital Projects</title><meta name="description" content="Prepare for a respectful debate by sorting notes into my claims, their strongest points, evidence, and common ground — with a readiness meter and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Debate Notes Organizer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../075-protest-poster-text-generator/index.html">← Previous</a><a class="btn btn-primary" href="../077-book-summary-template-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 076</span><h2>Debate Notes Organizer</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Prepare for a respectful debate by sorting your notes into four columns — including, crucially, <em>their</em> strongest points and the <em>common ground</em> you share. Everything stays on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 076</span><h2>Debate Notes Organizer</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
+<p class="lead">Prepare for a respectful discussion by sorting your thoughts into four boxes: your claims, their <em>strongest</em> points, the evidence, and the common ground. Steelmanning the other side is part of being ready. Saved on this device.</p>
 
-<div class="panel"><h3>How to use it</h3>
-<p>Add <strong>one point per line</strong> in each column. Tap a starter prompt to seed your "My claims" column. The "their strongest points" and "common ground" columns are the secret to a debate that changes minds instead of just heating up.</p>
-<p class="note" style="margin-bottom:4px">Starter prompts:</p>
-<div class="filters" id="starters">
-<button class="chip" type="button" data-goal="My core claim, in one sentence">Core claim</button>
-<button class="chip" type="button" data-goal="The value behind my position">My value</button>
-<button class="chip" type="button" data-goal="A point I can concede">A concession I can make</button>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>Why preparing the other side's best points makes you stronger.</li>
+<li>How to separate claims from evidence.</li>
+<li>Why naming common ground lowers the heat.</li>
+</ul></div>
+
+<div class="panel"><h3>Organise your notes</h3>
+<div class="meter-card"><div class="lab"><span>Preparation</span><b id="pct">0%</b></div><div class="meter"><span id="bar"></span></div></div>
+<div id="board" style="margin-top:12px">
+<div><label class="field" for="d-mine">My claims</label><textarea id="d-mine" data-label="My claims" placeholder="What I want to argue, in clear points…"></textarea></div>
+<div><label class="field" for="d-theirs">Their strongest points (steelman)</label><textarea id="d-theirs" data-label="Their strongest points" placeholder="The best version of the other view…"></textarea></div>
+<div><label class="field" for="d-evidence">Evidence &amp; sources</label><textarea id="d-evidence" data-label="Evidence" placeholder="Facts, examples, sources…"></textarea></div>
+<div><label class="field" for="d-common">Common ground</label><textarea id="d-common" data-label="Common ground" placeholder="What we both likely agree on…"></textarea></div>
 </div>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy notes</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
 </div>
 
-<div style="display:flex;gap:14px;flex-wrap:wrap">
-<div class="panel" style="flex:1 1 220px"><h3>My claims</h3><textarea id="col0" placeholder="One item per line…" aria-label="My claims"></textarea><p class="note" id="count0" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Their strongest points</h3><textarea id="col1" placeholder="One item per line…" aria-label="Their strongest points"></textarea><p class="note" id="count1" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Evidence &amp; examples</h3><textarea id="col2" placeholder="One item per line…" aria-label="Evidence and examples"></textarea><p class="note" id="count2" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Common ground</h3><textarea id="col3" placeholder="One item per line…" aria-label="Common ground"></textarea><p class="note" id="count3" role="status" aria-live="polite">0 items</p></div>
+<div class="panel"><h3>Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Preparing the other side's strongest points…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Weakens you</div><div class="opt" data-q="0" data-i="1">Makes you better prepared and fairer</div><div class="opt" data-q="0" data-i="2">Is pointless</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Naming common ground tends to…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Raise the heat</div><div class="opt" data-q="1" data-i="1">Lower the heat and build trust</div><div class="opt" data-q="1" data-i="2">Do nothing</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><div class="proj-nav"><button class="btn btn-primary" id="copyBtn" type="button">Copy my notes</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved on this device only.</span></div><p class="note">If you can fill the "their strongest points" column generously, you're ready for a good-faith debate.</p></div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>The best-prepared person in the room can state the other side fairly. Sort your claims from your evidence, steelman the opposition, and start from common ground — that's how good discussions happen.</p></div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Principles</span></a>
+<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot fallacies</span></a>
+<a href="../060-rationalism-toolkit/index.html">Rationalism Toolkit<span>Think clearly</span></a>
+<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>Draft replies</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../075-protest-poster-text-generator/index.html">← Previous</a><a class="btn btn-primary" href="../077-book-summary-template-tool/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

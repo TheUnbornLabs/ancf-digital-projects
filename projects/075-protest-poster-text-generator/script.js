@@ -1,32 +1,30 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
+var A=window.ANCF||{};
 var S={
-  autonomy:['MY BODY, MY DECISION — RESPECT REPRODUCTIVE AUTONOMY','MY FUTURE IS MINE TO AUTHOR','AUTONOMY IS FOR EVERYONE'],
-  respect:['EVERY CHOICE DESERVES RESPECT — PARENT OR CHILDFREE','RESPECT THE PERSON, NOT JUST THE PATH','DIFFERENT CHOICES, EQUAL DIGNITY'],
-  choice:['MORE CHOICES, NOT FEWER','FREEDOM TO DECIDE, IN EVERY DIRECTION','TO HAVE OR NOT — BOTH ARE FREEDOM'],
-  solidarity:['MOTHERS & CHILDFREE — SAME FREEDOM, SAME SIDE','SOLIDARITY OVER JUDGEMENT','WE RISE BY WIDENING RESPECT']
+ autonomy:['My body, my future, my choice','Autonomy is for everyone','Trust people to decide their own lives','Whose life? Mine to live'],
+ choice:['Every choice deserves respect','Childfree is a valid choice','Choice, not pressure','Free to choose, in every direction'],
+ respect:['Respect the choice, all choices','Different paths, equal dignity','No judgement, just respect','Families come in every shape'],
+ freedom:['Freedom to choose, freedom to be','Build the life that fits you','Live by your own reasons','Free people, free choices']
 };
-function pick(a,i){return a[((i%a.length)+a.length)%a.length];}
-var variant=0;
-function build(){var s=S[document.getElementById('focus').value]||S.autonomy;return pick(s,variant);}
-
-var out=document.getElementById('genOut');
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var KEY='ancf-'+location.pathname;
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-function generate(){var text=build();out.textContent=text;if(custom){custom.value=text;try{localStorage.setItem(KEY,custom.value);}catch(e){}}}
-var genBtn=document.getElementById('genBtn');
-var againBtn=document.getElementById('againBtn');
-if(genBtn)genBtn.addEventListener('click',function(){variant=0;generate();});
-if(againBtn)againBtn.addEventListener('click',function(){variant++;generate();});
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved){custom.value=saved;out.textContent=saved;}}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
-function copyText(text,btn,label){if(!text||!text.trim()||text.indexOf('will appear')>=0){flash('Generate first.');return;}function done(){if(btn){btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label;},1500);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}}
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
+var focus=document.getElementById('focus'),out=document.getElementById('out');var idx=0;
+function show(){var arr=S[focus.value]||S.autonomy;out.textContent='“'+arr[idx%arr.length]+'”';}
+var genBtn=document.getElementById('genBtn'),anotherBtn=document.getElementById('anotherBtn');
+if(genBtn)genBtn.addEventListener('click',function(){idx=Math.floor(Math.random()*(S[focus.value]||S.autonomy).length);show();});
+if(anotherBtn)anotherBtn.addEventListener('click',function(){idx++;show();});
+if(focus)focus.addEventListener('change',function(){idx=0;show();});
 var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){copyText(out.textContent,copyBtn,'Copy to clipboard');});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){copyText(custom?custom.value:'',copyCustom,'Copy my version');});
-}catch(e){console.error('project script error',e);}
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.textContent&&out.textContent.indexOf('Pick a focus')<0?out.textContent:'“'+(S[focus.value]||S.autonomy)[0]+'”',copyBtn);});
+
+var QZ=[{a:1,e:'A strong slogan is short, positive, and memorable.'},{a:1,e:'The best advocacy stands for a value, inclusively.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 075 script error',e);}
 });

@@ -1,21 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resource Allocation Simulator · ANCF Digital Projects</title><meta name="description" content="A live, neutral illustration of how a fixed resource pool divides per person as a household grows — with a visual. Division maths, not a judgment about anyone."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Resource Allocation Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resource Allocation Simulator · ANCF Digital Projects</title><meta name="description" content="A neutral illustration of how a fixed resource pool divides per person as a household grows — division maths, not a judgment about anyone."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Resource Allocation Simulator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../068-population-growth-visual-toy/index.html">← Previous</a><a class="btn btn-primary" href="../070-freedom-points-game/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 069</span><h2>Resource Allocation Simulator</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">A live, neutral illustration of simple division: how a <em>fixed</em> pool splits per person as a household grows. It updates as you drag. This is arithmetic, not a statement about anyone's worth, choices, or family size.</p>
+<div class="proj-head"><span class="num">PROJECT 069</span><h2>Resource Allocation Simulator</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min</span></div></div>
+<p class="lead">A simple toy showing how a <strong>fixed pool</strong> divides per person as a household grows. It's just division — a way to picture trade-offs. It implies nothing about anyone's worth, and real life is far richer than a fixed pie (love, after all, isn't divided).</p>
 
-<div class="panel"><h3>Split a pool</h3>
-<label class="field" for="pool">Total resource pool (units)</label>
-<input type="number" id="pool" value="100" min="1" max="100000" step="10">
-<label class="field" for="people">Number of people sharing it: <span id="peopleVal">4</span></label>
-<input type="range" id="people" min="1" max="12" value="4" style="width:100%" aria-describedby="rOut">
-<div id="bars" style="margin:12px 0"></div>
-<div class="result" id="rOut" role="status" aria-live="polite"></div>
+<p class="disclaimer">A maths illustration only. It does not judge family size or anyone's choices, and real resources aren't a fixed pie — incomes grow, support exists, and care multiplies. Just a thinking aid.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How a fixed amount splits into smaller per-person shares as a group grows.</li>
+<li>Why "more people, smaller slices" is only true when the pie is fixed.</li>
+<li>How to hold a trade-off in mind without judging anyone.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Try it</h3>
+<div class="slider-row"><div class="lab"><label for="pool">Fixed pool (units)</label><output id="o-pool">1000</output></div><input type="range" id="pool" min="100" max="3000" step="100" value="1000"></div>
+<div class="slider-row"><div class="lab"><label for="size">Household size</label><output id="o-size">2</output></div><input type="range" id="size" min="1" max="8" step="1" value="2"></div>
+<div class="meter-card"><div class="lab"><span>Per person (at this size)</span><b id="perOut">0</b></div></div>
+<svg class="chart" id="allocChart" role="img" aria-label="Bar chart of per-person share across household sizes for the fixed pool."></svg>
+<p class="chart-cap">Bar chart: per-person share as household size grows (fixed pool).</p>
 </div>
 
-<div class="panel"><h3>The honest caveat</h3>
-<p>If a pool is truly fixed, more people means a smaller slice each — that's just arithmetic. But <strong>real life is not a fixed pool</strong>: people also <em>produce</em> resources, share, and innovate, and households are not zero-sum. So please don't read this as "more people = worse." It's a tool for thinking about division, nothing more.</p>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. "More people, smaller slices" is true only when…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Always</div><div class="opt" data-q="0" data-i="1">The pool is fixed</div><div class="opt" data-q="0" data-i="2">Never</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. This toy is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A judgment on family size</div><div class="opt" data-q="1" data-i="1">A neutral division illustration</div><div class="opt" data-q="1" data-i="2">A claim love is finite</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Your reflection</h3>
+<label class="field" for="reflect">Where in real life is the "pie" fixed — and where isn't it?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Division is simple; life is not. A fixed pool divides into smaller shares — but incomes, support, and love don't behave like a fixed pie. The toy is a prompt to think about trade-offs, never to judge a family.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../068-population-growth-visual-toy/index.html">Population Growth Toy<span>Exponential maths</span></a>
+<a href="../011-childfree-budget-calculator/index.html">Budget Calculator<span>Real numbers</span></a>
+<a href="../030-economic-pressure-explainer/index.html">Economic Pressure<span>Systems, not people</span></a>
+<a href="../012-parenthood-cost-estimator/index.html">Cost Estimator<span>The other side</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../068-population-growth-visual-toy/index.html">← Previous</a><a class="btn btn-primary" href="../070-freedom-points-game/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

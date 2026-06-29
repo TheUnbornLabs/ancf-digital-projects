@@ -1,49 +1,33 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var KEY='ancf-'+location.pathname;
-var who={Grandparent:'Grandmother/Grandfather',Parent:'Mum/Dad',"Respected elder":'',"Aunt or uncle":'Auntie/Uncle'};
-var openers=[
-  "Thank you — I really value your wisdom and the love behind your advice.",
-  "I'm grateful for your guidance; it means a lot coming from you.",
-  "I always take what you say to heart — thank you for caring about me."
-];
-var middles={
-  warm:[
-    "I've thought about this a great deal, and I've found a path that brings me real peace.",
-    "After a lot of reflection, this is the life that feels right for me."
-  ],
-  firm:[
-    "I've made my decision with care, and I'd be grateful to have it respected.",
-    "This is settled for me, and I hope you can trust me with it."
-  ]
-};
-var closers=[
-  "Your blessing would mean a great deal to me.",
-  "More than anything, I'd love to have your support.",
-  "I hope, in time, you can be happy for me."
-];
-function pick(arr,i){return arr[((i%arr.length)+arr.length)%arr.length];}
-var variant=0;
-function build(){
-  var tone=document.getElementById('tone').value;
-  return [pick(openers,variant),pick(middles[tone]||middles.warm,variant),pick(closers,variant)].join(' ');
-}
-var out=document.getElementById('genOut');
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-function generate(){var t=build();out.textContent=t;if(custom){custom.value=t;try{localStorage.setItem(KEY,custom.value);}catch(e){}}}
+var A=window.ANCF||{};
+var honour={grandparent:'I really value your wisdom, and I know this comes from love.',relative:'Thank you — I know you care about me, and I respect your experience.',neighbour:'That\'s kind of you, and I appreciate you looking out for me.'};
+var bound={warm:'I\'ve thought about this with care, and a life without children is right for me. I\'d love to keep enjoying your company through all of it.',"gentle-firm":'I\'ve made a considered decision that\'s right for my life, and I\'d be grateful to leave it there.',brief:'It\'s a settled decision for me — but thank you for caring.'};
+var who=document.getElementById('who'),tone=document.getElementById('tone'),out=document.getElementById('out');
+function build(){out.value=(honour[who.value]||'')+' '+(bound[tone.value]||'');if(A.set)A.set('reply',out.value);}
 var genBtn=document.getElementById('genBtn');
-var againBtn=document.getElementById('againBtn');
-if(genBtn)genBtn.addEventListener('click',function(){variant=0;generate();});
-if(againBtn)againBtn.addEventListener('click',function(){variant++;generate();});
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved){custom.value=saved;out.textContent=saved;}}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
-function copyText(text,btn,label){if(!text||!text.trim()||text.indexOf('will appear')>=0){flash('Generate first.');return;}function done(){if(btn){btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label;},1500);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}}
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
+if(genBtn)genBtn.addEventListener('click',build);
+if(who)who.addEventListener('change',build);if(tone)tone.addEventListener('change',build);
+if(out){if(A.get)out.value=A.get('reply','');out.addEventListener('input',function(){if(A.set)A.set('reply',out.value);});if(!out.value)build();}
 var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){copyText(out.textContent,copyBtn,'Copy to clipboard');});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){copyText(custom?custom.value:'',copyCustom,'Copy my version');});
-}catch(e){console.error('project script error',e);}
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+
+var QZ=[{a:1,e:'Respecting an elder and keeping your boundary are fully compatible.'},{a:1,e:'Thanking an elder for their care can sit right alongside a clear "no".'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 049 script error',e);}
 });

@@ -1,31 +1,58 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mental Health Boundary Notice · ANCF Digital Projects</title><meta name="description" content="Draft a caring notice that protects wellbeing and signposts real support — tailored by context, with an editable box. Not a substitute for professional help."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Mental Health Boundary Notice</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../085-couple-compatibility-questions/index.html">← Previous</a><a class="btn btn-primary" href="../087-crisis-safe-community-policy-page/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 086</span><h2>Mental Health Boundary Notice</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Generate a gentle notice for a group that protects everyone's wellbeing and points to real support — making clear the space is supportive, but <strong>not a crisis service</strong>. Pick a context, then add your local resources.</p>
+<div class="proj-head"><span class="num">PROJECT 086</span><h2>Mental Health Boundary Notice</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~8 min</span></div></div>
+<p class="lead">Online spaces about big life topics can get heavy. This helps you draft a short, caring notice — for a group, post, or thread — that sets a gentle boundary and points people toward real support. The tone is warmth, not warning.</p>
 
-<div class="panel"><h3>1. Generate a notice</h3>
-<label class="field" for="context">Context</label><select id="context">
-<option value="chat">Group chat</option>
-<option value="page">Public page</option>
-<option value="event">Event</option>
-</select>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button></div>
-<div class="result" id="genOut" role="status" aria-live="polite">Your notice will appear here.</div>
-<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+<p class="disclaimer">This is a communication aid, <strong>not a substitute for professional help</strong>. If you or someone else may be in immediate danger, contact local emergency services or a crisis line in your country right away.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How to set a caring boundary without shutting people out.</li>
+<li>Why signposting support matters in any community space.</li>
+<li>Language that stays warm and non-judgmental.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Build your notice</h3>
+<div class="row">
+<div><label class="field" for="ctx">Where is this for?</label><select id="ctx"><option value="group">A community group</option><option value="post">A single post or thread</option><option value="event">An event or meetup</option></select></div>
+<div><label class="field" for="warmth">Tone</label><select id="warmth"><option value="gentle">Gentle &amp; brief</option><option value="full">Warm &amp; detailed</option></select></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate notice</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
+<label class="field" for="out">Your notice (editable)</label>
+<textarea id="out" style="min-height:180px" placeholder="Your notice appears here; edit freely. Saved on this device."></textarea>
+<p class="note">Add your own local helpline details where the notice marks [local support]. Helplines differ by country, so listing the right ones for your members is best.</p>
 </div>
 
-<div class="panel"><h3>2. Add your real resources</h3>
-<label class="field" for="custom">Crucial: replace [add a local/national support line] with a real one for your members' region. Saved on this device.</label>
-<textarea id="custom" placeholder="Your version… (generated notice lands here; add real support contacts.)" style="min-height:160px"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my notice</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="panel"><h3>2. A few principles</h3>
+<div class="kv">
+<strong>Care, not control</strong><span>A boundary protects everyone's wellbeing; it isn't a telling-off.</span>
+<strong>Always signpost</strong><span>Point to professional and local crisis support — never imply the group can replace it.</span>
+<strong>Stay non-judgmental</strong><span>People share when they feel safe, not policed.</span>
+</div>
 </div>
 
-<div class="panel"><h3>3. Keep it safe</h3>
-<details><summary>Respond to distress with care, not discipline</summary><div><p>If someone expresses they're struggling, lead with warmth and resources — never a warning or removal for the distress itself.</p></div></details>
-<details><summary>Don't promise what you can't give</summary><div><p>A community isn't a crisis service. Being honest about that — while still being kind — protects everyone, including moderators.</p></div></details>
-<details><summary>Have resources ready in advance</summary><div><p>List a few real, region-appropriate support lines before you ever need them, so no one is scrambling in a hard moment.</p></div></details>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. A good boundary notice mainly conveys…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">A telling-off</div><div class="opt" data-q="0" data-i="1">Care, plus where to find real support</div><div class="opt" data-q="0" data-i="2">That heavy topics are banned</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A community group can…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Replace professional help</div><div class="opt" data-q="1" data-i="1">Support people and point to professional help</div><div class="opt" data-q="1" data-i="2">Ignore wellbeing</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice. If you or someone is in immediate danger, contact local emergency services.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>The kindest community spaces hold two things at once: warmth for hard conversations, and a clear pointer to support beyond the group. Set the boundary with care, signpost real help, and people feel safe rather than silenced.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../087-crisis-safe-community-policy-page/index.html">Crisis-Safe Community Policy<span>Group safety</span></a>
+<a href="../088-anti-harassment-rules-page/index.html">Anti-Harassment Rules<span>Keep it kind</span></a>
+<a href="../090-safe-moderation-checklist/index.html">Safe Moderation Checklist<span>For moderators</span></a>
+<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Words that care</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice. This is a sensitive topic; if you're struggling personally, please reach out to a trusted person or a professional where you live.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../085-couple-compatibility-questions/index.html">← Previous</a><a class="btn btn-primary" href="../087-crisis-safe-community-policy-page/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

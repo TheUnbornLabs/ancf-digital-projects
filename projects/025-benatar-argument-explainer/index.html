@@ -1,59 +1,76 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Benatar Argument Explainer · ANCF Digital Projects</title><meta name="description" content="A clear, fair walkthrough of Benatar's asymmetry argument with the signature 2x2 table, an interactive 'weak link' tool, and the strongest objections."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Benatar Argument Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Benatar Argument Explainer · ANCF Digital Projects</title><meta name="description" content="A clear, fair walkthrough of Benatar's asymmetry argument: the signature 2x2 matrix, a premise self-test, and the strongest objections."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Benatar Argument Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../024-philosophy-timeline/index.html">← Previous</a><a class="btn btn-primary" href="../026-consent-argument-explainer/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 025</span><h2>Benatar Argument Explainer</h2><div><span class="cat">Philosophy</span> <span class="note">· Difficulty: Advanced</span></div></div>
-<p class="lead">David Benatar's "asymmetry argument" (from <em>Better Never to Have Been</em>, 2006) is the most cited case for antinatalism. This page walks through it in plain terms, shows the famous four-box table, lets you test which step <em>you</em> doubt, and gives the strongest objections — so you can judge for yourself.</p>
+<div class="proj-head"><span class="num">PROJECT 025</span><h2>Benatar Argument Explainer</h2><div><span class="cat">Philosophy</span> <span class="note">· Difficulty: Advanced · ~13 min</span></div></div>
+<p class="lead">David Benatar's asymmetry argument (2006) is the most discussed case for antinatalism. This page lays it out fairly — the famous four-cell matrix, the premises you can test for yourself, and the strongest objections — so you can decide where you stand. Holding the question open is a valid place to land.</p>
 
-<div class="panel"><h3>1. The asymmetry, in plain terms</h3>
-<p>Benatar argues that pain and pleasure are not symmetrical when we compare existing with never existing:</p>
-<ul class="clean">
-<li>The <strong>presence of pain</strong> is bad.</li>
-<li>The <strong>presence of pleasure</strong> is good.</li>
-<li>The <strong>absence of pain</strong> is good — <em>even if no one exists to enjoy that good.</em></li>
-<li>The <strong>absence of pleasure</strong> is <em>not bad</em> — unless there is someone for whom that absence is a deprivation.</li>
-</ul>
-<p>Because a never-existent person misses out on nothing (no one is deprived), but is also spared all pain, Benatar concludes that <strong>coming into existence is always a harm</strong> compared with never existing.</p>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The four cells of Benatar's pleasure/pain asymmetry.</li>
+<li>How those cells combine into the conclusion that coming into existence is a harm.</li>
+<li>Which premise you personally accept, doubt, or reject.</li>
+<li>The strongest objections — especially to "a good for no one".</li>
+</ul></div>
+
+<div class="panel"><h3>1. The asymmetry matrix</h3>
+<p class="note">Tap each cell to expand. The argument turns on the bottom two.</p>
+<div class="matrix" id="matrix">
+<div class="cell" data-k="pp"><b>Presence of pain</b><span class="verdict tag-bad">Bad</span><div class="more">Suffering that exists is a harm — uncontroversial.</div></div>
+<div class="cell" data-k="pl"><b>Presence of pleasure</b><span class="verdict tag-good">Good</span><div class="more">Enjoyment that exists is a benefit — uncontroversial.</div></div>
+<div class="cell" data-k="ap"><b>Absence of pain</b><span class="verdict tag-good">Good</span><div class="more">A harm that never happens is counted as good — <em>even with no one</em> to enjoy that good. This is the key claim.</div></div>
+<div class="cell" data-k="al"><b>Absence of pleasure</b><span class="verdict tag-good">Not bad</span><div class="more">A missing pleasure is only bad if a real person is deprived. With no one created, no one is deprived.</div></div>
+</div>
+<p class="note" style="margin-top:12px"><strong>Putting it together:</strong> for a possible person, non-existence has one clear plus (no pain — counted as good) and no minus (the absent pleasure is "not bad"). So, Benatar argues, never existing is always at least as good as existing — and usually better.</p>
 </div>
 
-<div class="panel"><h3>2. The four-box table</h3>
-<table class="asym"><thead><tr><th></th><th>Scenario A: a person exists</th><th>Scenario B: the person never exists</th></tr></thead>
-<tbody>
-<tr><th>Pain</th><td><strong>(1) Bad</strong></td><td class="good"><strong>(3) Good</strong> <span class="note">(even with no one to enjoy it)</span></td></tr>
-<tr><th>Pleasure</th><td class="good"><strong>(2) Good</strong></td><td><strong>(4) Not bad</strong> <span class="note">(no one is deprived)</span></td></tr>
-</tbody></table>
-<p class="note">The engine of the argument is the contrast between box (3) <em>Good</em> and box (4) <em>Not bad</em>: non-existence has an advantage (3) with no matching disadvantage (4).</p>
+<div class="panel"><h3>2. Test the premises</h3>
+<p class="note">Mark where you stand on each step. Saved on this device; there is no "correct" set.</p>
+<div id="argcheck">
+<div class="quiz-q" data-p="0"><strong>P1 — The presence of pain is bad.</strong><div class="opts"><div class="opt" data-p="0" data-v="accept">Accept</div><div class="opt" data-p="0" data-v="unsure">Unsure</div><div class="opt" data-p="0" data-v="reject">Reject</div></div></div>
+<div class="quiz-q" data-p="1"><strong>P2 — The presence of pleasure is good.</strong><div class="opts"><div class="opt" data-p="1" data-v="accept">Accept</div><div class="opt" data-p="1" data-v="unsure">Unsure</div><div class="opt" data-p="1" data-v="reject">Reject</div></div></div>
+<div class="quiz-q" data-p="2"><strong>P3 — The absence of pain is good, even if no one enjoys that good.</strong><div class="opts"><div class="opt" data-p="2" data-v="accept">Accept</div><div class="opt" data-p="2" data-v="unsure">Unsure</div><div class="opt" data-p="2" data-v="reject">Reject</div></div></div>
+<div class="quiz-q" data-p="3"><strong>P4 — The absence of pleasure is not bad, unless someone is deprived.</strong><div class="opts"><div class="opt" data-p="3" data-v="accept">Accept</div><div class="opt" data-p="3" data-v="unsure">Unsure</div><div class="opt" data-p="3" data-v="reject">Reject</div></div></div>
+<div class="quiz-q" data-p="4"><strong>C — Therefore, coming into existence is always a harm.</strong><div class="opts"><div class="opt" data-p="4" data-v="accept">Accept</div><div class="opt" data-p="4" data-v="unsure">Unsure</div><div class="opt" data-p="4" data-v="reject">Reject</div></div></div>
+</div>
+<div class="result" id="argSummary" role="status" aria-live="polite">Mark the steps above to see a summary.</div>
+<div class="btn-row"><button class="btn" id="argCopy" type="button">Copy my position</button><button class="btn" id="argReset" type="button">Reset</button><span class="spacer"></span><span class="note" id="argStatus" role="status" aria-live="polite"></span></div>
 </div>
 
-<div class="panel"><h3>3. Where do you think it's weakest?</h3>
-<p class="note">Pick the step you find least convincing. You'll see the named objection scholars raise at that exact point. Saved on this device.</p>
-<div id="weak">
-<div class="opt" data-k="box3">Box (3): that the absence of pain is "good" with no one to enjoy it</div>
-<div class="opt" data-k="box4">Box (4): that the absence of pleasure is merely "not bad"</div>
-<div class="opt" data-k="infer">The inference: that this makes existence <em>always</em> a net harm</div>
-<div class="opt" data-k="none">None — I find the argument convincing as stated</div>
-</div>
-<div class="result" id="weakOut" role="status" aria-live="polite">Choose a step above.</div>
+<div class="panel"><h3>3. The strongest objections</h3>
+<details><summary>"A good for no one isn't really good"</summary><div><p>The main objection targets P3: if there is no one to benefit, calling the absent pain "good" looks like a category error. Benatar replies that we routinely judge the absence of suffering as good when comparing scenarios, even impersonally.</p></div></details>
+<details><summary>Most lives are worth living</summary><div><p>People overwhelmingly report being glad to exist. Benatar replies that self-reports are unreliable (we adapt, and discount past pain), so they don't settle the impersonal comparison.</p></div></details>
+<details><summary>The asymmetry can be explained another way</summary><div><p>Critics argue our intuitions about not creating suffering vs not creating happiness can be explained without Benatar's strong claim — e.g., by duties to avoid harm being weightier than duties to create benefit.</p></div></details>
+<details><summary>It proves too much</summary><div><p>Some say the argument implies conclusions most reject (about the badness of all existence). Benatar embraces much of this; opponents treat it as a reductio.</p></div></details>
 </div>
 
-<div class="panel"><h3>4. The strongest objections</h3>
-<details><summary>"Good for no one" may be incoherent</summary><div><p>Critics argue a state can't be <em>good</em> if there is literally no subject for whom it is good. If box (3) collapses, the asymmetry loses its engine.</p></div></details>
-<details><summary>The asymmetry is question-begging</summary><div><p>Some say Benatar simply builds the conclusion into how he rates the four boxes; a symmetric rating (absence of pleasure <em>is</em> bad) would dissolve the argument.</p></div></details>
-<details><summary>Lives can be net positive</summary><div><p>Many hold that a good life's pleasures genuinely outweigh its pains, so existence is not automatically a harm — directly denying the conclusion.</p></div></details>
-<details><summary>It proves too much</summary><div><p>If sound, the argument implies it is <em>always</em> wrong to create any life, however happy — a conclusion many take as a reason to suspect a hidden flaw.</p></div></details>
+<div class="panel"><h3>4. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The argument turns most on which cell?</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Presence of pain</div><div class="opt" data-q="0" data-i="1">Absence of pain being "good" with no one to enjoy it</div><div class="opt" data-q="0" data-i="2">Presence of pleasure</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The most common objection targets…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">"A good for no one isn't really good"</div><div class="opt" data-q="1" data-i="1">That pain is bad</div><div class="opt" data-q="1" data-i="2">That pleasure exists</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
 <div class="panel"><h3>5. Your reflection</h3>
-<label class="field" for="reflect">Which step in the argument do you find weakest, and why?</label>
+<label class="field" for="reflect">Which premise is your "weak link" — the one you'd push back on first?</label>
 <textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="proj-nav">
-<button class="btn btn-primary" id="saveBtn" type="button">Save reflection</button>
-<button class="btn" id="copyBtn" type="button">Copy reflection</button>
-<button class="btn" id="clearBtn" type="button">Clear reflection</button>
-<span class="spacer"></span>
-<span class="note" id="saveStatus" role="status" aria-live="polite"></span>
-</div>
-<p class="note">Saved on this device only. Nothing is uploaded. Source: David Benatar, <em>Better Never to Have Been</em> (Oxford University Press, 2006).</p>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Benatar's argument is rigorous and unsettling, and its key move — that an absent harm is good for no one in particular — is exactly where thoughtful people part ways. Understanding precisely where you get off the train is more valuable than rushing to agree or dismiss.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../001-antinatalism-intro-guide/index.html">Antinatalism Intro Guide<span>The basics first</span></a>
+<a href="../026-consent-argument-explainer/index.html">Consent Argument Explainer<span>A different route</span></a>
+<a href="../027-risk-argument-explainer/index.html">Risk Argument Explainer<span>Risk-based reasoning</span></a>
+<a href="../051-antinatalism-faq/index.html">Antinatalism FAQ<span>Common questions</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../024-philosophy-timeline/index.html">← Previous</a><a class="btn btn-primary" href="../026-consent-argument-explainer/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

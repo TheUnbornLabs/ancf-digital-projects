@@ -1,39 +1,29 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var TREE={
-  start:{q:'A friend teases your childfree choice. You…',opts:[
-    {t:'Laugh and hold your ground',p:2,to:'online'},
-    {t:'Snap back unkindly',p:0,to:'snap'},
-    {t:'Explain calmly',p:1,to:'online'}]},
-  snap:{q:'It got heated and now you feel a bit bad. You…',opts:[
-    {t:'Apologise for the tone, keep the boundary',p:2,to:'online'},
-    {t:'Double down',p:0,to:'end_mean'}]},
-  online:{q:'Online, someone insults parents in your group. You…',opts:[
-    {t:'Ask them to critique ideas, not people',p:2,to:'drained'},
-    {t:'Pile on',p:0,to:'end_mean'},
-    {t:'Report it and de-escalate',p:2,to:'drained'}]},
-  drained:{q:'You feel drained by all the debate. You…',opts:[
-    {t:'Take a real break',p:2,to:'end_good'},
-    {t:'Doomscroll for an hour',p:0,to:'end_tired'},
-    {t:'Talk to someone you trust',p:2,to:'end_good'}]},
-  end_good:{end:true,msg:'You stayed kind and kept your autonomy. That balance — firm and warm — is the real win this game is about.'},
-  end_tired:{end:true,msg:'Doomscrolling quietly drains the very freedom you were defending. A real break protects it better than any comeback.'},
-  end_mean:{end:true,msg:'Piling on felt good for a second, but it made the space meaner — including for you. Critiquing ideas, not people, keeps your own peace too.'}
-};
-var pts=0,node='start';
-var label=document.getElementById('freedomLabel');
-var out=document.getElementById('fOut');
-var box=document.getElementById('choices');
-function setLabel(){if(label)label.textContent='Freedom points: '+pts;}
-function render(){
-  var n=TREE[node];setLabel();
-  if(n.end){out.textContent=n.msg+' (Freedom points: '+pts+')';box.innerHTML='';
-    var again=document.createElement('button');again.className='btn btn-primary';again.textContent='Play again';
-    again.addEventListener('click',function(){pts=0;node='start';render();});box.appendChild(again);return;}
-  out.textContent=n.q;box.innerHTML='';
-  n.opts.forEach(function(o){var b=document.createElement('button');b.className='btn';b.style.margin='6px 6px 0 0';b.textContent=o.t;
-    b.addEventListener('click',function(){pts+=o.p;node=o.to;render();});box.appendChild(b);});
-}
-render();
-}catch(e){console.error('project script error',e);}
+var A=window.ANCF||{};
+var D=[
+ {t:'At dinner, a relative asks: "When are the kids coming?"',o:[['Calm one-liner, then change the subject',2],['Justify yourself at length',1],['Snap back',0]]},
+ {t:'After a pushy phone call, you feel a wave of guilt.',o:[['Remind yourself this is your choice',2],['Spiral into self-blame',0]]},
+ {t:'A friend tells you they\'re childfree too.',o:[['Warmly affirm them',2],['Compete over who\'s more certain',0]]},
+ {t:'An elder gives firm, unwanted advice.',o:[['Thank them, and keep your boundary',2],['Give in just to avoid conflict',0]]},
+ {t:'Someone compares you to a sibling with kids.',o:[['Kindly decline the comparison',2],['Get competitive about it',0]]}
+];
+var idx=0,score=0,best=0,playing=false;
+try{best=parseInt(A.get?A.get('best','0'):'0',10)||0;}catch(e){}
+var roundEl=document.getElementById('round'),ptsEl=document.getElementById('pts'),bestEl=document.getElementById('best'),scene=document.getElementById('scene'),choices=document.getElementById('choices'),fb=document.getElementById('fb');
+if(bestEl)bestEl.textContent=best;
+function start(){idx=0;score=0;playing=true;if(ptsEl)ptsEl.textContent=0;next();}
+function next(){if(idx>=D.length){finish();return;}if(roundEl)roundEl.textContent=idx+1;scene.textContent=D[idx].t;fb.textContent='';choices.innerHTML='';
+  D[idx].o.forEach(function(opt){var b=document.createElement('button');b.className='btn';b.type='button';b.textContent=opt[0];b.addEventListener('click',function(){pick(opt[1]);});choices.appendChild(b);});}
+function pick(p){if(!playing)return;score+=p;if(ptsEl)ptsEl.textContent=score;fb.textContent=(p>=2?'+2 — calm and self-respecting.':(p===1?'+1 — fine, though you owe no one a lecture.':'+0 — understandable, but try the kinder, steadier move.'));idx++;choices.innerHTML='';setTimeout(next,1100);}
+function finish(){playing=false;scene.textContent='Done! '+score+' / 10 freedom points. '+(score>=8?'Beautifully self-respecting.':(score>=5?'Solid practice.':'Worth another round.'));if(score>best){best=score;if(A.set)A.set('best',String(best));if(bestEl)bestEl.textContent=best;}fb.textContent='Press Start to play again.';if(roundEl)roundEl.textContent=5;choices.innerHTML='';}
+var startBtn=document.getElementById('startBtn');if(startBtn)startBtn.addEventListener('click',start);
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 070 script error',e);}
 });

@@ -1,33 +1,71 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Healthcare Conversation Checklist · ANCF Digital Projects</title><meta name="description" content="A before/during/after preparation aid for a respectful, productive talk with a healthcare provider. A preparation aid only — NOT medical advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Healthcare Conversation Checklist</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../082-workplace-childfree-bias-notes/index.html">← Previous</a><a class="btn btn-primary" href="../084-sterilization-discussion-preparation-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 083</span><h2>Healthcare Conversation Checklist</h2><div><span class="cat">Childfree Life</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">A preparation aid for talking with a healthcare provider — about contraception, sterilisation, or any reproductive-health topic — so the conversation is clear and respectful. This is a <strong>preparation aid only, not medical advice</strong>. Your clinician is the right source for what's right for you.</p>
+<div class="proj-head"><span class="num">PROJECT 083</span><h2>Healthcare Conversation Checklist</h2><div><span class="cat">Practical Tools</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
+<p class="lead">A simple way to prepare for a clear, respectful conversation with a healthcare provider — what to think through before, what to cover during, and what to confirm after. Walking in prepared helps you be heard.</p>
 
-<div class="panel"><h3>Your preparation</h3>
-<div class="progress" aria-hidden="true"><span id="bar"></span></div>
-<p class="note" id="pct">0% ticked.</p>
-<div id="list">
-<h3 style="margin-bottom:4px">Before the appointment</h3>
-<label class="check"><input type="checkbox"> <span>I've written my main question in one clear sentence</span></label>
-<label class="check"><input type="checkbox"> <span>I've noted my relevant history and any concerns</span></label>
-<label class="check"><input type="checkbox"> <span>I've listed questions about options, benefits, and risks</span></label>
-<label class="check"><input type="checkbox"> <span>I've arranged a support person to come, if I'd like one</span></label>
-<h3 style="margin-bottom:4px">During the appointment</h3>
-<label class="check"><input type="checkbox"> <span>I'll state my main question first, clearly</span></label>
-<label class="check"><input type="checkbox"> <span>I'll ask them to explain anything I don't understand</span></label>
-<label class="check"><input type="checkbox"> <span>I'll ask for my stated preferences to be documented</span></label>
-<label class="check"><input type="checkbox"> <span>I know it's okay to ask for time, or a second opinion</span></label>
-<h3 style="margin-bottom:4px">After the appointment</h3>
-<label class="check"><input type="checkbox"> <span>I've noted what was decided and any next steps</span></label>
-<label class="check"><input type="checkbox"> <span>I know how to follow up or get a referral if needed</span></label>
+<p class="disclaimer">This is a <strong>preparation aid, not medical advice</strong>. It doesn't recommend any procedure or decision. Your provider is the right person for questions about your health.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How to organise your thoughts before an appointment.</li>
+<li>Ways to ask questions and confirm you understood.</li>
+<li>What to note down afterwards.</li>
+</ul></div>
+
+<div class="panel"><h3>Before · During · After</h3>
+<p class="note">Tick what you've prepared. Progress is saved on this device.</p>
+<h4 style="margin:14px 0 6px">Before the appointment</h4>
+<div id="docs">
+<label class="check"><input type="checkbox" data-key="b1"> Write down your main questions in advance</label>
+<label class="check"><input type="checkbox" data-key="b2"> Note any relevant history or context</label>
+<label class="check"><input type="checkbox" data-key="b3"> Decide what outcome you're hoping to discuss</label>
+<label class="check"><input type="checkbox" data-key="d1"> Ask your questions early in the visit</label>
+<label class="check"><input type="checkbox" data-key="d2"> Ask the provider to explain anything unclear</label>
+<label class="check"><input type="checkbox" data-key="d3"> Repeat back what you heard to check understanding</label>
+<label class="check"><input type="checkbox" data-key="a1"> Note what was said and any next steps</label>
+<label class="check"><input type="checkbox" data-key="a2"> Know how to follow up or get a second opinion</label>
 </div>
-<div class="proj-nav"><span class="spacer"></span><button class="btn" id="resetBtn" type="button">Reset checklist</button></div>
+<div class="meter" aria-hidden="true"><span id="docBar"></span></div>
+<p class="note" id="docCount" role="status" aria-live="polite">0 of 8 prepared.</p>
 </div>
 
-<div class="panel"><h3>You deserve to be heard</h3>
-<p>You're entitled to clear information, to have your preferences taken seriously, and to ask questions until you understand. If a conversation doesn't go well, seeking another provider is a reasonable step. Being prepared makes it far more likely you'll leave informed and respected.</p>
+<div class="panel"><h3>Helpful phrasings</h3>
+<div class="kv">
+<strong>To open</strong><span>"I've written down a few questions — could we go through them?"</span>
+<strong>To clarify</strong><span>"Can you explain that in simpler terms so I'm sure I follow?"</span>
+<strong>To confirm</strong><span>"So the next step is ___ — is that right?"</span>
+</div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice. Decisions about your care belong with you and a qualified clinician.</div>
+<div class="panel"><h3>Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Repeating back what you heard helps…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Waste time</div><div class="opt" data-q="0" data-i="1">Confirm you understood correctly</div><div class="opt" data-q="0" data-i="2">Annoy the provider</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The best source for your health questions is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A website</div><div class="opt" data-q="1" data-i="1">Your qualified provider</div><div class="opt" data-q="1" data-i="2">A checklist</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>Your questions</h3>
+<label class="field" for="reflect">Draft the questions you'd like to bring. Copy them to take along.</label>
+<textarea id="reflect" placeholder="1. …&#10;2. …&#10;3. …"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Preparation turns a rushed appointment into a real conversation. Bring your questions, check your understanding, note the next steps — and remember your provider, not any checklist, is the one to advise on your health.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../084-sterilization-discussion-preparation-tool/index.html">Sterilization Discussion Prep<span>One specific talk</span></a>
+<a href="../018-marriage-and-children-conversation-tool/index.html">Difficult Conversation Helper<span>Hard topics</span></a>
+<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy<span>Your decisions</span></a>
+<a href="../081-legal-rights-awareness-page/index.html">Legal Rights Awareness<span>Know the basics</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../082-workplace-childfree-bias-notes/index.html">← Previous</a><a class="btn btn-primary" href="../084-sterilization-discussion-preparation-tool/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

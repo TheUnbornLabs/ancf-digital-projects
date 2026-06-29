@@ -1,40 +1,31 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var items=[].slice.call(document.querySelectorAll('.faq-item'));
-var search=document.getElementById('search');
-var empty=document.getElementById('empty');
-var status=document.getElementById('status');
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1400);}
-
-function applyFilter(){
-  var q=(search.value||'').toLowerCase().trim();
-  var shown=0;
-  items.forEach(function(it){
-    var text=(it.textContent||'').toLowerCase();
-    var match=!q||text.indexOf(q)>=0;
-    it.style.display=match?'':'none';
-    if(match&&q)it.open=true;
-    if(match)shown++;
-  });
-  if(empty)empty.style.display=shown?'none':'';
+var A=window.ANCF||{};
+var search=document.getElementById('search'),count=document.getElementById('count'),items=[].slice.call(document.querySelectorAll('#faq details'));
+function filter(){
+  var q=(search.value||'').toLowerCase().trim();var shown=0;
+  items.forEach(function(d){var hay=(d.getAttribute('data-q')+' '+d.textContent).toLowerCase();var ok=!q||hay.indexOf(q)>=0;d.style.display=ok?'':'none';if(ok)shown++;});
+  if(count)count.textContent=shown+' of '+items.length+' questions shown.';
 }
-if(search)search.addEventListener('input',applyFilter);
+if(search)search.addEventListener('input',filter);
+filter();
 
-function answerText(it){
-  var p=it.querySelector('p');
-  var q=it.querySelector('summary');
-  return (q?q.textContent.trim()+'\n':'')+(p?p.textContent.trim():'');
-}
-items.forEach(function(it){
-  var btn=it.querySelector('.copy-a');
-  if(!btn)return;
-  btn.addEventListener('click',function(){
-    var text=answerText(it);
-    function done(){var o=btn.textContent;btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=o;},1200);}
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}
-  });
+var QZ=[{a:0,e:'"Childfree" implies an active choice (distinct from "childless").'},{a:1,e:'You owe basic courtesy, not a justification of your private life.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
 });
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
-}catch(e){console.error('project script error',e);}
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+
+var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
+function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
+if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
+var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
+if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
+if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
+}catch(e){console.error('project 050 script error',e);}
 });

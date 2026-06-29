@@ -1,36 +1,26 @@
 document.addEventListener('DOMContentLoaded',function(){
 try{
-var openers={
-  academic:["I hold a considered antinatalist view grounded in {b}.","My position rests on {b}, examined carefully."],
-  conversational:["For me, antinatalism really comes down to {b}.","Honestly, it's {b} that does it for me."]
-};
-var body="I argue about the ethics of creating life, never about the worth of anyone already living.";
-var closers=["I welcome disagreement offered in good faith, and I extend the same respect in return.","I hold it openly, and I'm glad to think it through with anyone willing to do so kindly.","I could be wrong, and I'd rather understand than win."];
-function pick(a,i){return a[((i%a.length)+a.length)%a.length];}
-var variant=0;
-function build(){
-  var b=document.getElementById('basis').value.toLowerCase();
-  var tone=document.getElementById('tone').value;
-  return pick(openers[tone]||openers.academic,variant).replace('{b}',b)+' '+body+' '+pick(closers,variant);
-}
-
-var out=document.getElementById('genOut');
-var custom=document.getElementById('custom');
-var status=document.getElementById('saveStatus');
-var KEY='ancf-'+location.pathname;
-var timer=null;
-function flash(msg){if(!status)return;status.textContent=msg;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-function generate(){var text=build();out.textContent=text;if(custom){custom.value=text;try{localStorage.setItem(KEY,custom.value);}catch(e){}}}
+var A=window.ANCF||{};
+var core={consent:'I hold that creating a new person imposes the risks of a whole life on someone who cannot consent in advance, and that this deserves serious ethical justification.',suffering:'I hold that because every life carries some risk of serious suffering, choosing not to create a new person is a reasonable way to avoid imposing that risk on someone who cannot weigh it.',asymmetry:'I find the asymmetry argument compelling: the absence of suffering is good even with no one to enjoy it, while the absence of pleasure is not a loss when there is no one to be deprived.',autonomy:'I hold that whether to bring a new person into existence is a weighty ethical decision rather than an automatic duty, and that the question belongs to careful reflection.',ecology:'I weigh ecological limits as one personal consideration among many, focused on systems and consumption rather than on judging any family.'};
+var pre={measured:'After careful thought, ',personal:'For me, ',academic:'On the view I find most defensible, '};
+var basis=document.getElementById('basis'),tone=document.getElementById('tone'),out=document.getElementById('out');
+function build(){out.value=(pre[tone.value]||'')+(core[basis.value]||core.consent)+' I hold this view about the ethics of creating life, not as any judgement of parents, children, or families — for whom I have full respect — and I welcome disagreement made in good faith.';if(A.set)A.set('stmt',out.value);}
 var genBtn=document.getElementById('genBtn');
-var againBtn=document.getElementById('againBtn');
-if(genBtn)genBtn.addEventListener('click',function(){variant=0;generate();});
-if(againBtn)againBtn.addEventListener('click',function(){variant++;generate();});
-if(custom){try{var saved=localStorage.getItem(KEY);if(saved){custom.value=saved;out.textContent=saved;}}catch(e){}custom.addEventListener('input',function(){try{localStorage.setItem(KEY,custom.value);}catch(e){}flash('Saved ✓');});}
-function copyText(text,btn,label){if(!text||!text.trim()||text.indexOf('will appear')>=0){flash('Generate first.');return;}function done(){if(btn){btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label;},1500);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fb(text,done);});}else{fb(text,done);}}
-function fb(text,done){try{var t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();document.execCommand('copy');document.body.removeChild(t);done();}catch(e){flash('Copy not supported.');}}
+if(genBtn)genBtn.addEventListener('click',build);
+if(basis)basis.addEventListener('change',build);if(tone)tone.addEventListener('change',build);
+if(out){if(A.get)out.value=A.get('stmt','');out.addEventListener('input',function(){if(A.set)A.set('stmt',out.value);});if(!out.value)build();}
 var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){copyText(out.textContent,copyBtn,'Copy to clipboard');});
-var copyCustom=document.getElementById('copyCustom');
-if(copyCustom)copyCustom.addEventListener('click',function(){copyText(custom?custom.value:'',copyCustom,'Copy my version');});
-}catch(e){console.error('project script error',e);}
+if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
+
+var QZ=[{a:1,e:'Argue the idea, with respect for people.'},{a:1,e:'A respect line keeps a strong claim civil and fair.'}];
+var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
+if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
+var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
+if(sB)sB.addEventListener('click',function(){
+  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
+  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
+  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
+});
+if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+}catch(e){console.error('project 073 script error',e);}
 });

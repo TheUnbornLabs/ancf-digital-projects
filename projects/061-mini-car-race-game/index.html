@@ -1,21 +1,44 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini Car Race Game: Escape Pronatalist Pressure · ANCF Digital Projects</title><meta name="description" content="A lightweight lane-dodging game where you steer past 'pressure' blocks — with on-screen buttons, keyboard, tap controls, and a saved high score. A playful metaphor."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Mini Car Race Game: Escape Pronatalist Pressure</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini Car Race Game · ANCF Digital Projects</title><meta name="description" content="A lightweight lane-dodging game where you steer past 'pressure' blocks — keyboard and on-screen controls, with a saved high score. A playful metaphor."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Mini Car Race Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../060-rationalism-toolkit/index.html">← Previous</a><a class="btn btn-primary" href="../062-pong-game-choice-vs-pressure/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 061</span><h2>Mini Car Race Game: Escape Pronatalist Pressure</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Steer your car between three lanes and slip past the deep-red "pressure" blocks. It's a playful metaphor for dodging unwanted questions — no people involved, and nothing to lose but a high score.</p>
-<p class="note">Controls: the ◀ / ▶ buttons below, the arrow keys, or tap the left/right half of the game.</p>
+<div class="proj-head"><span class="num">PROJECT 061</span><h2>Mini Car Race Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · a 2-min break</span></div></div>
+<p class="lead">Steer your car between three lanes and slip past the falling "pressure" blocks. It's a light, playful metaphor — a small reminder that with a little focus, you can keep moving and let the pressure pass.</p>
 
-<div class="game-hud"><span class="pill">Lane dodge</span><span class="note" id="scoreLabel">Freedom passed: 0</span><span class="spacer"></span><button class="btn" id="restart" type="button">Restart</button></div>
-<canvas id="game" aria-label="Lane-dodging game. Move left or right to avoid blocks." role="img"></canvas>
-<div class="game-controls">
-<button class="btn ctrl" id="leftBtn" type="button" aria-label="Move left">◀</button>
-<button class="btn ctrl" id="rightBtn" type="button" aria-label="Move right">▶</button>
+<div class="learn"><h3>How to play</h3>
+<ul>
+<li><strong>Move:</strong> Left/Right arrow keys, the A and D keys, or the on-screen buttons.</li>
+<li><strong>Goal:</strong> dodge the blocks as long as you can; your score climbs with distance.</li>
+<li><strong>It speeds up</strong> — your best score is saved on this device.</li>
+</ul></div>
+
+<div class="panel"><h3>Play</h3>
+<div class="game-hud"><span>Score: <b id="score">0</b></span><span class="spacer"></span><span>Best: <b id="best">0</b></span></div>
+<canvas id="game" width="300" height="420" aria-label="Lane-dodging car game. Use the buttons or arrow keys to move left and right."></canvas>
+<div class="btn-row" style="justify-content:center">
+<button class="btn" id="left" type="button" aria-label="Move left">◀ Left</button>
+<button class="btn btn-primary" id="startBtn" type="button">Start</button>
+<button class="btn" id="right" type="button" aria-label="Move right">Right ▶</button>
 </div>
-<p class="note" id="status" role="status" aria-live="polite"></p>
-
-<div class="panel"><h3>The idea behind it</h3>
-<p>The red blocks are <em>pressures</em>, not people — the "when are you having kids?" of life, sliding down the road. You can't argue them away, but you can keep choosing your own lane. Every block you pass is one you didn't let knock you off course.</p>
+<p class="note" id="msg" role="status" aria-live="polite">Press Start (or any arrow key) to play.</p>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>Your reflection</h3>
+<label class="field" for="reflect">What's one real "pressure block" you'd like to steer past this week?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Pressure keeps coming, but you get to steer. A small game, a small reminder: focus on your lane, keep moving, and most of it passes by.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../067-auntie-uncle-chase-arcade-game/index.html">Auntie/Uncle Chase<span>Another arcade break</span></a>
+<a href="../062-pong-game-choice-vs-pressure/index.html">Pong: Choice vs Pressure<span>Classic pong</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>The serious version</span></a>
+<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>Choices, gamified</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../060-rationalism-toolkit/index.html">← Previous</a><a class="btn btn-primary" href="../062-pong-game-choice-vs-pressure/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

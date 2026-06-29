@@ -1,32 +1,61 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Caste/Community Name Warning Tool · ANCF Digital Projects</title><meta name="description" content="A safety tool that screens draft posts for language naming or targeting castes, religions, or ethnic groups — and helps you rephrase toward pressures and ideas instead."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Caste/Community Name Warning Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Caste/Community Name Warning Tool · ANCF Digital Projects</title><meta name="description" content="A safety tool that screens a draft for language generalising about or targeting castes, communities, religions, or ethnic groups — and helps you rephrase toward pressures and systems instead."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Caste/Community Name Warning Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../043-gaslighting-phrase-detector/index.html">← Previous</a><a class="btn btn-primary" href="../045-identity-pressure-reflection-page/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 044</span><h2>Caste/Community Name Warning Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">A safety tool for writers and moderators. Paste a draft post to check whether it names or targets a caste, religion, or ethnic group. These spaces critique <strong>pressures and ideas — never groups of people</strong>. This helps keep posts respectful and your community safe for everyone.</p>
+<div class="proj-head"><span class="num">PROJECT 044</span><h2>Caste/Community Name Warning Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~7 min</span></div></div>
+<p class="lead">When we critique pressure, it's vital we aim at <strong>systems and behaviours — never at castes, communities, religions, or ethnic groups</strong>. This tool screens a draft for generalising or targeting language and helps you rephrase. It's a safeguard for kindness, used before you post.</p>
 
-<div class="panel"><h3>Screen a draft</h3>
-<label class="field" for="det">Paste a draft post to screen it</label>
-<textarea id="det" placeholder="Paste a draft post to check for group-targeting language…"></textarea>
-<div class="proj-nav"><button class="btn btn-primary" id="detBtn" type="button">Analyse text</button><span class="note">…or it updates as you type.</span></div>
-<div class="result" id="detOut" role="status" aria-live="polite">No analysis yet — paste a draft above.</div>
-<p class="note">A flag doesn't mean your post is "bad" — naming a group can be fine in context. It's a prompt to check that you're aiming at a <em>pressure or idea</em>, not at people.</p>
+<p class="disclaimer">This tool protects groups. Our content rules forbid hatred or generalisation toward any caste, community, religion, ethnicity, or other group. Critique the structure or the specific behaviour — never the people. This is a writing aid, not a judgement of you.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How generalising language slips into otherwise fair criticism.</li>
+<li>The difference between critiquing a <em>system</em> and targeting a <em>group</em>.</li>
+<li>How to rephrase toward pressures, structures, and specific behaviours.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Screen your draft</h3>
+<label class="field" for="text">Paste your draft</label>
+<textarea id="text" placeholder="Paste the post or message you're about to send…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="scanBtn" type="button">Screen</button><button class="btn" id="clearBtn" type="button">Clear</button></div>
+<div class="result" id="out" role="status" aria-live="polite" style="margin-top:10px">No screen yet.</div>
 </div>
 
-<div class="panel"><h3>Target the pressure, not the people</h3>
-<p class="note">The fix is almost always the same: replace "this group of people" with "this expectation / behaviour". Examples:</p>
+<div class="panel"><h3>2. How to rephrase</h3>
 <div class="kv">
-<strong>Instead of</strong><span>"Those people always pressure you to have kids."</span>
-<strong>Try</strong><span>"The <em>expectation</em> that everyone must have kids is worth questioning."</span>
-<strong>Instead of</strong><span>Blaming a religion or community for pronatalism.</span>
-<strong>Try</strong><span>Naming the specific <em>practice or pressure</em>, and noting many within that community disagree with it too.</span>
-<strong>Instead of</strong><span>"All of them think…"</span>
-<strong>Try</strong><span>"Some people argue…" — accurate, and it leaves room for the many who don't.</span>
+<strong>Instead of a group…</strong><span>name the <em>pressure</em> ("the expectation that…"), the <em>system</em> ("policies that…"), or the <em>specific behaviour</em> ("when someone says…").</span>
+<strong>Instead of "they always…"</strong><span>"some people, in some situations, do X" — and explain why the situation, not the identity, drives it.</span>
+<strong>Instead of blame…</strong><span>describe the structure that creates the pressure, and who it harms.</span>
 </div>
 </div>
 
-<div class="panel"><h3>Why this matters here</h3>
-<p>Antinatalist and childfree spaces exist to support reproductive autonomy with dignity — including the dignity of every caste, religion, and ethnic group. Pronatalist pressure shows up across all communities, and so do people who reject it. Aiming criticism at <em>people</em> rather than <em>pressure</em> is both unfair and exactly the kind of harm this collection refuses. This tool is a small guard-rail to help keep that promise.</p>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Fair criticism aims at…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">A whole caste, community, or ethnic group</div><div class="opt" data-q="0" data-i="1">Systems, pressures, and specific behaviours</div><div class="opt" data-q="0" data-i="2">Whoever's easiest to blame</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. "They always do X" is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A fair generalisation</div><div class="opt" data-q="1" data-i="1">A stereotype to avoid</div><div class="opt" data-q="1" data-i="2">Always true</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>4. Your reflection</h3>
+<label class="field" for="reflect">How can you make your point powerfully while protecting every group?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>The strongest critique names the pressure and the system, not a people. Aiming at structures keeps your argument both fairer and harder to dismiss — and it protects the very people who may also be hurt by those structures.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Word choices</span></a>
+<a href="../088-anti-harassment-rules-page/index.html">Anti-Harassment Rules<span>Community standards</span></a>
+<a href="../030-economic-pressure-explainer/index.html">Economic Pressure Explainer<span>Critique systems</span></a>
+<a href="../098-poverty-and-parenthood-pressure-explainer/index.html">Poverty &amp; Parenthood<span>Systems, not people</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../043-gaslighting-phrase-detector/index.html">← Previous</a><a class="btn btn-primary" href="../045-identity-pressure-reflection-page/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>
