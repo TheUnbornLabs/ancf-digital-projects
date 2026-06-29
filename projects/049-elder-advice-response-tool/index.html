@@ -1,1 +1,38 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Elder Advice Response Tool · ANCF Digital Projects</title><meta name="description" content="Respectful replies that honour elders while keeping your boundary."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Elder Advice Response Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn">☾ Dark</button></div></header><main class="wrap"><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../048-wedding-pressure-dialogue-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../050-childfree-faq/index.html">Next →</a></div><div class="proj-head"><span class="num">PROJECT 049</span><h2>Elder Advice Response Tool</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div><p class="lead">Generate a reply that shows respect to an elder and stays true to your choice.</p><div class="panel"><label class="field" for="relation">Who</label><select id="relation"><option value="Grandparent">Grandparent</option><option value="Parent">Parent</option><option value="Respected elder">Respected elder</option></select><label class="field" for="tone">Tone</label><select id="tone"><option value="Very warm">Very warm</option><option value="Gently firm">Gently firm</option></select><button class="btn btn-primary" id="genBtn" style="margin-top:14px">Generate</button><div class="result" id="genOut">Your text will appear here.</div><button class="btn copy" id="copyBtn">Copy to clipboard</button></div><div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../048-wedding-pressure-dialogue-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../050-childfree-faq/index.html">Next →</a></div></main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Elder Advice Response Tool · ANCF Digital Projects</title><meta name="description" content="Generate respectful replies that honour an elder while keeping your boundary — by relationship and tone, with variations, an editable box, and tips."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Elder Advice Response Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../048-wedding-pressure-dialogue-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../050-childfree-faq/index.html">Next →</a></div>
+<div class="proj-head"><span class="num">PROJECT 049</span><h2>Elder Advice Response Tool</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
+<p class="lead">In many families, respect for elders runs deep — and so can the pressure. This tool drafts a reply that genuinely honours an elder's place <em>and</em> stays true to your choice. Respect and a boundary are not opposites.</p>
+
+<div class="panel"><h3>1. Draft your reply</h3>
+<div class="row">
+<div><label class="field" for="relation">Who</label><select id="relation">
+<option value="Grandparent">Grandparent</option>
+<option value="Parent">Parent</option>
+<option value="Respected elder">A respected elder</option>
+<option value="Aunt or uncle">An aunt or uncle</option>
+</select></div>
+<div><label class="field" for="tone">Tone</label><select id="tone">
+<option value="warm">Very warm</option>
+<option value="firm">Gently firm</option>
+</select></div>
+</div>
+<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
+<div class="result" id="genOut" role="status" aria-live="polite">Your reply will appear here.</div>
+<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+</div>
+
+<div class="panel"><h3>2. Make it yours</h3>
+<label class="field" for="custom">Use their actual name or honorific, and your own warmth. Saved on this device.</label>
+<textarea id="custom" placeholder="Your version… (generated text lands here; edit freely.)"></textarea>
+<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+</div>
+
+<div class="panel"><h3>3. Honouring elders while holding firm</h3>
+<details><summary>Lead with genuine respect</summary><div><p>Open by valuing their wisdom and care — and mean it. Respect costs nothing and softens everything that follows.</p></div></details>
+<details><summary>Ask for blessing, not permission</summary><div><p>"Your blessing would mean a lot" honours their role without handing them the decision. It's yours to make; their warmth is what you're hoping for.</p></div></details>
+<details><summary>Repeat gently, don't escalate</summary><div><p>With elders especially, calm repetition over time works better than one decisive confrontation. Patience is its own kind of respect.</p></div></details>
+</div>
+
+<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../048-wedding-pressure-dialogue-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../050-childfree-faq/index.html">Next →</a></div>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
