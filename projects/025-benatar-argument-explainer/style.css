@@ -1,1 +1,14 @@
 /* Per-project overrides for Benatar Argument Explainer. Shared design system lives in ../../style.css */
+table.asym{width:100%;border-collapse:collapse;margin:8px 0;font-size:.95rem}
+table.asym th,table.asym td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+table.asym thead th{background:rgba(139,0,0,.06);color:var(--accent-2)}
+table.asym tbody th{background:rgba(139,0,0,.04);white-space:nowrap}
+[data-theme="dark"] table.asym thead th{background:rgba(226,58,82,.12)}
+[data-theme="dark"] table.asym tbody th{background:rgba(226,58,82,.08)}
+table.asym td.good{background:rgba(28,122,62,.10)}
+[data-theme="dark"] table.asym td.good{background:rgba(28,122,62,.16)}
+table.asym .note{display:block;margin-top:4px}
+@media(max-width:560px){table.asym,table.asym thead,table.asym tbody,table.asym th,table.asym td,table.asym tr{display:block}
+table.asym thead{display:none}
+table.asym tbody th{border-bottom:none}
+table.asym td{border-top:none}}
