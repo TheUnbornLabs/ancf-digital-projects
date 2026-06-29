@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var phrase=document.getElementById('phrase').value;return ('They said: '+phrase+'\nOften assumes: '+(phrase==="'You’ll change your mind'"?'that your decision is not yet real or rational.':phrase==="'It’s different when they’re yours'"?'that your feelings now cannot be trusted.':phrase==="'Who’ll care for you when you’re old?'"?'that children are an insurance policy.':'that a household has no value without children.')+'\nA kind reply: "I hear the care behind that — and I’ve thought about it carefully."');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

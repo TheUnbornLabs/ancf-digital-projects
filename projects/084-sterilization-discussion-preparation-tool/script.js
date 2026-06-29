@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var focus=document.getElementById('focus').value;return ('QUESTIONS FOR MY PROVIDER ('+focus+')\n1. What permanent and long-term options are available to me?\n2. What are the benefits, risks, and recovery for each?\n3. How reversible or permanent is each option?\n4. '+(focus==='Being taken seriously'?'How are my clearly stated preferences documented in my records?':'What should I expect before, during, and after?')+'\n5. Are there alternatives I should consider?\n(For information only — your provider gives the medical guidance.)');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

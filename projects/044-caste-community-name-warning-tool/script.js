@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+var P=[["caste|community|jati|clan", "Mentions a caste/community \u2014 ensure it isn\u2019t targeting people."], ["religion|hindu|muslim|christian|sikh|jain|buddh", "Mentions a religion \u2014 keep critique on ideas, not believers."], ["ethnic|tribe|race|nationality", "Mentions an ethnic/national group \u2014 avoid generalisations."], ["all of them|those people|these people", "Group-blaming language \u2014 please rephrase toward specific behaviours."]];document.getElementById('detBtn').addEventListener('click',function(){var t=document.getElementById('det').value.toLowerCase(),hits=[];P.forEach(function(p){var re=new RegExp(p[0],'i');if(re.test(t))hits.push('• '+p[1]);});var o=document.getElementById('detOut');o.textContent=hits.length?('Patterns worth noticing:\n'+hits.join('\n')):'No flagged patterns found. That does not mean the message is good or bad — trust your own judgement too.';});
+}catch(e){console.error('project script error',e);}
+});

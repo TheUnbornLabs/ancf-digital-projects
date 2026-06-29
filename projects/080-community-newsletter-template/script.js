@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var cadence=document.getElementById('cadence').value;var focus=document.getElementById('focus').value;return ('📰 '+cadence.toUpperCase()+' NEWSLETTER\n\n👋 Welcome & shout-outs\n📚 '+(focus==='Learning & resources'?'This edition’s reading/tool':focus==='Events'?'Upcoming gatherings':'Member spotlight & support')+'\n💬 One reflection prompt for the week\n🤝 Reminder: kind, respectful, no advice without disclaimers\n🔗 How to get involved\n\nWith care, the team');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

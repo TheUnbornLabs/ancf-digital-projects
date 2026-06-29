@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var tone=document.getElementById('tone').value;var who=document.getElementById('who').value;return ((tone==='Lightly humorous'?'I appreciate the interest in my life plan! ':'')+'I’ve made my decision about children, and it isn’t changing. '+(tone==='Brief and clear'?'I’d like us to move on from this topic. ':'I know it comes from love, and I’d be grateful if '+(who==='A family group'?'we':'you')+' could respect it. ')+'I’m always happy to talk about other things.');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

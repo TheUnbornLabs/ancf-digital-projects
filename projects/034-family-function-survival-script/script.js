@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var energy=document.getElementById('energy').value;var topic=document.getElementById('topic').value;return ('POCKET SCRIPT\nOpening: A warm greeting and a quick subject-change to their news.\nIf asked about "'+topic+'": '+(energy==='Low / want it brief'?'"We’re happy as we are — anyway, tell me about you!"':energy==='Playful'?'"Still gloriously well-rested, thanks for asking!"':'"It’s a settled choice for us, and we’re at peace with it."')+'\nExit line: "I’m going to grab a drink/help in the kitchen" — then take a breath.');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var stage=document.getElementById('stage').value;var stance=document.getElementById('stance').value;return ('There’s something important to me and I want to share it honestly. '+(stance==='Firmly childfree'?'I feel clear that I don’t want children. ':stance==='Leaning childfree'?'I’m currently leaning toward not having children. ':'I’m still working out how I feel about children. ')+'Since we’re '+stage.toLowerCase()+', I’d love to understand where you are too, without either of us having to defend ourselves.');}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});

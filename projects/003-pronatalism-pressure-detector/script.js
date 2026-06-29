@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+var P=[["change your mind|too young to (know|decide)", "Assumes your decision isn\u2019t real or final."], ["who will (look after|care for) you", "Frames children as retirement insurance."], ["selfish|self-?centered", "Moralises a personal choice."], ["god|nature|natural|meant to", "Appeals to destiny rather than your reasons."], ["everyone (does|has)|normal", "Appeals to majority pressure."], ["body clock|running out of time", "Time-pressure framing."], ["incomplete|not a real (woman|man|family)", "Ties worth to parenthood."]];document.getElementById('detBtn').addEventListener('click',function(){var t=document.getElementById('det').value.toLowerCase(),hits=[];P.forEach(function(p){var re=new RegExp(p[0],'i');if(re.test(t))hits.push('• '+p[1]);});var o=document.getElementById('detOut');o.textContent=hits.length?('Patterns worth noticing:\n'+hits.join('\n')):'No flagged patterns found. That does not mean the message is good or bad — trust your own judgement too.';});
+}catch(e){console.error('project script error',e);}
+});

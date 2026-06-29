@@ -1,0 +1,5 @@
+document.addEventListener('DOMContentLoaded',function(){
+try{
+function build(){var tone=document.getElementById('tone').value;var goal=document.getElementById('goal').value;return ('Mom, Dad — '+(tone==='Loving and patient'?'thank you for caring about my future. ':'')+(goal==='I’ve decided, and I’m at peace'?'I have decided not to have children, and I’m genuinely at peace with it. ':goal==='I need this topic to rest'?'I’d really like us to let this topic rest now. ':'Even though we see this differently, I want us to stay close. ')+(tone==='Calm and final'?'My decision is settled.':'I hope you can trust me with my own life.'));}document.getElementById('genBtn').addEventListener('click',function(){document.getElementById('genOut').textContent=build();});document.getElementById('copyBtn').addEventListener('click',function(){var t=document.getElementById('genOut').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy to clipboard';},1500);});
+}catch(e){console.error('project script error',e);}
+});
