@@ -1,36 +1,73 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Budget Calculator · ANCF Digital Projects</title><meta name="description" content="A transparent, live calculator for monthly leftover, annual savings, flexible spending, and a long-term compound projection. An illustration, not financial advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Budget Calculator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Budget Calculator · ANCF Digital Projects</title><meta name="description" content="A transparent, editable estimate of funds a childfree household might allocate differently — with a category chart and an optional long-term projection. An illustration, not financial advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Budget Calculator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../010-no-means-no-family-boundary-tool/index.html">← Previous</a><a class="btn btn-primary" href="../012-parenthood-cost-estimator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 011</span><h2>Childfree Budget Calculator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">A simple, transparent estimate of what a childfree household might save and spend flexibly — and how savings could grow over time. Every number is yours to edit, it updates live, and all of it stays in your browser. This is an illustration, not financial advice.</p>
+<div class="proj-head"><span class="num">PROJECT 011</span><h2>Childfree Budget Calculator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">If you are planning a childfree life, some funds that often go toward raising a child may be available for other priorities. This is a <strong>rough, fully editable model</strong> — costs vary enormously by place and family, so treat every number as a starting point you replace with your own.</p>
 
-<div class="panel"><h3>Your numbers</h3>
+<p class="disclaimer">This is an illustration for reflection, <strong>not financial advice</strong>. Real costs differ widely; enter your own figures. Nothing here judges anyone's choices.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How monthly category estimates add up across a year and over time.</li>
+<li>Which categories dominate the total (shown as a chart).</li>
+<li>What a redirected monthly amount could grow to, if invested.</li>
+<li>Why these figures are illustrative, not predictive.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Monthly estimates</h3>
+<p class="note">Enter amounts in your own currency. Leave any field blank or zero. Updates live; saved on this device.</p>
 <div class="row">
-<div><label class="field" for="income">Monthly take-home (your currency)</label><input type="number" id="income" value="3000" min="0" max="100000000" step="50"></div>
-<div><label class="field" for="essentials">Monthly essentials (rent, food, bills)</label><input type="number" id="essentials" value="1800" min="0" max="100000000" step="50"></div>
+<div><label class="field" for="c-childcare">Childcare / daycare</label><input type="number" id="c-childcare" data-label="Childcare" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="c-food">Food &amp; clothing</label><input type="number" id="c-food" data-label="Food & clothing" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="c-edu">Education / savings</label><input type="number" id="c-edu" data-label="Education" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="c-health">Healthcare</label><input type="number" id="c-health" data-label="Healthcare" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="c-activities">Activities / hobbies</label><input type="number" id="c-activities" data-label="Activities" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="c-housing">Bigger home / transport</label><input type="number" id="c-housing" data-label="Housing & transport" min="0" step="1" placeholder="0"></div>
 </div>
-<div class="row">
-<div><label class="field" for="saverate">Saving rate (% of leftover)</label><input type="number" id="saverate" value="40" min="0" max="100" step="1"></div>
-<div><label class="field" for="growth">Assumed annual growth on savings (%)</label><input type="number" id="growth" value="4" min="0" max="30" step="0.5"></div>
+<div class="meter-grid" style="margin-top:14px">
+<div class="meter-card"><div class="lab"><span>Per month</span><b id="sumMonth">0</b></div></div>
+<div class="meter-card"><div class="lab"><span>Per year</span><b id="sumYear">0</b></div></div>
+<div class="meter-card"><div class="lab"><span>Over 18 years</span><b id="sum18">0</b></div></div>
 </div>
-<div class="result" id="calcOut" role="status" aria-live="polite">Enter values to see your estimate.</div>
-<p class="note" style="margin-top:12px">How it's calculated (you can check the maths):</p>
-<div class="formula">leftover = income − essentials
-annual_savings = leftover × 12 × (saverate / 100)
-annual_flexible = leftover × 12 − annual_savings
-future_value(n yrs) = annual_savings × ((1 + g)ⁿ − 1) / g   ·   g = growth / 100</div>
-</div>
-
-<div class="panel"><h3>How to read this</h3>
-<p>This is a back-of-envelope illustration, not a forecast. "Flexible spending" is simply the part of your leftover you don't save — it might go to travel, hobbies, family, giving, or anything else. The projection assumes you save the same amount every year and earn a steady return, which real life never does exactly.</p>
-<p class="note">It is not a claim that a childfree life is "better" — only a way to see your own numbers clearly. Costs, incomes, and priorities vary enormously.</p>
+<svg class="chart" id="catChart" role="img" aria-label="Bar chart of annual estimate by category."></svg>
+<p class="chart-cap">Bar chart: annual estimate by category (your figures).</p>
 </div>
 
-<div class="panel"><h3>Assumptions &amp; caveats</h3>
-<details><summary>Why the projection is only a rough guide</summary><div><p>It uses constant contributions and a constant growth rate, ignores inflation, tax, fees, and life's surprises. Treat the long-term figures as "ballpark", not promises.</p></div></details>
-<details><summary>What "growth" means here</summary><div><p>A simplifying stand-in for investment return. Real returns vary year to year and can be negative. If you're unsure, set it to 0 to see savings with no growth at all.</p></div></details>
-<details><summary>Currency-neutral by design</summary><div><p>The tool has no currency symbol — the numbers are in whatever currency you think in. Nothing is sent anywhere.</p></div></details>
+<div class="panel"><h3>2. Optional: long-term projection</h3>
+<p class="note">If the monthly total were invested, roughly what might it grow to? Compound interest, monthly contributions. Illustrative only — real returns vary and are never guaranteed.</p>
+<div class="slider-row"><div class="lab"><label for="years">Years invested</label><output id="o-years">20</output></div><input type="range" id="years" min="1" max="40" step="1" value="20"></div>
+<div class="slider-row"><div class="lab"><label for="rate">Assumed annual return</label><output id="o-rate">5%</output></div><input type="range" id="rate" min="0" max="10" step="1" value="5"></div>
+<div class="result" id="projOut" role="status" aria-live="polite">Enter monthly amounts above to see a projection.</div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The best way to read these numbers is as…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Exact predictions</div><div class="opt" data-q="0" data-i="1">Rough, editable illustrations</div><div class="opt" data-q="0" data-i="2">Financial advice</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Compound growth means…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Returns can earn further returns over time</div><div class="opt" data-q="1" data-i="1">Money always doubles yearly</div><div class="opt" data-q="1" data-i="2">There is no risk</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>4. Your reflection</h3>
+<label class="field" for="reflect">If some of this became available to you, what would you most want to direct it toward?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Money is only one thread in a life decision, and these figures are illustrations, not forecasts. The value here is clarity about your own priorities — not a verdict that any path is "cheaper" or better. A meaningful life can be built at many budgets.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>The other side of the model</span></a>
+<a href="../013-time-freedom-calculator/index.html">Time Freedom Calculator<span>Hours, not money</span></a>
+<a href="../020-retirement-without-children-planner/index.html">Retirement Without Children Planner<span>Planning for later life</span></a>
+<a href="../015-life-goals-priority-mapper/index.html">Life Goals Priority Mapper<span>Where your priorities sit</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../010-no-means-no-family-boundary-tool/index.html">← Previous</a><a class="btn btn-primary" href="../012-parenthood-cost-estimator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

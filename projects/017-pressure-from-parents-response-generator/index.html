@@ -1,48 +1,66 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pressure From Parents Response Generator · ANCF Digital Projects</title><meta name="description" content="Draft warm, respectful replies to parental pressure about children — tailored by tone, goal, and the worry behind their question — plus techniques for the conversation."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pressure From Parents Response Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pressure From Parents Response Generator · ANCF Digital Projects</title><meta name="description" content="Draft warm, respectful replies to parental pressure about children — tune the warmth-vs-firmness balance and the worry behind their question."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pressure From Parents Response Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../016-personal-peace-checklist/index.html">← Previous</a><a class="btn btn-primary" href="../018-marriage-and-children-conversation-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 017</span><h2>Pressure From Parents Response Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Parents often push hardest because they love hardest. This tool drafts a warm, respectful reply tailored to your tone, your goal, and the worry behind their question — then you edit it into your own voice.</p>
+<div class="proj-head"><span class="num">PROJECT 017</span><h2>Pressure From Parents Response Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
+<p class="lead">Parental pressure about children usually comes from love and worry. This tool drafts a reply that <strong>honours that love while holding your line</strong> — and lets you tune the balance between warmth and firmness to fit your relationship.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How to acknowledge a parent's care before stating your boundary.</li>
+<li>How warmth and firmness can be dialled up or down for the moment.</li>
+<li>How to name the worry behind a question and address it kindly.</li>
+<li>How to keep a reply you can actually say out loud.</li>
+</ul></div>
 
 <div class="panel"><h3>1. Draft your reply</h3>
-<div class="row">
-<div><label class="field" for="tone">Tone</label><select id="tone">
-<option value="loving">Loving and patient</option>
-<option value="final">Calm and final</option>
-<option value="honest">Honest and open</option>
-</select></div>
-<div><label class="field" for="goal">What you want them to hear</label><select id="goal">
-<option value="peace">I've decided, and I'm at peace</option>
-<option value="rest">I need this topic to rest</option>
-<option value="close">I want closeness despite disagreement</option>
-</select></div>
-</div>
-<label class="field" for="concern">The worry behind their question</label><select id="concern">
-<option value="none">Not sure / leave it out</option>
-<option value="future">They worry about my future &amp; old age</option>
-<option value="grandkids">They long for grandchildren</option>
-<option value="others">They care what relatives will think</option>
-<option value="tradition">They feel it's tradition or duty</option>
+<label class="field" for="sit">What are they raising?</label>
+<select id="sit">
+<option value="general">Asking when grandchildren are coming</option>
+<option value="disappointment">Expressing disappointment</option>
+<option value="legacy">Carrying on the family name</option>
+<option value="worry">Worrying you'll be alone later</option>
+<option value="comparison">Comparing you to siblings or cousins</option>
 </select>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
-<div class="result" id="genOut" role="status" aria-live="polite">Your suggested wording will appear here.</div>
-<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+<div class="slider-row"><div class="lab"><label for="balance">Warmth ↔ firmness</label><output id="o-balance">Balanced</output></div><input type="range" id="balance" min="0" max="100" step="50" value="50"></div>
+<svg class="chart" id="balChart" role="img" aria-label="Bar chart of the warmth and firmness balance of the reply." style="max-width:320px"></svg>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate reply</button><button class="btn" id="copyBtn" type="button">Copy reply</button></div>
+<div class="result" id="out" role="status" aria-live="polite">Your reply will appear here.</div>
 </div>
 
 <div class="panel"><h3>2. Make it yours</h3>
-<label class="field" for="custom">Edit until it sounds like how you actually talk to your parents.</label>
+<label class="field" for="custom">Edit until it sounds like you, then save.</label>
 <textarea id="custom" placeholder="Your version… (generated text lands here; edit freely. Saved on this device.)"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="btn-row"><button class="btn" id="copyCustom" type="button">Copy my version</button><button class="btn" id="saveCustom" type="button">Save my line</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
-<div class="panel"><h3>3. Talking with parents</h3>
-<p class="note">A few things that make these conversations go better. Tap to expand.</p>
-<details><summary>Name the love first</summary><div><p>Starting with "I know this comes from caring about me" lowers everyone's defences. It tells them you're not rejecting <em>them</em>, only the topic.</p></div></details>
-<details><summary>Answer the fear, not the words</summary><div><p>"Who'll care for you?" is often really "I'm scared for you." Reassuring the fear ("I'm building a secure, connected life") lands better than debating the logic.</p></div></details>
-<details><summary>The warm broken record</summary><div><p>You don't need new arguments. Repeat the same kind line: "I've decided, and I'm at peace — I'd love to talk about something else." Calm repetition is the technique.</p></div></details>
-<details><summary>Agree to disagree</summary><div><p>You may not change their mind, and that's okay. "We see this differently, and I still love you" can be the whole resolution.</p></div></details>
-<details><summary>Give it time</summary><div><p>Acceptance often arrives slowly. A boundary held with warmth, repeated over months, usually softens things more than one perfect conversation.</p></div></details>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Acknowledging a parent's care first tends to…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Weaken your boundary</div><div class="opt" data-q="0" data-i="1">Lower defensiveness so your boundary lands better</div><div class="opt" data-q="0" data-i="2">Guarantee they agree</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A warm reply and a firm boundary are…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Opposites you must choose between</div><div class="opt" data-q="1" data-i="1">Fully compatible</div><div class="opt" data-q="1" data-i="2">Both rude</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>4. Your reflection</h3>
+<label class="field" for="reflect">What worry do you think is really behind their question — and how could you reassure it?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Warmth and firmness are not opposites. Naming a parent's love first lowers defences, so the boundary that follows lands as honesty rather than rejection — and keeps the relationship intact even when you disagree.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Hold the line</span></a>
+<a href="../049-elder-advice-response-tool/index.html">Elder Advice Response Tool<span>Honour elders, keep your line</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Prepare for the moment</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Name the pressure</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../016-personal-peace-checklist/index.html">← Previous</a><a class="btn btn-primary" href="../018-marriage-and-children-conversation-tool/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

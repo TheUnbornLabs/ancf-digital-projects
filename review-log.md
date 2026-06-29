@@ -170,3 +170,41 @@ again served stale copies of edited files, so per-file `node --check` on the edi
 scripts could not be run there; integrity was checked by direct reads. Recommended manual
 pass after deploy: open 001–010, check the browser console, and test save/copy/clear at ~360px.
 
+## Deep interactive rebuild — projects 011–020 (2026-06-29)
+
+Same standard and shared toolkit (`ancf-ui.js` + shared components) extended to the second
+batch — calculators, tools, and planners. Each page has the educator intro, "What you will
+learn", an interactive tool, a visual (SVG bar chart / meter / progress), a quiz with
+explanations, a saved reflection or export, a key-takeaway, related links, and disclaimers.
+
+- **011 Childfree Budget Calculator** — editable per-category monthly inputs → live
+  month/year/18-year totals, category bar chart, and an optional compound-growth projection.
+- **012 Parenthood Cost Estimator** — editable annual cost per life phase → totals, per-month
+  figure, and a per-phase bar chart. Neutral framing.
+- **013 Time Freedom Calculator** — weekly-hours sliders → discretionary-time meter, annual
+  hours, and a where-the-week-goes bar chart (incl. caregiving).
+- **014 Sleep Loss Simulator** — nightly shortfall × months → cumulative debt in hours/nights/
+  days and a milestone bar chart, with a clear "not medical advice" frame.
+- **015 Life Goals Priority Mapper** — add goals and sort across Now/Soon/Someday (move/remove),
+  a per-horizon count chart, and copy/export. (XSS-safe DOM rendering of user text.)
+- **016 Personal Peace Checklist** — before/during/after checklist → progress meter, copyable plan.
+- **017 Pressure From Parents Response Generator** — situation + warmth↔firmness slider →
+  generated reply with a warmth/firmness bar chart; editable, savable, copyable.
+- **018 Marriage & Children Conversation Tool** — you/partner leanings across 7 topics →
+  alignment bar chart (aligned/unsure/differ) + readiness meter + talking-points export.
+- **019 Childfree Couple Planning Board** — six life-area textareas → completion meter and a
+  words-per-area chart; copy/export the board.
+- **020 Retirement Without Children Planner** — age/savings/contribution/return inputs →
+  projected pot (FV of savings + contributions), growth-over-time bar chart, optional
+  target meter, plus a "beyond money" planning panel. Clear "not financial advice" frame.
+
+**Constraints honoured:** static HTML/CSS/JS only; no backend, no paid APIs, no tracking, no
+external chart libs (vanilla SVG); GitHub Pages compatible; mobile-first; keyboard-accessible;
+all displayed numbers rounded; chart captions/aria-labels present.
+
+**Verification:** built against the shared toolkit (`ancf-ui.js`, which passes `node --check`)
+and confirmed by host inspection. The sandbox bash mount continued to serve stale copies of
+edited files, so per-file `node --check` on the edited project scripts could not run there.
+Recommended manual pass after deploy: open 011–020, check the console, and test inputs/save/
+copy at ~360px.
+

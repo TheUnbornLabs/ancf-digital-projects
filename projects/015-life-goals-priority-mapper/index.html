@@ -1,31 +1,62 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Life Goals Priority Mapper · ANCF Digital Projects</title><meta name="description" content="Sort your life goals into now / soon / someday horizons, with live counts, starter ideas, and copy/clear. Saved on your device only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Life Goals Priority Mapper</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Life Goals Priority Mapper · ANCF Digital Projects</title><meta name="description" content="Sort your life goals into now / soon / someday horizons, with a live count chart and copy/export. Saved on your device only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Life Goals Priority Mapper</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../014-sleep-loss-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../016-personal-peace-checklist/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 015</span><h2>Life Goals Priority Mapper</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">Bring your goals into focus by sorting them across three time horizons. A childfree or examined life has just as many goals as any other — this tool helps you name and place them. Everything stays on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 015</span><h2>Life Goals Priority Mapper</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">A clear life is easier to build than a vague one. Add the goals that matter to you and sort them across three horizons — <strong>Now, Soon, Someday</strong> — to see where your energy belongs. Everything stays on this device.</p>
 
-<div class="panel"><h3>How to use it</h3>
-<p>Write <strong>one goal per line</strong> under each horizon. Move an item by cutting it from one box and pasting it into another. The counts update as you type. Need a spark? Tap a starter idea below and it drops into "Now" for you to edit or move.</p>
-<p class="note" style="margin-bottom:4px">Starter ideas:</p>
-<div class="filters" id="starters">
-<button class="chip" type="button" data-goal="Build an emergency fund">Emergency fund</button>
-<button class="chip" type="button" data-goal="Travel somewhere new">Travel</button>
-<button class="chip" type="button" data-goal="Learn a new skill or craft">Learn a skill</button>
-<button class="chip" type="button" data-goal="Deepen a close friendship">Deepen a friendship</button>
-<button class="chip" type="button" data-goal="Volunteer or mentor">Volunteer / mentor</button>
-<button class="chip" type="button" data-goal="Improve my health and sleep">Health</button>
-<button class="chip" type="button" data-goal="Create something (write, make, build)">Create something</button>
-<button class="chip" type="button" data-goal="Set a boundary I've been avoiding">Set a boundary</button>
-</div>
-</div>
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How to externalise your goals so you can actually see them.</li>
+<li>How to sort by time-horizon rather than vague urgency.</li>
+<li>Where your goals cluster (shown as a live chart).</li>
+<li>How to export your map to keep or revisit.</li>
+</ul></div>
 
-<div style="display:flex;gap:14px;flex-wrap:wrap">
-<div class="panel" style="flex:1 1 220px"><h3>Now (this year)</h3><label class="field" for="col0" style="font-weight:400">Goals for the next 12 months</label><textarea id="col0" placeholder="One item per line…" aria-label="Now, this year"></textarea><p class="note" id="count0" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Soon (1–3 years)</h3><label class="field" for="col1" style="font-weight:400">Goals for the next few years</label><textarea id="col1" placeholder="One item per line…" aria-label="Soon, one to three years"></textarea><p class="note" id="count1" role="status" aria-live="polite">0 items</p></div>
-<div class="panel" style="flex:1 1 220px"><h3>Someday / maybe</h3><label class="field" for="col2" style="font-weight:400">Open-ended hopes and maybes</label><textarea id="col2" placeholder="One item per line…" aria-label="Someday or maybe"></textarea><p class="note" id="count2" role="status" aria-live="polite">0 items</p></div>
+<div class="panel"><h3>1. Add a goal</h3>
+<label class="field" for="goalInput">A goal, in a few words</label>
+<div class="btn-row"><input type="text" id="goalInput" placeholder="e.g. Learn to sail · Save 6 months’ expenses · Mentor a teen" style="flex:1 1 220px"><button class="btn btn-primary" id="addGoal" type="button">Add to “Now”</button></div>
+<p class="note">Each goal starts in “Now”. Use the buttons on a goal to move it to Soon or Someday, or remove it.</p>
 </div>
 
-<div class="panel"><div class="proj-nav"><button class="btn btn-primary" id="copyBtn" type="button">Copy my map</button><button class="btn" id="clearAllBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite">Saved on this device only.</span></div><p class="note">Tip: "Someday/maybe" is not a lesser column — parking a goal there frees you to focus, without losing it.</p></div>
+<div class="panel"><h3>2. Your map</h3>
+<div class="row" style="grid-template-columns:1fr;gap:14px">
+<div><h3 style="font-size:var(--fs-base);margin:0 0 6px;color:var(--accent-2)">Now</h3><div id="col-now"></div></div>
+<div><h3 style="font-size:var(--fs-base);margin:0 0 6px;color:var(--accent-2)">Soon</h3><div id="col-soon"></div></div>
+<div><h3 style="font-size:var(--fs-base);margin:0 0 6px;color:var(--accent-2)">Someday</h3><div id="col-someday"></div></div>
+</div>
+<svg class="chart" id="goalChart" role="img" aria-label="Bar chart of how many goals are in each horizon."></svg>
+<p class="chart-cap">Bar chart: number of goals in each horizon.</p>
+<div class="btn-row"><button class="btn" id="copyBtn" type="button">Copy my map</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
+</div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. Sorting goals by horizon helps mainly because…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">It guarantees success</div><div class="opt" data-q="0" data-i="1">It turns a vague pile into clear next steps</div><div class="opt" data-q="0" data-i="2">It removes goals</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A "Someday" goal is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">A failure</div><div class="opt" data-q="1" data-i="1">A real goal that simply isn't now</div><div class="opt" data-q="1" data-i="2">Off-limits</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+</div>
+
+<div class="panel"><h3>4. Your reflection</h3>
+<label class="field" for="reflect">Looking at your map, what is the single most important "Now" — and what's the smallest first step?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>A life takes shape through the goals you actually name and place. Sorting them by horizon turns a vague sense of "I should…" into a small, doable "next" — and reminds you that "Someday" goals are real, just not yet.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protect your focus</span></a>
+<a href="../019-childfree-couple-planning-board/index.html">Childfree Couple Planning Board<span>Plan together</span></a>
+<a href="../071-personal-manifesto-builder/index.html">Personal Manifesto Builder<span>Put it into words</span></a>
+<a href="../013-time-freedom-calculator/index.html">Time Freedom Calculator<span>The hours to do it</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../014-sleep-loss-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../016-personal-peace-checklist/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

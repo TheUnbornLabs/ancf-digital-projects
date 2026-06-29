@@ -1,46 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marriage and Children Conversation Tool · ANCF Digital Projects</title><meta name="description" content="Prepare an honest, respectful opener for discussing children with a partner — tailored to your stage, stance, and goal — plus guidance for the conversation itself."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Marriage and Children Conversation Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marriage and Children Conversation Tool · ANCF Digital Projects</title><meta name="description" content="Map where you and a partner align on key questions about children, see an alignment chart, and prepare honest talking points."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Marriage and Children Conversation Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../017-pressure-from-parents-response-generator/index.html">← Previous</a><a class="btn btn-primary" href="../019-childfree-couple-planning-board/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 018</span><h2>Marriage and Children Conversation Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate</span></div></div>
-<p class="lead">Whether to have children is one of the few truly load-bearing questions in a relationship. This tool drafts a respectful <em>opener</em> tailored to your stage, stance, and goal — but a real talk needs listening too. This helps you start it well.</p>
+<div class="proj-head"><span class="num">PROJECT 018</span><h2>Marriage and Children Conversation Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~10 min</span></div></div>
+<p class="lead">Few conversations matter more for a couple than the one about children. This tool helps you map where you and your partner align across the key questions, see it as a chart, and prepare honest talking points — so the conversation is clearer and kinder.</p>
 
-<div class="panel"><h3>1. Draft your opener</h3>
-<div class="row">
-<div><label class="field" for="stage">Where you are</label><select id="stage">
-<option value="dating">Dating seriously</option>
-<option value="engaged">Engaged</option>
-<option value="married">Married</option>
-</select></div>
-<div><label class="field" for="stance">Your current stance</label><select id="stance">
-<option value="firm">Firmly childfree</option>
-<option value="leaning">Leaning childfree</option>
-<option value="exploring">Still exploring</option>
-</select></div>
-</div>
-<label class="field" for="goal">What you want from this talk</label><select id="goal">
-<option value="understand">To understand where they stand</option>
-<option value="share">To honestly share my position</option>
-<option value="together">To figure out a path together</option>
-</select>
-<div class="proj-nav" style="margin-top:14px"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="againBtn" type="button">Give me another</button></div>
-<div class="result" id="genOut" role="status" aria-live="polite">Your suggested opener will appear here.</div>
-<div class="proj-nav"><button class="btn copy" id="copyBtn" type="button">Copy to clipboard</button></div>
+<p class="disclaimer">A preparation aid for reflection, not relationship, legal, or mental health advice. For one person's use; share results only if you both choose to.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>The core questions a couple benefits from discussing.</li>
+<li>Where you currently align, differ, or are unsure (as a chart).</li>
+<li>How "readiness" grows as you think each topic through.</li>
+<li>How to turn it into talking points you can bring to the conversation.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Map your alignment</h3>
+<p class="note">For each statement, set your own leaning and your sense of your partner's. Yes / Unsure / No. Saved on this device.</p>
+<div id="topics"></div>
+<div class="meter-card" style="margin-top:10px"><div class="lab"><span>Topics thought through</span><b id="readyPct">0%</b></div><div class="meter"><span id="readyBar"></span></div></div>
+<svg class="chart" id="alignChart" role="img" aria-label="Bar chart of how many topics are aligned, unsure, or differing."></svg>
+<p class="chart-cap">Bar chart: aligned / unsure / differing across topics you've set both views on.</p>
 </div>
 
-<div class="panel"><h3>2. Make it yours</h3>
-<label class="field" for="custom">Edit it into your own words. The best opener is one that sounds like you and your relationship.</label>
-<textarea id="custom" placeholder="Your version… (generated text lands here; edit freely. Saved on this device.)"></textarea>
-<div class="proj-nav"><button class="btn" id="copyCustom" type="button">Copy my version</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<div class="panel"><h3>2. Talking points &amp; notes</h3>
+<label class="field" for="notes">Notes for the conversation (what matters most to you, questions to ask)</label>
+<textarea id="notes" placeholder="e.g. I want us to decide together, without pressure either way…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy talking points</button><button class="btn" id="clearBtn" type="button">Clear all</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
 </div>
 
-<div class="panel"><h3>3. Having the conversation</h3>
-<p class="note">An opener is just the door. A few things that help once you're through it.</p>
-<details><summary>Pick a calm moment</summary><div><p>Not during a fight, not late at night, not in passing. A relaxed, unhurried time signals that this matters and isn't an ambush.</p></div></details>
-<details><summary>Lead with curiosity, not a verdict</summary><div><p>Ask what they think and feel, and actually listen, before laying out conclusions. People open up when they don't feel cornered.</p></div></details>
-<details><summary>It's about values, not winning</summary><div><p>This isn't a debate to win. It's two people trying to understand each other's deepest hopes for their lives.</p></div></details>
-<details><summary>Be honest if it's a deal-breaker</summary><div><p>If this is non-negotiable for you, kindness means saying so clearly. Pretending otherwise to keep the peace tends to hurt everyone more, later.</p></div></details>
-<details><summary>It's okay to need time — or help</summary><div><p>You don't have to resolve it in one sitting. If you keep getting stuck, a couples counsellor is a normal, healthy place to take a question this big.</p></div></details>
+<div class="panel"><h3>3. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. The healthiest aim for this conversation is…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">To win</div><div class="opt" data-q="0" data-i="1">To understand each other honestly</div><div class="opt" data-q="0" data-i="2">To avoid it</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A genuine difference on having children is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">Always fixable by compromise</div><div class="opt" data-q="1" data-i="1">Serious and worth facing honestly, together</div><div class="opt" data-q="1" data-i="2">Not important</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>This is about understanding, not winning. Some differences resolve with time and care; others are real and deserve honesty rather than avoidance. Either way, naming where you stand — kindly and clearly — is the foundation of a fair decision made together.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../019-childfree-couple-planning-board/index.html">Childfree Couple Planning Board<span>Plan a shared life</span></a>
+<a href="../085-couple-compatibility-questions/index.html">Couple Compatibility Questions<span>Deeper conversation starters</span></a>
+<a href="../005-is-this-my-choice-reflection-tool/index.html">"Is This My Choice?"<span>Know your own view first</span></a>
+<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy Explainer<span>Both partners' autonomy</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../017-pressure-from-parents-response-generator/index.html">← Previous</a><a class="btn btn-primary" href="../019-childfree-couple-planning-board/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

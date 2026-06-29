@@ -1,41 +1,64 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parenthood Cost Estimator · ANCF Digital Projects</title><meta name="description" content="A neutral, editable, live estimate of cumulative child-rearing costs — flat and inflation-adjusted — with per-child and monthly breakdowns. An illustration only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Parenthood Cost Estimator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parenthood Cost Estimator · ANCF Digital Projects</title><meta name="description" content="A neutral, editable estimate of child-rearing costs by life phase, with a per-phase chart and a per-month breakdown. An illustration, not financial advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Parenthood Cost Estimator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 012</span><h2>Parenthood Cost Estimator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner</span></div></div>
-<p class="lead">An editable model of the cumulative direct cost of raising children. Real costs vary enormously by place, family, and choices, so treat every figure as a starting point you replace with your own. It updates live and stays entirely in your browser. This is an illustration only — and cost is just one of many things people rightly weigh.</p>
+<div class="proj-head"><span class="num">PROJECT 012</span><h2>Parenthood Cost Estimator</h2><div><span class="cat">Calculators</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
+<p class="lead">Raising a child has real, varied costs across different life phases. This neutral, editable estimator lets you enter your own annual figures per phase and see the cumulative total and a phase-by-phase chart. It is a thinking tool, never a judgement of anyone's choice to parent.</p>
 
-<div class="panel"><h3>Your numbers</h3>
+<p class="disclaimer">An illustration for reflection, <strong>not financial advice</strong>. Real costs vary enormously by country, household, and circumstance. Replace the figures with your own.</p>
+
+<div class="learn"><h3>What you will learn</h3>
+<ul>
+<li>How annual costs accumulate across childhood phases.</li>
+<li>Which phase tends to weigh most heavily (shown as a chart).</li>
+<li>How a large total breaks down into a manageable monthly figure.</li>
+<li>Why "the number" is always an estimate, not a verdict.</li>
+</ul></div>
+
+<div class="panel"><h3>1. Annual cost per phase</h3>
+<p class="note">Enter a typical annual cost (your currency) for each phase, and tick whether you include young-adult support. Updates live; saved on this device.</p>
 <div class="row">
-<div><label class="field" for="yearly">Estimated yearly cost per child (today's prices)</label><input type="number" id="yearly" value="9000" min="0" max="100000000" step="100"></div>
-<div><label class="field" for="years">Years of support</label><input type="number" id="years" value="18" min="0" max="30" step="1"></div>
+<div><label class="field" for="p-early">Early years (0–4) · per year</label><input type="number" id="p-early" data-label="Early (0–4)" data-years="5" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="p-school">School years (5–12) · per year</label><input type="number" id="p-school" data-label="School (5–12)" data-years="8" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="p-teen">Teen years (13–17) · per year</label><input type="number" id="p-teen" data-label="Teen (13–17)" data-years="5" min="0" step="1" placeholder="0"></div>
+<div><label class="field" for="p-adult">Young-adult support (18–22) · per year</label><input type="number" id="p-adult" data-label="Young adult (18–22)" data-years="5" min="0" step="1" placeholder="0"></div>
 </div>
-<div class="row">
-<div><label class="field" for="kids">Number of children</label><input type="number" id="kids" value="1" min="0" max="12" step="1"></div>
-<div><label class="field" for="inflation">Assumed annual cost inflation (%)</label><input type="number" id="inflation" value="3" min="0" max="20" step="0.5"></div>
+<div class="meter-grid" style="margin-top:14px">
+<div class="meter-card"><div class="lab"><span>Total (to 17)</span><b id="total17">0</b></div></div>
+<div class="meter-card"><div class="lab"><span>Total incl. 18–22</span><b id="total22">0</b></div></div>
+<div class="meter-card"><div class="lab"><span>≈ per month (to 17)</span><b id="perMonth">0</b></div></div>
 </div>
-<div class="result" id="calcOut" role="status" aria-live="polite">Enter values to see your estimate.</div>
-<p class="note" style="margin-top:12px">How it's calculated:</p>
-<div class="formula">flat_total = yearly × years × kids
-inflation_adjusted (per child) = yearly × ((1 + i)ʸᵉᵃʳˢ − 1) / i   ·   i = inflation / 100
-average_monthly = flat_total / (years × 12)</div>
-</div>
-
-<div class="panel"><h3>What this does — and doesn't — include</h3>
-<p>It covers recurring <em>direct</em> costs (food, clothing, activities, day-to-day care). It does <strong>not</strong> attempt to include things that vary too much to average honestly:</p>
-<ul class="clean">
-<li>Lost income or career impact from caregiving</li>
-<li>Housing upsizing, childcare, or higher education</li>
-<li>Government support, benefits, or tax credits that reduce costs</li>
-<li>The many non-financial joys and challenges, which no calculator can score</li>
-</ul>
-<p class="note">So real-world figures could be meaningfully higher or lower. This is a thinking tool, not a budget.</p>
+<svg class="chart" id="phaseChart" role="img" aria-label="Bar chart of total cost by life phase."></svg>
+<p class="chart-cap">Bar chart: total estimated cost by phase (your figures).</p>
 </div>
 
-<div class="panel"><h3>Assumptions &amp; caveats</h3>
-<details><summary>Why an inflation-adjusted figure?</summary><div><p>Costs tend to rise over the years you'd be supporting a child. The adjusted total grows each year's cost by your inflation rate, so it is usually higher than the flat figure. Set inflation to 0 to compare.</p></div></details>
-<details><summary>This is not a judgement on parenthood</summary><div><p>Plenty of people consider the cost well worth it; plenty weigh it heavily. The tool takes no side — it just helps you see one part of the picture in your own numbers.</p></div></details>
-<details><summary>Use local figures</summary><div><p>Average costs differ hugely between countries and households. Replacing the defaults with figures for your own situation makes the estimate far more meaningful.</p></div></details>
+<div class="panel"><h3>2. Quick check</h3>
+<div id="quiz">
+<div class="quiz-q"><strong>1. This estimator is best used to…</strong><div class="opts">
+<div class="opt" data-q="0" data-i="0">Decide that one path is "right"</div><div class="opt" data-q="0" data-i="1">Explore your own figures and assumptions</div><div class="opt" data-q="0" data-i="2">Predict exact future costs</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Cost is…</strong><div class="opts">
+<div class="opt" data-q="1" data-i="0">The only thing that matters in this choice</div><div class="opt" data-q="1" data-i="1">One real factor among many, weighed personally</div><div class="opt" data-q="1" data-i="2">Irrelevant</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="disclaimer">This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.</div>
+<div class="panel"><h3>3. Your reflection</h3>
+<label class="field" for="reflect">Did any phase's figure surprise you — and how much does cost weigh in your own thinking?</label>
+<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my summary</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
+<p class="note">Saved on this device only. Nothing is uploaded.</p>
+</div>
+
+<div class="takeaway"><h3>Key takeaway</h3>
+<p>Cost is one real factor among many, and it is deeply personal — plenty of loving families raise children on modest budgets, and money is never the whole story. The point is an honest, editable estimate, not a number that decides anything for you.</p></div>
+
+<div class="panel"><h3>Continue exploring</h3>
+<div class="related">
+<a href="../011-childfree-budget-calculator/index.html">Childfree Budget Calculator<span>The other side</span></a>
+<a href="../020-retirement-without-children-planner/index.html">Retirement Without Children Planner<span>Later-life planning</span></a>
+<a href="../030-economic-pressure-explainer/index.html">Economic Pressure Explainer<span>How money shapes choices</span></a>
+<a href="../013-time-freedom-calculator/index.html">Time Freedom Calculator<span>Time, not money</span></a>
+</div></div>
+
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../011-childfree-budget-calculator/index.html">← Previous</a><a class="btn btn-primary" href="../013-time-freedom-calculator/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="script.js"></script></body></html>
+</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>
