@@ -793,7 +793,7 @@ function drawPlayer(){
   const R=game.resources, px=player.x, py=player.y, t=game.time;
   const moving=player.onGround&&Math.abs(player.vx)>30, air=!player.onGround;
   const cx=px+player.w/2;
-  shadowBlob(cx,py+player.h+2,15,5,.25);
+  if(!air) shadowBlob(cx,py+player.h+2,15,5,.25);
   ctx.save(); ctx.translate(cx,py); ctx.scale(player.face<0?-1:1,1);
   const sw=moving?Math.sin(t*11)*7:0, sw2=moving?Math.sin(t*11+Math.PI)*7:0;
   const bob=moving?Math.abs(Math.sin(t*11))*1.6:Math.sin(t*2.4)*1.0;
