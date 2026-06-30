@@ -1,53 +1,51 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bad Argument Detector · ANCF Digital Projects</title><meta name="description" content="Paste an argument to spot classic logical-fallacy patterns, each with a plain explanation and a fair reply. A study aid, not a verdict."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Bad Argument Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bad Argument Detector · ANCF Digital Projects</title><meta name="description" content="Paste any argument and spot the classic logical fallacies hiding inside — each with a plain explanation. Plus a filterable field guide of fifteen fallacies. A study aid for reasoning well, not a verdict on people."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Bad Argument Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../039-respectful-debate-guide/index.html">← Previous</a><a class="btn btn-primary" href="../041-pronatalist-phrase-translator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 040</span><h2>Bad Argument Detector</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Intermediate · ~8 min</span></div></div>
-<p class="lead">Paste any argument and spot the classic <strong>logical fallacies</strong> hiding inside — each with a plain explanation. It's a study aid for learning to reason well, not a verdict on anyone. A flagged pattern is a prompt to look closer, not proof of bad faith.</p>
+<div class="proj-head"><span class="num">PROJECT 040</span><h2>Bad Argument Detector</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Intermediate · ~15 min · detector + library</span></div></div>
+<p class="lead">Paste any argument and spot the classic <strong>logical fallacies</strong> hiding inside — each with a plain explanation. It's a study aid for learning to reason well, <em>not</em> a verdict on people: a sentence can contain a fallacy and still come from someone who means well. Below the scanner is a field guide to fifteen common fallacies.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#scan">① Scan an argument</a><a href="#guide">② Fallacy field guide</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Eight common fallacies and how to recognise them.</li>
-<li>Why a fallacy weakens an argument (even a popular one).</li>
-<li>How to reply by pointing at the reasoning, not the person.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Scan an argument</h3>
-<label class="field" for="text">Paste the argument</label>
-<textarea id="text" placeholder="e.g. “Everyone has kids — it's just natural. You'll regret it, and people like you always do.”"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="scanBtn" type="button">Scan</button><button class="btn" id="clearBtn" type="button">Clear</button>
-<button class="btn" id="exBtn" type="button">Load example</button></div>
-<div class="meter-card" style="margin-top:8px"><div class="lab"><span>Fallacy patterns found</span><b id="fPct">0</b></div><div class="meter"><span id="fBar"></span></div></div>
-<div class="result" id="out" role="status" aria-live="polite" style="margin-top:10px">No scan yet.</div>
+<h3 id="scan" style="scroll-margin-top:70px">① Scan an argument</h3>
+<div class="panel"><p class="note">Paste a message, or try a sample. The scanner looks for <em>possible</em> fallacy patterns — always use your own judgement on what it flags.</p>
+<div class="samples" id="samples"></div>
+<textarea id="argIn" rows="4" placeholder="Paste an argument here…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="scanBtn" type="button">Scan for fallacies</button><button class="btn" id="clearBtn" type="button">Clear</button></div>
+<div id="findings"></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. "Everyone does it, so it's right" is which fallacy?</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Appeal to majority</div><div class="opt" data-q="0" data-i="1">Ad hominem</div><div class="opt" data-q="0" data-i="2">False dilemma</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. A flagged fallacy means…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">The person is bad</div><div class="opt" data-q="1" data-i="1">The reasoning is worth examining</div><div class="opt" data-q="1" data-i="2">The conclusion must be false</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="guide" style="scroll-margin-top:70px">② Fallacy field guide</h3>
+<div class="panel"><p class="note">Filter by family or search. Each entry has a plain definition and an everyday example.</p>
+<div class="fil-chips" id="catChips"></div>
+<input id="guideSearch" type="text" placeholder="Search fallacies…" style="width:100%;box-sizing:border-box;margin:6px 0">
+<div class="lib" id="guideList"></div>
+<p class="outmeta" id="guideCount"></p></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. "You only think that because you're bitter" is an example of…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Ad hominem — attacking the person, not the argument</div><div class="opt" data-q="0" data-i="1">A strong rebuttal</div><div class="opt" data-q="0" data-i="2">A false dilemma</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Spotting a fallacy in someone's argument means…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">That one step of their reasoning is weak — not that they're a bad person</div><div class="opt" data-q="1" data-i="1">They are stupid</div><div class="opt" data-q="1" data-i="2">Their conclusion must be false</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Which fallacy do you notice most in debates about this topic?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which fallacy do you notice most — in others, or honestly, in yourself?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Spotting a fallacy doesn't win an argument or condemn a person — it just shows where the reasoning is shaky. Note it kindly, ask for the stronger version, and keep the conversation honest.</p></div>
+<p>A fallacy is a flaw in the <em>reasoning</em>, not a measure of the person. Learning to name them sharpens your own thinking and helps you reply to the weak step instead of getting swept along. Note, too: an argument can be full of fallacies and still reach a true conclusion — so spotting one is an invitation to think harder, not a mic-drop.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../060-rationalism-toolkit/index.html">Rationalism Toolkit<span>Think clearly</span></a>
-<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Disagree well</span></a>
-<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>Respond calmly</span></a>
-<a href="../041-pronatalist-phrase-translator/index.html">Pronatalist Phrase Translator<span>Hidden assumptions</span></a>
+<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Reply well</span></a>
+<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>Calm replies</span></a>
+<a href="../004-parenthood-assumption-quiz/index.html">Assumption Quiz<span>Examine beliefs</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>Decode pressure</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../039-respectful-debate-guide/index.html">← Previous</a><a class="btn btn-primary" href="../041-pronatalist-phrase-translator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

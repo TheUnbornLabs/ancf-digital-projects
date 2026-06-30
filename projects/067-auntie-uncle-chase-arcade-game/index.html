@@ -1,47 +1,37 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“Auntie Uncle Chase” Arcade Game · ANCF Digital Projects</title><meta name="description" content="Collect 'freedom tokens' while keeping distance from the 'pressure' chasers — arrow keys or on-screen pad, with restart and a saved best. All metaphor."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“Auntie Uncle Chase” Arcade Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auntie-Uncle Chase Arcade · ANCF Digital Projects</title><meta name="description" content="Scoot around collecting gold freedom tokens while keeping your distance from the well-meaning 'pressure' chasers. Friendly metaphor, no offence meant — just a playful test of keeping your space. Arrows, WASD, or the on-screen pad."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Auntie-Uncle Chase Arcade</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../066-decision-tree-game/index.html">← Previous</a><a class="btn btn-primary" href="../068-population-growth-visual-toy/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 067</span><h2>“Auntie Uncle Chase” Arcade Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · a 2-min break</span></div></div>
-<p class="lead">Scoot around collecting gold "freedom tokens" while keeping your distance from the well-meaning "pressure" chasers. It's all friendly metaphor — nobody's the villain, you're just keeping your space.</p>
+<div class="proj-head"><span class="num">PROJECT 067</span><h2>Auntie-Uncle Chase Arcade</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min · arcade</span></div></div>
+<p class="lead">Scoot around collecting gold <strong>"freedom tokens"</strong> while keeping your distance from the well-meaning <strong>"pressure" chasers</strong>. It's all friendly metaphor — nobody's the villain here, it's just a playful test of holding your own space. Move with the arrow keys, WASD, or the on-screen pad.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② The little metaphor</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>How to play</h3>
-<ul>
-<li><strong>Move:</strong> arrow keys, WASD, or the on-screen pad.</li>
-<li><strong>Collect</strong> the gold token for points; <strong>avoid</strong> the red chasers.</li>
-<li>It gets trickier; best is saved on this device.</li>
-</ul></div>
-
-<div class="panel"><h3>Play</h3>
-<div class="game-hud"><span>Tokens: <b id="score">0</b></span><span class="spacer"></span><span>Best: <b id="best">0</b></span></div>
-<canvas id="game" width="320" height="320" aria-label="Top-down arcade. Move to collect tokens and avoid the chasers."></canvas>
-<div class="btn-row" style="justify-content:center;flex-wrap:wrap">
-<button class="btn" id="up" type="button" aria-label="Up" style="min-width:48px">▲</button></div>
-<div class="btn-row" style="justify-content:center">
-<button class="btn" id="lft" type="button" aria-label="Left" style="min-width:48px">◀</button>
-<button class="btn btn-primary" id="startBtn" type="button">Start</button>
-<button class="btn" id="rgt" type="button" aria-label="Right" style="min-width:48px">▶</button></div>
-<div class="btn-row" style="justify-content:center">
-<button class="btn" id="dwn" type="button" aria-label="Down" style="min-width:48px">▼</button></div>
-<p class="note" id="msg" role="status" aria-live="polite">Press Start, then use the pad or arrow keys.</p>
+<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
+<div class="panel">
+<div class="hud"><span>Tokens: <span id="score">0</span></span><span class="best">Best: <span id="best">0</span></span></div>
+<div class="gamewrap"><canvas id="cv" width="320" height="320" aria-label="Chase arcade game"></canvas>
+<div class="overlay show" id="overlay"><h4 id="ovTitle">Chase Arcade</h4><p id="ovMsg">Collect gold tokens, avoid the red chasers.</p><button class="btn btn-primary" id="startBtn" type="button">Start</button></div></div>
+<div class="dpad"><button class="gbtn up" id="upBtn" aria-label="Up">▲</button><button class="gbtn left" id="leftBtn" aria-label="Left">◀</button><button class="gbtn right" id="rightBtn" aria-label="Right">▶</button><button class="gbtn down" id="downBtn" aria-label="Down">▼</button></div>
 </div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">What's one "freedom token" — a small joy — you'll collect this week?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="about" style="scroll-margin-top:70px">② The little metaphor</h3>
+<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">A playful question: what's a "freedom token" — a bit of autonomy — you've collected for yourself lately?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>The chasers mean well — you just keep your space and gather the good stuff. A light reminder that distance can be kind, to them and to you.</p></div>
+<p>The chasers mean well — that's what makes them tricky. You're not fighting anyone; you're just keeping enough room to gather what's yours. A little distance, kept kindly, is a perfectly loving thing to do. Play for fun, and hold the metaphor lightly.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
 <a href="../061-mini-car-race-game/index.html">Mini Car Race<span>Dodge the blocks</span></a>
-<a href="../066-decision-tree-game/index.html">Decision Tree Game<span>Branching choices</span></a>
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>The serious version</span></a>
-<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>Choices, gamified</span></a>
+<a href="../070-freedom-points-game/index.html">Freedom Points<span>Choices, not reflexes</span></a>
+<a href="../047-cultural-pressure-map/index.html">Pressure Map<span>The serious version</span></a>
+<a href="../066-decision-tree-game/index.html">Decision Tree<span>Branching choices</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../066-decision-tree-game/index.html">← Previous</a><a class="btn btn-primary" href="../068-population-growth-visual-toy/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

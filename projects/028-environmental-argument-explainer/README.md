@@ -2,11 +2,8 @@
 
 *Project 028 · Category: Ethics · Difficulty: Intermediate*
 
-The ecological strand of antinatalist and childfree reasoning, fairly stated.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+The ecological argument, stated fairly and kept in proportion. Sliders to weigh five ecological
+considerations (with a reflective reading), a "what actually moves the needle" card set (systems
+and consumption >> individual family size, plus framing risks), and four strongest objections
+(blames the wrong people, missing person can't help either, consumption-not-number, coercion
+risk). Balanced and non-coercive. Vanilla JS; DOM test 6/6.

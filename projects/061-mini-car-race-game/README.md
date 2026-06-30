@@ -1,12 +1,7 @@
-# Mini Car Race Game: Escape Pronatalist Pressure
+# Mini Car Race Game
 
 *Project 061 · Category: Games · Difficulty: Beginner*
 
-A lightweight lane-dodging game where you steer past pressure blocks.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A 3-lane canvas dodge game: steer past falling "pressure" blocks, score by distance, with ramping
+speed and a saved best score. Keyboard / on-screen buttons / tap-to-steer. Headless-safe game loop
+(skips rAF under jsdom) exposing a test hook. Light metaphor cards + reflection. Vanilla JS; test 8/8.

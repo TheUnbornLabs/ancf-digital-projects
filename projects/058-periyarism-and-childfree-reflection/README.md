@@ -1,12 +1,8 @@
-# Periyarism and Childfree Reflection
+# Periyarism & Childfree Reflection
 
 *Project 058 · Category: Society · Difficulty: Advanced*
 
-Notes on rationalist, self-respect traditions and personal autonomy.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+An accurate bio panel for Periyar E. V. Ramasamy (1879–1973) and the Self-Respect Movement, five
+idea note-cards (rationalism, self-respect, women's autonomy, critique of compulsory marriage,
+reason as liberation) each with bearing on childfree reflection, and a resonance picker that surfaces
+a tailored reflection prompt. Frames him as a reformer, not an antinatalist. Vanilla JS; test 6/6.

@@ -1,50 +1,54 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var CONCEPTS=[
- ['Consent','agreeing in advance — impossible before birth'],
- ['Asymmetry','absent pain is good; absent pleasure isn\'t bad if no one is deprived'],
- ['Autonomy','your right to decide your own life and body'],
- ['Pronatalism','the assumption everyone should have children'],
- ['Childfree','an active choice not to have children'],
- ['Compassion','the wish to reduce suffering — a common root here']
-];
-var grid=document.getElementById('grid'),movesEl=document.getElementById('moves'),matchedEl=document.getElementById('matched'),bestEl=document.getElementById('best'),hint=document.getElementById('hint');
-var best=null;try{var b=A.get?A.get('best',''):'';best=b?parseInt(b,10):null;}catch(e){}if(bestEl)bestEl.textContent=best||'—';
-var cards=[],first=null,lock=false,moves=0,matched=0;
-function build(){
-  grid.innerHTML='';cards=[];first=null;lock=false;moves=0;matched=0;if(movesEl)movesEl.textContent=0;if(matchedEl)matchedEl.textContent=0;if(hint)hint.textContent='';
-  var deck=[];CONCEPTS.forEach(function(c,i){deck.push({i:i,term:c[0]});deck.push({i:i,term:c[0]});});
-  for(var k=deck.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=deck[k];deck[k]=deck[j];deck[j]=t;}
-  deck.forEach(function(card){
-    var b=document.createElement('button');b.className='opt';b.type='button';b.style.minHeight='64px';b.textContent='?';b.setAttribute('aria-label','Hidden card');
-    b.addEventListener('click',function(){flip(b,card);});
-    grid.appendChild(b);cards.push({el:b,card:card,done:false});
-  });
-}
-function flip(el,card){
-  if(lock)return;var rec=null;cards.forEach(function(c){if(c.el===el)rec=c;});if(!rec||rec.done||el===(first&&first.el))return;
-  el.textContent=card.term;el.classList.add('sel');el.setAttribute('aria-label',card.term);
-  if(!first){first={el:el,card:card,rec:rec};return;}
-  moves++;if(movesEl)movesEl.textContent=moves;lock=true;
-  if(first.card.i===card.i){
-    rec.done=true;first.rec.done=true;el.classList.add('ok');first.el.classList.add('ok');
-    matched++;if(matchedEl)matchedEl.textContent=matched;if(hint)hint.textContent=CONCEPTS[card.i][0]+': '+CONCEPTS[card.i][1];
-    first=null;lock=false;
-    if(matched===CONCEPTS.length){win();}
-  }else{
-    var a=first;setTimeout(function(){el.textContent='?';el.classList.remove('sel');el.setAttribute('aria-label','Hidden card');a.el.textContent='?';a.el.classList.remove('sel');a.el.setAttribute('aria-label','Hidden card');first=null;lock=false;},900);
+/* Project 065 · Memory Game: Ethical Concepts — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var PAIRS=[
+    {id:'asym',term:'Asymmetry',def:'Benatar\'s claim that absent pain is good, but absent pleasure is no loss',reveal:'The Asymmetry: Benatar argues the absence of pain is good even with no one to enjoy it, while the absence of pleasure is bad only if someone is deprived.'},
+    {id:'prona',term:'Pronatalism',def:'The cultural assumption that everyone should have children',reveal:'Pronatalism: the web of norms treating parenthood as the default, expected path for all.'},
+    {id:'auto',term:'Reproductive autonomy',def:'The right to decide whether and when to have children',reveal:'Reproductive autonomy: the freedom to choose whether, when, and if — including the right NOT to.'},
+    {id:'consent',term:'Consent',def:'Agreement freely given — impossible to obtain from the not-yet-existing',reveal:'Consent: central to many arguments, since a being who does not yet exist can neither agree to nor refuse birth.'},
+    {id:'suffer',term:'Suffering-focused ethics',def:'The view that reducing suffering takes moral priority',reveal:'Suffering-focused ethics: holds that easing suffering matters more than, or before, creating happiness.'},
+    {id:'steel',term:'Steelmanning',def:'Restating an opposing view in its strongest, fairest form',reveal:'Steelmanning: engaging the best version of a view you disagree with, rather than a caricature.'}
+  ];
+  var cards=[], first=null, lock=false, moves=0, matched=0;
+  var pairsEl=$('pairs'); if(pairsEl) pairsEl.textContent=PAIRS.length;
+  var best=(A.getJSON?A.getJSON('best',0):0)||0; var bestEl=$('best'); if(bestEl) bestEl.textContent=best?best:'—';
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+  function build(){
+    cards=[]; PAIRS.forEach(function(p){ cards.push({id:p.id,type:'term',text:p.term,reveal:p.reveal}); cards.push({id:p.id,type:'def',text:p.def,reveal:p.reveal}); });
+    shuffle(cards); first=null; lock=false; moves=0; matched=0;
+    var s=$('moves'); if(s)s.textContent=0; var m=$('matched'); if(m)m.textContent=0;
+    var rv=$('reveal'); if(rv) rv.textContent='Match a term with its definition to reveal the concept here.';
+    var g=$('grid'); if(!g) return;
+    g.innerHTML=cards.map(function(c,i){ return '<div class="mcard" data-i="'+i+'" data-id="'+c.id+'" data-type="'+c.type+'" role="button" tabindex="0">?</div>'; }).join('');
+    g.querySelectorAll('.mcard').forEach(function(el){ el.addEventListener('click',function(){ flip(el); }); });
   }
-}
-function win(){if(hint)hint.textContent='Solved in '+moves+' moves! '+(best===null||moves<best?'New best!':'Best: '+best);if(best===null||moves<best){best=moves;if(A.set)A.set('best',String(best));if(bestEl)bestEl.textContent=best;}}
-var newBtn=document.getElementById('newBtn');if(newBtn)newBtn.addEventListener('click',build);
-build();
-
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 065 script error',e);}
+  function flip(el){ if(lock) return; if(el.classList.contains('up')||el.classList.contains('matched')) return;
+    var c=cards[+el.getAttribute('data-i')];
+    el.classList.add('up'); el.innerHTML='<span class="ty">'+(c.type==='term'?'Term':'Definition')+'</span>'+esc(c.text);
+    if(!first){ first={el:el,c:c}; return; }
+    moves++; var s=$('moves'); if(s)s.textContent=moves;
+    if(first.c.id===c.id && first.el!==el){ // match
+      el.classList.add('matched'); first.el.classList.add('matched'); el.classList.remove('up'); first.el.classList.remove('up');
+      el.innerHTML='<span class="ty">'+(c.type==='term'?'Term':'Definition')+'</span>'+esc(c.text);
+      matched++; var m=$('matched'); if(m)m.textContent=matched;
+      var rv=$('reveal'); if(rv) rv.innerHTML='<b>✓ '+esc(c.reveal); 
+      first=null;
+      if(matched===PAIRS.length){ win(); }
+    } else {
+      lock=true; var f=first; first=null;
+      var apply=function(){ [f.el,el].forEach(function(x){ x.classList.remove('up'); x.textContent='?'; }); lock=false; };
+      if(/jsdom/i.test((navigator.userAgent||''))) apply(); else setTimeout(apply,850);
+    }
+  }
+  function win(){ var rv=$('reveal'); if(rv) rv.innerHTML='<b>🎉 All matched in '+moves+' moves!</b> '+rv.innerHTML;
+    if(!best||moves<best){ best=moves; if(A.setJSON)A.setJSON('best',best); var b=$('best'); if(b)b.textContent=best; } }
+  var nb=$('newBtn'); if(nb) nb.addEventListener('click',build);
+  build();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 065 script error', e); }
 });

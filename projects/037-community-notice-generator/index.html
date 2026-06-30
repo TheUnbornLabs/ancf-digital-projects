@@ -1,55 +1,49 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Community Notice Generator · ANCF Digital Projects</title><meta name="description" content="Draft clear community announcements — welcomes, events, policy updates, reminders — by type, with an editable box and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Community Notice Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Community Notice Generator · ANCF Digital Projects</title><meta name="description" content="Choose a notice type — event, schedule change, welcome, fundraiser, poll, or general — fill the details, and get a tidy, friendly message you can post. The preview updates live; edit and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Community Notice Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../036-whatsapp-group-rules-generator/index.html">← Previous</a><a class="btn btn-primary" href="../038-admin-warning-message-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 037</span><h2>Community Notice Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
-<p class="lead">Clear announcements keep a community calm and informed. Choose a notice type, fill the details, and get a tidy, friendly message you can post. Edit and copy.</p>
+<div class="proj-head"><span class="num">PROJECT 037</span><h2>Community Notice Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~10 min · generator</span></div></div>
+<p class="lead">Clear announcements keep a community calm and informed. Choose a notice type, fill the details, and get a tidy, friendly message you can post. Six templates cover the most common needs — the <strong>preview updates live</strong> as you type, so you can edit the wording and copy.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Build a notice</a><a href="#preview">② Your notice (live)</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The shape of a clear announcement: what, when, why, next step.</li>
-<li>How tone differs across welcomes, events, and policy updates.</li>
-<li>How to keep notices short and skimmable.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Build a notice</h3>
-<div class="row">
-<div><label class="field" for="type">Type</label><select id="type"><option value="welcome">Welcome</option><option value="event">Event</option><option value="policy">Policy update</option><option value="reminder">Reminder</option></select></div>
-<div><label class="field" for="title">Headline / topic</label><input type="text" id="title" placeholder="e.g. Monthly meetup"></div>
+<h3 id="build" style="scroll-margin-top:70px">① Build a notice</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="nType">Notice type</label><select id="nType"><option value="event">Event / meetup</option><option value="change">Schedule change</option><option value="welcome">Welcome new members</option><option value="fundraiser">Fundraiser</option><option value="poll">Poll / decision</option><option value="general">General announcement</option></select></div>
+<div><label class="field" for="nTone">Tone</label><select id="nTone"><option value="friendly">Friendly</option><option value="formal">Formal</option></select></div>
 </div>
-<label class="field" for="detail">Key detail (date, change, or message)</label><input type="text" id="detail" placeholder="e.g. Saturday 6pm, online — link below">
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate notice</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<label class="field" for="out">Notice (editable)</label>
-<textarea id="out" placeholder="Your notice appears here; edit freely. Saved on this device."></textarea>
+<div class="fields" id="fields"></div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Update preview</button><button class="btn" id="copyBtn" type="button">Copy notice</button></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A clear notice answers…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Only "what"</div><div class="opt" data-q="0" data-i="1">What, when, why, and the next step</div><div class="opt" data-q="0" data-i="2">Nothing specific</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Good notices are…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Long and dense</div><div class="opt" data-q="1" data-i="1">Short and skimmable</div><div class="opt" data-q="1" data-i="2">Vague</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="preview" style="scroll-margin-top:70px">② Your notice (live preview)</h3>
+<div class="panel"><div class="preview" id="out"></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A good community notice leads with…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">The key information, clearly</div><div class="opt" data-q="0" data-i="1">A long backstory</div><div class="opt" data-q="0" data-i="2">An apology</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Including a clear "what to do next" helps because…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">People know exactly how to respond</div><div class="opt" data-q="1" data-i="1">It pads out the message</div><div class="opt" data-q="1" data-i="2">It hides the point</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">What announcement do you need to send this week?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What kind of notice does your community most often need — and what makes those land well?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Say it plainly: what's happening, when, why it matters, and what to do next. A short, warm notice respects everyone's time and keeps the community in sync.</p></div>
+<p>A good notice respects people's time: it leads with the point, gives only the details that matter, and says clearly what to do next. Warm and brief beats long and vague every time. Pick a template, fill the blanks, and your community always knows what's going on.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../080-community-newsletter-template/index.html">Community Newsletter Template<span>Longer updates</span></a>
-<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set the rules</span></a>
-<a href="../038-admin-warning-message-generator/index.html">Admin Warning Generator<span>Moderation</span></a>
-<a href="../054-study-circle-dashboard/index.html">Study Circle Dashboard<span>Organise a group</span></a>
+<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set expectations</span></a>
+<a href="../038-admin-warning-message-generator/index.html">Admin Warning Generator<span>Private moderation</span></a>
+<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>For public posts</span></a>
+<a href="../019-childfree-couple-planning-board/index.html">Planning Board<span>Organise together</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../036-whatsapp-group-rules-generator/index.html">← Previous</a><a class="btn btn-primary" href="../038-admin-warning-message-generator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

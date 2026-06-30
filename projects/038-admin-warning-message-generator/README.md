@@ -2,11 +2,6 @@
 
 *Project 038 · Category: Community Tools · Difficulty: Intermediate*
 
-Compose firm-but-fair moderation warnings that de-escalate.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Drafts private moderation warnings across six common issues and a three-tier escalation ladder
+(gentle nudge / formal warning / final notice), with optional name and specifics. Names behaviour
+not worth, always leaves a door open. Includes the ladder and four principles. Vanilla JS; test 8/8.

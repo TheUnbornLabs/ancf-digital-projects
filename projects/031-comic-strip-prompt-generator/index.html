@@ -1,60 +1,55 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comic Strip Prompt Generator · ANCF Digital Projects</title><meta name="description" content="Generate gentle, metaphor-based comic premises about pressure and boundaries — never mocking real people — shown as a storyboard you can copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Comic Strip Prompt Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comic Strip Prompt Generator · ANCF Digital Projects</title><meta name="description" content="Generate gentle, metaphor-based three-panel comic premises about pressure, autonomy, and boundaries — rendered as a storyboard you can sketch from. Pick a theme and tone, draw new ones, save favourites, and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Comic Strip Prompt Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../030-economic-pressure-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../032-instagram-caption-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 031</span><h2>Comic Strip Prompt Generator</h2><div><span class="cat">Comics</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
-<p class="lead">Comics make ideas friendly. This tool generates <strong>gentle, metaphor-based</strong> comic premises about pressure, autonomy, and boundaries — laid out as a three-panel storyboard you can copy. It pokes fun at <em>situations</em>, never at real people or groups.</p>
+<div class="proj-head"><span class="num">PROJECT 031</span><h2>Comic Strip Prompt Generator</h2><div><span class="cat">Comics</span> <span class="note">· Difficulty: Beginner · ~10 min · generator</span></div></div>
+<p class="lead">Comics make ideas friendly. This tool generates gentle, <strong>metaphor-based three-panel premises</strong> about pressure, autonomy, and boundaries — laid out as a storyboard you can sketch from. Pick a theme and tone, generate, render the panels, save your favourites, and copy. The metaphors keep it warm and never mean-spirited.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#gen">① Generate a premise</a><a href="#board">② The storyboard</a><a href="#saved">③ Saved premises</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<p class="disclaimer">For kind, educational comics. Never mock parents, children, women, men, families, religious, caste, ethnic, poor, or LGBTQ+ people. Aim at ideas and situations, not at anyone's identity.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How to turn a theme into a three-beat comic: setup, turn, resolution.</li>
-<li>How metaphor keeps satire kind and on-target.</li>
-<li>How tone changes the same idea.</li>
-<li>How to storyboard a premise before drawing.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Generate a premise</h3>
-<div class="row">
-<div><label class="field" for="theme">Theme</label><select id="theme"><option value="consent">Consent</option><option value="pressure">Pressure</option><option value="autonomy">Autonomy</option><option value="freedom">Freedom</option><option value="myth">Myth-busting</option></select></div>
-<div><label class="field" for="tone">Tone</label><select id="tone"><option value="gentle">Gentle</option><option value="witty">Witty</option><option value="poignant">Poignant</option></select></div>
+<h3 id="gen" style="scroll-margin-top:70px">① Generate a premise</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="gTheme">Theme</label><select id="gTheme"><option value="pressure">Handling pressure</option><option value="autonomy">Owning your choice</option><option value="boundaries">Setting a boundary</option><option value="peace">Finding peace</option><option value="random">Surprise me</option></select></div>
+<div><label class="field" for="gTone">Tone</label><select id="gTone"><option value="gentle">Gentle &amp; warm</option><option value="witty">Witty</option><option value="wholesome">Wholesome</option><option value="absurd">Lightly absurd</option></select></div>
 </div>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate storyboard</button><button class="btn" id="againBtn" type="button">Another variation</button><button class="btn" id="copyBtn" type="button">Copy storyboard</button></div>
-<div class="row" id="board" style="grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-<div class="meter-card"><div class="lab"><span>Panel 1 · Setup</span></div><p class="note" id="p1" style="margin:6px 0 0">—</p></div>
-<div class="meter-card"><div class="lab"><span>Panel 2 · Turn</span></div><p class="note" id="p2" style="margin:6px 0 0">—</p></div>
-<div class="meter-card"><div class="lab"><span>Panel 3 · Resolution</span></div><p class="note" id="p3" style="margin:6px 0 0">—</p></div>
-</div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate premise</button><button class="btn" id="anotherBtn" type="button">Another</button><button class="btn" id="copyBtn" type="button">Copy</button><button class="btn" id="saveBtn" type="button">☆ Save</button></div>
+<div class="outbox" id="out">Press generate to get a three-panel comic premise.</div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Kind satire aims at…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">A person's identity or group</div><div class="opt" data-q="0" data-i="1">Situations, ideas, and pressures</div><div class="opt" data-q="0" data-i="2">Whoever's easiest to mock</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. A three-panel comic usually has…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Setup, turn, resolution</div><div class="opt" data-q="1" data-i="1">Only a punchline</div><div class="opt" data-q="1" data-i="2">No structure</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="board" style="scroll-margin-top:70px">② The storyboard</h3>
+<div class="panel">
+<p class="note">The same premise, broken into three panels with a simple visual cue — a sketch starting point, not a finished drawing.</p>
+<div class="storyboard" id="storyboard"></div>
+</div>
+
+<h3 id="saved" style="scroll-margin-top:70px">③ Saved premises</h3>
+<div class="panel"><div class="favs" id="favs"></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. Metaphor in a comic helps an idea feel…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Friendlier and easier to approach</div><div class="opt" data-q="0" data-i="1">More aggressive</div><div class="opt" data-q="0" data-i="2">Impossible to follow</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A good three-panel structure is usually…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Setup, turn, resolution</div><div class="opt" data-q="1" data-i="1">Three identical panels</div><div class="opt" data-q="1" data-i="2">No structure at all</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Sketch your own three-beat idea, or note a metaphor you'd like to draw.</label>
-<textarea id="reflect" placeholder="Your idea…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which premise made you smile — and what idea is it really about, underneath the metaphor?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>The kindest comics let everyone laugh, including the people they're about. Aim your wit at the pressure or the assumption — never at a person's worth — and the joke stays a doorway rather than a wall.</p></div>
+<p>A heavy idea, drawn lightly, gets through where a lecture can't. Metaphor lets you explore pressure and autonomy with a wink — inviting reflection instead of defensiveness. Take any premise here as a seed and make it your own.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../032-instagram-caption-generator/index.html">Instagram Caption Generator<span>Words for posts</span></a>
-<a href="../074-instagram-carousel-text-builder/index.html">Carousel Text Builder<span>Slide-by-slide</span></a>
-<a href="../075-protest-poster-text-generator/index.html">Protest Poster Text<span>Short slogans</span></a>
-<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Stay kind</span></a>
+<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>Words to go with it</span></a>
+<a href="../022-childfree-quote-archive/index.html">Affirmation Archive<span>Gentle reminders</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>The ideas behind the jokes</span></a>
+<a href="../021-antinatalist-quote-archive/index.html">Quote Archive<span>Ideas to reflect on</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../030-economic-pressure-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../032-instagram-caption-generator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -2,11 +2,7 @@
 
 *Project 033 · Category: Writing Tools · Difficulty: Intermediate*
 
-Draft calm, non-hostile replies to common arguments — aimed at ideas, not people.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Drafts calm replies to six common claims about not having children, each aimed at the idea rather
+than the person. Surfaces the hidden assumption behind each claim, offers calm/curious/firm/witty
+styles with variants, teaches the acknowledge-reframe-redirect structure, and saves favourites.
+Vanilla JS; DOM test 8/8.

@@ -1,52 +1,53 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ethics Flashcards · ANCF Digital Projects</title><meta name="description" content="Keyboard-friendly flip-cards for key terms in birth ethics and autonomy, with a known/learning tracker, a progress meter, shuffle, and a quiz."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Ethics Flashcards</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ethics Flashcards · ANCF Digital Projects</title><meta name="description" content="A study deck of 24 flip-cards for the key terms in birth ethics and reproductive autonomy: filter by category, mark what you know, track progress, and run a focused study session."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Ethics Flashcards</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../022-childfree-quote-archive/index.html">← Previous</a><a class="btn btn-primary" href="../024-philosophy-timeline/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 023</span><h2>Ethics Flashcards</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
-<p class="lead">Twelve flip-cards for the key terms in birth ethics and reproductive autonomy. Tap a card (or press Enter) to reveal the definition, mark the ones you know, and watch your progress grow. Great for solo study or a study circle.</p>
+<div class="proj-head"><span class="num">PROJECT 023</span><h2>Ethics Flashcards</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~15 min · study deck</span></div></div>
+<p class="lead">A study deck of <strong>24 flip-cards</strong> for the key terms in birth ethics and reproductive autonomy. Tap a card to reveal its definition, mark the ones you know, and watch your progress fill. When you're ready, run a <strong>focused study session</strong> to test yourself one card at a time.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#deck">① The deck</a><a href="#study">② Study session</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Definitions of the core vocabulary: consent, asymmetry, autonomy, and more.</li>
-<li>The difference between easily confused terms (childfree vs childless; actual vs proxy consent).</li>
-<li>Which terms you've mastered and which to revisit (a progress meter).</li>
-<li>How to self-test until the words feel natural.</li>
-</ul></div>
-
-<div class="panel"><h3>1. The cards</h3>
-<div class="btn-row"><button class="btn" id="shuffleBtn" type="button">Shuffle</button><button class="btn" id="resetKnown" type="button">Reset progress</button></div>
-<div class="meter-card"><div class="lab"><span>Marked known</span><b id="knownPct">0%</b></div><div class="meter"><span id="knownBar"></span></div></div>
-<div class="cards-flip" id="cards" style="margin-top:12px"></div>
-<p class="note">Tap a card to flip. Use “Know it / Learning” to track yourself. Saved on this device.</p>
+<h3 id="deck" style="scroll-margin-top:70px">① The deck</h3>
+<div class="panel">
+<p class="note">Tap a card (or press Enter) to flip it. Use the small badge to mark a card as known. Filter by category.</p>
+<div class="chips" id="catChips" role="group" aria-label="Filter by category"></div>
+<div class="deck-prog"><span class="bar"><span id="deckBar"></span></span><span class="note" id="deckCount" style="white-space:nowrap"></span></div>
+<div class="deck" id="deckGrid"></div>
+<div class="btn-row"><button class="btn" id="resetKnown" type="button">Reset progress</button></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. The "non-identity problem" points out that…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Identity is fake</div><div class="opt" data-q="0" data-i="1">A person exists only because they were born, complicating "harm"</div><div class="opt" data-q="0" data-i="2">Names don't matter</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. "Childfree" differs from "childless" because childfree implies…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">An active choice</div><div class="opt" data-q="1" data-i="1">Inability</div><div class="opt" data-q="1" data-i="2">Dislike of children</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="study" style="scroll-margin-top:70px">② Study session</h3>
+<div class="panel">
+<p class="note">A focused round: see a term, recall the meaning, flip to check, then mark whether you knew it. You can study the whole deck or only the cards you haven't mastered yet.</p>
+<div class="btn-row"><button class="btn btn-primary" id="studyAll" type="button">Study all 24</button><button class="btn" id="studyUnknown" type="button">Study only unknown</button></div>
+<div id="studyArea" style="margin-top:12px"></div>
+</div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. The "asymmetry" is a term from…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">David Benatar</div><div class="opt" data-q="0" data-i="1">Plato</div><div class="opt" data-q="0" data-i="2">Kant</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The non-identity problem is associated with…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Derek Parfit</div><div class="opt" data-q="1" data-i="1">Aristotle</div><div class="opt" data-q="1" data-i="2">Hume</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. "Childfree" differs from "childless" in that childfree implies…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">By choice</div><div class="opt" data-q="2" data-i="1">By accident</div><div class="opt" data-q="2" data-i="2">They're identical</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Which term was clearest once defined — and which still feels slippery?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which term clicked into place for you — and which one still feels slippery?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Clear words make for clear thinking. Once these terms feel natural, the bigger debates become far easier to follow — and to join with care and precision.</p></div>
+<p>A debate is far easier to follow once its vocabulary is second nature. Master these two dozen terms and the arguments across this archive — and most of moral philosophy about birth — stop feeling like jargon and start feeling like a conversation you can join.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../024-philosophy-timeline/index.html">Philosophy Timeline<span>The ideas in time</span></a>
-<a href="../055-philosophy-comparison-tool/index.html">Philosophy Comparison Tool<span>Compare positions</span></a>
-<a href="../007-consent-and-birth-philosophy-page/index.html">Consent &amp; Birth Philosophy<span>Terms in action</span></a>
-<a href="../060-rationalism-toolkit/index.html">Rationalism Toolkit<span>Think clearly</span></a>
+<a href="../024-philosophy-timeline/index.html">Philosophy Timeline<span>Where the ideas came from</span></a>
+<a href="../001-antinatalism-intro-guide/book/ch04.html">The Antinatalism Reader (Ch. 4)<span>The vocabulary in depth</span></a>
+<a href="../025-benatar-argument-explainer/index.html">Benatar Explainer<span>The asymmetry</span></a>
+<a href="../021-antinatalist-quote-archive/index.html">Quote Archive<span>Ideas to reflect on</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../022-childfree-quote-archive/index.html">← Previous</a><a class="btn btn-primary" href="../024-philosophy-timeline/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

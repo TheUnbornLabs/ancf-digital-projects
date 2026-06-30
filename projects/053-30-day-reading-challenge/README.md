@@ -2,11 +2,6 @@
 
 *Project 053 · Category: Learning Tools · Difficulty: Beginner*
 
-A 30-day prompt-a-day challenge to build a thoughtful view.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Thirty original daily reflection prompts with a "today's prompt" card (auto-advances to the next
+undone day), per-day private notes, a tappable 30-cell day grid (done/current), and a progress
+meter. Jump to any day; reset all. Saved on-device. Vanilla JS; DOM test 7/7.

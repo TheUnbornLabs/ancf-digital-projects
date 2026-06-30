@@ -1,56 +1,57 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Warning Message Generator · ANCF Digital Projects</title><meta name="description" content="Compose firm-but-fair private moderation warnings that name the behaviour, not the person — by issue and step — editable and copyable."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Admin Warning Message Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Warning Message Generator · ANCF Digital Projects</title><meta name="description" content="Draft a private moderation warning that names the behaviour, not the person's worth, and offers a way back. Pick the issue and an escalation tier — gentle nudge, formal warning, or final notice — and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Admin Warning Message Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 038</span><h2>Admin Warning Message Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~7 min</span></div></div>
-<p class="lead">Moderation works best when it's firm <em>and</em> fair. This tool drafts a private warning that names the behaviour, not the person's worth, and offers a way back. Pick the issue and the step, edit, and send privately.</p>
+<div class="proj-head"><span class="num">PROJECT 038</span><h2>Admin Warning Message Generator</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~12 min · generator</span></div></div>
+<p class="lead">Moderation works best when it's firm and fair. This tool drafts a <strong>private</strong> warning that names the <em>behaviour</em>, not the person's worth, and always offers a way back. Pick the issue and the escalation tier — a gentle nudge, a formal warning, or a final notice — add the specifics, and copy.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Compose a warning</a><a href="#ladder">② The escalation ladder</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<p class="disclaimer">For fair moderation. Address behaviour, never a person's identity. Keep warnings private; protect targets of harassment first. Not legal advice.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How to name a behaviour without attacking the person.</li>
-<li>How warnings escalate fairly: reminder → formal → final.</li>
-<li>How to leave a clear path back to good standing.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Compose a warning</h3>
-<div class="row">
-<div><label class="field" for="issue">Issue</label><select id="issue"><option value="harassment">Harassment / targeting</option><option value="hate">Hateful language</option><option value="attack">Personal attack</option><option value="spam">Spam / self-promo</option><option value="offtopic">Repeated off-topic</option></select></div>
-<div><label class="field" for="step">Step</label><select id="step"><option value="reminder">Gentle reminder</option><option value="formal">Formal warning</option><option value="final">Final warning</option></select></div>
+<h3 id="build" style="scroll-margin-top:70px">① Compose a warning</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="wIssue">The issue</label><select id="wIssue"></select></div>
+<div><label class="field" for="wTier">Escalation tier</label><select id="wTier"><option value="1">① Gentle nudge</option><option value="2">② Formal warning</option><option value="3">③ Final notice</option></select></div>
 </div>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<label class="field" for="out">Message (editable)</label>
-<textarea id="out" placeholder="Your message appears here; edit freely. Saved on this device."></textarea>
+<div class="fields">
+<div><label for="wName">Member name (optional)</label><input id="wName" type="text" placeholder="e.g. Alex (or leave blank)"></div>
+<div class="full"><label for="wDetail">What specifically happened (optional)</label><input id="wDetail" type="text" placeholder="e.g. posting promo links in the main chat"></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy message</button></div>
+<div class="preview" id="out"></div>
+<p class="outmeta">Send privately (direct message), not in the public channel — that's part of naming the behaviour without shaming the person.</p>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A fair warning names…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">The person's character</div><div class="opt" data-q="0" data-i="1">The specific behaviour and the rule</div><div class="opt" data-q="0" data-i="2">Nothing clearly</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. When harassment occurs, moderators protect…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">The harasser's feelings first</div><div class="opt" data-q="1" data-i="1">The target first</div><div class="opt" data-q="1" data-i="2">No one</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="ladder" style="scroll-margin-top:70px">② The escalation ladder</h3>
+<div class="panel"><p class="note">Most issues resolve at the first rung. Escalate only if the behaviour continues.</p>
+<div class="ladder" id="ladderBox"></div>
+<h4>Four principles behind every good warning</h4>
+<div class="cards3" id="principles"></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A fair warning targets…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">The specific behaviour, not the person's character</div><div class="opt" data-q="0" data-i="1">The person's worth</div><div class="opt" data-q="0" data-i="2">Their whole history</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Warnings are best delivered…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Privately, with a clear path back</div><div class="opt" data-q="1" data-i="1">Publicly, to make an example</div><div class="opt" data-q="1" data-i="2">Never — just remove people</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">What makes a warning feel fair to you, as a member?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Moderation can feel uncomfortable. What kind of warning would you want to receive if you'd slipped up?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Fair moderation is specific, private, and proportionate: name the behaviour, cite the rule, and leave a clear path back. Protect targets first — kindness to the room sometimes means firmness with one person.</p></div>
+<p>The goal of a warning isn't punishment — it's a clear, kind chance to course-correct. Name the behaviour, keep the person's dignity intact, state what happens next, and leave a door open. Done well, most warnings end with someone staying, and doing better.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../090-safe-moderation-checklist/index.html">Safe Moderation Checklist<span>Before you act</span></a>
-<a href="../088-anti-harassment-rules-page/index.html">Anti-Harassment Rules<span>The standards</span></a>
-<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set them up</span></a>
-<a href="../087-crisis-safe-community-policy-page/index.html">Crisis-Safe Policy<span>Harder moments</span></a>
+<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>The rules you're enforcing</span></a>
+<a href="../037-community-notice-generator/index.html">Community Notice Generator<span>Public announcements</span></a>
+<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Heading off conflict</span></a>
+<a href="../010-no-means-no-boundary-tool/index.html">"No Means No"<span>Boundaries</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../037-community-notice-generator/index.html">← Previous</a><a class="btn btn-primary" href="../039-respectful-debate-guide/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

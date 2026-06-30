@@ -1,12 +1,7 @@
-# “Auntie Uncle Chase” Arcade Game
+# Auntie-Uncle Chase Arcade
 
 *Project 067 · Category: Games · Difficulty: Beginner*
 
-Collect 'freedom tokens' while gently avoiding the well-meaning chasers.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A canvas chase-and-collect arcade: gather freedom tokens while homing "pressure" chasers pursue you;
+more chasers appear and all speed up over time. Arrows/WASD/d-pad movement, saved best, headless-safe
+loop with test hook. Friendly metaphor cards + reflection. Vanilla JS; DOM test 6/6.

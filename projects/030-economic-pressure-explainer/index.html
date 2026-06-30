@@ -1,69 +1,66 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Economic Pressure Explainer · ANCF Digital Projects</title><meta name="description" content="How money, housing, and work shape reproductive decisions — critiquing structures, never shaming families — with an interactive pressure map."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Economic Pressure Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Economic Pressure Explainer · ANCF Digital Projects</title><meta name="description" content="How money, housing, and work push family decisions in both directions. Name the forces, map which weigh on you with a two-direction pressure meter, and see why these are structures, not personal failings."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Economic Pressure Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../029-feminist-childfree-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../031-comic-strip-prompt-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 030</span><h2>Economic Pressure Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
-<p class="lead">Money, housing, and work shape family decisions in every direction — pushing some toward children and others away. This explainer names those forces and lets you map which weigh on you. It critiques <strong>structures</strong>, never families, and never shames anyone's choices.</p>
+<div class="proj-head"><span class="num">PROJECT 030</span><h2>Economic Pressure Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~15 min · interactive</span></div></div>
+<p class="lead">Money, housing, and work shape family decisions in every direction — pushing some people toward children and others away. This explainer names those forces, lets you <strong>map which weigh on you</strong>, and is clear that they are <em>structures</em>, not personal failings. It won't tell you what to choose; it makes the invisible pressures visible.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#forces">① The forces, both ways</a><a href="#map">② Map your pressures</a><a href="#structures">③ Structures, not blame</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<p class="disclaimer">This page critiques systems, not people. It does not pressure anyone toward or away from parenthood, and it never blames poor people or any family. Not financial advice.</p>
+<h3 id="forces" style="scroll-margin-top:70px">① The forces, both ways</h3>
+<div class="panel">
+<p class="note">Economics doesn't push only one way. Tap each to see how the same conditions move different people differently.</p>
+<div class="cards3" id="forceCards"></div>
+</div>
 
-<div class="learn"><h3>What you will learn</h3>
+<h3 id="map" style="scroll-margin-top:70px">② Map your pressures</h3>
+<div class="panel">
+<p class="note">Rate how strongly each force presses on <em>you</em>. The meter shows the net economic pull you're feeling — not what you should do. Saved on this device.</p>
+<div class="dirgrid">
+<div class="dircol toward"><h4>↑ Pushing toward children</h4><div id="towardRows"></div></div>
+<div class="dircol away"><h4>↓ Pushing away</h4><div id="awayRows"></div></div>
+</div>
+<div class="needle-wrap" aria-hidden="true"><span class="nd" id="needle"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--muted)"><span>← away from children</span><span>balanced</span><span>toward children →</span></div>
+<div class="reading" id="mapReading" role="status" aria-live="polite"></div>
+</div>
+
+<h3 id="structures" style="scroll-margin-top:70px">③ Structures, not blame</h3>
+<div class="panel">
+<div class="learn"><h3>The point worth holding onto</h3>
 <ul>
-<li>The economic forces that shape reproductive decisions.</li>
-<li>Why these are structural, not personal failings.</li>
-<li>Which pressures weigh most on you (an interactive map).</li>
-<li>How to discuss economics without shaming anyone.</li>
+<li><strong>These are conditions, not character.</strong> Feeling unable to afford a child — or feeling driven to have one for security — reflects housing markets, wages, and policy, not a personal flaw.</li>
+<li><strong>The pressure is real, and so is the choice.</strong> Naming the forces doesn't make the decision for you; it just stops the forces from making it invisibly.</li>
+<li><strong>Different people, opposite pushes.</strong> The same economy that makes children feel unaffordable to one person makes them feel like old-age security to another. Neither is irrational.</li>
+<li><strong>Policy can change the map.</strong> Childcare, housing, parental leave, and wages all shift these pressures — which is why this is a public question, not only a private one.</li>
 </ul></div>
-
-<div class="panel"><h3>1. Map the pressures</h3>
-<p class="note">Rate how much each weighs on you: 0 none → 4 severe. Saved on this device.</p>
-<div id="pressures">
-<div class="slider-row"><div class="lab"><label for="p-housing">Housing costs</label><output id="o-housing">0</output></div><input type="range" id="p-housing" data-axis="Housing" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="p-childcare">Childcare costs</label><output id="o-childcare">0</output></div><input type="range" id="p-childcare" data-axis="Childcare" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="p-jobs">Job insecurity</label><output id="o-jobs">0</output></div><input type="range" id="p-jobs" data-axis="Job security" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="p-wages">Wages vs cost of living</label><output id="o-wages">0</output></div><input type="range" id="p-wages" data-axis="Wages" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="p-debt">Debt</label><output id="o-debt">0</output></div><input type="range" id="p-debt" data-axis="Debt" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="p-support">Lack of leave / support</label><output id="o-support">0</output></div><input type="range" id="p-support" data-axis="Support" min="0" max="4" step="1" value="0"></div>
-</div>
-<svg class="chart" id="presChart" role="img" aria-label="Bar chart of how much each economic pressure weighs on you."></svg>
-<p class="chart-cap" id="presCap">Bar chart: your rating (0–4) of each pressure.</p>
 </div>
 
-<div class="panel"><h3>2. Structures, not blame</h3>
-<div class="kv">
-<strong>It's not personal failure</strong><span>Housing, wages, and care costs are set by policy and markets — not by any family doing something wrong.</span>
-<strong>Pressure runs both ways</strong><span>Economics pushes some toward children (security, support) and others away (cost, precarity).</span>
-<strong>Solidarity, not shame</strong><span>The fair target is the system. People making the best of hard constraints deserve support, not judgement.</span>
-</div>
-</div>
-
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. These pressures are best understood as…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Personal failings</div><div class="opt" data-q="0" data-i="1">Structural forces set by policy and markets</div><div class="opt" data-q="0" data-i="2">Nobody's concern</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. The fair target of critique is…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Poor families</div><div class="opt" data-q="1" data-i="1">The systems that shape choices</div><div class="opt" data-q="1" data-i="2">People with many children</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. Economic pressure on family decisions…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Only pushes people away from children</div><div class="opt" data-q="0" data-i="1">Pushes in both directions, depending on circumstance</div><div class="opt" data-q="0" data-i="2">Doesn't exist</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Feeling unable to afford a child reflects…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">A personal failing</div><div class="opt" data-q="1" data-i="1">Structural conditions like housing and wages</div><div class="opt" data-q="1" data-i="2">Laziness</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. Naming these pressures is meant to…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Decide for you</div><div class="opt" data-q="2" data-i="1">Make invisible forces visible so you can choose clearly</div><div class="opt" data-q="2" data-i="2">Assign blame</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>4. Your reflection</h3>
-<label class="field" for="reflect">Which pressure weighs most on you — and what structural change would ease it?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which economic force presses hardest on you — and how much of your "decision" is really it talking?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Economics shapes family life profoundly — but it is a matter of systems, not personal worth. Naming the structures clearly lets us support people on every path, without a word of blame for the choices they make under real constraints.</p></div>
+<p>A choice this big is rarely made in a vacuum — money, housing, and work are always in the room. Seeing exactly which forces are pressing, and in which direction, doesn't make the decision for you. It just hands the steering wheel back, so that whatever you choose, you choose it on purpose rather than under pressure you never named.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../098-poverty-and-parenthood-pressure-explainer/index.html">Poverty &amp; Parenthood Pressure<span>Deeper, with care</span></a>
-<a href="../012-parenthood-cost-estimator/index.html">Parenthood Cost Estimator<span>The numbers</span></a>
-<a href="../020-retirement-without-children-planner/index.html">Retirement Planner<span>Later-life security</span></a>
-<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Name the pressure</span></a>
+<a href="../011-childfree-budget-calculator/index.html">Budget Calculator<span>The money, mapped</span></a>
+<a href="../012-parenthood-cost-estimator/index.html">Cost Estimator<span>The other side</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Detector<span>Other pressures</span></a>
+<a href="../005-is-this-my-choice-reflection-tool/index.html">Is This My Choice?<span>Find your own voice</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../029-feminist-childfree-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../031-comic-strip-prompt-generator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

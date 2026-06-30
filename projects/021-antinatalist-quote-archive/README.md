@@ -2,11 +2,8 @@
 
 *Project 021 · Category: Learning Tools · Difficulty: Beginner*
 
-A small, copyable archive of reflective lines on the ethics of birth (paraphrased for study).
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A study archive of 28 **original prompts** (not quotations) that rephrase ideas from the
+antinatalist and pessimist traditions for reflection. Random "prompt of the moment", a
+searchable/filterable browser (by theme, with a favourites filter), per-card save/copy, a
+themes-and-thinkers glance, a quiz, and reflection. All text is original to avoid copyright.
+Vanilla JS; DOM test 9/9.

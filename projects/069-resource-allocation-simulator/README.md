@@ -2,11 +2,6 @@
 
 *Project 069 · Category: Games · Difficulty: Beginner*
 
-See how a fixed resource pool divides among different household sizes.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A per-person division toy across three resource types (monthly budget ₹, free hours/week, living
+space sq ft): set the pool and household size to see each share, a big readout, and a row of people.
+Neutral, what-it-ignores framing. Vanilla JS; DOM test 6/6.

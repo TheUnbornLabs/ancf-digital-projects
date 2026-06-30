@@ -2,11 +2,7 @@
 
 *Project 024 · Category: Learning Tools · Difficulty: Intermediate*
 
-A neutral timeline of ideas relevant to antinatalist and childfree thought.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A filterable study timeline of 23 entries (ancient Silenus → 2019) across six strands —
+philosophy, religion, feminism/childfree, ecology, ethics/rights, culture. Filter by strand,
+search, and expand any entry; a strand legend explains the groupings. Dates and works verified.
+Vanilla JS; DOM test 8/8.

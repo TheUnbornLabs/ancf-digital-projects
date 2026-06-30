@@ -1,1 +1,27 @@
-/* Per-project overrides for Childfree Quote Archive. Shared design system lives in ../../style.css */
+/* Project 022 · Childfree Quote Archive — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.arch-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+.arch-controls .search{flex:1 1 220px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip2{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:5px 12px;border-radius:var(--radius-pill);font-size:var(--fs-sm);font-weight:600;user-select:none}
+.chip2:hover{border-color:var(--accent);color:var(--ink)}.chip2.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qcount{font-size:var(--fs-sm);color:var(--muted);margin:4px 2px}
+.qcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-3);margin:8px 0}
+.qcard{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.qcard .qt{font-size:var(--fs-lg);line-height:1.4;font-weight:500}
+.qcard .qm{display:flex;align-items:center;gap:8px;margin-top:auto;font-size:var(--fs-xs)}
+.qcard .qm .theme{background:var(--info-soft);color:var(--info);border-radius:var(--radius-pill);padding:2px 9px;font-weight:700}
+.qcard .qm .src{color:var(--muted)}
+.qcard .acts{display:flex;gap:6px}
+.qcard .acts button{cursor:pointer;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius-sm);padding:3px 9px;font-size:var(--fs-xs);font-weight:700;color:var(--muted)}
+.qcard .acts button.fav.on{color:#b3122a;border-color:var(--accent)}
+.featured{border:2px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:16px 18px;margin:10px 0}
+.featured .qt{font-size:var(--fs-xl);font-weight:600;line-height:1.4}
+.featured .qm{margin-top:10px;font-size:var(--fs-sm);color:var(--muted)}
+.qempty{color:var(--muted);text-align:center;padding:18px;grid-column:1/-1}
+/* 022 builder */
+.builder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+@media(max-width:560px){.builder-grid{grid-template-columns:1fr}}
+.aff-out{font-size:var(--fs-xl);font-weight:600;line-height:1.4;border:2px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:16px 18px;margin:10px 0;color:var(--ink)}

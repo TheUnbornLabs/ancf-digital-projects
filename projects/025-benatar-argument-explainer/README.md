@@ -2,11 +2,7 @@
 
 *Project 025 · Category: Philosophy · Difficulty: Advanced*
 
-A clear, fair summary of the well-known asymmetry argument — and its critics.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+David Benatar's asymmetry argument, interactive and fair. An explorable four-cell matrix, a
+premise tester (accept/reject each premise → live conclusion), and four strongest objections
+("good for no one", not-really-asymmetric, proves-too-much, lives-worth-starting) with replies.
+Argues for no conclusion. Vanilla JS; DOM test 9/9.

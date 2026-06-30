@@ -1,53 +1,51 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>“When Are You Having Kids?” Reply Tool · ANCF Digital Projects</title><meta name="description" content="Instant, kind one-liners for the most common question of all — choose a vibe, cycle options, and copy. Every reply stays polite."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>“When Are You Having Kids?” Reply Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>"When Are You Having Kids?" Reply Tool · ANCF Digital Projects</title><meta name="description" content="The most common question, answered. Pick a vibe and who's asking, get a kind one-liner, cycle for more, and build your three go-to replies to keep ready. Every reply stays polite — a boundary, never an insult."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>"When Are You Having Kids?" Reply Tool</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../034-family-function-survival-script/index.html">← Previous</a><a class="btn btn-primary" href="../036-whatsapp-group-rules-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 035</span><h2>“When Are You Having Kids?” Reply Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~5 min</span></div></div>
-<p class="lead">The most common question, answered. Pick a vibe and get a kind one-liner you can use, cycle for more, and copy your favourite. Every reply stays polite — a boundary, never a barb.</p>
+<div class="proj-head"><span class="num">PROJECT 035</span><h2>"When Are You Having Kids?" Reply Tool</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~8 min · generator</span></div></div>
+<p class="lead">The most common question, answered. Pick a <strong>vibe</strong> and who's asking, get a kind one-liner you can actually use, and cycle for more. Then build your <strong>three go-to replies</strong> to keep in your back pocket. Every reply stays polite — a boundary, never an insult.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#gen">① Get a reply</a><a href="#kit">② Your three go-to lines</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Quick, kind replies in four vibes: kind, witty, firm, deflect.</li>
-<li>How a short line can close a topic without conflict.</li>
-<li>How to keep your favourite ready.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Get a reply</h3>
-<label class="field" for="vibe">Vibe</label>
-<select id="vibe"><option value="kind">Kind</option><option value="witty">Witty</option><option value="firm">Firm</option><option value="deflect">Deflect</option></select>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Give me a line</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<div class="result" id="out" role="status" aria-live="polite">Pick a vibe and tap "Give me a line".</div>
-<p class="note" style="margin-top:8px">All lines for this vibe:</p>
-<ul class="clean" id="all"></ul>
+<h3 id="gen" style="scroll-margin-top:70px">① Get a reply</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="vVibe">Vibe</label><select id="vVibe"><option value="gracious">Gracious</option><option value="breezy">Breezy / funny</option><option value="honest">Honest</option><option value="firm">Firm</option><option value="deflect">Deflect &amp; redirect</option></select></div>
+<div><label class="field" for="vWho">Who's asking</label><select id="vWho"><option value="anyone">Anyone</option><option value="stranger">A stranger / acquaintance</option><option value="family">Close family</option></select></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Get a reply</button><button class="btn" id="anotherBtn" type="button">Another</button><button class="btn" id="copyBtn" type="button">Copy</button><button class="btn" id="addBtn" type="button">★ Add to my three</button></div>
+<div class="outbox" id="out">Pick a vibe and press get a reply.</div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A good one-liner here is…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">A polite way to close the topic</div><div class="opt" data-q="0" data-i="1">An insult</div><div class="opt" data-q="0" data-i="2">A long explanation</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. You owe the asker…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">A full medical history</div><div class="opt" data-q="1" data-i="1">Basic courtesy, not a justification</div><div class="opt" data-q="1" data-i="2">An apology</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="kit" style="scroll-margin-top:70px">② Your three go-to lines</h3>
+<div class="panel"><p class="note">The replies you'd actually say. Keep up to three — easy to remember when you're put on the spot.</p>
+<div class="kit" id="kitBox"></div>
+<div class="btn-row"><button class="btn" id="copyKit" type="button">Copy my three</button><button class="btn" id="clearKit" type="button">Clear</button></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A good reply to a nosy question is…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">A polite boundary, not an insult</div><div class="opt" data-q="0" data-i="1">A cutting put-down</div><div class="opt" data-q="0" data-i="2">A long justification</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Having a few go-to lines ready means you…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Aren't caught flat-footed in the moment</div><div class="opt" data-q="1" data-i="1">Must use the exact same words every time</div><div class="opt" data-q="1" data-i="2">Owe everyone an explanation</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Write your own go-to line for this question.</label>
-<textarea id="reflect" placeholder="Your line…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Does this question usually sting, or just annoy? What would feel best to have ready next time?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>One kind sentence is usually enough. A short, warm line closes the topic and keeps the peace — you never have to justify your private life to anyone.</p></div>
+<p>You never owe anyone the reasons for your own life. A short, warm line — repeated calmly — answers the question without opening a debate. Pick your three, and the most common question in the world stops being something to dread.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Firmer boundaries</span></a>
-<a href="../017-pressure-from-parents-response-generator/index.html">Pressure From Parents Tool<span>Warm replies</span></a>
-<a href="../034-family-function-survival-script/index.html">Family Function Survival Script<span>A full plan</span></a>
-<a href="../049-elder-advice-response-tool/index.html">Elder Advice Response Tool<span>For elders</span></a>
+<a href="../034-family-function-survival-script/index.html">Survival Script<span>For the whole event</span></a>
+<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>If it goes deeper</span></a>
+<a href="../017-pressure-from-parents-response-generator/index.html">Parent Response Generator<span>For close family</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>Why people ask</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../034-family-function-survival-script/index.html">← Previous</a><a class="btn btn-primary" href="../036-whatsapp-group-rules-generator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

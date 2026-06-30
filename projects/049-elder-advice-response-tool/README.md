@@ -2,11 +2,7 @@
 
 *Project 049 · Category: Writing Tools · Difficulty: Beginner*
 
-Respectful replies that honour elders while keeping your boundary.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Drafts replies that honour an elder's care while keeping your boundary, from the relationship, the
+concern underneath their advice (six options), and a warmth-vs-directness dial, with variants and
+copy. Includes a "what they may really mean" decoder (the worry + how to honour it). Vanilla JS;
+DOM test 8/8.

@@ -1,76 +1,51 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Social Shame Explainer · ANCF Digital Projects</title><meta name="description" content="How social shame operates around reproductive choices — shame vs guilt, where it shows up, and how to loosen its grip, with a personal shame map."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Social Shame Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Social Shame Explainer · ANCF Digital Projects</title><meta name="description" content="Shame is one of society's quietest tools for keeping people in line. This explainer shows how it operates around reproductive choices, separates shame from healthy guilt with an interactive sorter, decodes shaming messages, and offers shame-resilience steps."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Social Shame Explainer</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../045-identity-pressure-reflection-page/index.html">← Previous</a><a class="btn btn-primary" href="../047-cultural-pressure-map/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 046</span><h2>Social Shame Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
-<p class="lead">Shame is one of society's quietest tools for keeping people in line. This explainer shows how it operates around reproductive choices, separates shame from healthy guilt, and offers ways to loosen its grip — with compassion, never more shame.</p>
+<div class="proj-head"><span class="num">PROJECT 046</span><h2>Social Shame Explainer</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~15 min · explainer</span></div></div>
+<p class="lead">Shame is one of society's quietest tools for keeping people in line. This explainer shows how it operates around reproductive choices, separates <strong>shame from healthy guilt</strong> — a distinction that changes everything — decodes the shaming messages people actually hear, and offers steps to build shame resilience.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#how">① How shame works</a><a href="#sorter">② Shame vs healthy guilt</a><a href="#decode">③ Decode a shaming line</a><a href="#resilience">④ Shame resilience</a><a href="#quiz">⑤ Quick check</a><a href="#reflect">⑥ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The difference between shame ("I am bad") and guilt ("I did something I can fix").</li>
-<li>How social shame is used to enforce reproductive norms.</li>
-<li>Where shame tends to show up for you.</li>
-<li>Gentle ways to loosen its grip.</li>
-</ul></div>
+<h3 id="how" style="scroll-margin-top:70px">① How shame works</h3>
+<div class="panel"><p class="note">Four things shame does to keep behaviour inside the lines. Tap each.</p><div class="cards3" id="howCards"></div></div>
 
-<div class="panel"><h3>1. Shame vs guilt</h3>
-<div class="kv">
-<strong>Shame</strong><span>"I am bad / wrong as a person." Global, isolating, hard to act on.</span>
-<strong>Guilt</strong><span>"I did something I can repair." Specific, and can guide useful action.</span>
-<strong>Social shame</strong><span>Shame applied by a group to enforce a norm — often disguised as concern.</span>
-</div>
-</div>
+<h3 id="sorter" style="scroll-margin-top:70px">② Shame vs healthy guilt</h3>
+<div class="panel"><p class="note">The key distinction: <b>shame</b> says "I <em>am</em> bad" (about your whole self); <b>healthy guilt</b> says "I <em>did</em> something I can put right" (about an action). Classify each statement.</p>
+<div class="sorter" id="sorterBox"></div>
+<p class="outmeta" id="sorterScore"></p></div>
 
-<div class="panel"><h3>2. Where does shame show up for you?</h3>
-<p class="note">Tick where you've felt it. Naming it is the first loosening. Saved on this device.</p>
-<div id="where">
-<label class="check"><input type="checkbox" data-key="w1"> At family gatherings.</label>
-<label class="check"><input type="checkbox" data-key="w2"> On social media.</label>
-<label class="check"><input type="checkbox" data-key="w3"> In religious or community settings.</label>
-<label class="check"><input type="checkbox" data-key="w4"> At work or among peers.</label>
-<label class="check"><input type="checkbox" data-key="w5"> In my own self-talk.</label>
-</div>
-<div class="meter" aria-hidden="true"><span id="whereBar"></span></div>
-<p class="note" id="whereCount" role="status" aria-live="polite">0 of 5 ticked.</p>
-</div>
+<h3 id="decode" style="scroll-margin-top:70px">③ Decode a shaming line</h3>
+<div class="panel"><p class="note">Common shaming lines, and the self-worth reframe underneath. Tap to reveal.</p><div class="cards3" id="decodeCards"></div></div>
 
-<div class="panel"><h3>3. Loosening the grip</h3>
-<div class="kv">
-<strong>Name it</strong><span>"That's shame talking" turns a global feeling into a specific, smaller thing.</span>
-<strong>Separate signal from noise</strong><span>Ask: is this useful guilt about my values, or noise enforcing someone else's norm?</span>
-<strong>Find your people</strong><span>Shame shrinks in the presence of others who accept you.</span>
-<strong>Self-compassion</strong><span>Speak to yourself as you would to a friend in the same spot.</span>
-</div>
-</div>
+<h3 id="resilience" style="scroll-margin-top:70px">④ Building shame resilience</h3>
+<div class="panel"><p class="note">Researcher Brené Brown describes shame resilience as moving <em>toward</em> connection rather than hiding. A practical path:</p>
+<div class="steps" id="stepsBox"></div></div>
 
-<div class="panel"><h3>4. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Guilt differs from shame because guilt is about…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Who you are as a person</div><div class="opt" data-q="0" data-i="1">A specific thing you can address</div><div class="opt" data-q="0" data-i="2">Nothing</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Social shame often disguises itself as…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Concern</div><div class="opt" data-q="1" data-i="1">A contract</div><div class="opt" data-q="1" data-i="2">A joke only</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">⑤ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. The core difference is that shame is about ___ and guilt is about ___.</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Who you are; what you did</div><div class="opt" data-q="0" data-i="1">What you did; who you are</div><div class="opt" data-q="0" data-i="2">Others; yourself</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Shame loses much of its power when you…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Name it and share it with someone safe</div><div class="opt" data-q="1" data-i="1">Hide it completely</div><div class="opt" data-q="1" data-i="2">Agree that you're worthless</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>5. Your reflection</h3>
-<label class="field" for="reflect">What would you say to a friend who felt ashamed of this same choice?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑥ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Recall a moment you felt ashamed about your choice. Reworded as healthy guilt — or simply as a difference of values — what would it sound like?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Shame says "you are wrong"; the truth is usually "someone wants you to conform." Naming it, sorting signal from noise, and meeting yourself with compassion loosens its grip — and you get your own voice back.</p>
-<p class="note">If shame feels heavy or persistent, please consider talking with someone you trust or a qualified professional. You deserve support.</p></div>
+<p>Shame says <em>you</em> are the problem; that's what makes it such an effective leash — and such a lie. A reproductive choice that harms no one is not a defect of character. Naming shame, telling the difference from healthy guilt, and reaching toward people who get it are how you take the leash off.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../045-identity-pressure-reflection-page/index.html">Identity Pressure Reflection<span>Belonging &amp; choice</span></a>
-<a href="../047-cultural-pressure-map/index.html">Cultural Pressure Map<span>Where it comes from</span></a>
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protect your peace</span></a>
-<a href="../022-childfree-quote-archive/index.html">Childfree Quote Archive<span>Kind reminders</span></a>
+<a href="../045-identity-pressure-reflection-page/index.html">Identity Pressure<span>Where pressure lives</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Stay grounded</span></a>
+<a href="../004-parenthood-assumption-quiz/index.html">Assumption Quiz<span>Examine beliefs</span></a>
+<a href="../042-emotional-blackmail-detector/index.html">Emotional Blackmail Detector<span>Related pressure</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../045-identity-pressure-reflection-page/index.html">← Previous</a><a class="btn btn-primary" href="../047-cultural-pressure-map/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -2,11 +2,6 @@
 
 *Project 068 · Category: Games · Difficulty: Beginner*
 
-A slider toy that shows how exponential growth curves behave.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+An interactive exponential-growth toy: sliders for starting size, growth rate, years, and a lower-rate
+comparison; an SVG curve (filled main line + dashed comparison) and readouts for final size, multiple,
+doublings, and doubling time. Neutral, maths-only framing. Vanilla JS; DOM test 6/6.

@@ -2,11 +2,6 @@
 
 *Project 070 · Category: Games · Difficulty: Beginner*
 
-A quick branching game rewarding self-respecting, kind choices.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Five everyday pressure moments, each with three responses scored on autonomy + kindness (0/1/2).
+Per-choice feedback explains the "freedom" and "warmth" dials, with a running total, progress meter,
+saved best, tailored result, and replay. The two-dials explainer + reflection. Vanilla JS; test 6/6.

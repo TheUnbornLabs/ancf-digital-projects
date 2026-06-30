@@ -2,11 +2,7 @@
 
 *Project 026 · Category: Philosophy · Difficulty: Intermediate*
 
-The consent-based line of reasoning, presented with its rebuttals.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+The consent argument, built up gently and distinct from Project 007: the gold-coins analogy, a
+six-case **"is this valid consent?" sorter** (contract, surgery, emergency, coercion, "glad
+later", and birth) that reveals what birth uniquely lacks, a premise tester with live conclusion,
+and four leading replies. Vanilla JS; DOM test 8/8.

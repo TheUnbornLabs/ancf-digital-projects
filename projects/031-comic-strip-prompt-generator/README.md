@@ -2,11 +2,6 @@
 
 *Project 031 · Category: Comics · Difficulty: Beginner*
 
-Generate gentle, metaphor-based comic ideas — never mocking real groups.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Generates metaphor-based three-panel comic premises (theme + tone) about pressure, autonomy, and
+boundaries, rendered as a setup/turn/resolution storyboard with sketch cues. Generate, cycle,
+copy, and save favourites. Warm, never mean-spirited. Vanilla JS; DOM test 6/6.

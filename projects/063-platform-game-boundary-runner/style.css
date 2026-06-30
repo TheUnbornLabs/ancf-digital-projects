@@ -1,4 +1,19 @@
-/* Per-project overrides for Boundary Runner. Shared design system lives in ../../style.css */
-#game{width:100%;max-width:420px;height:auto;margin:0 auto;touch-action:none}
-.game-controls{display:flex;justify-content:center;margin:12px auto;max-width:420px}
-.game-controls .ctrl{flex:1;font-size:1.2rem;padding:14px 0;min-height:54px}
+/* Project 063 · Boundary Runner */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.gamewrap{position:relative;max-width:360px;margin:10px auto}
+.gamewrap canvas{display:block;width:100%;height:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);touch-action:none}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700;font-size:var(--fs-sm);margin:6px 2px}
+.hud .best{color:var(--muted);font-weight:600}
+.overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(0,0,0,.55);color:#fff;border-radius:var(--radius);text-align:center;padding:18px}
+.overlay.show{display:flex}
+.overlay h4{margin:0;font-size:1.2rem}.overlay p{margin:0;font-size:var(--fs-sm);max-width:80%}
+.overlay .big{font-size:2rem;font-weight:800}
+.controls{display:flex;gap:10px;justify-content:center;margin:10px 0}
+.gbtn{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:12px 20px;font-size:1.2rem;font-weight:700;min-width:64px;user-select:none}
+.gbtn:active{background:var(--accent-soft);border-color:var(--accent)}
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.scard{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface-2);cursor:pointer;transition:.15s}
+.scard:hover,.scard.open{border-color:var(--accent)}.scard h4{margin:0 0 4px;font-size:var(--fs-base)}
+.scard .tg{font-size:var(--fs-sm);color:var(--muted)}.scard .more{display:none;font-size:var(--fs-sm);margin-top:8px}.scard.open .more{display:block}

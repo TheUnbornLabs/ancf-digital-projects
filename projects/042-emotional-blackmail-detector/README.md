@@ -2,11 +2,6 @@
 
 *Project 042 · Category: Society · Difficulty: Intermediate*
 
-Notice guilt-and-obligation patterns in a message, for your own clarity.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Scans a pasted message for fear/obligation/guilt (FOG) patterns — seven regex-heuristic tactics
+across three levers — each flagged with what it does, the matched phrase, and a grounding reframe.
+Includes a FOG guide, three samples, and a prominent non-diagnostic support note. Vanilla JS; test 8/8.

@@ -1,12 +1,8 @@
-# Caste/Community Name Warning Tool
+# Caste & Community Name Warning Tool
 
 *Project 044 · Category: Community Tools · Difficulty: Intermediate*
 
-A safety tool that warns when text names castes, communities, or ethnic groups in a targeting way.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Screens a draft for language that targets or blames a caste, community, religion, or ethnic group
+(detecting constructions — generalization, essentializing, group-blame, dehumanizing, othering —
+not specific group names), explains why each backfires, and suggests a behaviour-focused refocus.
+Includes four principles and before/after rewrites. Anti-bigotry framing. Vanilla JS; test 7/7.

@@ -2,11 +2,6 @@
 
 *Project 039 · Category: Community Tools · Difficulty: Beginner*
 
-Principles and phrases for debating sensitive topics without harm.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Six expandable principles for disagreeing well, a six-statement self-audit that scores your debate
+habits and returns a tailored reading, and an eight-item phrase-swap library (instead of X, try Y)
+with copy. Quiz and reflection. Vanilla JS; DOM test 7/7.

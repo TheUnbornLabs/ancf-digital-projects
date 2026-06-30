@@ -2,11 +2,6 @@
 
 *Project 032 · Category: Writing Tools · Difficulty: Beginner*
 
-Create thoughtful captions about childfree/antinatalist themes — respectful by design.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Drafts respectful captions about childfree life and reproductive autonomy. Controls for topic,
+tone, length, emoji, and hashtags; variants; a live character count; curated copyable hashtag
+sets; and saved favourites. Shares a view without putting anyone down. Vanilla JS; DOM test 6/6.

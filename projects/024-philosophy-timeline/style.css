@@ -1,1 +1,25 @@
-/* Per-project overrides for Philosophy Timeline. Shared design system lives in ../../style.css */
+/* Project 024 · Philosophy Timeline — heavy upgrade */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip2{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:5px 12px;border-radius:var(--radius-pill);font-size:var(--fs-sm);font-weight:600;user-select:none}
+.chip2:hover{border-color:var(--accent);color:var(--ink)}.chip2.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tl{list-style:none;padding-left:0;margin:10px 0}
+.tl li{border-left:3px solid var(--line);padding:0 0 4px 18px;position:relative;margin:0}
+.tl li::before{content:"";position:absolute;left:-8px;top:14px;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+.tl .ent{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);margin:6px 0 12px;overflow:hidden}
+.tl .ent summary{cursor:pointer;list-style:none;padding:11px 14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.tl .ent summary::-webkit-details-marker{display:none}
+.tl .ent .yr{font-weight:800;color:var(--accent-2);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.tl .ent .ti{font-weight:700;flex:1;min-width:140px}
+.tl .ent .strand{font-size:var(--fs-xs);font-weight:700;border-radius:var(--radius-pill);padding:2px 9px;background:var(--info-soft);color:var(--info)}
+.tl .ent .body{padding:0 14px 12px 14px;font-size:var(--fs-sm);color:var(--muted)}
+.tl .ent[open]{border-color:var(--accent)}
+.s-phil{color:#7a52b4!important;background:rgba(120,80,180,.14)!important}
+.s-rel{color:#a86b00!important;background:rgba(180,120,0,.14)!important}
+.s-fem{color:#b03c78!important;background:rgba(190,60,120,.14)!important}
+.s-eco{color:#1c7a3e!important;background:rgba(28,122,62,.14)!important}
+.s-eth{color:var(--info)!important}
+.s-cult{color:var(--accent-2)!important;background:var(--accent-soft)!important}
+.tlcount{font-size:var(--fs-sm);color:var(--muted);margin:4px 2px}

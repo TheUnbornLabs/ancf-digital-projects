@@ -1,57 +1,53 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debate Reply Generator · ANCF Digital Projects</title><meta name="description" content="Draft calm, non-hostile replies to common claims about not having children — three styles, an editable box. Aimed at ideas, never people."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Debate Reply Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Debate Reply Generator · ANCF Digital Projects</title><meta name="description" content="Draft a calm, non-hostile reply to a common claim about not having children — aimed squarely at the idea, never the person. See the hidden assumption, pick a style, get variants, and learn the acknowledge-reframe-redirect structure."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Debate Reply Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../032-instagram-caption-generator/index.html">← Previous</a><a class="btn btn-primary" href="../034-family-function-survival-script/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 033</span><h2>Debate Reply Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate · ~7 min</span></div></div>
-<p class="lead">Draft a calm, non-hostile reply to a common claim about not having children. Pick the claim and a style, and get a reply aimed squarely at the <strong>idea</strong> — never at the person. Edit it to fit your voice.</p>
+<div class="proj-head"><span class="num">PROJECT 033</span><h2>Debate Reply Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate · ~12 min · generator</span></div></div>
+<p class="lead">Draft a calm, non-hostile reply to a common claim about not having children. Pick the claim and a style, and get a reply aimed squarely at the <strong>idea, never the person</strong> — plus the hidden assumption the claim rests on, and the simple structure that keeps any reply both clear and kind.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#gen">① Generate a reply</a><a href="#structure">② The structure</a><a href="#saved">③ Saved replies</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<p class="disclaimer">For respectful discussion. These replies target arguments, not people. Disagreement is not disrespect — and you never owe anyone a debate.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>How to answer a claim without attacking the speaker.</li>
-<li>How calm, curious, and firm styles differ.</li>
-<li>How to keep a reply short and steady.</li>
-<li>When it's wiser to decline the debate entirely.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Generate a reply</h3>
-<div class="row">
-<div><label class="field" for="claim">The claim</label><select id="claim"><option value="mind">"You'll change your mind"</option><option value="care">"Who'll care for you when you're old?"</option><option value="selfish">"Isn't it selfish?"</option><option value="natural">"It's unnatural"</option><option value="society">"Society needs people"</option></select></div>
-<div><label class="field" for="style">Style</label><select id="style"><option value="calm">Calm</option><option value="curious">Curious</option><option value="firm">Firm</option></select></div>
+<h3 id="gen" style="scroll-margin-top:70px">① Generate a reply</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="dClaim">The claim</label><select id="dClaim"></select></div>
+<div><label class="field" for="dStyle">Style</label><select id="dStyle"><option value="calm">Calm</option><option value="curious">Curious</option><option value="firm">Firm</option><option value="witty">Lightly witty</option></select></div>
 </div>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<label class="field" for="out">Reply (editable)</label>
-<textarea id="out" placeholder="Your reply appears here; edit freely. Saved on this device."></textarea>
+<div class="outbox" id="assume" style="border-style:dashed;font-size:var(--fs-sm)"></div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate reply</button><button class="btn" id="anotherBtn" type="button">Another</button><button class="btn" id="copyBtn" type="button">Copy</button><button class="btn" id="saveBtn" type="button">☆ Save</button></div>
+<div class="outbox" id="out">Pick a claim and press generate.</div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A good debate reply targets…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">The person</div><div class="opt" data-q="0" data-i="1">The argument</div><div class="opt" data-q="0" data-i="2">Their character</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. You are obliged to debate…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Everyone, always</div><div class="opt" data-q="1" data-i="1">No one — it's your choice to engage</div><div class="opt" data-q="1" data-i="2">Only family</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="structure" style="scroll-margin-top:70px">② The structure that always works</h3>
+<div class="panel"><p class="note">Whatever the claim, a reply that stays kind and clear tends to follow three beats. Tap each.</p><div class="cards3" id="structCards"></div></div>
+
+<h3 id="saved" style="scroll-margin-top:70px">③ Saved replies</h3>
+<div class="panel"><div class="favs" id="favs"></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A good debate reply aims at…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">The person</div><div class="opt" data-q="0" data-i="1">The idea</div><div class="opt" data-q="0" data-i="2">Winning at all costs</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Naming the hidden assumption helps because…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">It exposes what the claim quietly takes for granted</div><div class="opt" data-q="1" data-i="1">It insults the speaker</div><div class="opt" data-q="1" data-i="2">It ends the friendship</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Which claim do you hear most — and how do you want to answer it?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which claim do you hear most — and what reply feels both true and kind to you?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Win the point, keep the person. Aim at the idea, stay calm, and remember the most powerful move is sometimes to decline the debate and change the subject.</p></div>
+<p>You rarely change a mind by winning a point, and you never need to win to be respected. Aim at the idea, name what it assumes, and stay warm — and even a disagreement can leave the relationship intact. Often, that's the real victory.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Principles &amp; phrases</span></a>
-<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot fallacies</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>When to decline</span></a>
-<a href="../076-debate-notes-organizer/index.html">Debate Notes Organizer<span>Prepare well</span></a>
+<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>How to disagree well</span></a>
+<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot the fallacies</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>Decode the pressure</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">"When Are You Having Kids?"<span>Quick one-liners</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../032-instagram-caption-generator/index.html">← Previous</a><a class="btn btn-primary" href="../034-family-function-survival-script/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

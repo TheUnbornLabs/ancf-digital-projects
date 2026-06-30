@@ -1,12 +1,7 @@
-# Pong Game: Choice vs Pressure
+# Pong: Choice vs Pressure
 
 *Project 062 · Category: Games · Difficulty: Beginner*
 
-Classic one-paddle pong: 'Choice' rallies against 'Pressure'.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A single-paddle canvas pong: keep the "Choice" ball in play, score per return, with angle-based
+deflection, ramping speed, and a saved best rally. Keyboard / buttons / drag. Headless-safe loop
+with test hook. Metaphor cards + reflection. Vanilla JS; DOM test 5/5.

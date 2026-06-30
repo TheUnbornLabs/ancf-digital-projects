@@ -1,58 +1,41 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cultural Pressure Map · ANCF Digital Projects</title><meta name="description" content="An interactive map of where reproductive pressure comes from — rate how strongly each source presses on you and see your personal radar. Reflective, on-device only."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Cultural Pressure Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cultural Pressure Map · ANCF Digital Projects</title><meta name="description" content="Reproductive pressure rarely comes from one place. Rate the common external sources — family, in-laws, peers, work, faith community, media, policy, society — to see where it's strongest for you, turning a vague heaviness into a clear map with targeted coping."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Cultural Pressure Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../046-social-shame-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../048-wedding-pressure-dialogue-simulator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 047</span><h2>Cultural Pressure Map</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
-<p class="lead">Reproductive pressure rarely comes from one place. This tool maps the common sources so you can see where it's strongest <em>for you</em> — turning a vague heaviness into a clear picture you can name and navigate.</p>
+<div class="proj-head"><span class="num">PROJECT 047</span><h2>Cultural Pressure Map</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~15 min · mapping tool</span></div></div>
+<p class="lead">Reproductive pressure rarely comes from one place. This tool maps the common <strong>external sources</strong> — family, in-laws, peers, work, faith community, media, policy, society at large — so you can see where it's strongest <em>for you</em>. It turns a vague heaviness into a clear map, with a targeted next move for whatever weighs most.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#rate">① Rate the sources</a><a href="#map">② Your pressure map</a><a href="#guide">③ Source guide</a><a href="#reflect">④ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The six common sources of cultural pressure.</li>
-<li>How to rate and compare their pull on you.</li>
-<li>Why a clear map makes pressure easier to handle.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Build your map</h3>
-<p class="note">Rate how strongly each source presses on you: 0 none → 4 strong. Saved on this device.</p>
-<div id="sources">
-<div class="slider-row"><div class="lab"><label for="m-family">Family</label><output id="o-family">0</output></div><input type="range" id="m-family" data-axis="Family" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="m-faith">Religion / community</label><output id="o-faith">0</output></div><input type="range" id="m-faith" data-axis="Community" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="m-media">Media</label><output id="o-media">0</output></div><input type="range" id="m-media" data-axis="Media" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="m-peers">Peers</label><output id="o-peers">0</output></div><input type="range" id="m-peers" data-axis="Peers" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="m-tradition">Tradition</label><output id="o-tradition">0</output></div><input type="range" id="m-tradition" data-axis="Tradition" min="0" max="4" step="1" value="0"></div>
-<div class="slider-row"><div class="lab"><label for="m-gender">Gender norms</label><output id="o-gender">0</output></div><input type="range" id="m-gender" data-axis="Gender" min="0" max="4" step="1" value="0"></div>
-</div>
-<svg class="chart" id="mapRadar" role="img" aria-label="Radar map of how strongly each cultural source presses on you."></svg>
-<p class="chart-cap">Radar: your personal map of pressure sources.</p>
+<h3 id="rate" style="scroll-margin-top:70px">① Rate the sources</h3>
+<div class="panel"><p class="note">For each source, how much reproductive pressure does it put on you? (0 = none, 5 = intense.) Saved on this device.</p>
+<div class="sliders" id="sliders"></div>
+<div class="btn-row"><button class="btn" id="resetBtn" type="button">Reset to zero</button></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A pressure map helps mainly by…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Removing all pressure</div><div class="opt" data-q="0" data-i="1">Turning vague heaviness into something you can name</div><div class="opt" data-q="0" data-i="2">Blaming a group</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Pressure usually comes from…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">One single source</div><div class="opt" data-q="1" data-i="1">Several sources at once</div><div class="opt" data-q="1" data-i="2">Nowhere</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
-</div>
+<h3 id="map" style="scroll-margin-top:70px">② Your pressure map</h3>
+<div class="panel"><p class="note">Sorted strongest to weakest, with your overall load and a targeted move for the top sources.</p>
+<div class="bars" id="bars"></div>
+<p class="load" id="loadMsg"></p>
+<div id="copingBox"></div></div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Which source is strongest for you — and what's one way to ease it?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="guide" style="scroll-margin-top:70px">③ Source guide</h3>
+<div class="panel"><p class="note">How each source tends to show up, and one counter-move. Tap to expand.</p><div class="cards3" id="sourceCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Looking at your map: which one source, if it eased, would lighten the most? What's one small step toward that?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>You can't navigate what you can't see. Mapping the sources turns a heavy fog into a handful of nameable pressures — and named pressure is far easier to set boundaries around.</p></div>
+<p>"Everyone wants me to have kids" is a fog; a map is a set of distinct, smaller pressures you can actually address one at a time. Some sources you can talk to, some you can limit, and some — like an advert or a stranger's opinion — you can simply let pass. Seeing them separately is what makes them manageable.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../003-pronatalism-pressure-detector/index.html">Pronatalism Pressure Detector<span>Rate the pressure</span></a>
-<a href="../046-social-shame-explainer/index.html">Social Shame Explainer<span>How shame works</span></a>
-<a href="../045-identity-pressure-reflection-page/index.html">Identity Pressure Reflection<span>Belonging &amp; choice</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Set boundaries</span></a>
+<a href="../045-identity-pressure-reflection-page/index.html">Identity Pressure<span>Internal sources</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>Decode messages</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protect your peace</span></a>
+<a href="../034-family-function-survival-script/index.html">Survival Script<span>For family events</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../046-social-shame-explainer/index.html">← Previous</a><a class="btn btn-primary" href="../048-wedding-pressure-dialogue-simulator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

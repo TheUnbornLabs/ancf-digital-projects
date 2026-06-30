@@ -1,44 +1,40 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var DIMS=['Creates a new life?','Main concern','About existing people?','Key claim','On others’ choices'];
-var POS={
- anti:{label:'Antinatalism',d:['Questions it','Ethics of creating life','No — future births only','Creating a life needs justification','Respects them; argues the ethics']},
- cf:{label:'Childfree (by choice)',d:['Not for oneself','Personal autonomy & life design','N/A — a personal choice','A life without children can be full','Lives and lets live']},
- pro:{label:'Pronatalism','d':['Encourages it','Continuity & social norms','N/A','Having children is the expected good','Often pressures toward children']},
- auto:{label:'Reproductive autonomy',d:['Neutral','Freedom to decide either way','Protects living people’s rights','The choice belongs to each person','Defends all choices equally']},
- care:{label:'Adoption-focused care',d:['No — cares for existing','Meeting an existing need','Centres existing children','Care can go to those already here','Non-judgemental of other paths']}
-};
-var keys=Object.keys(POS);
-var a=document.getElementById('a'),b=document.getElementById('b'),cmp=document.getElementById('cmp');
-keys.forEach(function(k){var o1=document.createElement('option');o1.value=k;o1.textContent=POS[k].label;a.appendChild(o1);var o2=o1.cloneNode(true);b.appendChild(o2);});
-a.value='anti';b.value='cf';
-function render(){
-  var pa=POS[a.value],pb=POS[b.value];
-  var html='<div class="kv" style="grid-template-columns:1fr 1fr 1fr;gap:8px 12px"><strong></strong><strong style="color:var(--accent-2)">'+pa.label+'</strong><strong style="color:var(--accent-2)">'+pb.label+'</strong>';
-  DIMS.forEach(function(d,i){html+='<strong>'+d+'</strong><span>'+pa.d[i]+'</span><span>'+pb.d[i]+'</span>';});
-  html+='</div>';cmp.innerHTML=html;
-}
-[a,b].forEach(function(s){s.addEventListener('change',render);});render();
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){var pa=POS[a.value],pb=POS[b.value];var L=['Comparison: '+pa.label+' vs '+pb.label,''];DIMS.forEach(function(d,i){L.push(d+'\n  - '+pa.label+': '+pa.d[i]+'\n  - '+pb.label+': '+pb.d[i]);});A.copy&&A.copy(L.join('\n'),copyBtn);});
+/* Project 055 · Philosophy Comparison Tool — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var DIMS=[['summary','In one line'],['procreation','On creating new lives'],['suffering','On suffering'],['meaning','On meaning'],['figures','Key figures'],['strength','Strongest point'],['objection','Main objection']];
+  var POS=[
+    {id:'antinatalism',name:'Antinatalism',summary:'Coming into existence carries a negative value.',procreation:'Generally ethically problematic to create new sentient beings.',suffering:'Central — preventing it is a primary concern.',meaning:'A life, once started, can still hold meaning; the question is about starting it.',figures:'David Benatar; echoes of Schopenhauer.',strength:'Takes the non-consenting party\'s interests seriously.',objection:'Contested asymmetry; many are glad to exist.'},
+    {id:'pronatalism',name:'Pronatalism',summary:'Having children is good, expected, and to be encouraged.',procreation:'A positive good, often a duty or blessing.',suffering:'Part of life, outweighed by its goods and joys.',meaning:'Children and family are a central source of meaning.',figures:'Many religious and cultural traditions; natalist policy thinkers.',strength:'Matches most people\'s lived sense that life is worth giving.',objection:'Can slide into pressure and ignore the unconsenting child\'s risk.'},
+    {id:'childfree',name:'Childfree by choice',summary:'A personal decision not to have children — no general claim.',procreation:'Neutral in principle; a private matter for each person.',suffering:'Not a defining concern of the stance.',meaning:'Found in many places; children simply aren\'t required.',figures:'A social movement more than a philosophy (1970s onward).',strength:'Respects autonomy without judging anyone else\'s choice.',objection:'Says little about the ethics of procreation in general.'},
+    {id:'suffering-focused',name:'Suffering-focused ethics',summary:'Reducing suffering matters more than creating happiness.',procreation:'Cautious — new lives risk adding more suffering.',suffering:'The core moral priority.',meaning:'Compatible with meaning; the emphasis is on harm prevention.',figures:'Negative utilitarians; some effective-altruism thinkers.',strength:'Captures the intuition that severe suffering is specially urgent.',objection:'May undervalue real, positive goods and happiness.'},
+    {id:'classical-util',name:'Classical utilitarianism',summary:'Maximise overall wellbeing (pleasure minus pain).',procreation:'Good if it adds net wellbeing to the world.',suffering:'Bad, but offset by sufficient happiness.',meaning:'Wellbeing is what ultimately matters.',figures:'Bentham; Mill; Sidgwick.',strength:'Clear, impartial, and counts everyone\'s interests.',objection:'Can demand creating people merely to add happiness ("repugnant conclusion").'},
+    {id:'stoicism',name:'Stoicism',summary:'Live by reason and virtue; accept what you cannot control.',procreation:'Generally affirmed — family and society are natural goods. (Not antinatalist.)',suffering:'Reframed: judgements, not events, disturb us.',meaning:'Virtue and a life lived in accordance with nature.',figures:'Epictetus; Seneca; Marcus Aurelius.',strength:'Powerful tools for equanimity amid hardship.',objection:'Acceptance can look like resignation to some critics.'},
+    {id:'buddhism',name:'Buddhism',summary:'Life involves dukkha; liberation comes from releasing craving.',procreation:'Not antinatalist; lay life and family are common, monasticism is one path.',suffering:'Dukkha is the first Noble Truth; its end is the goal.',meaning:'Awakening and compassion for all beings.',figures:'The Buddha; a vast living tradition.',strength:'Deep, practical analysis of suffering and the mind.',objection:'Doctrines like rebirth are metaphysically contested.'},
+    {id:'existentialism',name:'Existentialism',summary:'Existence precedes essence; we create our own meaning.',procreation:'No single line; emphasis is on authentic, free choice.',suffering:'The absurd is faced honestly, not denied.',meaning:'Self-authored through freedom and responsibility.',figures:'Kierkegaard; Sartre; de Beauvoir; Camus.',strength:'Centres freedom and honest confrontation with life.',objection:'Can feel under-determined about what one should actually do.'},
+    {id:'longtermism',name:'Longtermism',summary:'Positively shaping the long-run future is a key priority.',procreation:'Often favourable — future people\'s potential wellbeing matters greatly.',suffering:'Future suffering counts; so does future flourishing.',meaning:'Found partly in contributing to a vast future.',figures:'Some effective-altruism thinkers.',strength:'Takes the scale of the future morally seriously.',objection:'Risks discounting present people and is highly uncertain.'}
+  ];
+  function fill(sel,def){ var s=$(sel); s.innerHTML=POS.map(function(p,i){ return '<option value="'+i+'"'+(i===def?' selected':'')+'>'+esc(p.name)+'</option>'; }).join(''); }
+  function render(){
+    var a=POS[+$('selA').value], b=POS[+$('selB').value];
+    var head='<thead><tr><th class="dimlab">Dimension</th><th class="colA">'+esc(a.name)+'</th><th>'+esc(b.name)+'</th></tr></thead>';
+    var body='<tbody>'+DIMS.map(function(d){ return '<tr><td class="dimlab">'+esc(d[1])+'</td><td class="colA">'+esc(a[d[0]])+'</td><td>'+esc(b[d[0]])+'</td></tr>'; }).join('')+'</tbody>';
+    $('cmpTable').innerHTML=head+body;
+  }
+  $('selA').addEventListener('change',render); $('selB').addEventListener('change',render);
+  $('swapBtn').addEventListener('click',function(){ var a=$('selA').value; $('selA').value=$('selB').value; $('selB').value=a; render(); });
+  (function(){ var box=$('glossList'); if(!box) return; box.innerHTML=POS.map(function(p,i){ return '<details><summary><b>'+esc(p.name)+'</b><span class="chev">▾</span></summary><div class="body"><p>'+esc(p.summary)+'</p><button type="button" class="btn" data-i="'+i+'" style="font-size:.8rem;padding:4px 11px">Compare as B ↑</button></div></details>'; }).join('');
+    box.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ $('selB').value=b.getAttribute('data-i'); render(); var c=$('compare'); if(c&&c.scrollIntoView)c.scrollIntoView({behavior:'smooth'}); }); }); })();
+  fill('selA',0); fill('selB',1); render();
 
-var QZ=[{a:1,e:'Antinatalism and childfree are related but distinct — one is an ethical argument, the other a personal choice.'},{a:1,e:'Reproductive autonomy defends the freedom to choose either way.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 055 script error',e);}
+  (function(){
+    var ta=$('r1'), status=$('saveStatus'), timer=null;
+    function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear');
+    if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); });
+  })();
+} catch(e){ console.error('project 055 script error', e); }
 });

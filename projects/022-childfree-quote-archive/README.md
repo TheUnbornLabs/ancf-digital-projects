@@ -2,11 +2,7 @@
 
 *Project 022 · Category: Learning Tools · Difficulty: Beginner*
 
-Copyable affirmations and reflections on living childfree.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+28 **original affirmations** on living childfree. Random "affirmation of the moment", a
+searchable/filterable browser (eight themes + favourites), per-card save/copy, and a build-your-
+own affirmation combiner (opening + theme, shuffle, copy, save). All text original. Vanilla JS;
+DOM test 8/8.

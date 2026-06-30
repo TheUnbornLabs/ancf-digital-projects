@@ -1,54 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gaslighting Phrase Detector · ANCF Digital Projects</title><meta name="description" content="Paste a message to notice reality-denying patterns, with plain explanations — to help you trust your own perception. An awareness aid, not a diagnosis."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Gaslighting Phrase Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gaslighting Phrase Detector · ANCF Digital Projects</title><meta name="description" content="Gaslighting is a pattern of making someone doubt their own memory or perception. This tool flags phrases associated with that pattern and offers a reality-anchor for each, to help you trust your own mind. Non-diagnostic: a flag is not proof, and context matters."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Gaslighting Phrase Detector</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../042-emotional-blackmail-detector/index.html">← Previous</a><a class="btn btn-primary" href="../044-caste-community-name-warning-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 043</span><h2>Gaslighting Phrase Detector</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~7 min</span></div></div>
-<p class="lead">Gaslighting is a pattern of making someone doubt their own memory or perception. This tool flags phrases <em>associated</em> with that pattern, to help you <strong>trust your own read</strong> of a situation. It can't diagnose a relationship — only you can — but naming the pattern can help.</p>
+<div class="proj-head"><span class="num">PROJECT 043</span><h2>Gaslighting Phrase Detector</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~15 min · detector</span></div></div>
+<p class="lead">Gaslighting is a pattern of making someone doubt their own memory or perception. This tool flags phrases associated with that pattern and offers a <strong>reality anchor</strong> for each, to help you trust your own mind. It's a reflection aid, <em>not</em> a diagnosis: one phrase isn't proof, context and pattern matter far more, and <strong>your read of your own experience is valid</strong>.</p>
+<div class="support">If you often leave conversations doubting your own memory, apologising for things you didn't do, or feeling "too sensitive," that pattern deserves real support. A trusted friend or a qualified professional can help you see clearly in a way no tool can. You are not "too much" for wanting that.</div>
+<nav class="jump" aria-label="Jump to a section"><a href="#scan">① Scan a message</a><a href="#guide">② Techniques &amp; anchors</a><a href="#quiz">③ Quick check</a><a href="#reflect">④ Reflection</a></nav>
 
-<p class="disclaimer">An awareness aid, not a diagnosis. A single phrase is not proof of anything. If you often feel confused or doubt your reality after talking to someone, that matters — please consider support from someone you trust or a qualified professional. You deserve to feel safe.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Four patterns associated with gaslighting: denial, minimising, blame-shifting, and reality-doubt.</li>
-<li>Why trusting your own perception is protective.</li>
-<li>When to seek outside support.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Scan a message</h3>
-<label class="field" for="text">Paste a message to reflect on</label>
-<textarea id="text" placeholder="e.g. “That never happened. You're overreacting and far too sensitive — everyone agrees with me.”"></textarea>
+<h3 id="scan" style="scroll-margin-top:70px">① Scan a message</h3>
+<div class="panel"><p class="note">Paste a message, or try a sample. The scanner finds <em>possible</em> gaslighting phrasings and pairs each with a reality anchor — your own perception comes first.</p>
+<div class="samples" id="samples"></div>
+<textarea id="msgIn" rows="4" placeholder="Paste a message here…"></textarea>
 <div class="btn-row"><button class="btn btn-primary" id="scanBtn" type="button">Scan</button><button class="btn" id="clearBtn" type="button">Clear</button></div>
-<div class="meter-card" style="margin-top:8px"><div class="lab"><span>Pattern intensity</span><b id="iPct">0%</b></div><div class="meter"><span id="iBar"></span></div></div>
-<div class="result" id="out" role="status" aria-live="polite" style="margin-top:10px">No scan yet.</div>
+<div id="findings"></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Gaslighting makes a person doubt their…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Memory and perception</div><div class="opt" data-q="0" data-i="1">Spelling</div><div class="opt" data-q="0" data-i="2">Schedule</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. If you often doubt your reality after talking to someone, you should…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Ignore it</div><div class="opt" data-q="1" data-i="1">Take it seriously and consider support</div><div class="opt" data-q="1" data-i="2">Assume it's your fault</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="guide" style="scroll-margin-top:70px">② Techniques &amp; staying anchored</h3>
+<div class="panel"><p class="note">The common techniques, and ways to keep hold of your own reality. Tap each technique.</p>
+<div class="lib" id="techList"></div>
+<h4>Five ways to stay anchored</h4><div class="anchors" id="anchorList"></div></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">③ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. Gaslighting works by…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Making you doubt your own memory or perception</div><div class="opt" data-q="0" data-i="1">Giving honest feedback</div><div class="opt" data-q="0" data-i="2">Agreeing too much</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. One flagged phrase, on its own…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Isn't proof — gaslighting is about a sustained pattern and context</div><div class="opt" data-q="1" data-i="1">Proves the relationship is abusive</div><div class="opt" data-q="1" data-i="2">Means you imagined everything</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">What does your own perception tell you — before anyone else weighs in?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Write down one thing you remember clearly that you've been made to doubt. What does your own memory say?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Your perception is valid information. Naming reality-denying patterns can help you hold onto it. If someone repeatedly leaves you doubting what you saw and felt, that pattern is worth taking seriously — and reaching for support is wise, not weak.</p></div>
+<p>Your memory and your perceptions are yours, and they’re allowed to count. Naming a technique doesn’t settle who’s right about any one event — but it can break the spell of automatic self-doubt long enough for you to check in with yourself and the people you trust. Trusting your own mind is not arrogance; it’s the ground you stand on.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../042-emotional-blackmail-detector/index.html">Emotional Blackmail Detector<span>Fear, obligation, guilt</span></a>
-<a href="../086-mental-health-boundary-notice/index.html">Mental Health Boundary Notice<span>Caring boundaries</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Hold your line</span></a>
-<a href="../005-is-this-my-choice-reflection-tool/index.html">"Is This My Choice?"<span>Find your own voice</span></a>
+<a href="../042-emotional-blackmail-detector/index.html">Emotional Blackmail Detector<span>A related pattern</span></a>
+<a href="../010-no-means-no-boundary-tool/index.html">"No Means No"<span>Hold the line</span></a>
+<a href="../005-is-this-my-choice/index.html">"Is This My Choice?"<span>Find your own voice</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Stay grounded</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../042-emotional-blackmail-detector/index.html">← Previous</a><a class="btn btn-primary" href="../044-caste-community-name-warning-tool/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

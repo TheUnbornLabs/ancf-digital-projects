@@ -2,11 +2,6 @@
 
 *Project 037 · Category: Community Tools · Difficulty: Beginner*
 
-Draft clear community announcements (events, policy updates, welcomes).
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Builds tidy community notices from six templates (event, schedule change, welcome, fundraiser,
+poll, general), each with its own dynamic fields and a friendly/formal tone. Live preview that
+updates as you type, with copy. Poll options auto-letter (A/B/C). Vanilla JS; DOM test 8/8.

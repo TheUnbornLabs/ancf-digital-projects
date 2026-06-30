@@ -1,44 +1,73 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var PROMPTS=[
- 'Define antinatalism in your own words.','Define "childfree" and how it differs from "childless".','Write down one assumption about parenthood you grew up with.','Read about consent and birth — note one question it raises.','Explain the asymmetry argument to an imaginary friend.','List three sources of pressure you personally feel.','Write a calm reply to "you\'ll change your mind".','Note one thing money has to do with this choice — and one thing it doesn\'t.','Map how you\'d spend a gained free hour each week.','Read a counter-argument and state it fairly.','Write what a meaningful life looks like for you.','Notice one myth and the reality behind it.','Reflect: whose voice do you hear when judged?','Consider the non-identity problem; jot your reaction.','Write one boundary line you could actually say.','List who supports your autonomy — and thank one of them.','Explore the environmental argument and its limits.','Reflect on identity and belonging in your choice.','Draft your own one-line affirmation.','Read about reproductive autonomy; note why it cuts both ways.','Write the strongest objection to your own current view.','Consider adoption, fostering, and support — note your leanings.','Reflect on later-life planning beyond children.','Notice a fallacy in a recent debate you saw.','Write a kind reply to an elder\'s advice.','Reflect: what would you want if no one were watching?','List three things that give your days meaning.','Plan how you\'ll handle the next family gathering.','Write what you\'d tell a younger you.','Summarise your considered view in three sentences.'
-];
-var wrap=document.getElementById('days'),bar=document.getElementById('bar'),pct=document.getElementById('pct'),count=document.getElementById('count');
-var done=A.getJSON?(A.getJSON('days',{})||{}):{};
-function render(){
-  var n=0;for(var k in done){if(done[k])n++;}
-  if(A.meter)A.meter(bar,n/PROMPTS.length*100);if(pct)pct.textContent=Math.round(n/PROMPTS.length*100)+'%';if(count)count.textContent=n+' of '+PROMPTS.length+' done.';
-}
-PROMPTS.forEach(function(p,i){
-  var lab=document.createElement('label');lab.className='check';
-  var cb=document.createElement('input');cb.type='checkbox';cb.checked=!!done['d'+i];
-  cb.addEventListener('change',function(){done['d'+i]=cb.checked;if(A.setJSON)A.setJSON('days',done);render();});
-  var sp=document.createElement('span');sp.innerHTML='<strong>Day '+(i+1)+':</strong> '+p;
-  lab.appendChild(cb);lab.appendChild(sp);wrap.appendChild(lab);
-});
-render();
-var status=document.getElementById('status'),timer=null;
-function flash(m){if(!status)return;status.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){status.textContent='';},1600);}
-var resetBtn=document.getElementById('resetBtn');
-if(resetBtn)resetBtn.addEventListener('click',function(){if(!window.confirm('Reset all 30 days?'))return;done={};if(A.remove)A.remove('days');wrap.querySelectorAll('input').forEach(function(c){c.checked=false;});render();flash('Reset.');});
+/* Project 053 · 30-Day Reading Challenge — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var PROMPTS=[
+    'What first drew you to think about this subject? Write the honest reason.',
+    'Define "antinatalism" in your own words, without looking anything up. Refine it later.',
+    'List three assumptions you hold about having children. Where did each come from?',
+    'Whose voice do you hear when you imagine being asked "when are you having kids?"',
+    'What would a good life without children look like, in concrete detail?',
+    'Read about the asymmetry argument. State it back in one sentence.',
+    'What is the single strongest objection to antinatalism, in your view?',
+    'Can someone value their own life and still question the ethics of creating new ones? Why or why not?',
+    'Distinguish "childfree" from "antinatalist". Which (if either) describes you today?',
+    'Recall a time you felt pressure about children. What was the person really worried about?',
+    'Write the kindest possible version of a view you disagree with here.',
+    'What role does consent play in your thinking about birth?',
+    'Is reducing suffering more urgent than creating happiness? Argue both sides briefly.',
+    'What do you owe — if anything — to family, tradition, or society on this question?',
+    'Notice one place pronatalism shows up in media you consumed today.',
+    'How would you explain your current view to a curious, respectful friend?',
+    'What evidence or argument would change your mind? Be specific.',
+    'Separate a fact, a value, and a feeling in your thinking about this.',
+    'Where does "natural" appear in arguments you hear? Does it do real work?',
+    'Write a boundary you might need, and a calm sentence to hold it.',
+    'What is one thing antinatalists and pronatalists could honestly agree on?',
+    'Reflect on regret: how should the possibility of future regret weigh on a present choice?',
+    'Who benefits from the assumption that everyone should have children?',
+    'What would change in your life if this pressure simply lifted tomorrow?',
+    'Read one objection you find persuasive. Sit with it for ten minutes.',
+    'How do you tell your own voice apart from the voices you\'ve absorbed?',
+    'What does a meaningful life require, for you, at minimum?',
+    'Draft, in two sentences, how you\'d answer a nosy stranger with warmth.',
+    'Has anything shifted since Day 1? Compare your Day 2 definition with today\'s.',
+    'Write a short letter to yourself about where you stand now — and what\'s still open.'
+  ];
+  var done=(A.getJSON?A.getJSON('done',{}):{})||{};
+  var notes=(A.getJSON?A.getJSON('notes',{}):{})||{};
+  var cur=0;
+  // start at first undone
+  (function(){ for(var i=0;i<PROMPTS.length;i++){ if(!done[i]){ cur=i; break; } if(i===PROMPTS.length-1) cur=PROMPTS.length-1; } })();
+  function renderToday(){
+    var box=$('todayBox'); if(!box) return;
+    box.innerHTML='<span class="dn">Day '+(cur+1)+' of 30'+(done[cur]?' · done ✓':'')+'</span><p class="pr">'+esc(PROMPTS[cur])+'</p>';
+    var nt=$('note'); if(nt) nt.value=notes[cur]||'';
+  }
+  function renderGrid(){
+    var g=$('daygrid'); if(!g) return;
+    g.innerHTML=PROMPTS.map(function(_,i){ return '<div class="daycell'+(done[i]?' done':'')+(i===cur?' cur':'')+'" data-i="'+i+'">'+(i+1)+'</div>'; }).join('');
+    g.querySelectorAll('.daycell').forEach(function(c){ c.addEventListener('click',function(){ cur=+c.getAttribute('data-i'); renderToday(); renderGrid(); }); });
+  }
+  function prog(){ var dn=Object.keys(done).length, pct=Math.round(dn/PROMPTS.length*100); if(A.meter)A.meter($('meter'),pct); var m=$('progMsg'); if(m) m.textContent=dn+' of 30 days done ('+pct+'%)'+(dn===30?' — challenge complete! 🌱':''); }
+  $('doneBtn').addEventListener('click',function(){ done[cur]=1; var nt=$('note'); if(nt&&nt.value.trim()){ notes[cur]=nt.value; if(A.setJSON)A.setJSON('notes',notes); } if(A.setJSON)A.setJSON('done',done);
+    // advance to next undone
+    var nxt=cur; for(var i=0;i<PROMPTS.length;i++){ if(!done[i]){ nxt=i; break; } }
+    cur=nxt; renderToday(); renderGrid(); prog(); });
+  $('undoBtn').addEventListener('click',function(){ delete done[cur]; if(A.setJSON)A.setJSON('done',done); renderToday(); renderGrid(); prog(); });
+  $('saveNote').addEventListener('click',function(){ var nt=$('note'); if(nt){ notes[cur]=nt.value; if(A.setJSON)A.setJSON('notes',notes); } var st=$('saveStatus'); });
+  $('resetBtn').addEventListener('click',function(){ if(Object.keys(done).length&&!window.confirm('Reset all days and notes?'))return; done={}; notes={}; if(A.setJSON){A.setJSON('done',done);A.setJSON('notes',notes);} cur=0; renderToday(); renderGrid(); prog(); });
 
-var QZ=[{a:1,e:'A little each day is the point — consistency over cramming.'},{a:1,e:'Missing a day is fine; just pick up where you left off.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
+  renderToday(); renderGrid(); prog();
 
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 053 script error',e);}
+  (function(){
+    var ta=$('r1'), status=$('saveStatus'), timer=null;
+    function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear');
+    if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); });
+  })();
+} catch(e){ console.error('project 053 script error', e); }
 });

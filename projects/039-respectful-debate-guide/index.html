@@ -1,77 +1,48 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Respectful Debate Guide · ANCF Digital Projects</title><meta name="description" content="A field guide to disagreeing well on sensitive topics — principles, a self-audit checklist, and helpful phrases — protecting both the truth and the relationship."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Respectful Debate Guide</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Respectful Debate Guide · ANCF Digital Projects</title><meta name="description" content="Principles for disagreeing well, a quick self-audit of your own debate habits, and a phrase-swap library that turns heat into light — so you can protect both the conversation and the relationship."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Respectful Debate Guide</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../038-admin-warning-message-generator/index.html">← Previous</a><a class="btn btn-primary" href="../040-bad-argument-detector/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 039</span><h2>Respectful Debate Guide</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
-<p class="lead">Hard topics deserve careful conversation. This guide offers principles for disagreeing well, a quick self-audit, and phrases that help instead of harm — so you can protect both the truth and the relationship.</p>
+<div class="proj-head"><span class="num">PROJECT 039</span><h2>Respectful Debate Guide</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~15 min · guide + tools</span></div></div>
+<p class="lead">Hard topics deserve careful conversation. This guide offers <strong>principles for disagreeing well</strong>, a quick self-audit of your own debate habits, and a phrase-swap library that turns heat into light — so you can protect both the conversation and the relationship at the same time.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#principles">① The principles</a><a href="#audit">② Self-audit</a><a href="#swaps">③ Phrase swaps</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Principles that keep a debate honest and kind.</li>
-<li>How to steelman before you rebut.</li>
-<li>Phrases that lower heat instead of raising it.</li>
-<li>How to audit your own debating habits.</li>
-</ul></div>
+<h3 id="principles" style="scroll-margin-top:70px">① The principles</h3>
+<div class="panel"><p class="note">Six habits that keep a disagreement productive. Tap each to expand.</p><div class="cards3" id="principleCards"></div></div>
 
-<div class="panel"><h3>1. The principles</h3>
-<div class="grid">
-<div class="card"><h3>Aim at ideas</h3><p class="desc">Critique the argument, never the person's worth or identity.</p></div>
-<div class="card"><h3>Steelman first</h3><p class="desc">State the other view at its strongest before you reply.</p></div>
-<div class="card"><h3>Stay curious</h3><p class="desc">Ask questions; assume good faith until shown otherwise.</p></div>
-<div class="card"><h3>Hold your uncertainty</h3><p class="desc">Be willing to say "I might be wrong" and mean it.</p></div>
-<div class="card"><h3>Know when to stop</h3><p class="desc">You can exit a debate that's turning unkind. That's wisdom, not defeat.</p></div>
-<div class="card"><h3>Protect the vulnerable</h3><p class="desc">Don't platform contempt for any group in the name of "debate".</p></div>
-</div>
-</div>
+<h3 id="audit" style="scroll-margin-top:70px">② Self-audit</h3>
+<div class="panel"><p class="note">Rate how true each statement is of you in a heated discussion (1 = rarely, 5 = almost always). Honest answers only — this is just for you.</p>
+<div class="audit" id="auditBox"></div>
+<div class="btn-row"><button class="btn btn-primary" id="auditBtn" type="button">See my reading</button><button class="btn" id="auditReset" type="button">Reset</button></div>
+<div class="result" id="auditResult" role="status" aria-live="polite" style="display:none"></div></div>
 
-<div class="panel"><h3>2. Phrases that help vs. harm</h3>
-<div class="kv">
-<strong>Helps</strong><span>"Help me understand…" · "What would change your mind?" · "Here's where I see it differently…"</span>
-<strong>Harms</strong><span>"You always…" · "That's stupid." · "People like you…"</span>
-</div>
-</div>
+<h3 id="swaps" style="scroll-margin-top:70px">③ Phrase swaps</h3>
+<div class="panel"><p class="note">Same point, less heat. Tap any swap to copy the better version.</p><div class="swap" id="swapBox"></div></div>
 
-<div class="panel"><h3>3. Self-audit</h3>
-<p class="note">Tick what's true of you in your last hard conversation. Saved on this device.</p>
-<div id="audit">
-<label class="check"><input type="checkbox" data-key="a1"> I aimed at the idea, not the person.</label>
-<label class="check"><input type="checkbox" data-key="a2"> I stated their view fairly before replying.</label>
-<label class="check"><input type="checkbox" data-key="a3"> I asked at least one genuine question.</label>
-<label class="check"><input type="checkbox" data-key="a4"> I admitted what I wasn't sure about.</label>
-<label class="check"><input type="checkbox" data-key="a5"> I stayed kind, even while disagreeing.</label>
-<label class="check"><input type="checkbox" data-key="a6"> I knew when to pause or stop.</label>
-</div>
-<div class="meter" aria-hidden="true"><span id="auditBar"></span></div>
-<p class="note" id="auditCount" role="status" aria-live="polite">0 of 6 ticked.</p>
-</div>
-
-<div class="panel"><h3>4. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. To "steelman" means to…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Attack the weakest version of a view</div><div class="opt" data-q="0" data-i="1">State the other view at its strongest first</div><div class="opt" data-q="0" data-i="2">Ignore the other view</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Leaving a debate that's turned unkind is…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Weakness</div><div class="opt" data-q="1" data-i="1">Wisdom</div><div class="opt" data-q="1" data-i="2">Rudeness</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. To "steelman" an argument means to…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Restate it in its strongest, fairest form before replying</div><div class="opt" data-q="0" data-i="1">Attack its weakest version</div><div class="opt" data-q="0" data-i="2">Ignore it</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The goal of respectful debate is usually to…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Understand and be understood, not just to win</div><div class="opt" data-q="1" data-i="1">Win at any cost</div><div class="opt" data-q="1" data-i="2">Never disagree</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>5. Your reflection</h3>
-<label class="field" for="reflect">Which principle do you most want to practise next time?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which habit from the audit would most improve your hard conversations — and what would you try first?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Good debate is a shared search, not a battle. Aim at ideas, steelman generously, stay kind, and know when to stop — and you'll change more minds, including sometimes your own.</p></div>
+<p>You can disagree completely and still treat someone well — in fact, that's the only kind of disagreement that ever changes anything. Aim at ideas, steelman before you answer, stay curious, and pick words that lower the temperature. The relationship usually matters more than the point.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot fallacies</span></a>
-<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>Draft replies</span></a>
-<a href="../060-rationalism-toolkit/index.html">Rationalism Toolkit<span>Think clearly</span></a>
-<a href="../076-debate-notes-organizer/index.html">Debate Notes Organizer<span>Prepare</span></a>
+<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot the fallacies</span></a>
+<a href="../033-debate-reply-generator/index.html">Debate Reply Generator<span>Calm replies</span></a>
+<a href="../004-parenthood-assumption-quiz/index.html">Assumption Quiz<span>Examine beliefs</span></a>
+<a href="../038-admin-warning-message-generator/index.html">Admin Warning Generator<span>When it breaks down</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../038-admin-warning-message-generator/index.html">← Previous</a><a class="btn btn-primary" href="../040-bad-argument-detector/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

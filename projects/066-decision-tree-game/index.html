@@ -1,41 +1,35 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Decision Tree Game · ANCF Digital Projects</title><meta name="description" content="Walk a branching scenario about handling pressure — your choices change the path, earn freedom points, and shape the ending."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Decision Tree Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Decision Tree Game · ANCF Digital Projects</title><meta name="description" content="Walk a short, branching scenario about handling family pressure. Your choices change the path and earn 'freedom points' for calm, self-respecting moves. Replay to explore other routes — there's no single right way."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Decision Tree Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../065-memory-game-ethical-concepts/index.html">← Previous</a><a class="btn btn-primary" href="../067-auntie-uncle-chase-arcade-game/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 066</span><h2>Decision Tree Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min</span></div></div>
-<p class="lead">Walk a short, branching scenario about handling family pressure. Your choices change the path and earn "freedom points" for calm, self-respecting moves. There's no losing — just practice for the real thing.</p>
+<div class="proj-head"><span class="num">PROJECT 066</span><h2>Decision Tree Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Intermediate · ~10 min · branching game</span></div></div>
+<p class="lead">Walk a short, branching scenario about handling family pressure. Your choices change the path and earn <strong>"freedom points"</strong> for calm, self-respecting moves. Replay to explore other routes — there's no single right way, just kinder and clearer ones.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② How scoring works</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>How to play</h3>
-<ul>
-<li>Read each moment and pick how you'd respond.</li>
-<li>Your choice leads somewhere new and may earn freedom points.</li>
-<li>Reach an ending, then start over to try a different path.</li>
-</ul></div>
-
-<div class="panel"><h3>Play</h3>
-<div class="game-hud"><span>Freedom points: <b id="pts">0</b></span></div>
-<div class="decision" id="scene"></div>
-<div class="btn-row" id="choices"></div>
-<div class="result" id="ending" role="status" aria-live="polite" style="display:none"></div>
-<div class="btn-row"><button class="btn" id="restart" type="button" style="display:none">Start over</button></div>
+<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
+<div class="panel">
+<div class="hud"><span>Freedom points: <span id="fp">0</span></span><span class="best">Best run: <span id="best">0</span></span></div>
+<div id="host"></div>
 </div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">Which choice felt most like the real you?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="about" style="scroll-margin-top:70px">② How scoring works</h3>
+<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which choice felt truest to how you'd actually respond — and which would you like to be able to choose?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Every pressured moment is a branch with choices. Rehearsing the calm, self-respecting ones here makes them easier to reach when it counts.</p></div>
+<p>The "freedom points" aren't really about winning — they reward responses that keep both your boundary and the relationship intact. There's rarely one correct line, but calm and clarity tend to score well in life, too. Replay it; notice how small choices change where you end up.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>More dilemmas</span></a>
-<a href="../048-wedding-pressure-dialogue-simulator/index.html">Wedding Dialogue Simulator<span>Rehearse replies</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>The serious version</span></a>
-<a href="../034-family-function-survival-script/index.html">Family Function Script<span>A pocket plan</span></a>
+<a href="../048-wedding-pressure-dialogue-simulator/index.html">Wedding Sim<span>Another branching scene</span></a>
+<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>More choices</span></a>
+<a href="../017-pressure-from-parents-response-generator/index.html">Parent Responses<span>Real-life lines</span></a>
+<a href="../034-family-function-survival-script/index.html">Survival Script<span>Plan ahead</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../065-memory-game-ethical-concepts/index.html">← Previous</a><a class="btn btn-primary" href="../067-auntie-uncle-chase-arcade-game/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

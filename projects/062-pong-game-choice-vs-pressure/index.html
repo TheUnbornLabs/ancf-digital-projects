@@ -1,44 +1,37 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pong Game: Choice vs Pressure · ANCF Digital Projects</title><meta name="description" content="Keep 'Choice' in play against the pull of 'Pressure' — a one-paddle pong with keyboard and on-screen controls and a saved best."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pong Game: Choice vs Pressure</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pong: Choice vs Pressure · ANCF Digital Projects</title><meta name="description" content="Keep 'Choice' bouncing and don't let it drop. The longer you rally, the faster it gets — a light reminder that staying in the game just takes a steady paddle and a calm eye. Keyboard, buttons, or drag to play."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pong: Choice vs Pressure</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../061-mini-car-race-game/index.html">← Previous</a><a class="btn btn-primary" href="../063-platform-game-boundary-runner/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 062</span><h2>Pong: Choice vs Pressure</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · a 2-min break</span></div></div>
-<p class="lead">Keep "Choice" bouncing and don't let it drop. The longer you rally, the faster it gets — a light reminder that staying in the game just takes a steady hand.</p>
+<div class="proj-head"><span class="num">PROJECT 062</span><h2>Pong: Choice vs Pressure</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min · arcade</span></div></div>
+<p class="lead">Keep <strong>"Choice"</strong> bouncing and don't let it drop. Each time your paddle sends it back, you score — and it speeds up a little. A light reminder that staying in the game just takes a <strong>steady paddle and a calm eye</strong>. Move with the arrow keys, the buttons, or by dragging across the court.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② The little metaphor</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>How to play</h3>
-<ul>
-<li><strong>Move the paddle:</strong> Left/Right arrows, A/D, or the on-screen buttons.</li>
-<li><strong>Goal:</strong> keep the ball from falling past your paddle.</li>
-<li>Each bounce scores a point; best is saved on this device.</li>
-</ul></div>
-
-<div class="panel"><h3>Play</h3>
-<div class="game-hud"><span>Rally: <b id="score">0</b></span><span class="spacer"></span><span>Best: <b id="best">0</b></span></div>
-<canvas id="game" width="320" height="360" aria-label="One-paddle pong. Move the paddle to keep the ball in play."></canvas>
-<div class="btn-row" style="justify-content:center">
-<button class="btn" id="left" type="button" aria-label="Move paddle left">◀</button>
-<button class="btn btn-primary" id="startBtn" type="button">Start</button>
-<button class="btn" id="right" type="button" aria-label="Move paddle right">▶</button>
-</div>
-<p class="note" id="msg" role="status" aria-live="polite">Press Start (or an arrow key) to play.</p>
+<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
+<div class="panel">
+<div class="hud"><span>Rally: <span id="score">0</span></span><span class="best">Best: <span id="best">0</span></span></div>
+<div class="gamewrap"><canvas id="cv" width="300" height="440" aria-label="Pong game"></canvas>
+<div class="overlay show" id="overlay"><h4 id="ovTitle">Choice vs Pressure</h4><p id="ovMsg">Keep "Choice" in play. Left / Right to move your paddle.</p><button class="btn btn-primary" id="startBtn" type="button">Start</button></div></div>
+<div class="controls"><button class="gbtn" id="leftBtn" aria-label="Move left">◀</button><button class="gbtn" id="rightBtn" aria-label="Move right">▶</button></div>
 </div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">What helps you "keep your choice in play" when pressure speeds up?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="about" style="scroll-margin-top:70px">② The little metaphor</h3>
+<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">A playful question: what helps you "keep the rally going" when pressure picks up speed?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>You don't have to be perfect — just keep the ball in play. Small, steady moves keep your choice alive, even as the pace picks up.</p></div>
+<p>Pressure, like the ball, tends to come back faster the longer things go on. You don't have to smash it away — just keep your paddle under it, calm and ready. Staying in the game is its own kind of winning. Play for fun; hold the metaphor lightly.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
 <a href="../061-mini-car-race-game/index.html">Mini Car Race<span>Dodge the blocks</span></a>
-<a href="../063-platform-game-boundary-runner/index.html">Boundary Runner<span>Jump the obstacles</span></a>
-<a href="../070-freedom-points-game/index.html">Freedom Points Game<span>Choices, gamified</span></a>
-<a href="../064-quiz-game-myth-vs-reality/index.html">Myth vs Reality Quiz<span>A brainier game</span></a>
+<a href="../063-platform-game-boundary-runner/index.html">Boundary Runner<span>Hop the hurdles</span></a>
+<a href="../070-freedom-points-game/index.html">Freedom Points<span>Choices, not reflexes</span></a>
+<a href="../016-personal-peace-checklist/index.html">Peace Checklist<span>The serious version</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../061-mini-car-race-game/index.html">← Previous</a><a class="btn btn-primary" href="../063-platform-game-boundary-runner/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

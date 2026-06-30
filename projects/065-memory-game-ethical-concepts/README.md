@@ -2,11 +2,6 @@
 
 *Project 065 · Category: Games · Difficulty: Beginner*
 
-Match pairs of key ethics terms to reinforce learning.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A concentration game matching six ethics terms to their definitions (12 cards). Each match reveals
+the concept in a sentence; tracks moves and matches, saves a best (fewest-moves) score, and reshuffles
+on New game. Headless-safe flip-back (immediate under jsdom). Vanilla JS; DOM test 8/8.

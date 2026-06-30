@@ -1,41 +1,36 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Freedom Points Game · ANCF Digital Projects</title><meta name="description" content="A quick game rewarding self-respecting, kind choices in everyday pressure moments — with a running score and a saved best."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Freedom Points Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Freedom Points Game · ANCF Digital Projects</title><meta name="description" content="Five everyday moments, one choice each. Pick the response that protects your autonomy and stays kind. The points are just a playful mirror — and good practice for the real thing. No response is wrong; some keep more of both freedom and warmth."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Freedom Points Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../069-resource-allocation-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../071-personal-manifesto-builder/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 070</span><h2>Freedom Points Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~4 min</span></div></div>
-<p class="lead">Five everyday moments, one choice each. Pick the response that protects your autonomy and stays kind. The points are just a playful mirror — and good practice for real life.</p>
+<div class="proj-head"><span class="num">PROJECT 070</span><h2>Freedom Points Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~10 min · choices game</span></div></div>
+<p class="lead">Five everyday moments, one choice each. Pick the response that <strong>protects your autonomy and stays kind</strong>. The points are just a playful mirror — and good practice for the real thing. No response is "wrong"; some simply keep more of <em>both</em> your freedom and your warmth.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② The two dials</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>How to play</h3>
-<ul>
-<li>Read each moment and choose a response.</li>
-<li>Self-respecting, kind choices earn the most freedom points.</li>
-<li>Finish all five; your best is saved on this device.</li>
-</ul></div>
-
-<div class="panel"><h3>Play</h3>
-<div class="game-hud"><span>Moment: <b id="round">0</b>/5</span><span class="spacer"></span><span>Freedom points: <b id="pts">0</b> · Best: <b id="best">0</b></span></div>
-<div class="decision" id="scene">Press Start to begin.</div>
-<div class="btn-row" id="choices"></div>
-<p class="note" id="fb" role="status" aria-live="polite"></p>
-<div class="btn-row"><button class="btn btn-primary" id="startBtn" type="button">Start</button></div>
+<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
+<div class="panel">
+<div class="hud"><span>Freedom points: <span id="fp">0</span></span><span class="best">Best: <span id="best">0</span></span></div>
+<div class="meter-wrap"><div class="meter" id="meter"></div></div>
+<div id="host"></div>
 </div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">Which choice would be hardest to make in real life — and why?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="about" style="scroll-margin-top:70px">② The two dials</h3>
+<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which moment do you find hardest in real life — caving, or snapping? What would the "both" response sound like in your voice?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Autonomy is a muscle. Choosing the calm, self-respecting, kind option here — again and again — makes it the natural choice when it counts.</p></div>
+<p>Protecting your autonomy and staying kind aren't opposites — the highest-scoring answers do both at once. Caving gives away your freedom; snapping spends your warmth; "I hear you, and this is mine" keeps both. It's a small skill, and like any skill, it grows with practice.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../066-decision-tree-game/index.html">Decision Tree Game<span>Branching scenario</span></a>
-<a href="../048-wedding-pressure-dialogue-simulator/index.html">Wedding Dialogue Simulator<span>Rehearse replies</span></a>
-<a href="../071-personal-manifesto-builder/index.html">Personal Manifesto Builder<span>Put it in words</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>The serious version</span></a>
+<a href="../066-decision-tree-game/index.html">Decision Tree<span>Branching version</span></a>
+<a href="../017-pressure-from-parents-response-generator/index.html">Parent Responses<span>Real lines</span></a>
+<a href="../010-no-means-no-boundary-tool/index.html">"No Means No"<span>Hold the line</span></a>
+<a href="../033-debate-reply-generator/index.html">Debate Replies<span>Reply to claims</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../069-resource-allocation-simulator/index.html">← Previous</a><a class="btn btn-primary" href="../071-personal-manifesto-builder/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -1,56 +1,83 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var D={
- consent:[
-  ['A signpost is planted in an empty field before anyone arrives.','A traveller appears and reads: "You agreed to this road."','They shrug: "Funny — I was never asked." The signpost looks sheepish.'],
-  ['A waiter sets a giant mystery dish at an empty table.','A diner sits down: "I didn\'t order this."','Waiter: "But you\'ll probably like it!" Diner raises an eyebrow.']
- ],
- pressure:[
-  ['A tiny snowball labelled "just curious" rolls downhill.','It gathers labels: "when?", "who\'ll care for you?", "everyone does it".','At the bottom it\'s a boulder. A calm figure simply steps aside.'],
-  ['A garden where every plant is told to grow the same flower.','One plant quietly grows something else, beautifully.','The gardener pauses, then waters it too.']
- ],
- autonomy:[
-  ['A person holds a map with one road drawn in bold.','They notice the paper is blank underneath the printed route.','They pick up a pen and draw their own path. The map smiles.'],
-  ['A remote control labelled "your life" sits on a crowded table.','Many hands reach for it at once.','The owner gently takes it back, presses "my choice", and relaxes.']
- ],
- freedom:[
-  ['An open field stretches in every direction.','A voice off-panel: "But which way is correct?"','The walker: "Any of them, if it\'s mine." Birds scatter happily.'],
-  ['A calendar with every box pre-filled by someone else.','A hand erases a few boxes, leaving them blank.','The blank boxes glow — room to breathe.']
- ],
- myth:[
-  ['A myth balloon floats by: "You\'ll regret it."','A pin labelled "actually, contentment is common" drifts near.','Pop. The balloon deflates into a small, harmless puff.'],
-  ['A poster reads "A real family = children."','Someone adds, with a marker, "...or love, in any shape."','The poster reads better now; passers-by nod.']
- ]
-};
-var toneNote={gentle:'Tone: warm and gentle.',witty:'Tone: light and witty.',poignant:'Tone: quiet and poignant.'};
-var theme=document.getElementById('theme'),tone=document.getElementById('tone'),p1=document.getElementById('p1'),p2=document.getElementById('p2'),p3=document.getElementById('p3');
-var variant=0;
-function build(){var arr=D[theme.value]||D.consent;var v=arr[variant%arr.length];p1.textContent=v[0];p2.textContent=v[1];p3.textContent=v[2]+' ('+toneNote[tone.value]+')';}
-var genBtn=document.getElementById('genBtn'),againBtn=document.getElementById('againBtn');
-if(genBtn)genBtn.addEventListener('click',function(){variant=0;build();});
-if(againBtn)againBtn.addEventListener('click',function(){variant++;build();});
-if(theme)theme.addEventListener('change',function(){variant=0;build();});
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){var t='Comic storyboard ('+theme.value+', '+tone.value+'):\nPanel 1: '+p1.textContent+'\nPanel 2: '+p2.textContent+'\nPanel 3: '+p3.textContent;A.copy&&A.copy(t,copyBtn);});
-build();
+/* Project 031 · Comic Strip Prompt Generator — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  // characters carry a metaphor; emoji is a sketch cue
+  var CHARS=[
+    {n:'a small boat',e:'⛵',love:'the calm of its own harbour'},
+    {n:'a contented cactus',e:'🌵',love:'its quiet patch of desert'},
+    {n:'a teapot',e:'🫖',love:'being full of exactly enough tea'},
+    {n:'a house cat',e:'🐈',love:'a sunbeam and a closed door'},
+    {n:'a lighthouse',e:'🗼',love:'standing steady and alone'},
+    {n:'a snail',e:'🐌',love:'carrying its whole home, slowly'},
+    {n:'a single sock',e:'🧦',love:'being perfectly happy unpaired'},
+    {n:'a moon',e:'🌙',love:'its own unhurried orbit'}
+  ];
+  var PRESS={
+    pressure:['everyone keeps asking when it will "fill up"','a well-meaning aunt-cloud rains questions','the whole pond insists it should sail somewhere else'],
+    autonomy:['a map is handed to it with the route already drawn','a chorus chants "but everyone docks here"','a louder voice tries to steer'],
+    boundaries:['a neighbour keeps peering over the fence','a relative reorganises its shelves uninvited','the questions arrive faster than it can answer'],
+    peace:['the noise of expectation rises like a tide','a hundred opinions buzz around it','the calendar fills with other people\'s plans']
+  };
+  var TURN={
+    gentle:['takes a slow breath and remembers what it loves','smiles, kindly, and stays exactly where it is','lets the question pass like weather'],
+    witty:['raises one eyebrow (somehow) and changes the subject','offers a biscuit instead of an answer','replies, "noted!", and carries on'],
+    wholesome:['gently thanks them for caring, and holds its line','remembers that warmth and a boundary can share a sentence','chooses its own calm over their approval'],
+    absurd:['produces a tiny umbrella and waits out the storm','politely files the advice in a drawer marked "later, perhaps never"','grows one extra, very serene, leaf']
+  };
+  var END={
+    gentle:['and the harbour is quiet again','content, exactly as it is','at peace, and unhurried'],
+    witty:['the end. (no further questions, your honour)','crisis averted, biscuits intact','roll credits, gently'],
+    wholesome:['loved, and still itself','sure that its choice is its own','warm, settled, whole'],
+    absurd:['the umbrella, it turns out, was the friend all along','and the desert applauded politely','perfectly, absurdly fine']
+  };
+  var current=null;
+  function gen(){
+    var theme=$('gTheme').value; if(theme==='random') theme=pick(['pressure','autonomy','boundaries','peace']);
+    var tone=$('gTone').value;
+    var ch=pick(CHARS), p=pick(PRESS[theme]), t=pick(TURN[tone]), e=pick(END[tone]);
+    current={ch:ch,theme:theme,tone:tone,
+      p1:'We meet '+ch.n+', who loves '+ch.love+'.',
+      p2:'Then '+p+'. '+ch.n.charAt(0).toUpperCase()+ch.n.slice(1)+' '+t+'.',
+      p3:'And so, '+e+'.'};
+    render();
+  }
+  function render(){
+    if(!current) return;
+    $('out').textContent='THREE-PANEL COMIC PREMISE\n\nPanel 1 (setup): '+current.p1+'\nPanel 2 (turn): '+current.p2+'\nPanel 3 (resolution): '+current.p3;
+    var sb=$('storyboard');
+    if(sb){ sb.innerHTML=[['Setup',current.p1],['Turn',current.p2],['Resolution',current.p3]].map(function(p){ return '<div class="panel-c"><div class="ph">'+p[0]+'</div><div class="frame">'+current.ch.e+'</div><div class="cap">'+esc(p[1])+'</div></div>'; }).join(''); }
+  }
+  function text(){ return current?('Panel 1: '+current.p1+'\nPanel 2: '+current.p2+'\nPanel 3: '+current.p3):''; }
+  $('genBtn').addEventListener('click',gen); $('anotherBtn').addEventListener('click',gen);
+  $('copyBtn').addEventListener('click',function(){ if(current&&A.copy) A.copy(text(),$('copyBtn')); });
+  /* favourites */
+  var favs=(A.getJSON?A.getJSON('favs',[]):[])||[];
+  function renderFavs(){ var box=$('favs'); if(!box) return; if(!favs.length){ box.innerHTML='<p class="note">No saved premises yet — tap ☆ Save on one you like.</p>'; return; }
+    box.innerHTML=favs.map(function(t,i){ return '<div class="favrow"><span>'+esc(t.replace(/\n/g,' · '))+'</span><button type="button" data-i="'+i+'" aria-label="Remove">×</button></div>'; }).join('');
+    box.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ favs.splice(+b.getAttribute('data-i'),1); if(A.setJSON)A.setJSON('favs',favs); renderFavs(); }); }); }
+  $('saveBtn').addEventListener('click',function(){ if(!current) return; var t=text(); if(favs.indexOf(t)<0){ favs.push(t); if(A.setJSON)A.setJSON('favs',favs); renderFavs(); } });
+  renderFavs(); gen();
 
-var QZ=[{a:1,e:'Kind satire aims at situations, ideas, and pressures — never at a person\'s identity or group.'},{a:0,e:'A classic three-panel comic moves through setup, turn, and resolution.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 031 script error',e);}
+  (function(){
+    var Q=[{a:0},{a:0}], E=['Metaphor makes a heavy idea feel friendlier and easier to approach.','A classic three-panel beat is setup, turn, resolution.'];
+    var picks={}, total=document.querySelectorAll('#quizbox .quiz-q').length;
+    if(A.initOptions) A.initOptions($('quizbox'),function(q,i){ picks[q]=+i; });
+    var sB=$('quizScore'), rB=$('quizReset'), res=$('quizResult');
+    if(sB) sB.addEventListener('click',function(){ if(Object.keys(picks).length<total){ res.style.display='block'; res.textContent='Pick an answer for all '+total+' questions first.'; return; }
+      var sc=0; Q.forEach(function(it,i){ document.querySelectorAll('.opt[data-q="'+i+'"]').forEach(function(x){ var j=+x.getAttribute('data-i'); x.classList.remove('ok','no'); if(j===it.a)x.classList.add('ok'); else if(j===picks[i])x.classList.add('no'); }); var ex=document.querySelector('.explain[data-q="'+i+'"]'); if(ex){ ex.style.display='block'; ex.textContent=E[i]; } if(picks[i]===it.a)sc++; });
+      res.style.display='block'; res.textContent='You matched '+sc+' of '+Q.length+' with the explained view.'; if(rB) rB.style.display='inline-block'; });
+    if(rB) rB.addEventListener('click',function(){ picks={}; document.querySelectorAll('#quizbox .opt').forEach(function(x){ x.classList.remove('sel','ok','no'); }); document.querySelectorAll('#quizbox .explain').forEach(function(ex){ ex.style.display='none'; ex.textContent=''; }); res.style.display='none'; rB.style.display='none'; });
+  })();
+  (function(){
+    var ta=$('r1'), status=$('saveStatus'), timer=null;
+    function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear');
+    if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); });
+  })();
+} catch(e){ console.error('project 031 script error', e); }
 });

@@ -2,11 +2,6 @@
 
 *Project 036 · Category: Community Tools · Difficulty: Beginner*
 
-Generate clear, inclusive rules for an online childfree/antinatalist community group.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Builds a ready-to-pin rules set from a group focus, a moderation strictness level, and eight
+toggleable rules, with two always-on essentials and a focus-specific lead rule. Live preview,
+select-all/clear, and copy. Inclusive and safety-first by default. Vanilla JS; DOM test 8/8.

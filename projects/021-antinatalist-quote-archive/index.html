@@ -1,57 +1,54 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Antinatalist Quote Archive · ANCF Digital Projects</title><meta name="description" content="A themed archive of original study prompts on the ethics of birth, with theme filters, favourites, a random draw, and a theme chart. Paraphrased for study, not attributed quotations."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Antinatalist Quote Archive</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Antinatalist Quote Archive · ANCF Digital Projects</title><meta name="description" content="A searchable, filterable archive of original study-prompts that rephrase ideas from the antinatalist tradition for reflection. Filter by theme or thinker, draw one at random, save favourites, and copy any."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Antinatalist Quote Archive</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../020-retirement-without-children-planner/index.html">← Previous</a><a class="btn btn-primary" href="../022-childfree-quote-archive/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 021</span><h2>Antinatalist Quote Archive</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
-<p class="lead">A small archive of <strong>original study prompts</strong> that reword ideas from the antinatalist tradition for reflection. Filter by theme, draw one at random, save your favourites, and copy any to keep. These are paraphrases for learning — <em>not</em> verbatim quotations attributed to any author.</p>
+<div class="proj-head"><span class="num">PROJECT 021</span><h2>Antinatalist Quote Archive</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~12 min · study archive</span></div></div>
+<p class="lead">A study archive of <strong>original prompts</strong> that rephrase ideas from the antinatalist and pessimist traditions into plain language for reflection. These are not quotations — they're fresh wordings written to help you <em>think with</em> each idea. Search or filter by theme and thinker, draw one at random, save your favourites, and copy any to keep.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#daily">① Prompt of the moment</a><a href="#browse">② Browse the archive</a><a href="#themes">③ Themes &amp; thinkers</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The recurring themes of antinatalist thought: consent, suffering, asymmetry, autonomy, ecology, compassion.</li>
-<li>How a single line can compress a whole argument.</li>
-<li>Which themes you return to most (shown as a chart).</li>
-<li>How to keep the lines that move you.</li>
-</ul></div>
+<h3 id="daily" style="scroll-margin-top:70px">① Prompt of the moment</h3>
+<div class="panel"><div class="featured" id="featured" role="status" aria-live="polite"></div>
+<div class="btn-row"><button class="btn btn-primary" id="drawBtn" type="button">Draw another at random</button><button class="btn" id="featCopy" type="button">Copy</button><button class="btn" id="featFav" type="button">☆ Save</button></div></div>
 
-<div class="panel"><h3>1. Browse the archive</h3>
-<div class="filters" id="qfilters"></div>
-<div class="btn-row"><button class="btn" id="randomBtn" type="button">Draw one at random</button><button class="btn" id="favBtn" type="button">Show favourites</button></div>
-<div class="result" id="randomOut" role="status" aria-live="polite" style="display:none"></div>
-<div id="qlist" style="margin-top:8px"></div>
+<h3 id="browse" style="scroll-margin-top:70px">② Browse the archive</h3>
+<div class="panel">
+<div class="arch-controls"><input type="search" class="search" id="qSearch" placeholder="Search the prompts (e.g. 'consent', 'suffering', 'asymmetry')…" aria-label="Search prompts"></div>
+<div class="chips" id="themeChips" role="group" aria-label="Filter by theme"></div>
+<p class="qcount" id="qCount" role="status" aria-live="polite"></p>
+<div class="qcards" id="qCards"></div>
 </div>
 
-<div class="panel"><h3>2. Themes at a glance</h3>
-<svg class="chart" id="themeChart" role="img" aria-label="Bar chart of how many prompts fall under each theme."></svg>
-<p class="chart-cap">Bar chart: number of prompts per theme.</p>
-</div>
+<h3 id="themes" style="scroll-margin-top:70px">③ Themes &amp; thinkers at a glance</h3>
+<div class="panel"><p class="note">The archive draws on several strands. None of the wordings are quotations; each is an original prompt written in this project's own voice, inspired by the named tradition.</p>
+<div class="kv" id="themeKv"></div>
+<p class="note">For the full treatment of these ideas, see <a href="../001-antinatalism-intro-guide/book/index.html">The Antinatalism Reader</a>.</p></div>
 
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. These lines are…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Exact quotes from famous philosophers</div><div class="opt" data-q="0" data-i="1">Original paraphrases for study</div><div class="opt" data-q="0" data-i="2">Legal statements</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. "A harm prevented is good, even when no one is glad of it" expresses…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">The asymmetry idea</div><div class="opt" data-q="1" data-i="1">An economic claim</div><div class="opt" data-q="1" data-i="2">A legal rule</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Three quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. The texts in this archive are…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Exact quotations</div><div class="opt" data-q="0" data-i="1">Original prompts inspired by the tradition</div><div class="opt" data-q="0" data-i="2">AI-generated nonsense</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The "asymmetry" idea is most associated with…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">David Benatar</div><div class="opt" data-q="1" data-i="1">Plato</div><div class="opt" data-q="1" data-i="2">Aristotle</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<div class="quiz-q"><strong>3. A study prompt is for…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Memorizing a creed</div><div class="opt" data-q="2" data-i="1">Thinking with an idea, your own way</div><div class="opt" data-q="2" data-i="2">Winning debates</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>4. Your reflection</h3>
-<label class="field" for="reflect">Which line lands most for you — and why?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which prompt stayed with you, and what did it make you think?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my favourites</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>A good line is a doorway, not a proof. These prompts are meant to start your own thinking — to disagree with, refine, or carry — rather than to settle anything. Keep the ones that open something for you.</p></div>
+<p>Ideas are easier to weigh when they're stated plainly and met one at a time. However you respond to any of these prompts — agreement, resistance, or a long pause — the practice of thinking <em>with</em> them, rather than past them, is the whole point.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../022-childfree-quote-archive/index.html">Childfree Quote Archive<span>The personal side</span></a>
-<a href="../025-benatar-argument-explainer/index.html">Benatar Argument Explainer<span>The asymmetry in depth</span></a>
-<a href="../051-antinatalism-faq/index.html">Antinatalism FAQ<span>Common questions</span></a>
-<a href="../023-ethics-flashcards/index.html">Ethics Flashcards<span>Learn the key terms</span></a>
+<a href="../022-childfree-quote-archive/index.html">Childfree Quote Archive<span>Affirmations &amp; reflections</span></a>
+<a href="../001-antinatalism-intro-guide/book/index.html">The Antinatalism Reader<span>The ideas in depth</span></a>
+<a href="../024-philosophy-timeline/index.html">Philosophy Timeline<span>Where they came from</span></a>
+<a href="../023-ethics-flashcards/index.html">Ethics Flashcards<span>The key terms</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../020-retirement-without-children-planner/index.html">← Previous</a><a class="btn btn-primary" href="../022-childfree-quote-archive/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

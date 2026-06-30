@@ -1,45 +1,45 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var cv=document.getElementById('game'),ctx=cv&&cv.getContext('2d');
-var scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),msg=document.getElementById('msg');
-var W=320,H=360,pad={w:74,h:12,x:123},ball={x:160,y:80,vx:2.6,vy:2.8,r:8},score=0,playing=false,best=0,raf=null,move=0;
-try{best=parseInt(A.get?A.get('best','0'):'0',10)||0;}catch(e){}if(bestEl)bestEl.textContent=best;
-function reset(){pad.x=123;ball.x=160;ball.y=80;ball.vx=(Math.random()>.5?1:-1)*2.6;ball.vy=2.8;score=0;}
-function draw(){
-  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0c0c0e';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#2f9e9e';ctx.fillRect(pad.x,H-pad.h-6,pad.w,pad.h);
-  ctx.beginPath();ctx.fillStyle='#e23a52';ctx.arc(ball.x,ball.y,ball.r,0,7);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.25)';ctx.font='12px system-ui';ctx.fillText('Choice',ball.x-18,ball.y-14);
-}
-function over(){playing=false;if(raf)cancelAnimationFrame(raf);if(score>best){best=score;if(A.set)A.set('best',String(best));if(bestEl)bestEl.textContent=best;}if(msg)msg.textContent='Dropped! Rally '+score+'. Press Start to try again.';}
-function loop(){
-  if(!playing)return;
-  pad.x+=move*5;pad.x=Math.max(0,Math.min(W-pad.w,pad.x));
-  ball.x+=ball.vx;ball.y+=ball.vy;
-  if(ball.x<ball.r){ball.x=ball.r;ball.vx*=-1;}if(ball.x>W-ball.r){ball.x=W-ball.r;ball.vx*=-1;}
-  if(ball.y<ball.r){ball.y=ball.r;ball.vy*=-1;}
-  if(ball.y>H-pad.h-6-ball.r){
-    if(ball.x>pad.x-ball.r&&ball.x<pad.x+pad.w+ball.r){ball.y=H-pad.h-6-ball.r;ball.vy*=-1;ball.vy-=0.12;ball.vx+=(ball.x-(pad.x+pad.w/2))*0.03;score++;if(scoreEl)scoreEl.textContent=score;}
-    else if(ball.y>H){return over();}
+/* Project 062 · Pong: Choice vs Pressure — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  var headless=/jsdom/i.test((window.navigator&&window.navigator.userAgent)||'');
+  var cv=$('cv'), ctx=cv&&cv.getContext?cv.getContext('2d'):null;
+  var W=300,H=440, PW=72,PH=12, PY=H-26, R=9;
+  var st={running:false,over:false,px:W/2,ball:{x:W/2,y:H/2,vx:2.2,vy:-2.6},score:0,best:0,spd:1};
+  st.best=(A.getJSON?A.getJSON('best',0):0)||0; var be=$('best'); if(be)be.textContent=st.best;
+  function reset(){ st.running=false;st.over=false;st.px=W/2;st.score=0;st.spd=1; st.ball={x:W/2,y:H/2,vx:2.2,vy:-2.6}; var s=$('score'); if(s)s.textContent=0; }
+  function start(){ reset(); st.running=true; var ov=$('overlay'); if(ov)ov.classList.remove('show'); if(!headless) requestAnimationFrame(loop); }
+  function end(){ st.running=false; st.over=true; if(st.score>st.best){ st.best=st.score; if(A.setJSON)A.setJSON('best',st.score); var b=$('best'); if(b)b.textContent=st.score; }
+    var ov=$('overlay'); if(ov){ ov.classList.add('show'); $('ovTitle').textContent='Dropped!'; $('ovMsg').innerHTML='Rally of <b>'+st.score+'</b>. Steady — go again.'; $('startBtn').textContent='Play again'; } }
+  function movePaddle(dx){ st.px=Math.max(PW/2,Math.min(W-PW/2,st.px+dx)); }
+  function update(dt){ if(!st.running)return; dt=dt||1; var b=st.ball;
+    b.x+=b.vx*st.spd*dt; b.y+=b.vy*st.spd*dt;
+    if(b.x<R){ b.x=R; b.vx=Math.abs(b.vx); } if(b.x>W-R){ b.x=W-R; b.vx=-Math.abs(b.vx); }
+    if(b.y<R){ b.y=R; b.vy=Math.abs(b.vy); }
+    if(b.y+R>=PY && b.y+R<=PY+PH+6 && b.vy>0 && b.x>st.px-PW/2-R && b.x<st.px+PW/2+R){
+      b.vy=-Math.abs(b.vy); var off=(b.x-st.px)/(PW/2); b.vx=2.4*off; st.score++; st.spd=1+st.score*0.06; var s=$('score'); if(s)s.textContent=st.score; }
+    if(b.y-R>H){ end(); }
   }
-  draw();raf=requestAnimationFrame(loop);
-}
-function start(){if(playing)return;reset();playing=true;if(msg)msg.textContent='Keep it up!';draw();raf=requestAnimationFrame(loop);}
-var startBtn=document.getElementById('startBtn'),L=document.getElementById('left'),R=document.getElementById('right');
-if(startBtn)startBtn.addEventListener('click',start);
-function press(d){move=d;if(!playing&&d)start();}
-if(L){L.addEventListener('mousedown',function(){press(-1);});L.addEventListener('mouseup',function(){move=0;});L.addEventListener('touchstart',function(e){e.preventDefault();press(-1);});L.addEventListener('touchend',function(){move=0;});L.addEventListener('click',function(){pad.x=Math.max(0,pad.x-30);if(!playing)draw();});}
-if(R){R.addEventListener('mousedown',function(){press(1);});R.addEventListener('mouseup',function(){move=0;});R.addEventListener('touchstart',function(e){e.preventDefault();press(1);});R.addEventListener('touchend',function(){move=0;});R.addEventListener('click',function(){pad.x=Math.min(W-pad.w,pad.x+30);if(!playing)draw();});}
-document.addEventListener('keydown',function(e){if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){e.preventDefault();press(-1);}else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){e.preventDefault();press(1);}});
-document.addEventListener('keyup',function(e){if(['ArrowLeft','ArrowRight','a','A','d','D'].indexOf(e.key)>=0)move=0;});
-if(ctx){reset();draw();}
-
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 062 script error',e);}
+  function draw(){ if(!ctx)return; ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#1f7a4d'; ctx.fillRect(st.px-PW/2,PY,PW,PH);
+    ctx.fillStyle='#b3122a'; ctx.beginPath(); ctx.arc(st.ball.x,st.ball.y,R,0,7); ctx.fill();
+    ctx.fillStyle='rgba(127,127,127,.6)'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('CHOICE',st.ball.x,st.ball.y-13);
+  }
+  function loop(){ if(!st.running)return; update(1); draw(); if(!headless) requestAnimationFrame(loop); }
+  var sb=$('startBtn'); if(sb) sb.addEventListener('click',start);
+  var lb=$('leftBtn'); if(lb) lb.addEventListener('click',function(){ movePaddle(-26); });
+  var rb=$('rightBtn'); if(rb) rb.addEventListener('click',function(){ movePaddle(26); });
+  window.addEventListener('keydown',function(e){ if(e.key==='ArrowLeft') movePaddle(-26); else if(e.key==='ArrowRight') movePaddle(26); else if((e.key===' '||e.key==='Enter')&&!st.running) start(); });
+  if(cv) cv.addEventListener('pointermove',function(e){ if(!st.running)return; var r=cv.getBoundingClientRect(); st.px=Math.max(PW/2,Math.min(W-PW/2,(e.clientX-r.left)/r.width*W)); });
+  if(!headless && ctx) draw();
+  window.__game={st:st,update:update,start:start,reset:reset,movePaddle:movePaddle,step:function(n){ n=n||1; for(var i=0;i<n;i++) update(1); }};
+  (function(){ var box=$('aboutCards'); if(!box) return;
+    var C=[['It speeds up','The longer the rally, the faster the ball — pressure can intensify the longer a topic runs. Expect it, and you won\'t be rattled.'],['Position, not power','You win by being under the ball, not by hitting hard. A calm, well-placed "no" beats a forceful one.'],['One return at a time','You don\'t have to end the rally — just make the next return. Handle this moment; the next will come when it comes.']];
+    box.innerHTML=C.map(function(p){ return '<div class="scard"><h4>'+p[0]+'</h4><span class="tg">Tap to expand</span><div class="more">'+p[1]+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 062 script error', e); }
 });

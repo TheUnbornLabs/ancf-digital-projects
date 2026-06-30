@@ -1,51 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>30-Day Reading Challenge · ANCF Digital Projects</title><meta name="description" content="A 30-day, one-prompt-a-day challenge to build a thoughtful view of antinatalism and childfree life — with a progress tracker. Skip and return freely."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>30-Day Reading Challenge</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>30-Day Reading Challenge · ANCF Digital Projects</title><meta name="description" content="One small reflective prompt a day for thirty days, to build a considered view at a gentle pace. See today's prompt, jot a note, tick each day, and watch the grid fill. Skip and return freely; your progress saves on this device."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>30-Day Reading Challenge</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../052-beginner-study-plan/index.html">← Previous</a><a class="btn btn-primary" href="../054-study-circle-dashboard/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 053</span><h2>30-Day Reading Challenge</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~5 min/day</span></div></div>
-<p class="lead">One small prompt a day for thirty days, to build a considered view at a gentle pace. Tick each day as you go; skip and return freely. Your progress saves on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 053</span><h2>30-Day Reading Challenge</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~30 days · tracker</span></div></div>
+<p class="lead">One small reflective prompt a day for thirty days, to build a considered view at a <strong>gentle pace</strong>. See today's prompt, jot a private note, tick the day, and watch the grid fill in. Skip and return freely — there's no streak to break. Your progress saves on this device.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#today">① Today's prompt</a><a href="#grid">② The thirty days</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>A little, consistently, beats a lot, once.</li>
-<li>How daily prompts build understanding over a month.</li>
-<li>How to track a habit without pressure.</li>
-</ul></div>
-
-<div class="panel"><h3>Your challenge</h3>
-<div class="meter-card"><div class="lab"><span>Days complete</span><b id="pct">0%</b></div><div class="meter"><span id="bar"></span></div></div>
-<p class="note" id="count" role="status" aria-live="polite" style="margin-top:8px">0 of 30 done.</p>
-<div id="days" style="margin-top:8px"></div>
-<div class="btn-row"><button class="btn" id="resetBtn" type="button">Reset progress</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
+<h3 id="today" style="scroll-margin-top:70px">① Today's prompt</h3>
+<div class="panel">
+<div class="meter-wrap"><div class="meter" id="meter"></div></div><p class="outmeta" id="progMsg"></p>
+<div class="today" id="todayBox"></div>
+<label class="field" for="note">Your note for this day (optional)</label>
+<textarea id="note" placeholder="A thought, a reaction, a question…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="doneBtn" type="button">Mark this day done</button><button class="btn" id="undoBtn" type="button">Undo</button><button class="btn" id="saveNote" type="button">Save note</button></div>
 </div>
 
-<div class="panel"><h3>Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. The challenge works best by…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Doing all 30 at once</div><div class="opt" data-q="0" data-i="1">A little each day</div><div class="opt" data-q="0" data-i="2">Never starting</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Missing a day means…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">You've failed</div><div class="opt" data-q="1" data-i="1">Just pick up where you left off</div><div class="opt" data-q="1" data-i="2">Start over from zero</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
-</div>
+<h3 id="grid" style="scroll-margin-top:70px">② The thirty days</h3>
+<div class="panel"><p class="note">Green = done, outlined = currently viewing. Tap any day to jump to it.</p>
+<div class="daygrid" id="daygrid"></div>
+<div class="btn-row"><button class="btn" id="resetBtn" type="button">Reset all</button></div></div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">What's the biggest shift in your thinking so far?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Looking back over the days you've done: what's shifted in how you think — even slightly?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Understanding grows like a plant, not a download. A few minutes a day, with room to miss and return, builds a view that's genuinely yours by the end of the month.</p></div>
+<p>Big questions are best approached in small, daily doses. A few minutes of honest reflection, repeated, builds a more considered view than any single marathon session. Wherever you land by day thirty, the thinking you did along the way is yours to keep.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../052-beginner-study-plan/index.html">Beginner Study Plan<span>A 4-week path</span></a>
-<a href="../076-debate-notes-organizer/index.html">Debate Notes Organizer<span>Capture your thinking</span></a>
-<a href="../077-book-summary-template-tool/index.html">Book Summary Template<span>Summarise reads</span></a>
-<a href="../023-ethics-flashcards/index.html">Ethics Flashcards<span>Learn the terms</span></a>
+<a href="../052-beginner-study-plan/index.html">Study Plan<span>A four-week version</span></a>
+<a href="../021-antinatalist-quote-archive/index.html">Quote Archive<span>More prompts</span></a>
+<a href="../051-antinatalism-faq/index.html">FAQ<span>Look things up</span></a>
+<a href="../001-antinatalism-intro-guide/index.html">The Reader<span>Go deeper</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../052-beginner-study-plan/index.html">← Previous</a><a class="btn btn-primary" href="../054-study-circle-dashboard/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -2,11 +2,6 @@
 
 *Project 051 · Category: Philosophy · Difficulty: Intermediate*
 
-Clear answers to frequent questions and misconceptions about antinatalism.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+24 original Q&As across six categories (basics, arguments, myths, ethics, living, criticisms) in a
+filterable, searchable accordion, with myth-tagged misconceptions and per-answer copy. Presents the
+position fairly, flags myths, and includes its strongest objections. Vanilla JS; DOM test 6/6.

@@ -2,11 +2,8 @@
 
 *Project 027 · Category: Philosophy · Difficulty: Intermediate*
 
-How risk and uncertainty feature in arguments about creating life.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+The risk argument, made concrete and distinct from Project 008. Six "what makes a risk hard to
+justify" factor cards; an interactive **comparator** that lines up an everyday risk (driving
+lessons, vaccination, skydiving, elective surgery) against creating a life, factor by factor,
+with a reading; three decision lenses (expected value, precaution, maximin); and four leading
+replies. Vanilla JS; DOM test 8/8.

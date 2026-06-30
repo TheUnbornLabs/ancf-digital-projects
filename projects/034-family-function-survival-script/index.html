@@ -1,65 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Family Function Survival Script · ANCF Digital Projects</title><meta name="description" content="Assemble a warm pocket script — opener, deflection, firm line, graceful exit — for big family gatherings, with a readiness checklist and copy/export."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Family Function Survival Script</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Family Function Survival Script · ANCF Digital Projects</title><meta name="description" content="Assemble a calm pocket script for a family gathering — an opener, a deflection, a firm line, and a graceful exit — plus a field guide to the lines you'll likely hear with a ready response, and a readiness checklist."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Family Function Survival Script</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../033-debate-reply-generator/index.html">← Previous</a><a class="btn btn-primary" href="../035-when-are-you-having-kids-reply-tool/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 034</span><h2>Family Function Survival Script</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~8 min</span></div></div>
-<p class="lead">Big gatherings go better with a plan. Assemble a small <strong>pocket script</strong> — a calm opener, a deflection, a firm line, and a graceful exit — and tick a readiness checklist so you walk in steady. Saved on this device.</p>
+<div class="proj-head"><span class="num">PROJECT 034</span><h2>Family Function Survival Script</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~12 min · planner</span></div></div>
+<p class="lead">Big gatherings go better with a plan. Assemble a small <strong>pocket script</strong> — a calm opener, a deflection, a firm line, and a graceful exit — tuned to the event and your style. Then preview the field guide of lines you'll likely hear (each with a ready response), and run a quick readiness checklist before you go.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Build your script</a><a href="#lines">② Lines you'll hear</a><a href="#ready">③ Readiness checklist</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The four lines worth having ready before a gathering.</li>
-<li>How to deflect without conflict.</li>
-<li>How to exit a conversation gracefully.</li>
-<li>How small preparation lowers stress.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Build your pocket script</h3>
-<p class="note">Edit each line so it sounds like you. Defaults are provided. Saved on this device.</p>
-<label class="field" for="s-open">Warm opener</label><textarea id="s-open" data-def="So good to see everyone. I've been keeping well — busy with work and a few projects I love."></textarea>
-<label class="field" for="s-deflect">Deflection</label><textarea id="s-deflect" data-def="Oh, the kids question! No news there. Tell me what's new with you — how's [their thing] going?"></textarea>
-<label class="field" for="s-firm">Firm line (if pressed)</label><textarea id="s-firm" data-def="I've thought about this carefully and it's settled for me. I'd rather not make it the topic today."></textarea>
-<label class="field" for="s-exit">Graceful exit</label><textarea id="s-exit" data-def="I'm going to grab a drink / say hi to [name]. Let's catch up properly soon."></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="copyBtn" type="button">Copy my script</button><button class="btn" id="resetBtn" type="button">Reset to defaults</button><span class="spacer"></span><span class="note" id="status" role="status" aria-live="polite"></span></div>
+<h3 id="build" style="scroll-margin-top:70px">① Build your pocket script</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="bEvent">The event</label><select id="bEvent"><option value="dinner">Family dinner</option><option value="wedding">A wedding</option><option value="holiday">Holiday gathering</option><option value="reunion">Big reunion</option></select></div>
+<div><label class="field" for="bStyle">Your style</label><select id="bStyle"><option value="warm">Warm</option><option value="breezy">Breezy</option><option value="firm">Firm</option></select></div>
+</div>
+<div class="slot"><label class="field" for="sOpen">Opener — set a friendly tone</label><select id="sOpen"></select></div>
+<div class="slot"><label class="field" for="sDeflect">Deflection — lightly move past it</label><select id="sDeflect"></select></div>
+<div class="slot"><label class="field" for="sFirm">Firm line — if it keeps coming</label><select id="sFirm"></select></div>
+<div class="slot"><label class="field" for="sExit">Graceful exit — change the scene</label><select id="sExit"></select></div>
+<div class="btn-row"><button class="btn btn-primary" id="shuffleBtn" type="button">🎲 Surprise me</button><button class="btn" id="copyBtn" type="button">Copy card</button></div>
+<div class="preview" id="card"></div>
 </div>
 
-<div class="panel"><h3>2. Readiness checklist</h3>
-<div id="ready">
-<label class="check"><input type="checkbox" data-key="r1"> I have my four lines ready.</label>
-<label class="check"><input type="checkbox" data-key="r2"> I've arranged my own transport / exit.</label>
-<label class="check"><input type="checkbox" data-key="r3"> I have a supportive person to text.</label>
-<label class="check"><input type="checkbox" data-key="r4"> I've decided which topics are off-limits.</label>
-</div>
-<div class="meter" aria-hidden="true"><span id="readyBar"></span></div>
-<p class="note" id="readyCount" role="status" aria-live="polite">0 of 4 ready.</p>
-</div>
+<h3 id="lines" style="scroll-margin-top:70px">② Lines you'll likely hear</h3>
+<div class="panel"><p class="note">Tap a line to reveal a calm, ready response. Forewarned is forearmed.</p><div class="cards3" id="lineCards"></div></div>
 
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A graceful exit line lets you…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Storm off</div><div class="opt" data-q="0" data-i="1">Leave a conversation calmly and kindly</div><div class="opt" data-q="0" data-i="2">Argue more</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Preparing lines in advance tends to…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Increase stress</div><div class="opt" data-q="1" data-i="1">Lower stress and help you stay steady</div><div class="opt" data-q="1" data-i="2">Make no difference</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="ready" style="scroll-margin-top:70px">③ Readiness checklist</h3>
+<div class="panel"><p class="note">Tick what's true. Your progress saves on this device.</p>
+<div class="chk" id="checklist"></div>
+<div class="meter-wrap"><div class="meter" id="readyMeter"></div></div><p class="outmeta" id="readyMsg"></p></div>
+
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. A graceful exit line is for…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Storming off angrily</div><div class="opt" data-q="0" data-i="1">Changing the scene calmly when you've had enough</div><div class="opt" data-q="0" data-i="2">Winning the argument</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. Rehearsing a few lines beforehand mainly helps you…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Feel calmer and less caught off guard</div><div class="opt" data-q="1" data-i="1">Memorise a perfect speech</div><div class="opt" data-q="1" data-i="2">Avoid your family forever</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>4. Your reflection</h3>
-<label class="field" for="reflect">Which gathering are you preparing for — and what would "going well" look like?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Who do you most want to feel calm around — and what one line would you most like to have ready?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>You don't need a speech — just four steady lines and an exit. A little preparation turns a dreaded gathering into something you can move through calmly, on your own terms.</p></div>
+<p>You can't control what anyone asks, but you can decide in advance how you'll answer. A few rehearsed lines turn a dreaded moment into a manageable one — calm, kind, and unmistakably yours. Pocket the script, and let the rest of the day be about the people you actually enjoy.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Before / during / after</span></a>
-<a href="../035-when-are-you-having-kids-reply-tool/index.html">"When Are You Having Kids?" Tool<span>Quick lines</span></a>
-<a href="../010-no-means-no-family-boundary-tool/index.html">"No Means No" Boundary Tool<span>Hold the line</span></a>
-<a href="../049-elder-advice-response-tool/index.html">Elder Advice Response Tool<span>For elders</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">"When Are You Having Kids?"<span>Quick one-liners</span></a>
+<a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Stay grounded</span></a>
+<a href="../017-pressure-from-parents-response-generator/index.html">Parent Response Generator<span>For close family</span></a>
+<a href="../010-no-means-no-boundary-tool/index.html">"No Means No"<span>Hold the line</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../033-debate-reply-generator/index.html">← Previous</a><a class="btn btn-primary" href="../035-when-are-you-having-kids-reply-tool/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

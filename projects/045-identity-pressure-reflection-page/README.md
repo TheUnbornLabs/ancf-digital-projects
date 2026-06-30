@@ -2,11 +2,7 @@
 
 *Project 045 · Category: Society · Difficulty: Beginner*
 
-Reflect on how identity and belonging shape reproductive expectations.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Rate how much child-related expectation each of seven identity facets (family role, gender,
+culture, faith, class, peers, inner critic) carries for you; see a sorted bar "pressure picture"
+with a tailored reading of your loudest source; expandable facet explainers; two journaling
+prompts. All saved on-device. Vanilla JS; DOM test 9/9.

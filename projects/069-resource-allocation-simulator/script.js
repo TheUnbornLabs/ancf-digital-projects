@@ -1,35 +1,33 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-function fmt(x){return Math.round(x).toLocaleString();}
-var pool=document.getElementById('pool'),size=document.getElementById('size'),oP=document.getElementById('o-pool'),oS=document.getElementById('o-size'),perOut=document.getElementById('perOut'),chart=document.getElementById('allocChart');
-function update(){
-  var p=+pool.value,s=+size.value;if(oP)oP.textContent=p;if(oS)oS.textContent=s;
-  if(perOut)perOut.textContent=fmt(p/s)+' / person';
-  var items=[];for(var n=1;n<=6;n++){items.push({label:n+(n===1?' person':' people'),value:Math.round(p/n)});}
-  if(A.barChart)A.barChart(chart,items,{fmt:fmt,title:'Per-person share'});
-  if(A.setJSON)A.setJSON('alloc',{p:pool.value,s:size.value});
-}
-[pool,size].forEach(function(e){if(e)e.addEventListener('input',update);});
-(function(){var st=A.getJSON?A.getJSON('alloc',null):null;if(st){if(st.p)pool.value=st.p;if(st.s)size.value=st.s;}})();
-update();
-
-var QZ=[{a:1,e:'"More people, smaller slices" holds only when the pool is fixed.'},{a:1,e:'It is a neutral division illustration — not a judgment or a claim that love is finite.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-
-var ta=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),t2=null;
-function flash2(m){if(!refStatus)return;refStatus.textContent=m;if(t2)clearTimeout(t2);t2=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ta&&A.get){ta.value=A.get('reflect','');ta.addEventListener('input',function(){A.set('reflect',ta.value);});}
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ta.value);flash2('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ta?ta.value:'',copyRef);});
-}catch(e){console.error('project 069 script error',e);}
+/* Project 069 · Resource Allocation Simulator — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  var RES={
+    money:{name:'Monthly budget (₹)',unit:'₹',min:10000,max:300000,step:1000,def:60000,ico:'💰',per:'per person / month'},
+    time:{name:'Free hours / week',unit:'',suffix:' hrs',min:0,max:80,step:1,def:40,ico:'⏳',per:'attention hours each / week'},
+    space:{name:'Living space (sq ft)',unit:'',suffix:' sq ft',min:200,max:3000,step:50,def:900,ico:'🏠',per:'per person'}
+  };
+  function fmt(v,r){ var n=Math.round(v); var s; try{ s=n.toLocaleString('en-IN'); }catch(e){ s=''+n; } return (r.unit||'')+s+(r.suffix||''); }
+  (function(){ var s=$('resType'); s.innerHTML=Object.keys(RES).map(function(k){ return '<option value="'+k+'">'+RES[k].name+'</option>'; }).join(''); })();
+  function setupPool(){ var r=RES[$('resType').value]; var sp=$('sPool'); sp.min=r.min; sp.max=r.max; sp.step=r.step; sp.value=r.def; }
+  function render(){
+    var r=RES[$('resType').value], pool=+$('sPool').value, n=+$('sPeople').value;
+    $('vPool').textContent=fmt(pool,r); $('vPeople').textContent=n;
+    var share=pool/n;
+    $('bigshare').innerHTML='<div class="v">'+fmt(share,r)+'</div><div class="k">'+r.per+'</div>';
+    var ppl=''; for(var i=0;i<n;i++){ ppl+='<div class="person"><div class="ico">'+r.ico+'</div><div class="amt">'+fmt(share,r)+'</div></div>'; }
+    $('people').innerHTML=ppl;
+  }
+  $('resType').addEventListener('change',function(){ setupPool(); render(); });
+  $('sPool').addEventListener('input',render); $('sPeople').addEventListener('input',render);
+  setupPool(); render();
+  (function(){ var box=$('aboutCards'); if(!box) return;
+    var C=[['What it shows','The simple truth that a fixed pool, split more ways, leaves a smaller slice each. A clear first picture of one kind of trade-off.'],['What it ignores','Real households share rooms, pool incomes, hand things down, and benefit from economies of scale. Per-person division overstates the squeeze.'],['What it isn\'t','It is not a verdict on family size or anyone\'s worth. People are not costs, and a smaller slice of money can sit beside a larger share of other goods.']];
+    box.innerHTML=C.map(function(p){ return '<div class="scard"><h4>'+p[0]+'</h4><span class="tg">Tap to expand</span><div class="more">'+p[1]+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 069 script error', e); }
 });

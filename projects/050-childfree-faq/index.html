@@ -1,59 +1,43 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree FAQ · ANCF Digital Projects</title><meta name="description" content="Calm, respectful answers to the questions childfree people hear most — searchable, with a quiz and the option to copy any answer."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree FAQ</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree FAQ · ANCF Digital Projects</title><meta name="description" content="Calm, respectful answers to the questions childfree people hear most — about identity, relationships, family pressure, the future, society, and meaning. Filter by topic, search, open any question, and copy an answer to reuse."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree FAQ</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../049-elder-advice-response-tool/index.html">← Previous</a><a class="btn btn-primary" href="../051-antinatalism-faq/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 050</span><h2>Childfree FAQ</h2><div><span class="cat">Childfree Life</span> <span class="note">· Difficulty: Beginner · ~7 min</span></div></div>
-<p class="lead">Calm, respectful answers to the questions childfree people hear most. Search the list, tap a question to open it, and copy any answer you'd like to reuse. Respectful toward people who choose children, too.</p>
+<div class="proj-head"><span class="num">PROJECT 050</span><h2>Childfree FAQ</h2><div><span class="cat">Childfree Life</span> <span class="note">· Difficulty: Beginner · ~15 min · reference</span></div></div>
+<p class="lead">Calm, respectful answers to the questions childfree people hear most — about identity, relationships, family pressure, the future, society, and meaning. Filter by topic or search, open any question to read the answer, and <strong>copy any answer you'd like to reuse</strong>. Every reply respects people who choose differently.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#faq">① Browse the FAQ</a><a href="#quiz">② Quick check</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>Straight answers to the most common questions and myths.</li>
-<li>How to respond without conflict.</li>
-<li>Where to read more deeply.</li>
-</ul></div>
+<h3 id="faq" style="scroll-margin-top:70px">① Browse the FAQ</h3>
+<div class="panel"><p class="note">Filter by topic or search. Tap a question to open it.</p>
+<div class="fil-chips" id="catChips"></div>
+<input id="faqSearch" type="text" placeholder="Search questions…" style="width:100%;box-sizing:border-box;margin:6px 0">
+<div class="lib" id="faqList"></div>
+<p class="outmeta" id="faqCount"></p></div>
 
-<div class="panel"><h3>1. Search the FAQ</h3>
-<input type="search" id="search" class="search" placeholder="Search questions…" aria-label="Search the FAQ" style="width:100%">
-<p class="note" id="count" role="status" aria-live="polite" style="margin-top:8px"></p>
-<div id="faq" style="margin-top:8px">
-<details data-q="childfree childless difference"><summary>Is "childfree" the same as "childless"?</summary><div><p>Not quite. "Childfree" is an active choice; "childless" usually describes circumstance, including people who wanted children and couldn't. Follow the word a person uses for themselves.</p></div></details>
-<details data-q="regret"><summary>Will I regret it?</summary><div><p>Regret is possible on every path, including parenthood. Studies find most childfree-by-choice adults report being content with the decision. You can also revisit a "not now" without it being a failure.</p></div></details>
-<details data-q="selfish"><summary>Isn't it selfish?</summary><div><p>Choosing the life that fits you harms no one, and plenty of caring people are childfree. "Selfish" is often a way to apply pressure, not a fair description.</p></div></details>
-<details data-q="old age care retirement"><summary>Who'll care for you when you're old?</summary><div><p>Children aren't a reliable retirement plan. Friendships, savings, community, and services are things you can actively build — and many people do.</p></div></details>
-<details data-q="dislike children hate kids"><summary>Do childfree people dislike children?</summary><div><p>Many adore nieces, nephews, students, and friends' kids. Not wanting your own is simply not the same as disliking children.</p></div></details>
-<details data-q="meaning meaningful purpose"><summary>Can a childfree life be meaningful?</summary><div><p>Absolutely. Meaning grows from autonomy, relationships, competence, and contribution — none of which require parenthood. Work, friendship, creativity, care, and rest all build a full life.</p></div></details>
-<details data-q="family pressure handle"><summary>How do I handle family pressure?</summary><div><p>A calm, repeatable line plus a redirect goes a long way: "I've thought about this, and it's settled for me — anyway, how are you?" You don't owe anyone a justification.</p></div></details>
-<details data-q="too late change mind young"><summary>Is it too late to decide — or to change my mind?</summary><div><p>A considered choice isn't invalidated by your age, and you're allowed to revisit it gently. "Not now" and "not ever" can be different answers, held lightly.</p></div></details>
-</div>
-</div>
-
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. "Childfree" implies…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">An active choice</div><div class="opt" data-q="0" data-i="1">Inability</div><div class="opt" data-q="0" data-i="2">Dislike of children</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. You owe relatives…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">A full justification</div><div class="opt" data-q="1" data-i="1">Basic courtesy, not a justification</div><div class="opt" data-q="1" data-i="2">An apology</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">② Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. "Childless" and "childfree" usually differ in that…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">"Childfree" implies a choice; "childless" can imply circumstance</div><div class="opt" data-q="0" data-i="1">They mean exactly the same thing</div><div class="opt" data-q="0" data-i="2">"Childfree" means disliking children</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. A respectful childfree answer generally…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">States your choice without judging people who choose differently</div><div class="opt" data-q="1" data-i="1">Argues no one should have kids</div><div class="opt" data-q="1" data-i="2">Owes a full justification to everyone</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>3. Your reflection</h3>
-<label class="field" for="reflect">Which question do you hear most — and what's your favourite answer to it?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which question here do you hear most — and how would <em>you</em> like to answer it, in your own words?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Most questions have a calm, short, kind answer — and most of them you don't actually owe anyone. Keep the answers that fit you, and offer the same respect to people who choose children.</p></div>
+<p>Most of these questions have been asked of childfree people a thousand times — which means you never have to answer them cold. Calm, brief, and kind almost always serves you better than a debate. Borrow what fits, make it your own, and remember: you owe no one a full account of your life.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../051-antinatalism-faq/index.html">Antinatalism FAQ<span>The philosophy side</span></a>
-<a href="../002-childfree-life-intro-guide/index.html">Childfree Life Intro Guide<span>Start here</span></a>
-<a href="../022-childfree-quote-archive/index.html">Childfree Quote Archive<span>Kind reminders</span></a>
-<a href="../035-when-are-you-having-kids-reply-tool/index.html">Reply Tool<span>Quick lines</span></a>
+<a href="../002-childfree-life-intro-guide/index.html">The Childfree Life<span>The full companion book</span></a>
+<a href="../035-when-are-you-having-kids-reply-tool/index.html">Reply Tool<span>Quick one-liners</span></a>
+<a href="../022-childfree-quote-archive/index.html">Affirmation Archive<span>Gentle reminders</span></a>
+<a href="../041-pronatalist-phrase-translator/index.html">Phrase Translator<span>Decode the pressure</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../049-elder-advice-response-tool/index.html">← Previous</a><a class="btn btn-primary" href="../051-antinatalism-faq/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

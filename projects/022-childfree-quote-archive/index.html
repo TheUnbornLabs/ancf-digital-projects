@@ -1,57 +1,59 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Quote Archive · ANCF Digital Projects</title><meta name="description" content="A themed archive of original childfree affirmations and reflections, with theme filters, favourites, a random draw, and a theme chart. For journals and quiet encouragement."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Quote Archive</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Childfree Quote Archive · ANCF Digital Projects</title><meta name="description" content="A searchable archive of original affirmations and reflections on living childfree — for journaling and quiet encouragement. Filter by theme, draw one at random, save favourites, and build your own affirmation."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Childfree Quote Archive</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../021-antinatalist-quote-archive/index.html">← Previous</a><a class="btn btn-primary" href="../023-ethics-flashcards/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 022</span><h2>Childfree Quote Archive</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
-<p class="lead">A collection of <strong>original affirmations and reflections</strong> on living childfree — for journaling, quiet encouragement, or a kind reminder on a hard day. Filter by theme, draw one at random, save your favourites, and copy any to keep.</p>
+<div class="proj-head"><span class="num">PROJECT 022</span><h2>Childfree Quote Archive</h2><div><span class="cat">Learning Tools</span> <span class="note">· Difficulty: Beginner · ~12 min · affirmation archive</span></div></div>
+<p class="lead">A collection of <strong>original affirmations and reflections</strong> on living childfree — for journaling, quiet encouragement, or a kind reminder on a hard day. Search or filter by theme, draw one at random, save your favourites, and even build your own. Every line here is written fresh for this project.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#daily">① Affirmation of the moment</a><a href="#browse">② Browse the archive</a><a href="#build">③ Build your own</a><a href="#quiz">④ Quick check</a><a href="#reflect">⑤ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The themes of a confident childfree life: freedom, meaning, identity, relationships, peace, dignity.</li>
-<li>How a short line can steady you against pressure.</li>
-<li>Which themes resonate most for you (shown as a chart).</li>
-<li>How to keep the lines that help.</li>
-</ul></div>
+<h3 id="daily" style="scroll-margin-top:70px">① Affirmation of the moment</h3>
+<div class="panel"><div class="featured" id="featured" role="status" aria-live="polite"></div>
+<div class="btn-row"><button class="btn btn-primary" id="drawBtn" type="button">Draw another</button><button class="btn" id="featCopy" type="button">Copy</button><button class="btn" id="featFav" type="button">☆ Save</button></div></div>
 
-<div class="panel"><h3>1. Browse the archive</h3>
-<div class="filters" id="qfilters"></div>
-<div class="btn-row"><button class="btn" id="randomBtn" type="button">Draw one at random</button><button class="btn" id="favBtn" type="button">Show favourites</button></div>
-<div class="result" id="randomOut" role="status" aria-live="polite" style="display:none"></div>
-<div id="qlist" style="margin-top:8px"></div>
+<h3 id="browse" style="scroll-margin-top:70px">② Browse the archive</h3>
+<div class="panel">
+<div class="arch-controls"><input type="search" class="search" id="qSearch" placeholder="Search (e.g. 'peace', 'freedom', 'enough')…" aria-label="Search affirmations"></div>
+<div class="chips" id="themeChips" role="group" aria-label="Filter by theme"></div>
+<p class="qcount" id="qCount" role="status" aria-live="polite"></p>
+<div class="qcards" id="qCards"></div>
 </div>
 
-<div class="panel"><h3>2. Themes at a glance</h3>
-<svg class="chart" id="themeChart" role="img" aria-label="Bar chart of how many affirmations fall under each theme."></svg>
-<p class="chart-cap">Bar chart: number of affirmations per theme.</p>
+<h3 id="build" style="scroll-margin-top:70px">③ Build your own affirmation</h3>
+<div class="panel">
+<p class="note">Mix and match to make one that fits you today — then copy or save it.</p>
+<div class="builder-grid">
+<div><label class="field" for="bOpen">Opening</label><select id="bOpen"></select></div>
+<div><label class="field" for="bCore">About</label><select id="bCore"></select></div>
+</div>
+<div class="aff-out" id="affOut"></div>
+<div class="btn-row"><button class="btn btn-primary" id="affGen" type="button">Shuffle</button><button class="btn" id="affCopy" type="button">Copy</button><button class="btn" id="affSave" type="button">Save to favourites</button></div>
 </div>
 
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. "Not wanting children is a complete sentence" means…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">You must always explain yourself</div><div class="opt" data-q="0" data-i="1">Your choice needs no further justification</div><div class="opt" data-q="0" data-i="2">Children are bad</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. These lines are best used as…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Weapons in arguments</div><div class="opt" data-q="1" data-i="1">Quiet encouragement and reflection</div><div class="opt" data-q="1" data-i="2">Rules for others</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+<h3 id="quiz" style="scroll-margin-top:70px">④ Quick check</h3>
+<div class="panel"><p class="note">Two quick questions — educational, not a test.</p>
+<div id="quizbox">
+<div class="quiz-q"><strong>1. These affirmations are…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Famous quotations</div><div class="opt" data-q="0" data-i="1">Original lines written for this project</div><div class="opt" data-q="0" data-i="2">Rules you must follow</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+<div class="quiz-q"><strong>2. The best way to use an affirmation is…</strong><div class="opts"><div class="opt" data-q="1" data-i="0">To force a feeling</div><div class="opt" data-q="1" data-i="1">As a gentle, honest reminder that resonates with you</div><div class="opt" data-q="1" data-i="2">To win arguments</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
 </div>
 <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
 <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
 </div>
 
-<div class="panel"><h3>4. Your reflection</h3>
-<label class="field" for="reflect">Write your own one-line affirmation for the life you're choosing.</label>
-<textarea id="reflect" placeholder="Your own line…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">⑤ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which line do you most want to remember on a hard day — and why?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyBtn" type="button">Copy my favourites</button><button class="btn" id="clearBtn" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>An affirmation isn't an argument — it's a steadying hand. Keep the lines that remind you your life is yours to build, and offer the same gentleness to people who choose differently.</p></div>
+<p>An affirmation isn't a spell; it's a sentence you choose to keep nearby. The ones that help are the ones that feel true to you — so take what resonates, write your own, and let the rest go.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../021-antinatalist-quote-archive/index.html">Antinatalist Quote Archive<span>The philosophical side</span></a>
-<a href="../050-childfree-faq/index.html">Childfree FAQ<span>Straight answers</span></a>
+<a href="../021-antinatalist-quote-archive/index.html">Antinatalist Quote Archive<span>The ideas</span></a>
 <a href="../016-personal-peace-checklist/index.html">Personal Peace Checklist<span>Protect your peace</span></a>
-<a href="../072-childfree-bio-generator/index.html">Childfree Bio Generator<span>Put it in a profile</span></a>
+<a href="../019-childfree-couple-planning-board/index.html">Couple Planning Board<span>Build your vision</span></a>
+<a href="../002-childfree-life-intro-guide/book/index.html">The Childfree Life<span>The full companion</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../021-antinatalist-quote-archive/index.html">← Previous</a><a class="btn btn-primary" href="../023-ethics-flashcards/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -1,12 +1,8 @@
-# Stoicism and Antinatalism Notes
+# Stoicism & Antinatalism Notes
 
 *Project 056 · Category: Philosophy · Difficulty: Advanced*
 
-Study notes connecting Stoic ideas with reflective questions about birth.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Six concept note-cards (dichotomy of control, amor fati, premeditatio malorum, oikeiosis, virtue,
+death) each with how it bears on birth questions; a clear myth-buster establishing the Stoics were
+NOT antinatalists (Marcus, Epictetus, Seneca); and a converge/diverge explorer. Factually careful.
+Vanilla JS; DOM test 7/7.

@@ -2,11 +2,7 @@
 
 *Project 055 · Category: Learning Tools · Difficulty: Intermediate*
 
-Compare several positions side by side on key questions.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Compare any two of nine positions (antinatalism, pronatalism, childfree, suffering-focused ethics,
+classical utilitarianism, Stoicism, Buddhism, existentialism, longtermism) side by side across seven
+dimensions, with swap and a glossary that can load a position into the comparison. Neutral; no
+ranking. Vanilla JS; DOM test 7/7.

@@ -1,40 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiz Game: Myth vs Reality · ANCF Digital Projects</title><meta name="description" content="A myth-busting quiz about childfree and antinatalist topics — decide myth or reality, then read the explanation. Keyboard-accessible, with a score and best."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Quiz Game: Myth vs Reality</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiz Game: Myth vs Reality · ANCF Digital Projects</title><meta name="description" content="Myth or reality? Read each statement about antinatalism and childfree life and decide — then see the explanation. A quick, friendly way to test and sharpen what you know, with a score, a streak, and no trick questions."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Myth vs Reality Quiz</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../063-platform-game-boundary-runner/index.html">← Previous</a><a class="btn btn-primary" href="../065-memory-game-ethical-concepts/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 064</span><h2>Quiz Game: Myth vs Reality</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min</span></div></div>
-<p class="lead">Myth or reality? Read each statement and decide — then see the explanation. A quick, friendly way to test (and sharpen) what you know. There are no trick questions, just common mix-ups.</p>
+<div class="proj-head"><span class="num">PROJECT 064</span><h2>Quiz Game: Myth vs Reality</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~10 min · quiz game</span></div></div>
+<p class="lead">Myth or reality? Read each statement and decide — then see the explanation. A quick, friendly way to <strong>test (and sharpen) what you know</strong> about antinatalism and childfree life. There are no trick questions, just a score, a streak, and a little learning each round.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#reflect">② Reflection</a></nav>
 
-<div class="learn"><h3>How to play</h3>
-<ul>
-<li>Read the statement and tap <strong>Myth</strong> or <strong>Reality</strong>.</li>
-<li>See instant feedback and a short explanation.</li>
-<li>Ten rounds; your best score is saved on this device.</li>
-</ul></div>
-
-<div class="panel"><h3>Play</h3>
-<div class="game-hud"><span>Round: <b id="round">0</b>/10</span><span class="spacer"></span><span>Score: <b id="score">0</b> · Best: <b id="best">0</b></span></div>
-<div class="result" id="statement" role="status" aria-live="polite" style="font-size:var(--fs-lg)">Press Start to begin.</div>
-<div class="btn-row" style="margin-top:10px"><button class="btn" id="mythBtn" type="button">Myth</button><button class="btn" id="realBtn" type="button">Reality</button><span class="spacer"></span><button class="btn btn-primary" id="startBtn" type="button">Start</button></div>
-<p class="note" id="fb" role="status" aria-live="polite"></p>
+<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
+<div class="panel">
+<div class="hud"><span>Score: <span id="score">0</span>/<span id="total">0</span></span><span class="best">Streak: <span id="streak">0</span> · Best: <span id="best">0</span></span></div>
+<div class="meter-wrap"><div class="meter" id="meter"></div></div>
+<div id="qhost"></div>
 </div>
 
-<div class="panel"><h3>Your reflection</h3>
-<label class="field" for="reflect">Which one surprised you most?</label>
-<textarea id="reflect" placeholder="Write your own thoughts here…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="saveBtn" type="button">Save</button><button class="btn" id="copyRef" type="button">Copy</button><span class="spacer"></span><span class="note" id="refStatus" role="status" aria-live="polite"></span></div>
-<p class="note">Saved on this device only. Nothing is uploaded.</p>
+<h3 id="reflect" style="scroll-margin-top:70px">② Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Which "myth" had you fooled — or which "reality" surprised you most?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Most "common knowledge" about these topics is a mix of myth and reality. A quick check helps you separate them — and respond to misconceptions with calm, accurate facts.</p></div>
+<p>A lot of "common knowledge" about this topic is myth dressed as fact. Pausing to ask "is that actually true?" — and checking — is a small habit that pays off well beyond a quiz. However you scored, the explanations are the real prize.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../050-childfree-faq/index.html">Childfree FAQ<span>Straight answers</span></a>
-<a href="../051-antinatalism-faq/index.html">Antinatalism FAQ<span>The philosophy</span></a>
-<a href="../065-memory-game-ethical-concepts/index.html">Memory Game<span>Match the terms</span></a>
-<a href="../023-ethics-flashcards/index.html">Ethics Flashcards<span>Learn the terms</span></a>
+<a href="../051-antinatalism-faq/index.html">Antinatalism FAQ<span>The myths, in depth</span></a>
+<a href="../050-childfree-faq/index.html">Childfree FAQ<span>Common questions</span></a>
+<a href="../040-bad-argument-detector/index.html">Bad Argument Detector<span>Spot bad reasoning</span></a>
+<a href="../065-memory-game-ethical-concepts/index.html">Memory Game<span>Learn the terms</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../063-platform-game-boundary-runner/index.html">← Previous</a><a class="btn btn-primary" href="../065-memory-game-ethical-concepts/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

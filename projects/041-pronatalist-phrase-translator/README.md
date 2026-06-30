@@ -2,11 +2,6 @@
 
 *Project 041 · Category: Society · Difficulty: Beginner*
 
-Translate a loaded pressure phrase into what it often assumes underneath.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Translates ten common pressure phrases into their literal meaning, real meaning, hidden assumption,
+and a kind reply. Paste-and-match (keyword scoring) or browse a filterable/searchable library;
+save favourite replies. Framed for understanding, not winning. Vanilla JS; DOM test 8/8.

@@ -2,11 +2,6 @@
 
 *Project 054 · Category: Community Tools · Difficulty: Intermediate*
 
-Organise a small study circle: topics, roles, and questions.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A multi-section reading-group planner: basics (topic/schedule/reading), roles, a dynamic discussion-
+question list (add/remove + seed starters), and six toggleable ground rules. A readiness meter tracks
+completeness; a live exportable plan can be copied. All saved on-device. Vanilla JS; DOM test 8/8.
