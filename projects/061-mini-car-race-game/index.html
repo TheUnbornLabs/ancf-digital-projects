@@ -1,37 +1,1794 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini Car Race Game · ANCF Digital Projects</title><meta name="description" content="Steer between three lanes and slip past the falling pressure blocks. A light, playful metaphor — with a steady hand and a clear eye, you can keep moving past the pressure. Keyboard, buttons, or tap to play."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Mini Car Race Game</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
-<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../060-rationalism-toolkit/index.html">← Previous</a><a class="btn btn-primary" href="../062-pong-game-choice-vs-pressure/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 061</span><h2>Mini Car Race Game</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min · arcade</span></div></div>
-<p class="lead">Steer your car between three lanes and slip past the falling <strong>"pressure" blocks</strong>. It's a light, playful metaphor — a small reminder that with a steady hand and a clear eye, you can keep moving past the pressure. Use the arrow keys, the buttons, or tap the sides of the track.</p>
-<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② The little metaphor</a><a href="#reflect">③ Reflection</a></nav>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mini Car Race Game · ANCF Digital Projects</title>
+  <meta name="description" content="A mobile-first reflection arcade game about steering through pressure, boundaries, and choice." />
+  <style>
+    :root {
+      --bg: #f8f3ea;
+      --paper: #fffaf2;
+      --ink: #201b17;
+      --muted: #6b625a;
+      --line: rgba(32, 27, 23, 0.14);
+      --brand: #5b2d1f;
+      --brand-2: #9d633f;
+      --accent: #d39a42;
+      --good: #28704c;
+      --bad: #a33b31;
+      --focus: #0f5d7a;
+      --shadow: 0 18px 45px rgba(32, 27, 23, 0.13);
+      --radius: 24px;
+    }
 
-<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
-<div class="panel">
-<div class="hud"><span>Score: <span id="score">0</span></span><span class="best">Best: <span id="best">0</span></span></div>
-<div class="gamewrap"><canvas id="cv" width="300" height="440" aria-label="Car racing game"></canvas>
-<div class="overlay show" id="overlay"><h4 id="ovTitle">Mini Car Race</h4><p id="ovMsg">Dodge the falling blocks. Left / Right to steer.</p><button class="btn btn-primary" id="startBtn" type="button">Start</button></div></div>
-<div class="controls"><button class="gbtn" id="leftBtn" aria-label="Steer left">◀</button><button class="gbtn" id="rightBtn" aria-label="Steer right">▶</button></div>
-</div>
+    [data-theme="dark"] {
+      --bg: #11100f;
+      --paper: #1b1815;
+      --ink: #f6eee4;
+      --muted: #c6b8aa;
+      --line: rgba(246, 238, 228, 0.14);
+      --brand: #f0bf71;
+      --brand-2: #d99c55;
+      --accent: #efc15f;
+      --good: #63d197;
+      --bad: #ff7d71;
+      --focus: #75c9ef;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    }
 
-<h3 id="about" style="scroll-margin-top:70px">② The little metaphor</h3>
-<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+    * {
+      box-sizing: border-box;
+    }
 
-<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
-<div class="panel"><p class="note">Saved on this device only.</p>
-<label class="field" for="r1">A playful question: what's one "block" of pressure you've learned to steer around lately?</label>
-<textarea id="r1" placeholder="Write freely…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
-</div>
+    html {
+      scroll-behavior: smooth;
+    }
 
-<div class="takeaway"><h3>Key takeaway</h3>
-<p>It's only a little game — but there's a grain of truth in it. Pressure tends to keep coming; you don't have to crash into it. A small adjustment here, a clear look ahead there, and you keep moving in the direction you chose. Play for fun, and take the metaphor as lightly as you like.</p></div>
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(211, 154, 66, 0.20), transparent 34rem),
+        radial-gradient(circle at bottom right, rgba(91, 45, 31, 0.16), transparent 36rem),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
 
-<div class="panel"><h3>Continue exploring</h3>
-<div class="related">
-<a href="../062-pong-game-choice-vs-pressure/index.html">Pong: Choice vs Pressure<span>Keep the rally going</span></a>
-<a href="../067-auntie-uncle-chase-arcade-game/index.html">Chase Arcade<span>Collect freedom tokens</span></a>
-<a href="../070-freedom-points-game/index.html">Freedom Points<span>Choices, not reflexes</span></a>
-<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>The serious version</span></a>
-</div></div>
-<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
-<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../060-rationalism-toolkit/index.html">← Previous</a><a class="btn btn-primary" href="../062-pong-game-choice-vs-pressure/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 0;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 0.8rem 1rem;
+      z-index: 999;
+    }
+
+    .skip-link:focus {
+      left: 1rem;
+      top: 1rem;
+      border-radius: 999px;
+    }
+
+    .shell {
+      width: min(1100px, calc(100% - 28px));
+      margin: 0 auto;
+    }
+
+    header.site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 68px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: #fff7eb;
+      box-shadow: var(--shadow);
+      font-size: 0.78rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.55rem;
+    }
+
+    .chip,
+    .btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 0.62rem 0.9rem;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(32, 27, 23, 0.06);
+      user-select: none;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #fff7eb;
+      border-color: transparent;
+    }
+
+    .btn.warn {
+      background: color-mix(in srgb, var(--bad) 12%, var(--paper));
+      color: var(--ink);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .btn:focus-visible,
+    .chip:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 50%, transparent);
+      outline-offset: 3px;
+    }
+
+    main {
+      padding: 2rem 0 3rem;
+    }
+
+    .hero {
+      padding: 2rem 0 1.2rem;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.6rem;
+      align-items: center;
+    }
+
+    .kicker {
+      color: var(--brand);
+      font-weight: 950;
+      letter-spacing: 0.13em;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0.25rem 0 0.7rem;
+      font-size: clamp(2rem, 5vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 1.07rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .meta-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+      box-shadow: 0 12px 35px rgba(32, 27, 23, 0.08);
+    }
+
+    .meta-card b {
+      display: block;
+      font-size: 1.2rem;
+    }
+
+    .meta-card span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 69px;
+      z-index: 20;
+      padding: 0.75rem 0;
+      margin-bottom: 1rem;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 0.55rem;
+      overflow-x: auto;
+      padding-bottom: 0.1rem;
+    }
+
+    section {
+      margin: 1rem 0 1.25rem;
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--paper) 95%, transparent);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 1.15rem 1.2rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .panel-head h2,
+    .panel h3 {
+      margin: 0;
+      letter-spacing: -0.035em;
+    }
+
+    .panel-body {
+      padding: 1.1rem;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 470px) minmax(260px, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .game-card {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--paper) 90%, #ffffff 10%), var(--paper));
+      padding: 1rem;
+      box-shadow: 0 16px 40px rgba(32, 27, 23, 0.10);
+    }
+
+    .game-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .game-title-row h3 {
+      font-size: 1.25rem;
+    }
+
+    .status-pill {
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--accent) 14%, var(--paper));
+      color: var(--ink);
+      font-size: 0.82rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .score-box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.65rem;
+      background: color-mix(in srgb, var(--paper) 82%, var(--bg));
+      min-height: 70px;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .score-box b {
+      font-size: 1.2rem;
+      line-height: 1.1;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: #161616;
+      touch-action: none;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 4.35;
+      touch-action: none;
+      background: #202020;
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(0,0,0,0.52);
+      color: #fff7eb;
+      text-align: center;
+      transition: opacity 180ms ease;
+    }
+
+    .canvas-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-card {
+      width: min(330px, 92%);
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(20, 16, 13, 0.78);
+      border-radius: 24px;
+      padding: 1.1rem;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.38);
+    }
+
+    .overlay-card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .overlay-card p {
+      margin: 0.5rem 0 1rem;
+      color: rgba(255,247,235,0.82);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-top: 0.8rem;
+    }
+
+    .controls .btn {
+      min-height: 58px;
+      font-size: 1.2rem;
+      touch-action: manipulation;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.55rem;
+      margin-top: 0.65rem;
+    }
+
+    .control-row .btn {
+      min-height: 46px;
+      font-size: 0.95rem;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .mini-panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: color-mix(in srgb, var(--paper) 92%, var(--bg));
+      padding: 1rem;
+    }
+
+    .mini-panel h3 {
+      margin-bottom: 0.55rem;
+    }
+
+    .mini-panel p {
+      margin: 0.4rem 0;
+      color: var(--muted);
+    }
+
+    .phase-list,
+    .stat-list {
+      display: grid;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .phase-list li,
+    .stat-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.65rem 0.75rem;
+      background: color-mix(in srgb, var(--paper) 88%, var(--bg));
+    }
+
+    .phase-list strong,
+    .stat-list strong {
+      color: var(--ink);
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.8rem;
+    }
+
+    .toggle {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.72rem 0.65rem;
+      background: var(--paper);
+      cursor: pointer;
+      font-weight: 850;
+      color: var(--ink);
+    }
+
+    .toggle[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--accent) 25%, var(--paper));
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    }
+
+    .reflection-card {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .reflection-output {
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0.9rem;
+      background: color-mix(in srgb, var(--accent) 10%, var(--paper));
+      font-weight: 800;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0.9rem;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .reflection-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .continue-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+      background: var(--paper);
+      box-shadow: 0 12px 32px rgba(32, 27, 23, 0.08);
+    }
+
+    .continue-card b {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .continue-card span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 2rem 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 880px) {
+      .hero,
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .meta-grid,
+      .cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .shell {
+        width: min(100% - 18px, 1100px);
+      }
+
+      .topbar {
+        align-items: flex-start;
+        padding: 0.75rem 0;
+        flex-direction: column;
+      }
+
+      .nav-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .nav-actions .chip,
+      .nav-actions .btn {
+        padding-inline: 0.72rem;
+        min-height: 38px;
+        font-size: 0.88rem;
+      }
+
+      main {
+        padding-top: 1rem;
+      }
+
+      .hero {
+        padding-top: 1rem;
+      }
+
+      .meta-grid,
+      .scoreboard,
+      .cards,
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-body,
+      .game-card {
+        padding: 0.75rem;
+      }
+
+      .scoreboard {
+        gap: 0.45rem;
+      }
+
+      .score-box {
+        min-height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .tabs {
+        top: 113px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#play">Skip to game</a>
+
+  <header class="site-header">
+    <div class="shell topbar">
+      <a class="brand" href="../../index.html" aria-label="ANCF Digital Projects home">
+        <span class="brand-mark">ANCF</span>
+        <span>ANCF Digital Projects</span>
+      </a>
+
+      <nav class="nav-actions" aria-label="Project navigation">
+        <a class="chip" href="../../index.html">← Back to Home</a>
+        <a class="chip" href="../060-rationalism-toolkit/index.html">← Previous</a>
+        <a class="chip" href="../062-pong-game-choice-vs-pressure/index.html">Next →</a>
+        <button class="btn ghost" id="themeBtn" type="button" aria-label="Toggle dark mode">☾ Dark</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="shell">
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <div class="kicker">Project 061 · Games · Beginner · Arcade</div>
+        <h1 id="pageTitle">Mini Car Race Game</h1>
+        <p class="lede">
+          Steer through pressure without surrendering the wheel. Dodge social blocks, collect boundary tools,
+          and use the crash reflection to name what pressure tries to do.
+        </p>
+      </div>
+
+      <div class="meta-grid" aria-label="Project facts">
+        <div class="meta-card">
+          <b>Mobile-first</b>
+          <span>Swipe, tap, buttons, or keyboard.</span>
+        </div>
+        <div class="meta-card">
+          <b>Local only</b>
+          <span>Best score and notes stay on this device.</span>
+        </div>
+        <div class="meta-card">
+          <b>5 phases</b>
+          <span>Difficulty rises with survival time.</span>
+        </div>
+        <div class="meta-card">
+          <b>No tracking</b>
+          <span>Static HTML, CSS, and JavaScript.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" aria-label="Page sections">
+      <div class="tab-row">
+        <a class="chip" href="#play">① Play</a>
+        <a class="chip" href="#metaphor">② The little metaphor</a>
+        <a class="chip" href="#reflection">③ Reflection</a>
+        <a class="chip" href="#continue">④ Continue</a>
+      </div>
+    </div>
+
+    <section id="play" class="panel" aria-labelledby="playTitle">
+      <div class="panel-head">
+        <h2 id="playTitle">① Play</h2>
+        <span class="status-pill" id="gameStateText">Ready</span>
+      </div>
+
+      <div class="panel-body">
+        <div class="game-layout">
+          <div class="game-card">
+            <div class="game-title-row">
+              <h3>Pressure Road</h3>
+              <span class="status-pill" id="phaseText">Phase 1 · Light pressure</span>
+            </div>
+
+            <div class="scoreboard" aria-label="Game scoreboard">
+              <div class="score-box"><span>Score</span><b id="scoreText">0</b></div>
+              <div class="score-box"><span>Best</span><b id="bestText">0</b></div>
+              <div class="score-box"><span>Time</span><b id="timeText">0.0s</b></div>
+            </div>
+
+            <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="gameCanvas" width="720" height="1044" aria-label="Mini car race game canvas"></canvas>
+
+              <div class="canvas-overlay" id="startOverlay">
+                <div class="overlay-card">
+                  <h3>Steer clean.</h3>
+                  <p>Dodge pressure blocks. Collect boundary tools. Use ◀ ▶, buttons, tap sides, or swipe.</p>
+                  <button class="btn primary" id="overlayStartBtn" type="button">Start Game</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="controls" aria-label="Movement controls">
+              <button class="btn" id="leftBtn" type="button" aria-label="Move left">◀ Left</button>
+              <button class="btn" id="rightBtn" type="button" aria-label="Move right">Right ▶</button>
+            </div>
+
+            <div class="control-row" aria-label="Game actions">
+              <button class="btn primary" id="startBtn" type="button">Start</button>
+              <button class="btn" id="pauseBtn" type="button">Pause</button>
+              <button class="btn warn" id="restartBtn" type="button">Restart</button>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="mini-panel">
+              <h3>How to play</h3>
+              <p><strong>Move:</strong> arrow keys, A/D, touch buttons, tap left/right side, or swipe.</p>
+              <p><strong>Avoid:</strong> family, gossip, marriage, status, and reproduction pressure blocks.</p>
+              <p><strong>Collect:</strong> shields, calm, self-respect boosts, and clear choices.</p>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Live stats</h3>
+              <ul class="stat-list">
+                <li><span>Phase reached</span><strong id="phaseReachedText">1</strong></li>
+                <li><span>Near misses</span><strong id="nearMissText">0</strong></li>
+                <li><span>Pickups collected</span><strong id="pickupText">0</strong></li>
+                <li><span>Shield</span><strong id="shieldText">Off</strong></li>
+              </ul>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Settings</h3>
+              <p>Use these when playing on smaller screens or older devices.</p>
+              <div class="settings-grid">
+                <button class="toggle" id="muteToggle" type="button" aria-pressed="false">Sound: On</button>
+                <button class="toggle" id="motionToggle" type="button" aria-pressed="false">Reduce motion: Off</button>
+                <button class="toggle" id="contrastToggle" type="button" aria-pressed="false">Contrast: Normal</button>
+              </div>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Phases</h3>
+              <ul class="phase-list">
+                <li><span>1</span><strong>Light pressure</strong></li>
+                <li><span>2</span><strong>Social pressure</strong></li>
+                <li><span>3</span><strong>Family pressure</strong></li>
+                <li><span>4</span><strong>Status pressure</strong></li>
+                <li><span>5</span><strong>Boundary mastery</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metaphor" class="panel" aria-labelledby="metaphorTitle">
+      <div class="panel-head">
+        <h2 id="metaphorTitle">② The little metaphor</h2>
+      </div>
+      <div class="panel-body">
+        <p>
+          The road is ordinary life. The blocks are outside demands. The car is your attention.
+          Good play is not aggression; it is timely movement. You do not have to smash every pressure.
+          Often, the cleanest answer is to steer past it and keep possession of your direction.
+        </p>
+        <p>
+          This is still only a small game. Its job is not to preach. Its job is to make one thing visible:
+          pressure keeps coming, but collision is not the only possible response.
+        </p>
+      </div>
+    </section>
+
+    <section id="reflection" class="panel" aria-labelledby="reflectionTitle">
+      <div class="panel-head">
+        <h2 id="reflectionTitle">③ Your reflection</h2>
+        <span class="status-pill">Saved on this device only</span>
+      </div>
+
+      <div class="panel-body reflection-card">
+        <div>
+          <h3>Crash reflection</h3>
+          <div class="reflection-output" id="reflectionOutput">
+            Play once. If you crash, this box will name the pressure that caught you.
+          </div>
+        </div>
+
+        <label for="reflectionText">
+          <strong>A playful question:</strong>
+          what is one “block” of pressure you have learned to steer around lately?
+        </label>
+        <textarea id="reflectionText" placeholder="Write a private note. It stays in this browser only."></textarea>
+
+        <div class="reflection-actions">
+          <button class="btn primary" id="saveReflectionBtn" type="button">Save Reflection</button>
+          <button class="btn" id="clearReflectionBtn" type="button">Clear</button>
+          <span class="status-pill" id="reflectionStatus">Not saved yet</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="takeawayTitle">
+      <div class="panel-head">
+        <h2 id="takeawayTitle">Key takeaway</h2>
+      </div>
+      <div class="panel-body">
+        <p>
+          A boundary is not a wall against life. It is steering. You are not required to crash into every
+          demand just because someone placed it on your road.
+        </p>
+      </div>
+    </section>
+
+    <section id="continue" class="panel" aria-labelledby="continueTitle">
+      <div class="panel-head">
+        <h2 id="continueTitle">④ Continue exploring</h2>
+      </div>
+      <div class="panel-body">
+        <div class="cards">
+          <a class="continue-card" href="../060-rationalism-toolkit/index.html">
+            <b>Rationalism Toolkit</b>
+            <span>Think sharper, argue better.</span>
+          </a>
+          <a class="continue-card" href="../062-pong-game-choice-vs-pressure/index.html">
+            <b>Pong: Choice vs Pressure</b>
+            <span>Keep the rally going.</span>
+          </a>
+          <a class="continue-card" href="../063-platform-game-boundary-runner/index.html">
+            <b>Boundary Runner</b>
+            <span>Platform your way to freedom.</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <p>
+        This project is for education and reflection, not medical, legal, financial, or mental health advice.
+      </p>
+      <p>
+        ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection.
+        · <a href="../../index.html">All 100 projects</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const storageKeys = {
+        best: "ancf_061_best_score",
+        note: "ancf_061_reflection",
+        theme: "ancf_theme",
+        mute: "ancf_061_mute",
+        motion: "ancf_061_reduce_motion",
+        contrast: "ancf_061_high_contrast"
+      };
+
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const wrap = document.getElementById("canvasWrap");
+      const overlay = document.getElementById("startOverlay");
+
+      const scoreText = document.getElementById("scoreText");
+      const bestText = document.getElementById("bestText");
+      const timeText = document.getElementById("timeText");
+      const phaseText = document.getElementById("phaseText");
+      const gameStateText = document.getElementById("gameStateText");
+      const phaseReachedText = document.getElementById("phaseReachedText");
+      const nearMissText = document.getElementById("nearMissText");
+      const pickupText = document.getElementById("pickupText");
+      const shieldText = document.getElementById("shieldText");
+      const reflectionOutput = document.getElementById("reflectionOutput");
+      const reflectionText = document.getElementById("reflectionText");
+      const reflectionStatus = document.getElementById("reflectionStatus");
+
+      const startBtn = document.getElementById("startBtn");
+      const overlayStartBtn = document.getElementById("overlayStartBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const restartBtn = document.getElementById("restartBtn");
+      const leftBtn = document.getElementById("leftBtn");
+      const rightBtn = document.getElementById("rightBtn");
+      const saveReflectionBtn = document.getElementById("saveReflectionBtn");
+      const clearReflectionBtn = document.getElementById("clearReflectionBtn");
+      const themeBtn = document.getElementById("themeBtn");
+      const muteToggle = document.getElementById("muteToggle");
+      const motionToggle = document.getElementById("motionToggle");
+      const contrastToggle = document.getElementById("contrastToggle");
+
+      const phases = [
+        { id: 1, name: "Light pressure", from: 0, speed: 168, spawn: 940 },
+        { id: 2, name: "Social pressure", from: 15, speed: 205, spawn: 820 },
+        { id: 3, name: "Family pressure", from: 32, speed: 246, spawn: 700 },
+        { id: 4, name: "Status pressure", from: 52, speed: 292, spawn: 600 },
+        { id: 5, name: "Boundary mastery", from: 78, speed: 345, spawn: 510 }
+      ];
+
+      const pressureTypes = [
+        {
+          key: "family",
+          label: "Family",
+          short: "Family",
+          color: "#bb4a3a",
+          message: "Family pressure: A family expectation is not a life contract."
+        },
+        {
+          key: "gossip",
+          label: "Gossip",
+          short: "Gossip",
+          color: "#8e5ec7",
+          message: "Gossip pressure: Noise is not authority."
+        },
+        {
+          key: "marriage",
+          label: "Marriage",
+          short: "Marriage",
+          color: "#c06b37",
+          message: "Marriage pressure: A timeline is not a command."
+        },
+        {
+          key: "status",
+          label: "Status",
+          short: "Status",
+          color: "#3f78b5",
+          message: "Status pressure: Respectability is not freedom."
+        },
+        {
+          key: "reproduction",
+          label: "Reproduction",
+          short: "Repro",
+          color: "#a73866",
+          message: "Reproduction pressure: A choice is ethical only when it is free."
+        }
+      ];
+
+      const pickupTypes = [
+        { key: "shield", label: "Boundary Shield", short: "Shield", color: "#3fb57f" },
+        { key: "boost", label: "Self-Respect Boost", short: "Boost", color: "#e0a83a" },
+        { key: "calm", label: "Calm Mind", short: "Calm", color: "#4eb3cf" },
+        { key: "choice", label: "Clear Choice", short: "Choice", color: "#f0d36d" }
+      ];
+
+      let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      let view = { w: 360, h: 522, roadX: 42, roadW: 276, laneW: 92 };
+      let raf = null;
+      let lastFrame = 0;
+      let spawnClock = 0;
+      let pickupClock = 0;
+      let shakeClock = 0;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchStartTime = 0;
+
+      const state = {
+        running: false,
+        paused: false,
+        over: false,
+        score: 0,
+        best: Number(localStorage.getItem(storageKeys.best) || 0),
+        elapsed: 0,
+        phase: phases[0],
+        highestPhase: 1,
+        nearMisses: 0,
+        pickups: 0,
+        shield: 0,
+        speedBoostUntil: 0,
+        calmUntil: 0,
+        player: {
+          lane: 1,
+          targetLane: 1,
+          x: 0,
+          y: 0,
+          w: 42,
+          h: 64
+        },
+        obstacles: [],
+        pickupsOnRoad: [],
+        particles: [],
+        muted: localStorage.getItem(storageKeys.mute) === "true",
+        reduceMotion: localStorage.getItem(storageKeys.motion) === "true",
+        highContrast: localStorage.getItem(storageKeys.contrast) === "true"
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function rand(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function choice(list) {
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      function formatTime(seconds) {
+        return `${seconds.toFixed(1)}s`;
+      }
+
+      function laneCenter(lane) {
+        return view.roadX + lane * view.laneW + view.laneW / 2;
+      }
+
+      function resizeCanvas() {
+        const rect = wrap.getBoundingClientRect();
+        const cssW = Math.max(280, Math.min(rect.width, 520));
+        const cssH = Math.round(cssW * 1.45);
+
+        dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        canvas.width = Math.floor(cssW * dpr);
+        canvas.height = Math.floor(cssH * dpr);
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        view.w = cssW;
+        view.h = cssH;
+        view.roadX = Math.round(cssW * 0.12);
+        view.roadW = Math.round(cssW * 0.76);
+        view.laneW = view.roadW / 3;
+
+        state.player.w = Math.max(36, view.laneW * 0.42);
+        state.player.h = state.player.w * 1.45;
+        state.player.y = view.h - state.player.h - 28;
+        state.player.x = laneCenter(state.player.lane);
+
+        draw();
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.over = false;
+        state.score = 0;
+        state.elapsed = 0;
+        state.phase = phases[0];
+        state.highestPhase = 1;
+        state.nearMisses = 0;
+        state.pickups = 0;
+        state.shield = 0;
+        state.speedBoostUntil = 0;
+        state.calmUntil = 0;
+        state.player.lane = 1;
+        state.player.targetLane = 1;
+        state.player.x = laneCenter(1);
+        state.obstacles = [];
+        state.pickupsOnRoad = [];
+        state.particles = [];
+        spawnClock = 0;
+        pickupClock = 0;
+        shakeClock = 0;
+        reflectionOutput.textContent = "Play once. If you crash, this box will name the pressure that caught you.";
+        gameStateText.textContent = "Ready";
+        phaseText.textContent = "Phase 1 · Light pressure";
+        overlay.classList.remove("hidden");
+        overlay.querySelector("h3").textContent = "Steer clean.";
+        overlay.querySelector("p").textContent = "Dodge pressure blocks. Collect boundary tools. Use ◀ ▶, buttons, tap sides, or swipe.";
+        overlayStartBtn.textContent = "Start Game";
+        updateHud();
+        draw();
+      }
+
+      function startGame() {
+        if (state.running && !state.over) return;
+
+        if (state.over) {
+          resetGame();
+        }
+
+        state.running = true;
+        state.paused = false;
+        state.over = false;
+        overlay.classList.add("hidden");
+        gameStateText.textContent = "Playing";
+        lastFrame = performance.now();
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
+      }
+
+      function pauseGame() {
+        if (!state.running || state.over) return;
+        state.paused = !state.paused;
+
+        if (state.paused) {
+          gameStateText.textContent = "Paused";
+          overlay.classList.remove("hidden");
+          overlay.querySelector("h3").textContent = "Paused";
+          overlay.querySelector("p").textContent = "Take a breath. Pressure does not require panic.";
+          overlayStartBtn.textContent = "Resume";
+        } else {
+          gameStateText.textContent = "Playing";
+          overlay.classList.add("hidden");
+          lastFrame = performance.now();
+          raf = requestAnimationFrame(loop);
+        }
+      }
+
+      function gameOver(type) {
+        state.running = false;
+        state.paused = false;
+        state.over = true;
+        gameStateText.textContent = "Game over";
+        shakeClock = state.reduceMotion ? 0 : 360;
+
+        if (state.score > state.best) {
+          state.best = state.score;
+          localStorage.setItem(storageKeys.best, String(state.best));
+        }
+
+        const message = type?.message || "Pressure caught the car. Reset, name it, and steer again.";
+        reflectionOutput.textContent = message;
+
+        overlay.classList.remove("hidden");
+        overlay.querySelector("h3").textContent = "Crash.";
+        overlay.querySelector("p").textContent =
+          `${message} Score ${state.score}. Time ${formatTime(state.elapsed)}. Phase ${state.highestPhase}.`;
+        overlayStartBtn.textContent = "Play Again";
+
+        updateHud();
+        draw();
+      }
+
+      function move(direction) {
+        if (!state.running || state.paused || state.over) return;
+        state.player.targetLane = clamp(state.player.targetLane + direction, 0, 2);
+        state.player.lane = state.player.targetLane;
+        beep(direction < 0 ? 230 : 280, 0.025, 0.025);
+      }
+
+      function currentPhase() {
+        let result = phases[0];
+        for (const phase of phases) {
+          if (state.elapsed >= phase.from) result = phase;
+        }
+        return result;
+      }
+
+      function spawnObstacle() {
+        const lane = Math.floor(rand(0, 3));
+        const type = choice(pressureTypes);
+        const w = Math.max(56, view.laneW * 0.72);
+        const h = Math.max(42, view.laneW * 0.50);
+        state.obstacles.push({
+          lane,
+          x: laneCenter(lane),
+          y: -h - rand(0, 20),
+          w,
+          h,
+          type,
+          counted: false,
+          nearCounted: false,
+          passed: false
+        });
+      }
+
+      function spawnPickup() {
+        const lane = Math.floor(rand(0, 3));
+        const type = choice(pickupTypes);
+        const size = Math.max(36, view.laneW * 0.40);
+        state.pickupsOnRoad.push({
+          lane,
+          x: laneCenter(lane),
+          y: -size - rand(0, 20),
+          size,
+          type,
+          pulse: rand(0, Math.PI * 2)
+        });
+      }
+
+      function collectPickup(pickup) {
+        state.pickups += 1;
+        state.score += pickup.type.key === "choice" ? 90 : 60;
+
+        if (pickup.type.key === "shield") {
+          state.shield = Math.min(2, state.shield + 1);
+        }
+
+        if (pickup.type.key === "boost") {
+          state.speedBoostUntil = state.elapsed + 7;
+        }
+
+        if (pickup.type.key === "calm") {
+          state.calmUntil = state.elapsed + 6;
+        }
+
+        createBurst(pickup.x, pickup.y, pickup.type.color, 10);
+        beep(520, 0.04, 0.04);
+      }
+
+      function rectsOverlap(a, b) {
+        return (
+          Math.abs(a.x - b.x) < (a.w + b.w) / 2 &&
+          Math.abs(a.y - b.y) < (a.h + b.h) / 2
+        );
+      }
+
+      function createBurst(x, y, color, count) {
+        if (state.reduceMotion) return;
+        for (let i = 0; i < count; i += 1) {
+          state.particles.push({
+            x,
+            y,
+            vx: rand(-80, 80),
+            vy: rand(-120, 40),
+            life: rand(0.25, 0.65),
+            maxLife: 0.65,
+            color,
+            size: rand(2, 5)
+          });
+        }
+      }
+
+      function loop(now) {
+        if (!state.running || state.paused || state.over) return;
+
+        const dt = Math.min(0.033, (now - lastFrame) / 1000 || 0);
+        lastFrame = now;
+        update(dt);
+        draw();
+
+        raf = requestAnimationFrame(loop);
+      }
+
+      function update(dt) {
+        state.elapsed += dt;
+        state.phase = currentPhase();
+        state.highestPhase = Math.max(state.highestPhase, state.phase.id);
+
+        const targetX = laneCenter(state.player.targetLane);
+        const moveRate = state.reduceMotion ? 1 : Math.min(1, dt * 12);
+        state.player.x += (targetX - state.player.x) * moveRate;
+
+        let speed = state.phase.speed;
+        if (state.calmUntil > state.elapsed) speed *= 0.72;
+
+        const boostMultiplier = state.speedBoostUntil > state.elapsed ? 1.7 : 1;
+        state.score += Math.round(dt * 11 * boostMultiplier);
+
+        spawnClock += dt * 1000;
+        pickupClock += dt * 1000;
+
+        const spawnTarget = Math.max(350, state.phase.spawn - state.elapsed * 2.6);
+        if (spawnClock >= spawnTarget) {
+          spawnClock = 0;
+          spawnObstacle();
+          if (state.phase.id >= 3 && Math.random() < 0.28) {
+            setTimeout(() => {
+              if (state.running && !state.paused && !state.over) spawnObstacle();
+            }, 180);
+          }
+        }
+
+        const pickupTarget = 4300 - Math.min(1200, state.elapsed * 8);
+        if (pickupClock >= pickupTarget) {
+          pickupClock = 0;
+          if (Math.random() < 0.78) spawnPickup();
+        }
+
+        const playerRect = {
+          x: state.player.x,
+          y: state.player.y + state.player.h / 2,
+          w: state.player.w * 0.74,
+          h: state.player.h * 0.82
+        };
+
+        state.obstacles.forEach((ob) => {
+          ob.y += speed * dt;
+
+          const obRect = { x: ob.x, y: ob.y + ob.h / 2, w: ob.w * 0.86, h: ob.h * 0.82 };
+
+          if (!ob.nearCounted && ob.y > state.player.y - ob.h && ob.y < state.player.y + state.player.h) {
+            const laneGap = Math.abs(ob.lane - state.player.targetLane);
+            if (laneGap === 1) {
+              ob.nearCounted = true;
+              state.nearMisses += 1;
+              state.score += 35;
+              beep(370, 0.025, 0.025);
+            }
+          }
+
+          if (!ob.passed && ob.y > state.player.y + state.player.h + 8) {
+            ob.passed = true;
+            state.score += 18;
+          }
+
+          if (rectsOverlap(playerRect, obRect)) {
+            if (state.shield > 0) {
+              state.shield -= 1;
+              ob.dead = true;
+              state.score += 120;
+              createBurst(ob.x, ob.y + ob.h / 2, "#65d394", 16);
+              beep(160, 0.06, 0.06);
+            } else {
+              createBurst(state.player.x, state.player.y, ob.type.color, 22);
+              gameOver(ob.type);
+            }
+          }
+        });
+
+        state.pickupsOnRoad.forEach((p) => {
+          p.y += speed * 0.82 * dt;
+          p.pulse += dt * 5;
+
+          const pRect = { x: p.x, y: p.y, w: p.size, h: p.size };
+          if (rectsOverlap(playerRect, pRect)) {
+            p.dead = true;
+            collectPickup(p);
+          }
+        });
+
+        state.obstacles = state.obstacles.filter((ob) => !ob.dead && ob.y < view.h + 90);
+        state.pickupsOnRoad = state.pickupsOnRoad.filter((p) => !p.dead && p.y < view.h + 70);
+
+        state.particles.forEach((p) => {
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 260 * dt;
+        });
+        state.particles = state.particles.filter((p) => p.life > 0);
+
+        if (shakeClock > 0) shakeClock -= dt * 1000;
+
+        updateHud();
+      }
+
+      function updateHud() {
+        scoreText.textContent = String(Math.floor(state.score));
+        bestText.textContent = String(Math.max(state.best, Math.floor(state.score)));
+        timeText.textContent = formatTime(state.elapsed);
+        phaseText.textContent = `Phase ${state.phase.id} · ${state.phase.name}`;
+        phaseReachedText.textContent = String(state.highestPhase);
+        nearMissText.textContent = String(state.nearMisses);
+        pickupText.textContent = String(state.pickups);
+        shieldText.textContent = state.shield > 0 ? `On ×${state.shield}` : "Off";
+      }
+
+      function draw() {
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+
+        let shakeX = 0;
+        let shakeY = 0;
+        if (shakeClock > 0 && !state.reduceMotion) {
+          shakeX = rand(-4, 4);
+          shakeY = rand(-3, 3);
+        }
+
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
+        drawBackground(w, h);
+        drawRoad(w, h);
+        drawPickups();
+        drawObstacles();
+        drawPlayer();
+        drawParticles();
+        drawEffectLabels();
+        ctx.restore();
+      }
+
+      function drawBackground(w, h) {
+        const sky = ctx.createLinearGradient(0, 0, 0, h);
+        if (state.highContrast) {
+          sky.addColorStop(0, "#090909");
+          sky.addColorStop(1, "#202020");
+        } else {
+          sky.addColorStop(0, "#2b241e");
+          sky.addColorStop(0.44, "#4b3829");
+          sky.addColorStop(1, "#241d19");
+        }
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalAlpha = state.highContrast ? 0.10 : 0.16;
+        for (let i = 0; i < 18; i += 1) {
+          const x = (i * 73 + state.elapsed * 12) % (w + 80) - 40;
+          const y = (i * 41 + state.elapsed * 20) % h;
+          ctx.beginPath();
+          ctx.arc(x, y, 1.4 + (i % 3), 0, Math.PI * 2);
+          ctx.fillStyle = "#fff7d7";
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawRoad(w, h) {
+        const x = view.roadX;
+        const roadW = view.roadW;
+        const laneW = view.laneW;
+
+        ctx.fillStyle = state.highContrast ? "#050505" : "#242424";
+        roundRect(x, -12, roadW, h + 24, 24);
+        ctx.fill();
+
+        const edgeColor = state.highContrast ? "#ffffff" : "#e0b15c";
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(x + 3, 0);
+        ctx.lineTo(x + 3, h);
+        ctx.moveTo(x + roadW - 3, 0);
+        ctx.lineTo(x + roadW - 3, h);
+        ctx.stroke();
+
+        ctx.strokeStyle = state.highContrast ? "rgba(255,255,255,0.9)" : "rgba(255,247,235,0.65)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([20, 18]);
+
+        const offset = (state.elapsed * (state.phase.speed * 0.42)) % 38;
+        for (let i = 1; i < 3; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(x + laneW * i, -38 + offset);
+          ctx.lineTo(x + laneW * i, h + 38);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        ctx.globalAlpha = 0.16;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x + 8, 0, 2, h);
+        ctx.globalAlpha = 1;
+      }
+
+      function drawPlayer() {
+        const p = state.player;
+        const x = p.x;
+        const y = p.y;
+        const w = p.w;
+        const h = p.h;
+
+        if (state.shield > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.34 + Math.sin(state.elapsed * 8) * 0.08;
+          ctx.strokeStyle = "#76dfab";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.ellipse(x, y + h / 2, w * 0.82, h * 0.65, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.translate(x, y + h / 2);
+
+        ctx.fillStyle = state.highContrast ? "#ffffff" : "#f3c35d";
+        roundRect(-w / 2, -h / 2 + 8, w, h - 12, 12);
+        ctx.fill();
+
+        ctx.fillStyle = state.highContrast ? "#000000" : "#6b2f22";
+        roundRect(-w * 0.32, -h * 0.28, w * 0.64, h * 0.32, 8);
+        ctx.fill();
+
+        ctx.fillStyle = state.highContrast ? "#ffffff" : "#201b17";
+        roundRect(-w * 0.43, h * 0.08, w * 0.18, h * 0.28, 5);
+        roundRect(w * 0.25, h * 0.08, w * 0.18, h * 0.28, 5);
+        ctx.fill();
+
+        ctx.fillStyle = state.highContrast ? "#ffef86" : "#fff5a8";
+        ctx.beginPath();
+        ctx.arc(-w * 0.25, -h * 0.42, 3.2, 0, Math.PI * 2);
+        ctx.arc(w * 0.25, -h * 0.42, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawObstacles() {
+        for (const ob of state.obstacles) {
+          const x = ob.x - ob.w / 2;
+          const y = ob.y;
+          ctx.save();
+          ctx.fillStyle = state.highContrast ? "#ff4b4b" : ob.type.color;
+          roundRect(x, y, ob.w, ob.h, 12);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,255,255,0.58)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = "#fff7eb";
+          ctx.font = `900 ${Math.max(11, ob.w * 0.15)}px ui-sans-serif, system-ui`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(ob.type.short, ob.x, y + ob.h / 2);
+
+          ctx.restore();
+        }
+      }
+
+      function drawPickups() {
+        for (const p of state.pickupsOnRoad) {
+          const pulse = state.reduceMotion ? 0 : Math.sin(p.pulse) * 2.5;
+          const size = p.size + pulse;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.fillStyle = state.highContrast ? "#76ff9f" : p.type.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,255,255,0.72)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = "#17120f";
+          ctx.font = `900 ${Math.max(9, size * 0.22)}px ui-sans-serif, system-ui`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(p.type.short, 0, 0);
+          ctx.restore();
+        }
+      }
+
+      function drawParticles() {
+        for (const p of state.particles) {
+          ctx.save();
+          ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawEffectLabels() {
+        const labels = [];
+        if (state.shield > 0) labels.push(`Shield ×${state.shield}`);
+        if (state.speedBoostUntil > state.elapsed) labels.push("Self-respect boost");
+        if (state.calmUntil > state.elapsed) labels.push("Calm mind");
+
+        if (!labels.length) return;
+
+        ctx.save();
+        ctx.font = "900 12px ui-sans-serif, system-ui";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        let y = 14;
+        for (const label of labels) {
+          const width = ctx.measureText(label).width + 18;
+          ctx.fillStyle = "rgba(0,0,0,0.52)";
+          roundRect(12, y, width, 26, 999);
+          ctx.fill();
+          ctx.fillStyle = "#fff7eb";
+          ctx.fillText(label, 21, y + 7);
+          y += 32;
+        }
+        ctx.restore();
+      }
+
+      function roundRect(x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      let audioCtx = null;
+      function beep(freq, duration, volume) {
+        if (state.muted) return;
+
+        try {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.frequency.value = freq;
+          osc.type = "sine";
+          gain.gain.value = volume;
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (err) {
+          state.muted = true;
+          localStorage.setItem(storageKeys.mute, "true");
+          updateToggles();
+        }
+      }
+
+      function updateToggles() {
+        muteToggle.setAttribute("aria-pressed", String(state.muted));
+        muteToggle.textContent = state.muted ? "Sound: Off" : "Sound: On";
+
+        motionToggle.setAttribute("aria-pressed", String(state.reduceMotion));
+        motionToggle.textContent = state.reduceMotion ? "Reduce motion: On" : "Reduce motion: Off";
+
+        contrastToggle.setAttribute("aria-pressed", String(state.highContrast));
+        contrastToggle.textContent = state.highContrast ? "Contrast: High" : "Contrast: Normal";
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        themeBtn.textContent = theme === "dark" ? "☀ Light" : "☾ Dark";
+        localStorage.setItem(storageKeys.theme, theme);
+      }
+
+      function initTheme() {
+        const saved = localStorage.getItem(storageKeys.theme);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyTheme(saved || (prefersDark ? "dark" : "light"));
+      }
+
+      function saveReflection() {
+        localStorage.setItem(storageKeys.note, reflectionText.value.trim());
+        reflectionStatus.textContent = "Saved";
+      }
+
+      function clearReflection() {
+        reflectionText.value = "";
+        localStorage.removeItem(storageKeys.note);
+        reflectionStatus.textContent = "Cleared";
+      }
+
+      function loadReflection() {
+        const saved = localStorage.getItem(storageKeys.note) || "";
+        reflectionText.value = saved;
+        reflectionStatus.textContent = saved ? "Loaded saved note" : "Not saved yet";
+      }
+
+      function bindEvents() {
+        startBtn.addEventListener("click", startGame);
+        overlayStartBtn.addEventListener("click", () => {
+          if (state.paused) pauseGame();
+          else startGame();
+        });
+        pauseBtn.addEventListener("click", pauseGame);
+        restartBtn.addEventListener("click", () => {
+          resetGame();
+          startGame();
+        });
+
+        leftBtn.addEventListener("click", () => move(-1));
+        rightBtn.addEventListener("click", () => move(1));
+
+        document.addEventListener("keydown", (event) => {
+          const key = event.key.toLowerCase();
+          if (["arrowleft", "a"].includes(key)) {
+            event.preventDefault();
+            move(-1);
+          }
+          if (["arrowright", "d"].includes(key)) {
+            event.preventDefault();
+            move(1);
+          }
+          if (key === " " || key === "enter") {
+            event.preventDefault();
+            if (!state.running || state.over) startGame();
+            else pauseGame();
+          }
+        });
+
+        wrap.addEventListener("pointerdown", (event) => {
+          touchStartX = event.clientX;
+          touchStartY = event.clientY;
+          touchStartTime = performance.now();
+        }, { passive: true });
+
+        wrap.addEventListener("pointerup", (event) => {
+          if (!state.running || state.paused || state.over) return;
+
+          const dx = event.clientX - touchStartX;
+          const dy = event.clientY - touchStartY;
+          const age = performance.now() - touchStartTime;
+
+          if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) && age < 600) {
+            move(dx < 0 ? -1 : 1);
+            return;
+          }
+
+          const rect = wrap.getBoundingClientRect();
+          const localX = event.clientX - rect.left;
+          move(localX < rect.width / 2 ? -1 : 1);
+        }, { passive: true });
+
+        wrap.addEventListener("touchmove", (event) => {
+          if (state.running) event.preventDefault();
+        }, { passive: false });
+
+        themeBtn.addEventListener("click", () => {
+          const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+          applyTheme(current === "dark" ? "light" : "dark");
+        });
+
+        muteToggle.addEventListener("click", () => {
+          state.muted = !state.muted;
+          localStorage.setItem(storageKeys.mute, String(state.muted));
+          updateToggles();
+        });
+
+        motionToggle.addEventListener("click", () => {
+          state.reduceMotion = !state.reduceMotion;
+          localStorage.setItem(storageKeys.motion, String(state.reduceMotion));
+          updateToggles();
+        });
+
+        contrastToggle.addEventListener("click", () => {
+          state.highContrast = !state.highContrast;
+          localStorage.setItem(storageKeys.contrast, String(state.highContrast));
+          updateToggles();
+          draw();
+        });
+
+        saveReflectionBtn.addEventListener("click", saveReflection);
+        clearReflectionBtn.addEventListener("click", clearReflection);
+
+        window.addEventListener("resize", resizeCanvas);
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden && state.running && !state.paused && !state.over) {
+            pauseGame();
+          }
+        });
+      }
+
+      function boot() {
+        initTheme();
+        loadReflection();
+        updateToggles();
+        bestText.textContent = String(state.best);
+        bindEvents();
+        resizeCanvas();
+        resetGame();
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
