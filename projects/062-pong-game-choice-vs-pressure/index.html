@@ -1,37 +1,1954 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pong: Choice vs Pressure · ANCF Digital Projects</title><meta name="description" content="Keep 'Choice' bouncing and don't let it drop. The longer you rally, the faster it gets — a light reminder that staying in the game just takes a steady paddle and a calm eye. Keyboard, buttons, or drag to play."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Pong: Choice vs Pressure</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
-<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../061-mini-car-race-game/index.html">← Previous</a><a class="btn btn-primary" href="../063-platform-game-boundary-runner/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 062</span><h2>Pong: Choice vs Pressure</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~5 min · arcade</span></div></div>
-<p class="lead">Keep <strong>"Choice"</strong> bouncing and don't let it drop. Each time your paddle sends it back, you score — and it speeds up a little. A light reminder that staying in the game just takes a <strong>steady paddle and a calm eye</strong>. Move with the arrow keys, the buttons, or by dragging across the court.</p>
-<nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#about">② The little metaphor</a><a href="#reflect">③ Reflection</a></nav>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pong: Choice vs Pressure · ANCF Digital Projects</title>
+  <meta name="description" content="A mobile-first Pong reflection game about keeping choice in play under pressure." />
+  <style>
+    :root {
+      --bg: #f8f3ea;
+      --paper: #fffaf2;
+      --ink: #201b17;
+      --muted: #6b625a;
+      --line: rgba(32, 27, 23, 0.14);
+      --brand: #5b2d1f;
+      --brand-2: #9d633f;
+      --accent: #d39a42;
+      --good: #28704c;
+      --bad: #a33b31;
+      --focus: #0f5d7a;
+      --shadow: 0 18px 45px rgba(32, 27, 23, 0.13);
+      --radius: 24px;
+    }
 
-<h3 id="game" style="scroll-margin-top:70px">① Play</h3>
-<div class="panel">
-<div class="hud"><span>Rally: <span id="score">0</span></span><span class="best">Best: <span id="best">0</span></span></div>
-<div class="gamewrap"><canvas id="cv" width="300" height="440" aria-label="Pong game"></canvas>
-<div class="overlay show" id="overlay"><h4 id="ovTitle">Choice vs Pressure</h4><p id="ovMsg">Keep "Choice" in play. Left / Right to move your paddle.</p><button class="btn btn-primary" id="startBtn" type="button">Start</button></div></div>
-<div class="controls"><button class="gbtn" id="leftBtn" aria-label="Move left">◀</button><button class="gbtn" id="rightBtn" aria-label="Move right">▶</button></div>
-</div>
+    [data-theme="dark"] {
+      --bg: #11100f;
+      --paper: #1b1815;
+      --ink: #f6eee4;
+      --muted: #c6b8aa;
+      --line: rgba(246, 238, 228, 0.14);
+      --brand: #f0bf71;
+      --brand-2: #d99c55;
+      --accent: #efc15f;
+      --good: #63d197;
+      --bad: #ff7d71;
+      --focus: #75c9ef;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    }
 
-<h3 id="about" style="scroll-margin-top:70px">② The little metaphor</h3>
-<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+    * {
+      box-sizing: border-box;
+    }
 
-<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
-<div class="panel"><p class="note">Saved on this device only.</p>
-<label class="field" for="r1">A playful question: what helps you "keep the rally going" when pressure picks up speed?</label>
-<textarea id="r1" placeholder="Write freely…"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
-</div>
+    html {
+      scroll-behavior: smooth;
+    }
 
-<div class="takeaway"><h3>Key takeaway</h3>
-<p>Pressure, like the ball, tends to come back faster the longer things go on. You don't have to smash it away — just keep your paddle under it, calm and ready. Staying in the game is its own kind of winning. Play for fun; hold the metaphor lightly.</p></div>
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(211, 154, 66, 0.20), transparent 34rem),
+        radial-gradient(circle at bottom right, rgba(91, 45, 31, 0.16), transparent 36rem),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
 
-<div class="panel"><h3>Continue exploring</h3>
-<div class="related">
-<a href="../061-mini-car-race-game/index.html">Mini Car Race<span>Dodge the blocks</span></a>
-<a href="../063-platform-game-boundary-runner/index.html">Boundary Runner<span>Hop the hurdles</span></a>
-<a href="../070-freedom-points-game/index.html">Freedom Points<span>Choices, not reflexes</span></a>
-<a href="../016-personal-peace-checklist/index.html">Peace Checklist<span>The serious version</span></a>
-</div></div>
-<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
-<div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../061-mini-car-race-game/index.html">← Previous</a><a class="btn btn-primary" href="../063-platform-game-boundary-runner/index.html">Next →</a></div>
-</main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 0;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 0.8rem 1rem;
+      z-index: 999;
+    }
+
+    .skip-link:focus {
+      left: 1rem;
+      top: 1rem;
+      border-radius: 999px;
+    }
+
+    .shell {
+      width: min(1100px, calc(100% - 28px));
+      margin: 0 auto;
+    }
+
+    header.site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 68px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: #fff7eb;
+      box-shadow: var(--shadow);
+      font-size: 0.78rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.55rem;
+    }
+
+    .chip,
+    .btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 0.62rem 0.9rem;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(32, 27, 23, 0.06);
+      user-select: none;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: #fff7eb;
+      border-color: transparent;
+    }
+
+    .btn.warn {
+      background: color-mix(in srgb, var(--bad) 12%, var(--paper));
+      color: var(--ink);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .btn:focus-visible,
+    .chip:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 50%, transparent);
+      outline-offset: 3px;
+    }
+
+    main {
+      padding: 2rem 0 3rem;
+    }
+
+    .hero {
+      padding: 2rem 0 1.2rem;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.6rem;
+      align-items: center;
+    }
+
+    .kicker {
+      color: var(--brand);
+      font-weight: 950;
+      letter-spacing: 0.13em;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0.25rem 0 0.7rem;
+      font-size: clamp(2rem, 5vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 1.07rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .meta-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+      box-shadow: 0 12px 35px rgba(32, 27, 23, 0.08);
+    }
+
+    .meta-card b {
+      display: block;
+      font-size: 1.2rem;
+    }
+
+    .meta-card span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 69px;
+      z-index: 20;
+      padding: 0.75rem 0;
+      margin-bottom: 1rem;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 0.55rem;
+      overflow-x: auto;
+      padding-bottom: 0.1rem;
+    }
+
+    section {
+      margin: 1rem 0 1.25rem;
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--paper) 95%, transparent);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 1.15rem 1.2rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .panel-head h2,
+    .panel h3 {
+      margin: 0;
+      letter-spacing: -0.035em;
+    }
+
+    .panel-body {
+      padding: 1.1rem;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 500px) minmax(260px, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .game-card {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--paper) 90%, #ffffff 10%), var(--paper));
+      padding: 1rem;
+      box-shadow: 0 16px 40px rgba(32, 27, 23, 0.10);
+    }
+
+    .game-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .game-title-row h3 {
+      font-size: 1.25rem;
+    }
+
+    .status-pill {
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--accent) 14%, var(--paper));
+      color: var(--ink);
+      font-size: 0.82rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .score-box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.65rem;
+      background: color-mix(in srgb, var(--paper) 82%, var(--bg));
+      min-height: 70px;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .score-box b {
+      font-size: 1.2rem;
+      line-height: 1.1;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: #161616;
+      touch-action: none;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 4.05;
+      touch-action: none;
+      background: #202020;
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(0,0,0,0.52);
+      color: #fff7eb;
+      text-align: center;
+      transition: opacity 180ms ease;
+    }
+
+    .canvas-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .overlay-card {
+      width: min(340px, 92%);
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(20, 16, 13, 0.78);
+      border-radius: 24px;
+      padding: 1.1rem;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.38);
+    }
+
+    .overlay-card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .overlay-card p {
+      margin: 0.5rem 0 1rem;
+      color: rgba(255,247,235,0.82);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-top: 0.8rem;
+    }
+
+    .controls .btn {
+      min-height: 58px;
+      font-size: 1.2rem;
+      touch-action: manipulation;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.55rem;
+      margin-top: 0.65rem;
+    }
+
+    .control-row .btn {
+      min-height: 46px;
+      font-size: 0.95rem;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .mini-panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: color-mix(in srgb, var(--paper) 92%, var(--bg));
+      padding: 1rem;
+    }
+
+    .mini-panel h3 {
+      margin-bottom: 0.55rem;
+    }
+
+    .mini-panel p {
+      margin: 0.4rem 0;
+      color: var(--muted);
+    }
+
+    .phase-list,
+    .stat-list {
+      display: grid;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .phase-list li,
+    .stat-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.65rem 0.75rem;
+      background: color-mix(in srgb, var(--paper) 88%, var(--bg));
+    }
+
+    .phase-list strong,
+    .stat-list strong {
+      color: var(--ink);
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.8rem;
+    }
+
+    .toggle {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.72rem 0.65rem;
+      background: var(--paper);
+      cursor: pointer;
+      font-weight: 850;
+      color: var(--ink);
+    }
+
+    .toggle[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--accent) 25%, var(--paper));
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    }
+
+    .reflection-card {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .reflection-output {
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0.9rem;
+      background: color-mix(in srgb, var(--accent) 10%, var(--paper));
+      font-weight: 800;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0.9rem;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .reflection-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .continue-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1rem;
+      background: var(--paper);
+      box-shadow: 0 12px 32px rgba(32, 27, 23, 0.08);
+    }
+
+    .continue-card b {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .continue-card span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 2rem 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 930px) {
+      .hero,
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .meta-grid,
+      .cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .shell {
+        width: min(100% - 18px, 1100px);
+      }
+
+      .topbar {
+        align-items: flex-start;
+        padding: 0.75rem 0;
+        flex-direction: column;
+      }
+
+      .nav-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .nav-actions .chip,
+      .nav-actions .btn {
+        padding-inline: 0.72rem;
+        min-height: 38px;
+        font-size: 0.88rem;
+      }
+
+      main {
+        padding-top: 1rem;
+      }
+
+      .hero {
+        padding-top: 1rem;
+      }
+
+      .meta-grid,
+      .scoreboard,
+      .cards,
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-body,
+      .game-card {
+        padding: 0.75rem;
+      }
+
+      .scoreboard {
+        gap: 0.45rem;
+      }
+
+      .score-box {
+        min-height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .tabs {
+        top: 113px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#play">Skip to game</a>
+
+  <header class="site-header">
+    <div class="shell topbar">
+      <a class="brand" href="../../index.html" aria-label="ANCF Digital Projects home">
+        <span class="brand-mark">ANCF</span>
+        <span>ANCF Digital Projects</span>
+      </a>
+
+      <nav class="nav-actions" aria-label="Project navigation">
+        <a class="chip" href="../../index.html">← Back to Home</a>
+        <a class="chip" href="../061-mini-car-race-game/index.html">← Previous</a>
+        <a class="chip" href="../063-platform-game-boundary-runner/index.html">Next →</a>
+        <button class="btn ghost" id="themeBtn" type="button" aria-label="Toggle dark mode">☾ Dark</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="shell">
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <div class="kicker">Project 062 · Games · Beginner · Arcade</div>
+        <h1 id="pageTitle">Pong: Choice vs Pressure</h1>
+        <p class="lede">
+          Keep Choice in play while pressure ricochets back faster. Move the paddle, break pressure blocks,
+          catch boundary tools, and use the final reflection to name what nearly made you drop the rally.
+        </p>
+      </div>
+
+      <div class="meta-grid" aria-label="Project facts">
+        <div class="meta-card">
+          <b>Mobile-first</b>
+          <span>Drag, tap buttons, keyboard, or pointer control.</span>
+        </div>
+        <div class="meta-card">
+          <b>Local only</b>
+          <span>Best rally and reflections stay on this device.</span>
+        </div>
+        <div class="meta-card">
+          <b>5 phases</b>
+          <span>Speed and pressure density rise with skill.</span>
+        </div>
+        <div class="meta-card">
+          <b>No tracking</b>
+          <span>Static HTML, CSS, and JavaScript only.</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="tabs" aria-label="Page sections">
+      <div class="tab-row">
+        <a class="chip" href="#play">① Play</a>
+        <a class="chip" href="#metaphor">② The little metaphor</a>
+        <a class="chip" href="#reflection">③ Reflection</a>
+        <a class="chip" href="#continue">④ Continue</a>
+      </div>
+    </div>
+
+    <section id="play" class="panel" aria-labelledby="playTitle">
+      <div class="panel-head">
+        <h2 id="playTitle">① Play</h2>
+        <span class="status-pill" id="gameStateText">Ready</span>
+      </div>
+
+      <div class="panel-body">
+        <div class="game-layout">
+          <div class="game-card">
+            <div class="game-title-row">
+              <h3>Choice Rally</h3>
+              <span class="status-pill" id="phaseText">Phase 1 · Calm start</span>
+            </div>
+
+            <div class="scoreboard" aria-label="Game scoreboard">
+              <div class="score-box"><span>Rally</span><b id="rallyText">0</b></div>
+              <div class="score-box"><span>Best</span><b id="bestText">0</b></div>
+              <div class="score-box"><span>Time</span><b id="timeText">0.0s</b></div>
+            </div>
+
+            <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="gameCanvas" width="720" height="972" aria-label="Pong choice versus pressure game canvas"></canvas>
+
+              <div class="canvas-overlay" id="startOverlay">
+                <div class="overlay-card">
+                  <h3>Keep Choice alive.</h3>
+                  <p>Move the paddle. Return the ball. Break pressure blocks. Catch tools when they fall.</p>
+                  <button class="btn primary" id="overlayStartBtn" type="button">Start Game</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="controls" aria-label="Movement controls">
+              <button class="btn" id="leftBtn" type="button" aria-label="Move left">◀ Left</button>
+              <button class="btn" id="rightBtn" type="button" aria-label="Move right">Right ▶</button>
+            </div>
+
+            <div class="control-row" aria-label="Game actions">
+              <button class="btn primary" id="startBtn" type="button">Start</button>
+              <button class="btn" id="pauseBtn" type="button">Pause</button>
+              <button class="btn warn" id="restartBtn" type="button">Restart</button>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="mini-panel">
+              <h3>How to play</h3>
+              <p><strong>Move:</strong> drag across the court, use arrow keys/A-D, or tap the left/right buttons.</p>
+              <p><strong>Return:</strong> bounce Choice back before it falls below the paddle.</p>
+              <p><strong>Break:</strong> pressure blocks. Each block can speed, bend, or disrupt the ball.</p>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Live stats</h3>
+              <ul class="stat-list">
+                <li><span>Phase reached</span><strong id="phaseReachedText">1</strong></li>
+                <li><span>Pressure broken</span><strong id="pressureBrokenText">0</strong></li>
+                <li><span>Pickups collected</span><strong id="pickupText">0</strong></li>
+                <li><span>Shield</span><strong id="shieldText">Off</strong></li>
+              </ul>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Settings</h3>
+              <p>Use these for smaller screens, older devices, or quiet play.</p>
+              <div class="settings-grid">
+                <button class="toggle" id="muteToggle" type="button" aria-pressed="false">Sound: On</button>
+                <button class="toggle" id="motionToggle" type="button" aria-pressed="false">Reduce motion: Off</button>
+                <button class="toggle" id="contrastToggle" type="button" aria-pressed="false">Contrast: Normal</button>
+              </div>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Phases</h3>
+              <ul class="phase-list">
+                <li><span>1</span><strong>Calm start</strong></li>
+                <li><span>2</span><strong>Social noise</strong></li>
+                <li><span>3</span><strong>Family command</strong></li>
+                <li><span>4</span><strong>Status chase</strong></li>
+                <li><span>5</span><strong>Boundary mastery</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="metaphor" class="panel" aria-labelledby="metaphorTitle">
+      <div class="panel-head">
+        <h2 id="metaphorTitle">② The little metaphor</h2>
+      </div>
+      <div class="panel-body">
+        <p>
+          The ball is Choice. The paddle is attention. The pressure blocks are the slogans, gossip,
+          status expectations, timelines, and family commands that try to change the angle of your life.
+        </p>
+        <p>
+          A clean return is not a violent answer. It is controlled timing. You do not need to defeat every voice.
+          You need enough steadiness to keep Choice in play.
+        </p>
+      </div>
+    </section>
+
+    <section id="reflection" class="panel" aria-labelledby="reflectionTitle">
+      <div class="panel-head">
+        <h2 id="reflectionTitle">③ Your reflection</h2>
+        <span class="status-pill">Saved on this device only</span>
+      </div>
+
+      <div class="panel-body reflection-card">
+        <div>
+          <h3>Rally reflection</h3>
+          <div class="reflection-output" id="reflectionOutput">
+            Play once. When Choice drops, this box will name the strongest pressure in the rally.
+          </div>
+        </div>
+
+        <label for="reflectionText">
+          <strong>A playful question:</strong>
+          what helps you keep the rally going when pressure picks up speed?
+        </label>
+        <textarea id="reflectionText" placeholder="Write a private note. It stays in this browser only."></textarea>
+
+        <div class="reflection-actions">
+          <button class="btn primary" id="saveReflectionBtn" type="button">Save Reflection</button>
+          <button class="btn" id="clearReflectionBtn" type="button">Clear</button>
+          <span class="status-pill" id="reflectionStatus">Not saved yet</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="takeawayTitle">
+      <div class="panel-head">
+        <h2 id="takeawayTitle">Key takeaway</h2>
+      </div>
+      <div class="panel-body">
+        <p>
+          Pressure returns. That is normal. The answer is not panic. It is position, timing, and a paddle
+          steady enough to keep Choice from falling out of play.
+        </p>
+      </div>
+    </section>
+
+    <section id="continue" class="panel" aria-labelledby="continueTitle">
+      <div class="panel-head">
+        <h2 id="continueTitle">④ Continue exploring</h2>
+      </div>
+      <div class="panel-body">
+        <div class="cards">
+          <a class="continue-card" href="../061-mini-car-race-game/index.html">
+            <b>Mini Car Race</b>
+            <span>Dodge pressure blocks.</span>
+          </a>
+          <a class="continue-card" href="../063-platform-game-boundary-runner/index.html">
+            <b>Boundary Runner</b>
+            <span>Hop the hurdles.</span>
+          </a>
+          <a class="continue-card" href="../064-quiz-game-myth-vs-reality/index.html">
+            <b>Myth vs Reality Quiz</b>
+            <span>Test what you know.</span>
+          </a>
+          <a class="continue-card" href="../065-memory-game-ethical-concepts/index.html">
+            <b>Memory: Ethical Concepts</b>
+            <span>Flip and match.</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <p>
+        This project is for education and reflection, not medical, legal, financial, or mental health advice.
+      </p>
+      <p>
+        ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection.
+        · <a href="../../index.html">All 100 projects</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const storageKeys = {
+        best: "ancf_062_best_rally",
+        note: "ancf_062_reflection",
+        theme: "ancf_theme",
+        mute: "ancf_062_mute",
+        motion: "ancf_062_reduce_motion",
+        contrast: "ancf_062_high_contrast"
+      };
+
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const wrap = document.getElementById("canvasWrap");
+      const overlay = document.getElementById("startOverlay");
+
+      const rallyText = document.getElementById("rallyText");
+      const bestText = document.getElementById("bestText");
+      const timeText = document.getElementById("timeText");
+      const phaseText = document.getElementById("phaseText");
+      const gameStateText = document.getElementById("gameStateText");
+      const phaseReachedText = document.getElementById("phaseReachedText");
+      const pressureBrokenText = document.getElementById("pressureBrokenText");
+      const pickupText = document.getElementById("pickupText");
+      const shieldText = document.getElementById("shieldText");
+      const reflectionOutput = document.getElementById("reflectionOutput");
+      const reflectionText = document.getElementById("reflectionText");
+      const reflectionStatus = document.getElementById("reflectionStatus");
+
+      const startBtn = document.getElementById("startBtn");
+      const overlayStartBtn = document.getElementById("overlayStartBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const restartBtn = document.getElementById("restartBtn");
+      const leftBtn = document.getElementById("leftBtn");
+      const rightBtn = document.getElementById("rightBtn");
+      const saveReflectionBtn = document.getElementById("saveReflectionBtn");
+      const clearReflectionBtn = document.getElementById("clearReflectionBtn");
+      const themeBtn = document.getElementById("themeBtn");
+      const muteToggle = document.getElementById("muteToggle");
+      const motionToggle = document.getElementById("motionToggle");
+      const contrastToggle = document.getElementById("contrastToggle");
+
+      const phases = [
+        { id: 1, name: "Calm start", from: 0, ballSpeed: 265, blockRows: 1, blockChance: 0.55 },
+        { id: 2, name: "Social noise", from: 6, ballSpeed: 310, blockRows: 2, blockChance: 0.68 },
+        { id: 3, name: "Family command", from: 14, ballSpeed: 360, blockRows: 2, blockChance: 0.76 },
+        { id: 4, name: "Status chase", from: 24, ballSpeed: 420, blockRows: 3, blockChance: 0.82 },
+        { id: 5, name: "Boundary mastery", from: 38, ballSpeed: 485, blockRows: 3, blockChance: 0.88 }
+      ];
+
+      const pressureTypes = [
+        {
+          key: "gossip",
+          label: "Gossip",
+          short: "Gossip",
+          color: "#8e5ec7",
+          impulse: 1.02,
+          message: "Gossip pressure: noise is not authority."
+        },
+        {
+          key: "family",
+          label: "Family",
+          short: "Family",
+          color: "#bb4a3a",
+          impulse: 1.04,
+          message: "Family pressure: love is not permission to command your life."
+        },
+        {
+          key: "marriage",
+          label: "Marriage",
+          short: "Marriage",
+          color: "#c06b37",
+          impulse: 1.05,
+          message: "Marriage pressure: a timeline is not a command."
+        },
+        {
+          key: "status",
+          label: "Status",
+          short: "Status",
+          color: "#3f78b5",
+          impulse: 1.06,
+          message: "Status pressure: respectability is not freedom."
+        },
+        {
+          key: "repro",
+          label: "Reproduction",
+          short: "Repro",
+          color: "#a73866",
+          impulse: 1.07,
+          message: "Reproduction pressure: a choice is ethical only when it is free."
+        }
+      ];
+
+      const pickupTypes = [
+        { key: "shield", label: "Boundary Shield", short: "Shield", color: "#3fb57f" },
+        { key: "wide", label: "Wider Paddle", short: "Wide", color: "#e0a83a" },
+        { key: "calm", label: "Calm Ball", short: "Calm", color: "#4eb3cf" },
+        { key: "focus", label: "Focus Bonus", short: "Focus", color: "#f0d36d" }
+      ];
+
+      const state = {
+        running: false,
+        paused: false,
+        over: false,
+        best: Number(localStorage.getItem(storageKeys.best) || 0),
+        rally: 0,
+        elapsed: 0,
+        phase: phases[0],
+        highestPhase: 1,
+        pressureBroken: 0,
+        pickups: 0,
+        shield: 0,
+        wideUntil: 0,
+        calmUntil: 0,
+        focusUntil: 0,
+        lastPressure: null,
+        paddle: {
+          x: 0,
+          y: 0,
+          w: 96,
+          h: 14,
+          targetX: 0,
+          speed: 510
+        },
+        ball: {
+          x: 0,
+          y: 0,
+          r: 9,
+          vx: 0,
+          vy: 0,
+          trail: []
+        },
+        blocks: [],
+        pickupsOnCourt: [],
+        particles: [],
+        muted: localStorage.getItem(storageKeys.mute) === "true",
+        reduceMotion: localStorage.getItem(storageKeys.motion) === "true",
+        highContrast: localStorage.getItem(storageKeys.contrast) === "true"
+      };
+
+      let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+      let view = { w: 360, h: 486 };
+      let raf = null;
+      let lastFrame = 0;
+      let pickupClock = 0;
+      let rebuildClock = 0;
+      let shakeClock = 0;
+      let holdDirection = 0;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function rand(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function choice(list) {
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      function formatTime(seconds) {
+        return `${seconds.toFixed(1)}s`;
+      }
+
+      function resizeCanvas() {
+        const rect = wrap.getBoundingClientRect();
+        const cssW = Math.max(280, Math.min(rect.width, 540));
+        const cssH = Math.round(cssW * 1.35);
+
+        dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        canvas.width = Math.floor(cssW * dpr);
+        canvas.height = Math.floor(cssH * dpr);
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        view.w = cssW;
+        view.h = cssH;
+        state.paddle.y = view.h - 52;
+        state.paddle.x = clamp(state.paddle.x || view.w / 2, 45, view.w - 45);
+        state.paddle.targetX = state.paddle.x;
+
+        if (!state.running) {
+          state.ball.x = view.w / 2;
+          state.ball.y = view.h * 0.58;
+        }
+
+        draw();
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.over = false;
+        state.rally = 0;
+        state.elapsed = 0;
+        state.phase = phases[0];
+        state.highestPhase = 1;
+        state.pressureBroken = 0;
+        state.pickups = 0;
+        state.shield = 0;
+        state.wideUntil = 0;
+        state.calmUntil = 0;
+        state.focusUntil = 0;
+        state.lastPressure = null;
+        state.paddle.w = Math.max(88, view.w * 0.26);
+        state.paddle.h = Math.max(13, view.h * 0.028);
+        state.paddle.x = view.w / 2;
+        state.paddle.targetX = view.w / 2;
+        state.ball.r = Math.max(8, view.w * 0.024);
+        state.ball.x = view.w / 2;
+        state.ball.y = view.h * 0.58;
+        state.ball.vx = 0;
+        state.ball.vy = 0;
+        state.ball.trail = [];
+        state.blocks = [];
+        state.pickupsOnCourt = [];
+        state.particles = [];
+        pickupClock = 0;
+        rebuildClock = 0;
+        shakeClock = 0;
+        buildPressureWall();
+        reflectionOutput.textContent = "Play once. When Choice drops, this box will name the strongest pressure in the rally.";
+        gameStateText.textContent = "Ready";
+        phaseText.textContent = "Phase 1 · Calm start";
+        overlay.classList.remove("hidden");
+        overlay.querySelector("h3").textContent = "Keep Choice alive.";
+        overlay.querySelector("p").textContent = "Move the paddle. Return the ball. Break pressure blocks. Catch tools when they fall.";
+        overlayStartBtn.textContent = "Start Game";
+        updateHud();
+        draw();
+      }
+
+      function startGame() {
+        if (state.running && !state.over) return;
+
+        if (state.over) {
+          resetGame();
+        }
+
+        state.running = true;
+        state.paused = false;
+        state.over = false;
+        overlay.classList.add("hidden");
+        gameStateText.textContent = "Playing";
+
+        const speed = state.phase.ballSpeed;
+        const angle = rand(-0.65, 0.65);
+        state.ball.vx = Math.sin(angle) * speed;
+        state.ball.vy = -Math.cos(angle) * speed;
+
+        lastFrame = performance.now();
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
+      }
+
+      function pauseGame() {
+        if (!state.running || state.over) return;
+        state.paused = !state.paused;
+
+        if (state.paused) {
+          gameStateText.textContent = "Paused";
+          overlay.classList.remove("hidden");
+          overlay.querySelector("h3").textContent = "Paused";
+          overlay.querySelector("p").textContent = "Hold the paddle. A pause is also a boundary.";
+          overlayStartBtn.textContent = "Resume";
+        } else {
+          gameStateText.textContent = "Playing";
+          overlay.classList.add("hidden");
+          lastFrame = performance.now();
+          raf = requestAnimationFrame(loop);
+        }
+      }
+
+      function gameOver() {
+        state.running = false;
+        state.paused = false;
+        state.over = true;
+        gameStateText.textContent = "Game over";
+        shakeClock = state.reduceMotion ? 0 : 360;
+
+        if (state.rally > state.best) {
+          state.best = state.rally;
+          localStorage.setItem(storageKeys.best, String(state.best));
+        }
+
+        const pressure = state.lastPressure;
+        const message = pressure
+          ? pressure.message
+          : "Dropped rally: Choice fell because the paddle was not under it in time.";
+
+        reflectionOutput.textContent = message;
+
+        overlay.classList.remove("hidden");
+        overlay.querySelector("h3").textContent = "Choice dropped.";
+        overlay.querySelector("p").textContent =
+          `${message} Rally ${state.rally}. Time ${formatTime(state.elapsed)}. Phase ${state.highestPhase}.`;
+        overlayStartBtn.textContent = "Play Again";
+
+        beep(115, 0.12, 0.08);
+        updateHud();
+        draw();
+      }
+
+      function buildPressureWall() {
+        state.blocks = [];
+
+        const phase = state.phase;
+        const cols = 5;
+        const rows = phase.blockRows;
+        const marginX = Math.max(18, view.w * 0.05);
+        const gap = Math.max(6, view.w * 0.018);
+        const usableW = view.w - marginX * 2;
+        const blockW = (usableW - gap * (cols - 1)) / cols;
+        const blockH = Math.max(26, view.h * 0.06);
+        const startY = Math.max(36, view.h * 0.09);
+
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < cols; col += 1) {
+            if (Math.random() > phase.blockChance) continue;
+            const type = choice(pressureTypes);
+            state.blocks.push({
+              x: marginX + col * (blockW + gap),
+              y: startY + row * (blockH + gap),
+              w: blockW,
+              h: blockH,
+              type,
+              hp: phase.id >= 5 && Math.random() < 0.22 ? 2 : 1,
+              pulse: rand(0, Math.PI * 2)
+            });
+          }
+        }
+
+        if (state.blocks.length < 3) {
+          for (let i = 0; i < 3; i += 1) {
+            const type = choice(pressureTypes);
+            state.blocks.push({
+              x: marginX + i * (blockW + gap),
+              y: startY,
+              w: blockW,
+              h: blockH,
+              type,
+              hp: 1,
+              pulse: rand(0, Math.PI * 2)
+            });
+          }
+        }
+      }
+
+      function currentPhase() {
+        let result = phases[0];
+        for (const phase of phases) {
+          if (state.rally >= phase.from) result = phase;
+        }
+        return result;
+      }
+
+      function spawnPickup() {
+        const type = choice(pickupTypes);
+        const size = Math.max(28, view.w * 0.075);
+        state.pickupsOnCourt.push({
+          x: rand(size, view.w - size),
+          y: -size,
+          vy: rand(55, 85) + state.phase.id * 8,
+          size,
+          type,
+          pulse: rand(0, Math.PI * 2)
+        });
+      }
+
+      function loop(now) {
+        if (!state.running || state.paused || state.over) return;
+
+        const dt = Math.min(0.033, (now - lastFrame) / 1000 || 0);
+        lastFrame = now;
+        update(dt);
+        draw();
+
+        raf = requestAnimationFrame(loop);
+      }
+
+      function update(dt) {
+        state.elapsed += dt;
+        const nextPhase = currentPhase();
+        if (nextPhase.id !== state.phase.id) {
+          state.phase = nextPhase;
+          state.highestPhase = Math.max(state.highestPhase, state.phase.id);
+          buildPressureWall();
+          createBurst(view.w / 2, view.h * 0.22, "#f0bf71", 28);
+          beep(600, 0.06, 0.05);
+        }
+
+        state.highestPhase = Math.max(state.highestPhase, state.phase.id);
+
+        if (holdDirection !== 0) {
+          state.paddle.targetX += holdDirection * state.paddle.speed * dt;
+        }
+
+        const paddleW = paddleWidth();
+        state.paddle.targetX = clamp(state.paddle.targetX, paddleW / 2 + 8, view.w - paddleW / 2 - 8);
+        const follow = state.reduceMotion ? 1 : Math.min(1, dt * 13);
+        state.paddle.x += (state.paddle.targetX - state.paddle.x) * follow;
+
+        updateBall(dt);
+        updatePickups(dt);
+        updateParticles(dt);
+
+        rebuildClock += dt;
+        if (state.blocks.length <= 2 && rebuildClock > 1.3) {
+          rebuildClock = 0;
+          buildPressureWall();
+        }
+
+        pickupClock += dt;
+        const pickupInterval = Math.max(4.2, 7.3 - state.phase.id * 0.35);
+        if (pickupClock >= pickupInterval) {
+          pickupClock = 0;
+          if (Math.random() < 0.84) spawnPickup();
+        }
+
+        if (shakeClock > 0) shakeClock -= dt * 1000;
+        updateHud();
+      }
+
+      function updateBall(dt) {
+        const b = state.ball;
+
+        if (!state.reduceMotion) {
+          b.trail.push({ x: b.x, y: b.y, life: 0.25 });
+          if (b.trail.length > 10) b.trail.shift();
+          for (const t of b.trail) t.life -= dt;
+          b.trail = b.trail.filter((t) => t.life > 0);
+        }
+
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        if (b.x - b.r <= 0) {
+          b.x = b.r;
+          b.vx = Math.abs(b.vx);
+          beep(240, 0.025, 0.025);
+        }
+
+        if (b.x + b.r >= view.w) {
+          b.x = view.w - b.r;
+          b.vx = -Math.abs(b.vx);
+          beep(240, 0.025, 0.025);
+        }
+
+        if (b.y - b.r <= 0) {
+          b.y = b.r;
+          b.vy = Math.abs(b.vy);
+          beep(260, 0.025, 0.025);
+        }
+
+        collidePaddle();
+        collideBlocks();
+
+        if (b.y - b.r > view.h) {
+          if (state.shield > 0) {
+            state.shield -= 1;
+            b.x = state.paddle.x;
+            b.y = state.paddle.y - 40;
+            const speed = Math.max(state.phase.ballSpeed, ballSpeedMagnitude() * 0.92);
+            b.vx = rand(-0.45, 0.45) * speed;
+            b.vy = -Math.abs(speed);
+            createBurst(b.x, b.y, "#76dfab", 18);
+            beep(520, 0.07, 0.06);
+          } else {
+            gameOver();
+          }
+        }
+      }
+
+      function collidePaddle() {
+        const b = state.ball;
+        const paddleW = paddleWidth();
+        const px = state.paddle.x - paddleW / 2;
+        const py = state.paddle.y;
+        const ph = state.paddle.h;
+
+        const touching =
+          b.x + b.r >= px &&
+          b.x - b.r <= px + paddleW &&
+          b.y + b.r >= py &&
+          b.y - b.r <= py + ph &&
+          b.vy > 0;
+
+        if (!touching) return;
+
+        b.y = py - b.r - 0.5;
+        const hit = clamp((b.x - state.paddle.x) / (paddleW / 2), -1, 1);
+        let speed = Math.max(state.phase.ballSpeed, ballSpeedMagnitude() + 8 + state.phase.id * 1.5);
+        if (state.calmUntil > state.elapsed) speed *= 0.86;
+
+        b.vx = hit * speed * 0.78;
+        b.vy = -Math.sqrt(Math.max(1, speed * speed - b.vx * b.vx));
+
+        const focusBonus = state.focusUntil > state.elapsed ? 2 : 1;
+        state.rally += 1 * focusBonus;
+
+        createBurst(b.x, b.y, "#f0bf71", 8);
+        beep(360 + Math.abs(hit) * 100, 0.035, 0.035);
+      }
+
+      function collideBlocks() {
+        const b = state.ball;
+
+        for (const block of state.blocks) {
+          const nearestX = clamp(b.x, block.x, block.x + block.w);
+          const nearestY = clamp(b.y, block.y, block.y + block.h);
+          const dx = b.x - nearestX;
+          const dy = b.y - nearestY;
+
+          if (dx * dx + dy * dy > b.r * b.r) continue;
+
+          state.lastPressure = block.type;
+          block.hp -= 1;
+
+          const fromSide = Math.abs(dx) > Math.abs(dy);
+          if (fromSide) {
+            b.vx *= -1;
+          } else {
+            b.vy *= -1;
+          }
+
+          b.vx *= block.type.impulse;
+          b.vy *= block.type.impulse;
+
+          if (block.hp <= 0) {
+            block.dead = true;
+            state.pressureBroken += 1;
+            const focusBonus = state.focusUntil > state.elapsed ? 2 : 1;
+            state.rally += 1 * focusBonus;
+            createBurst(block.x + block.w / 2, block.y + block.h / 2, block.type.color, 12);
+          } else {
+            createBurst(block.x + block.w / 2, block.y + block.h / 2, "#ffffff", 5);
+          }
+
+          beep(430, 0.03, 0.035);
+          break;
+        }
+
+        state.blocks = state.blocks.filter((block) => !block.dead);
+      }
+
+      function updatePickups(dt) {
+        const paddleW = paddleWidth();
+        const px = state.paddle.x - paddleW / 2;
+        const py = state.paddle.y;
+
+        for (const p of state.pickupsOnCourt) {
+          p.y += p.vy * dt;
+          p.pulse += dt * 5;
+
+          const collected =
+            p.x + p.size / 2 >= px &&
+            p.x - p.size / 2 <= px + paddleW &&
+            p.y + p.size / 2 >= py &&
+            p.y - p.size / 2 <= py + state.paddle.h + 12;
+
+          if (collected) {
+            p.dead = true;
+            collectPickup(p);
+          }
+
+          if (p.y > view.h + p.size) p.dead = true;
+        }
+
+        state.pickupsOnCourt = state.pickupsOnCourt.filter((p) => !p.dead);
+      }
+
+      function collectPickup(p) {
+        state.pickups += 1;
+        state.rally += p.type.key === "focus" ? 3 : 1;
+
+        if (p.type.key === "shield") state.shield = Math.min(2, state.shield + 1);
+        if (p.type.key === "wide") state.wideUntil = state.elapsed + 9;
+        if (p.type.key === "calm") {
+          state.calmUntil = state.elapsed + 8;
+          state.ball.vx *= 0.82;
+          state.ball.vy *= 0.82;
+        }
+        if (p.type.key === "focus") state.focusUntil = state.elapsed + 8;
+
+        createBurst(p.x, p.y, p.type.color, 14);
+        beep(560, 0.05, 0.045);
+      }
+
+      function updateParticles(dt) {
+        for (const p of state.particles) {
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 220 * dt;
+        }
+        state.particles = state.particles.filter((p) => p.life > 0);
+      }
+
+      function ballSpeedMagnitude() {
+        return Math.sqrt(state.ball.vx * state.ball.vx + state.ball.vy * state.ball.vy);
+      }
+
+      function paddleWidth() {
+        const base = Math.max(86, view.w * 0.26);
+        return state.wideUntil > state.elapsed ? base * 1.42 : base;
+      }
+
+      function createBurst(x, y, color, count) {
+        if (state.reduceMotion) return;
+        for (let i = 0; i < count; i += 1) {
+          state.particles.push({
+            x,
+            y,
+            vx: rand(-120, 120),
+            vy: rand(-150, 60),
+            life: rand(0.25, 0.75),
+            maxLife: 0.75,
+            color,
+            size: rand(2, 5)
+          });
+        }
+      }
+
+      function updateHud() {
+        rallyText.textContent = String(Math.floor(state.rally));
+        bestText.textContent = String(Math.max(state.best, Math.floor(state.rally)));
+        timeText.textContent = formatTime(state.elapsed);
+        phaseText.textContent = `Phase ${state.phase.id} · ${state.phase.name}`;
+        phaseReachedText.textContent = String(state.highestPhase);
+        pressureBrokenText.textContent = String(state.pressureBroken);
+        pickupText.textContent = String(state.pickups);
+        shieldText.textContent = state.shield > 0 ? `On ×${state.shield}` : "Off";
+      }
+
+      function draw() {
+        const w = view.w;
+        const h = view.h;
+        ctx.clearRect(0, 0, w, h);
+
+        let shakeX = 0;
+        let shakeY = 0;
+        if (shakeClock > 0 && !state.reduceMotion) {
+          shakeX = rand(-4, 4);
+          shakeY = rand(-3, 3);
+        }
+
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+        drawBackground(w, h);
+        drawCourt(w, h);
+        drawBlocks();
+        drawPickups();
+        drawPaddle();
+        drawBall();
+        drawParticles();
+        drawEffectLabels();
+        ctx.restore();
+      }
+
+      function drawBackground(w, h) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        if (state.highContrast) {
+          gradient.addColorStop(0, "#060606");
+          gradient.addColorStop(1, "#1c1c1c");
+        } else {
+          gradient.addColorStop(0, "#2b241e");
+          gradient.addColorStop(0.48, "#453325");
+          gradient.addColorStop(1, "#191614");
+        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalAlpha = state.highContrast ? 0.08 : 0.14;
+        for (let i = 0; i < 24; i += 1) {
+          const x = (i * 83 + state.elapsed * 9) % (w + 80) - 40;
+          const y = (i * 47 + state.elapsed * 14) % h;
+          ctx.beginPath();
+          ctx.arc(x, y, 1.2 + (i % 3), 0, Math.PI * 2);
+          ctx.fillStyle = "#fff7d7";
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawCourt(w, h) {
+        const pad = Math.max(14, w * 0.04);
+        ctx.strokeStyle = state.highContrast ? "#ffffff" : "rgba(255,247,235,0.55)";
+        ctx.lineWidth = 3;
+        roundRect(pad, pad, w - pad * 2, h - pad * 2, 20);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.globalAlpha = state.highContrast ? 0.5 : 0.22;
+        ctx.strokeStyle = "#fff7eb";
+        ctx.setLineDash([8, 12]);
+        ctx.beginPath();
+        ctx.moveTo(pad + 12, h / 2);
+        ctx.lineTo(w - pad - 12, h / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(0,0,0,0.20)";
+        roundRect(pad + 8, h - 72, w - pad * 2 - 16, 38, 999);
+        ctx.fill();
+      }
+
+      function drawBlocks() {
+        for (const block of state.blocks) {
+          const pulse = state.reduceMotion ? 0 : Math.sin(block.pulse + state.elapsed * 4) * 0.04;
+          ctx.save();
+          ctx.globalAlpha = 0.96 + pulse;
+          ctx.fillStyle = state.highContrast ? "#ff4b4b" : block.type.color;
+          roundRect(block.x, block.y, block.w, block.h, 10);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,255,255,0.58)";
+          ctx.lineWidth = block.hp > 1 ? 3 : 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = "#fff7eb";
+          ctx.font = `900 ${Math.max(10, block.w * 0.13)}px ui-sans-serif, system-ui`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(block.type.short, block.x + block.w / 2, block.y + block.h / 2);
+          ctx.restore();
+        }
+      }
+
+      function drawPickups() {
+        for (const p of state.pickupsOnCourt) {
+          const pulse = state.reduceMotion ? 0 : Math.sin(p.pulse) * 2.5;
+          const size = p.size + pulse;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.fillStyle = state.highContrast ? "#76ff9f" : p.type.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,255,255,0.72)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = "#17120f";
+          ctx.font = `900 ${Math.max(8, size * 0.22)}px ui-sans-serif, system-ui`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(p.type.short, 0, 0);
+          ctx.restore();
+        }
+      }
+
+      function drawPaddle() {
+        const w = paddleWidth();
+        const h = state.paddle.h;
+        const x = state.paddle.x - w / 2;
+        const y = state.paddle.y;
+
+        if (state.shield > 0) {
+          ctx.save();
+          ctx.globalAlpha = 0.28 + Math.sin(state.elapsed * 8) * 0.06;
+          ctx.strokeStyle = "#76dfab";
+          ctx.lineWidth = 5;
+          roundRect(x - 8, y - 7, w + 16, h + 18, 999);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.fillStyle = state.highContrast ? "#ffffff" : "#f0bf71";
+        roundRect(x, y, w, h, 999);
+        ctx.fill();
+
+        ctx.fillStyle = state.highContrast ? "#000000" : "#5b2d1f";
+        roundRect(x + w * 0.18, y + h * 0.2, w * 0.64, h * 0.6, 999);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff7eb";
+        ctx.font = `900 ${Math.max(9, h * 0.82)}px ui-sans-serif, system-ui`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("PADDLE", state.paddle.x, y + h / 2);
+      }
+
+      function drawBall() {
+        const b = state.ball;
+
+        if (!state.reduceMotion) {
+          for (const t of b.trail) {
+            ctx.save();
+            ctx.globalAlpha = clamp(t.life / 0.25, 0, 1) * 0.26;
+            ctx.fillStyle = "#fff1ad";
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, b.r * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        ctx.save();
+        ctx.fillStyle = state.highContrast ? "#ffff00" : "#fff1ad";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = state.highContrast ? "#ffffff" : "#5b2d1f";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#201b17";
+        ctx.font = `900 ${Math.max(8, b.r * 0.82)}px ui-sans-serif, system-ui`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("C", b.x, b.y + 0.5);
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        for (const p of state.particles) {
+          ctx.save();
+          ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawEffectLabels() {
+        const labels = [];
+        if (state.shield > 0) labels.push(`Shield ×${state.shield}`);
+        if (state.wideUntil > state.elapsed) labels.push("Wide paddle");
+        if (state.calmUntil > state.elapsed) labels.push("Calm ball");
+        if (state.focusUntil > state.elapsed) labels.push("Focus x2");
+
+        if (!labels.length) return;
+
+        ctx.save();
+        ctx.font = "900 12px ui-sans-serif, system-ui";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        let y = 14;
+        for (const label of labels) {
+          const width = ctx.measureText(label).width + 18;
+          ctx.fillStyle = "rgba(0,0,0,0.52)";
+          roundRect(12, y, width, 26, 999);
+          ctx.fill();
+          ctx.fillStyle = "#fff7eb";
+          ctx.fillText(label, 21, y + 7);
+          y += 32;
+        }
+        ctx.restore();
+      }
+
+      function roundRect(x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      let audioCtx = null;
+      function beep(freq, duration, volume) {
+        if (state.muted) return;
+
+        try {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.frequency.value = freq;
+          osc.type = "sine";
+          gain.gain.value = volume;
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (err) {
+          state.muted = true;
+          localStorage.setItem(storageKeys.mute, "true");
+          updateToggles();
+        }
+      }
+
+      function updateToggles() {
+        muteToggle.setAttribute("aria-pressed", String(state.muted));
+        muteToggle.textContent = state.muted ? "Sound: Off" : "Sound: On";
+
+        motionToggle.setAttribute("aria-pressed", String(state.reduceMotion));
+        motionToggle.textContent = state.reduceMotion ? "Reduce motion: On" : "Reduce motion: Off";
+
+        contrastToggle.setAttribute("aria-pressed", String(state.highContrast));
+        contrastToggle.textContent = state.highContrast ? "Contrast: High" : "Contrast: Normal";
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        themeBtn.textContent = theme === "dark" ? "☀ Light" : "☾ Dark";
+        localStorage.setItem(storageKeys.theme, theme);
+      }
+
+      function initTheme() {
+        const saved = localStorage.getItem(storageKeys.theme);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyTheme(saved || (prefersDark ? "dark" : "light"));
+      }
+
+      function saveReflection() {
+        localStorage.setItem(storageKeys.note, reflectionText.value.trim());
+        reflectionStatus.textContent = "Saved";
+      }
+
+      function clearReflection() {
+        reflectionText.value = "";
+        localStorage.removeItem(storageKeys.note);
+        reflectionStatus.textContent = "Cleared";
+      }
+
+      function loadReflection() {
+        const saved = localStorage.getItem(storageKeys.note) || "";
+        reflectionText.value = saved;
+        reflectionStatus.textContent = saved ? "Loaded saved note" : "Not saved yet";
+      }
+
+      function nudgePaddle(direction) {
+        if (!state.running || state.paused || state.over) return;
+        state.paddle.targetX += direction * Math.max(40, view.w * 0.12);
+        beep(direction < 0 ? 210 : 250, 0.02, 0.02);
+      }
+
+      function setPaddleFromClientX(clientX) {
+        const rect = wrap.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const scale = view.w / rect.width;
+        state.paddle.targetX = clamp(x * scale, paddleWidth() / 2 + 8, view.w - paddleWidth() / 2 - 8);
+      }
+
+      function bindEvents() {
+        startBtn.addEventListener("click", startGame);
+        overlayStartBtn.addEventListener("click", () => {
+          if (state.paused) pauseGame();
+          else startGame();
+        });
+        pauseBtn.addEventListener("click", pauseGame);
+        restartBtn.addEventListener("click", () => {
+          resetGame();
+          startGame();
+        });
+
+        leftBtn.addEventListener("click", () => nudgePaddle(-1));
+        rightBtn.addEventListener("click", () => nudgePaddle(1));
+
+        leftBtn.addEventListener("pointerdown", () => { holdDirection = -1; });
+        rightBtn.addEventListener("pointerdown", () => { holdDirection = 1; });
+        window.addEventListener("pointerup", () => { holdDirection = 0; });
+        window.addEventListener("pointercancel", () => { holdDirection = 0; });
+
+        document.addEventListener("keydown", (event) => {
+          const key = event.key.toLowerCase();
+
+          if (["arrowleft", "a"].includes(key)) {
+            event.preventDefault();
+            holdDirection = -1;
+          }
+
+          if (["arrowright", "d"].includes(key)) {
+            event.preventDefault();
+            holdDirection = 1;
+          }
+
+          if (key === " " || key === "enter") {
+            event.preventDefault();
+            if (!state.running || state.over) startGame();
+            else pauseGame();
+          }
+        });
+
+        document.addEventListener("keyup", (event) => {
+          const key = event.key.toLowerCase();
+          if (["arrowleft", "a", "arrowright", "d"].includes(key)) {
+            holdDirection = 0;
+          }
+        });
+
+        wrap.addEventListener("pointerdown", (event) => {
+          if (!state.running || state.over) {
+            startGame();
+          }
+          setPaddleFromClientX(event.clientX);
+          wrap.setPointerCapture?.(event.pointerId);
+        }, { passive: true });
+
+        wrap.addEventListener("pointermove", (event) => {
+          if (!state.running || state.paused || state.over) return;
+          setPaddleFromClientX(event.clientX);
+        }, { passive: true });
+
+        wrap.addEventListener("touchmove", (event) => {
+          if (state.running) event.preventDefault();
+        }, { passive: false });
+
+        themeBtn.addEventListener("click", () => {
+          const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+          applyTheme(current === "dark" ? "light" : "dark");
+        });
+
+        muteToggle.addEventListener("click", () => {
+          state.muted = !state.muted;
+          localStorage.setItem(storageKeys.mute, String(state.muted));
+          updateToggles();
+        });
+
+        motionToggle.addEventListener("click", () => {
+          state.reduceMotion = !state.reduceMotion;
+          localStorage.setItem(storageKeys.motion, String(state.reduceMotion));
+          updateToggles();
+        });
+
+        contrastToggle.addEventListener("click", () => {
+          state.highContrast = !state.highContrast;
+          localStorage.setItem(storageKeys.contrast, String(state.highContrast));
+          updateToggles();
+          draw();
+        });
+
+        saveReflectionBtn.addEventListener("click", saveReflection);
+        clearReflectionBtn.addEventListener("click", clearReflection);
+
+        window.addEventListener("resize", resizeCanvas);
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden && state.running && !state.paused && !state.over) {
+            pauseGame();
+          }
+        });
+      }
+
+      function boot() {
+        initTheme();
+        loadReflection();
+        updateToggles();
+        bestText.textContent = String(state.best);
+        bindEvents();
+        resizeCanvas();
+        resetGame();
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
