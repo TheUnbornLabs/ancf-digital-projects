@@ -1,6 +1,6 @@
 {
   "name": "ANCF Digital Projects",
-  "subtitle": "100 Antinatalism & Childfree Tools, Games, Guides, and Reflection Projects",
+  "subtitle": "100 Digital Tools for Antinatalism, Childfree Life, Ethics, and Reflection",
   "categories": [
     "Philosophy",
     "Childfree Life",
@@ -13,907 +13,117 @@
     "Writing Tools",
     "Community Tools"
   ],
+  "types": ["Guide","Quiz","Calculator","Generator","Game","Reflection","Community Tool","Tool","Checklist","Simulation","Flashcard"],
+  "collections": [
+    {"id":"beginner","label":"Beginner Path"},
+    {"id":"family-pressure","label":"Family Pressure Toolkit"},
+    {"id":"ethics","label":"Ethics Path"},
+    {"id":"practical","label":"Practical Life Planning"},
+    {"id":"games","label":"Games & Simulations"},
+    {"id":"writing","label":"Writing & Response Tools"},
+    {"id":"community-admin","label":"Community Admin Toolkit"}
+  ],
   "count": 100,
   "projects": [
-    {
-      "number": 1,
-      "slug": "001-antinatalism-intro-guide",
-      "title": "Antinatalism Intro Guide",
-      "category": "Philosophy",
-      "difficulty": "Beginner",
-      "description": "A calm, plain-language introduction to what antinatalism is — and is not. Now includes The Antinatalism Reader: a full 43-chapter companion book.",
-      "path": "projects/001-antinatalism-intro-guide/index.html"
-    },
-    {
-      "number": 2,
-      "slug": "002-childfree-life-intro-guide",
-      "title": "Childfree Life Intro Guide",
-      "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "An introduction to choosing a life without children — practically and emotionally. Now includes The Childfree Life: a full 44-chapter companion book.",
-      "path": "projects/002-childfree-life-intro-guide/index.html"
-    },
-    {
-      "number": 3,
-      "slug": "003-pronatalism-pressure-detector",
-      "title": "Pronatalism Pressure Detector",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "A 360-degree interactive toolkit on pronatalism: understand its four levels and history, a message pressure-detector, a decoded field guide, a personal pressure profile, a coercion safety-check, a boundary composer, and rehearsal scenarios.",
-      "path": "projects/003-pronatalism-pressure-detector/index.html"
-    },
-    {
-      "number": 4,
-      "slug": "004-parenthood-assumption-quiz",
-      "title": "Parenthood Assumption Quiz",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "A 360-degree toolkit for examining the assumptions behind parenthood talk: an assumption decoder, an 18-entry library, a self-profile radar, a Socratic belief-examiner, root-tracing, a quiz, and reflection.",
-      "path": "projects/004-parenthood-assumption-quiz/index.html"
-    },
-    {
-      "number": 5,
-      "slug": "005-is-this-my-choice-reflection-tool",
-      "title": "“Is This My Choice?” Reflection Tool",
-      "category": "Childfree Life",
-      "difficulty": "Intermediate",
-      "description": "A decision-clarity studio for telling your own wishes from inherited pressure: a desire-vs-pressure map, a values clarifier, a whose-voice-is-it sorter, clarity signals, five classic perspective tools, and a private clarity report.",
-      "path": "projects/005-is-this-my-choice-reflection-tool/index.html"
-    },
-    {
-      "number": 6,
-      "slug": "006-reproductive-autonomy-explainer",
-      "title": "Reproductive Autonomy Explainer",
-      "category": "Ethics",
-      "difficulty": "Intermediate",
-      "description": "A 360-degree explainer on reproductive autonomy: the conditions a free choice needs, how coercion runs in both directions, a short history of reproductive rights, a personal autonomy self-check, scenarios, and an autonomy-respecting response generator.",
-      "path": "projects/006-reproductive-autonomy-explainer/index.html"
-    },
-    {
-      "number": 7,
-      "slug": "007-consent-and-birth-philosophy-page",
-      "title": "Consent and Birth Philosophy Page",
-      "category": "Philosophy",
-      "difficulty": "Intermediate",
-      "description": "An interactive look at the consent argument in birth ethics: build the argument premise by premise, explore three senses of consent, Shiffrin's gold-coins analogy, an objection explorer, and a position finder.",
-      "path": "projects/007-consent-and-birth-philosophy-page/index.html"
-    },
-    {
-      "number": 8,
-      "slug": "008-suffering-risk-thought-experiment",
-      "title": "Suffering Risk Thought Experiment",
-      "category": "Philosophy",
-      "difficulty": "Intermediate",
-      "description": "A structured thought experiment about risk and bringing life into the world: a probabilistic life-outcome simulator with a veil-of-ignorance test, the decision frames philosophers use, thought-experiment cards, and a where's-your-line tool.",
-      "path": "projects/008-suffering-risk-thought-experiment/index.html"
-    },
-    {
-      "number": 9,
-      "slug": "009-adoption-vs-birth-ethics-explainer",
-      "title": "Adoption vs Birth Ethics Explainer",
-      "category": "Ethics",
-      "difficulty": "Intermediate",
-      "description": "A balanced comparison of ethical considerations around adoption and biological birth: five paths to caring for children, the existing-need vs created-need contrast, an honest look at adoption, and a priorities mapper that ranks paths to your values.",
-      "path": "projects/009-adoption-vs-birth-ethics-explainer/index.html"
-    },
-    {
-      "number": 10,
-      "slug": "010-no-means-no-family-boundary-tool",
-      "title": "“No Means No” Family Boundary Tool",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "A 360-degree boundary toolkit for repeated family questions: understand the FOG of pressure, generate calm boundary scripts, decode emotional blackmail, climb an escalation ladder, and rehearse holding the line.",
-      "path": "projects/010-no-means-no-family-boundary-tool/index.html"
-    },
-    {
-      "number": 11,
-      "slug": "011-childfree-budget-calculator",
-      "title": "Childfree Budget Calculator",
-      "category": "Calculators",
-      "difficulty": "Beginner",
-      "description": "A country-aware, editable model of funds a childfree budget may free up: pick your country for local currency and figures, with monthly category presets, a reallocation planner, and a compound 'freedom fund' projection.",
-      "path": "projects/011-childfree-budget-calculator/index.html"
-    },
-    {
-      "number": 12,
-      "slug": "012-parenthood-cost-estimator",
-      "title": "Parenthood Cost Estimator",
-      "category": "Calculators",
-      "difficulty": "Beginner",
-      "description": "A neutral, country-aware estimator of the cost of raising a child across six phases: pick your country for local currency and figures, with a cumulative-cost chart by age and a phase breakdown. Estimates only.",
-      "path": "projects/012-parenthood-cost-estimator/index.html"
-    },
-    {
-      "number": 13,
-      "slug": "013-time-freedom-calculator",
-      "title": "Time Freedom Calculator",
-      "category": "Calculators",
-      "difficulty": "Beginner",
-      "description": "A 168-hour week allocator: see how your week divides, how much discretionary time remains, how caregiving changes it, and what your free hours add up to over years — with a week visualizer and lifetime projection.",
-      "path": "projects/013-time-freedom-calculator/index.html"
-    },
-    {
-      "number": 14,
-      "slug": "014-sleep-loss-simulator",
-      "title": "Sleep Loss Simulator",
-      "category": "Calculators",
-      "difficulty": "Beginner",
-      "description": "An illustrative model of how a nightly sleep shortfall during early caregiving accumulates into a cumulative sleep debt, by phase, with a timeline chart and relatable equivalents. Not medical advice.",
-      "path": "projects/014-sleep-loss-simulator/index.html"
-    },
-    {
-      "number": 15,
-      "slug": "015-life-goals-priority-mapper",
-      "title": "Life Goals Priority Mapper",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Add the goals that matter to you, sort them across three horizons (Now/Soon/Someday) and an importance-vs-effort matrix, and get a clear suggestion of where to start. A planning tool; everything stays on your device.",
-      "path": "projects/015-life-goals-priority-mapper/index.html"
-    },
-    {
-      "number": 16,
-      "slug": "016-personal-peace-checklist",
-      "title": "Personal Peace Checklist",
-      "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "A gentle toolkit for protecting your peace around repeated questions: a before/during/after peace plan with progress, a kit of calm exit-lines, a guided box-breathing grounder, and a personal support anchor.",
-      "path": "projects/016-personal-peace-checklist/index.html"
-    },
-    {
-      "number": 17,
-      "slug": "017-pressure-from-parents-response-generator",
-      "title": "Pressure From Parents Response Generator",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Draft a reply to parental pressure that honors their love while holding your line: a warmth-to-firmness dial generator, an 'acknowledge-then-hold' structure, and a mapper for the fear underneath their words.",
-      "path": "projects/017-pressure-from-parents-response-generator/index.html"
-    },
-    {
-      "number": 18,
-      "slug": "018-marriage-and-children-conversation-tool",
-      "title": "Marriage and Children Conversation Tool",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "Map where you and your partner align on the children question across seven key topics, see an alignment radar and where you differ, follow a guided conversation agenda, and find honest help for a real mismatch.",
-      "path": "projects/018-marriage-and-children-conversation-tool/index.html"
-    },
-    {
-      "number": 19,
-      "slug": "019-childfree-couple-planning-board",
-      "title": "Childfree Couple Planning Board",
-      "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "An editable vision board for a couple (or anyone) to name what they're building together across six areas of life, sparked by suggestions, with a shared-vision statement builder. Everything stays on your device.",
-      "path": "projects/019-childfree-couple-planning-board/index.html"
-    },
-    {
-      "number": 20,
-      "slug": "020-retirement-without-children-planner",
-      "title": "Retirement Without Children Planner",
-      "category": "Calculators",
-      "difficulty": "Intermediate",
-      "description": "Answer 'who will look after you?' with a plan: a country-aware compound savings projection with a target/gap check, plus a care-network builder for the support money can't buy. Pick your country for local currency and defaults.",
-      "path": "projects/020-retirement-without-children-planner/index.html"
-    },
-    {
-      "number": 21,
-      "slug": "021-antinatalist-quote-archive",
-      "title": "Antinatalist Quote Archive",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "A searchable, filterable archive of original study-prompts that rephrase ideas from the antinatalist tradition for reflection. Filter by theme or thinker, draw one at random, save favourites, and copy any.",
-      "path": "projects/021-antinatalist-quote-archive/index.html"
-    },
-    {
-      "number": 22,
-      "slug": "022-childfree-quote-archive",
-      "title": "Childfree Quote Archive",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "A searchable archive of original affirmations and reflections on living childfree — for journaling and quiet encouragement. Filter by theme, draw one at random, save favourites, and build your own affirmation.",
-      "path": "projects/022-childfree-quote-archive/index.html"
-    },
-    {
-      "number": 23,
-      "slug": "023-ethics-flashcards",
-      "title": "Ethics Flashcards",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "A study deck of 24 flip-cards for the key terms in birth ethics and reproductive autonomy: filter by category, mark what you know, track progress, and run a focused study session.",
-      "path": "projects/023-ethics-flashcards/index.html"
-    },
-    {
-      "number": 24,
-      "slug": "024-philosophy-timeline",
-      "title": "Philosophy Timeline",
-      "category": "Learning Tools",
-      "difficulty": "Intermediate",
-      "description": "A simplified, filterable study timeline of ideas feeding antinatalist and childfree thought across philosophy, religion, feminism, ethics, and ecology. Filter by strand, search, and tap any entry for detail.",
-      "path": "projects/024-philosophy-timeline/index.html"
-    },
-    {
-      "number": 25,
-      "slug": "025-benatar-argument-explainer",
-      "title": "Benatar Argument Explainer",
-      "category": "Philosophy",
-      "difficulty": "Advanced",
-      "description": "David Benatar's asymmetry argument for antinatalism, laid out fairly and interactively: the four-cell matrix you can explore, a premise tester you toggle, and the strongest objections with replies.",
-      "path": "projects/025-benatar-argument-explainer/index.html"
-    },
-    {
-      "number": 26,
-      "slug": "026-consent-argument-explainer",
-      "title": "Consent Argument Explainer",
-      "category": "Philosophy",
-      "difficulty": "Intermediate",
-      "description": "The consent argument in birth ethics, built up interactively: an everyday analogy, an 'is this valid consent?' sorter that reveals what birth uniquely lacks, a premise tester, and the leading replies.",
-      "path": "projects/026-consent-argument-explainer/index.html"
-    },
-    {
-      "number": 27,
-      "slug": "027-risk-argument-explainer",
-      "title": "Risk Argument Explainer",
-      "category": "Philosophy",
-      "difficulty": "Intermediate",
-      "description": "The risk argument made concrete: what makes a risk hard to justify, an interactive comparator pitting an everyday risk against creating a life across six factors, the three decision lenses, and the leading replies.",
-      "path": "projects/027-risk-argument-explainer/index.html"
-    },
-    {
-      "number": 28,
-      "slug": "028-environmental-argument-explainer",
-      "title": "Environmental Argument Explainer",
-      "category": "Ethics",
-      "difficulty": "Intermediate",
-      "description": "The ecological reasoning some weigh in family decisions, stated fairly and with its limits clear: weigh the considerations, see what actually moves the needle (systems vs individual births), and meet the strongest objections.",
-      "path": "projects/028-environmental-argument-explainer/index.html"
-    },
-    {
-      "number": 29,
-      "slug": "029-feminist-childfree-explainer",
-      "title": "Feminist Childfree Explainer",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "How feminist thought has defended a woman's right to decide whether and when to have children — including none: the threads of the argument, key voices and milestones, and an honest look at the debates within feminism.",
-      "path": "projects/029-feminist-childfree-explainer/index.html"
-    },
-    {
-      "number": 30,
-      "slug": "030-economic-pressure-explainer",
-      "title": "Economic Pressure Explainer",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "How money, housing, and work push family decisions in both directions. Name the forces, map which weigh on you with a two-direction pressure meter, and see why these are structures, not personal failings.",
-      "path": "projects/030-economic-pressure-explainer/index.html"
-    },
-    {
-      "number": 31,
-      "slug": "031-comic-strip-prompt-generator",
-      "title": "Comic Strip Prompt Generator",
-      "category": "Comics",
-      "difficulty": "Beginner",
-      "description": "Generate gentle, metaphor-based three-panel comic premises about pressure, autonomy, and boundaries — rendered as a storyboard you can sketch from. Pick a theme and tone, draw new ones, save favourites, and copy.",
-      "path": "projects/031-comic-strip-prompt-generator/index.html"
-    },
-    {
-      "number": 32,
-      "slug": "032-instagram-caption-generator",
-      "title": "Instagram Caption Generator",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Draft a thoughtful, respectful caption for a post about childfree life or reproductive autonomy: pick topic, tone, length, emoji and hashtags, generate variants, grab curated hashtag sets, and save favourites.",
-      "path": "projects/032-instagram-caption-generator/index.html"
-    },
-    {
-      "number": 33,
-      "slug": "033-debate-reply-generator",
-      "title": "Debate Reply Generator",
-      "category": "Writing Tools",
-      "difficulty": "Intermediate",
-      "description": "Draft a calm, non-hostile reply to a common claim about not having children — aimed at the idea, not the person. See the hidden assumption each claim rests on, pick a style, get variants, and learn the acknowledge-reframe-redirect structure.",
-      "path": "projects/033-debate-reply-generator/index.html"
-    },
-    {
-      "number": 34,
-      "slug": "034-family-function-survival-script",
-      "title": "Family Function Survival Script",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Assemble a calm pocket script for a family gathering — opener, deflection, firm line, graceful exit — tuned to the event and your style. Plus a field guide to the lines you'll likely hear with ready responses, and a readiness checklist.",
-      "path": "projects/034-family-function-survival-script/index.html"
-    },
-    {
-      "number": 35,
-      "slug": "035-when-are-you-having-kids-reply-tool",
-      "title": "“When Are You Having Kids?” Reply Tool",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "The most common question, answered. Pick a vibe and who's asking, get a kind one-liner, cycle for more, and build your three go-to replies to keep ready. Every reply stays polite — a boundary, never an insult.",
-      "path": "projects/035-when-are-you-having-kids-reply-tool/index.html"
-    },
-    {
-      "number": 36,
-      "slug": "036-whatsapp-group-rules-generator",
-      "title": "WhatsApp Group Rules Generator",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "Pick your group's focus and how strict you want moderation, toggle the rules you want, and generate a ready-to-pin rules set with a live preview — inclusive and safety-first by default. Edit and copy.",
-      "path": "projects/036-whatsapp-group-rules-generator/index.html"
-    },
-    {
-      "number": 37,
-      "slug": "037-community-notice-generator",
-      "title": "Community Notice Generator",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "Choose a notice type — event, schedule change, welcome, fundraiser, poll, or general — fill the details, and get a tidy, friendly message you can post. Six templates with dynamic fields and a live preview. Edit and copy.",
-      "path": "projects/037-community-notice-generator/index.html"
-    },
-    {
-      "number": 38,
-      "slug": "038-admin-warning-message-generator",
-      "title": "Admin Warning Message Generator",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "Draft a private moderation warning that names the behaviour, not the person's worth, and offers a way back. Pick the issue and an escalation tier — gentle nudge, formal warning, or final notice — add specifics, and copy. Includes the escalation ladder and four principles.",
-      "path": "projects/038-admin-warning-message-generator/index.html"
-    },
-    {
-      "number": 39,
-      "slug": "039-respectful-debate-guide",
-      "title": "Respectful Debate Guide",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "Principles for disagreeing well, a quick self-audit of your own debate habits with a personalised reading, and a phrase-swap library that turns heat into light — so you protect both the conversation and the relationship.",
-      "path": "projects/039-respectful-debate-guide/index.html"
-    },
-    {
-      "number": 40,
-      "slug": "040-bad-argument-detector",
-      "title": "Bad Argument Detector",
-      "category": "Learning Tools",
-      "difficulty": "Intermediate",
-      "description": "Paste any argument and spot the classic logical fallacies hiding inside — each flagged with the matched phrase and a plain explanation. Includes a filterable, searchable field guide of fifteen fallacies. A study aid for reasoning well, not a verdict on people.",
-      "path": "projects/040-bad-argument-detector/index.html"
-    },
-    {
-      "number": 41,
-      "slug": "041-pronatalist-phrase-translator",
-      "title": "Pronatalist Phrase Translator",
-      "category": "Society",
-      "difficulty": "Beginner",
-      "description": "Common pressure phrases carry a hidden assumption. This translator shows what a phrase literally says, what it really means, the assumption underneath, and a kind reply — by paste-and-match or by browsing a filterable library. For understanding, never for winning.",
-      "path": "projects/041-pronatalist-phrase-translator/index.html"
-    },
-    {
-      "number": 42,
-      "slug": "042-emotional-blackmail-detector",
-      "title": "Emotional Blackmail Detector",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Emotional blackmail uses fear, obligation, and guilt (FOG) as leverage. Paste a message to notice those patterns for your own clarity, each with a grounding reframe, plus a guide to the three levers and common tactics. Non-diagnostic: a flag is a prompt to reflect, not proof of abuse.",
-      "path": "projects/042-emotional-blackmail-detector/index.html"
-    },
-    {
-      "number": 43,
-      "slug": "043-gaslighting-phrase-detector",
-      "title": "Gaslighting Phrase Detector",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Gaslighting is a pattern of making someone doubt their own memory or perception. This tool flags phrases associated with it and pairs each with a reality anchor, plus a technique guide and five ways to stay grounded. Non-diagnostic: a single phrase isn't proof; pattern and context matter.",
-      "path": "projects/043-gaslighting-phrase-detector/index.html"
-    },
-    {
-      "number": 44,
-      "slug": "044-caste-community-name-warning-tool",
-      "title": "Caste/Community Name Warning Tool",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "When critiquing reproductive pressure, aim at systems and behaviours — never at castes, communities, religions, or ethnic groups. This tool screens a draft for group-targeting language, explains why it backfires, suggests a refocus, and shows before/after rewrites.",
-      "path": "projects/044-caste-community-name-warning-tool/index.html"
-    },
-    {
-      "number": 45,
-      "slug": "045-identity-pressure-reflection-page",
-      "title": "Identity Pressure Reflection Page",
-      "category": "Society",
-      "difficulty": "Beginner",
-      "description": "Belonging is precious — and sometimes it carries expectations about children. Rate how much child-related pressure each part of your identity (family role, gender, culture, faith, class, peers, inner critic) carries, see where it's loudest in a sorted picture, learn how each shapes expectations, and reflect.",
-      "path": "projects/045-identity-pressure-reflection-page/index.html"
-    },
-    {
-      "number": 46,
-      "slug": "046-social-shame-explainer",
-      "title": "Social Shame Explainer",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Shame is one of society's quietest tools for keeping people in line. This explainer shows how it operates around reproductive choices, separates shame from healthy guilt with an interactive sorter, decodes common shaming lines, and offers four shame-resilience steps.",
-      "path": "projects/046-social-shame-explainer/index.html"
-    },
-    {
-      "number": 47,
-      "slug": "047-cultural-pressure-map",
-      "title": "Cultural Pressure Map",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Reproductive pressure rarely comes from one place. Rate the common external sources — family, in-laws, peers, work, faith community, media, policy, society — to see where it's strongest for you in a sorted map, with an overall load reading and targeted coping moves for your top sources.",
-      "path": "projects/047-cultural-pressure-map/index.html"
-    },
-    {
-      "number": 48,
-      "slug": "048-wedding-pressure-dialogue-simulator",
-      "title": "Wedding Pressure Dialogue Simulator",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Weddings are peak season for 'you're next!' This branching simulator lets you rehearse calm responses across a three-round conversation that adapts to your choices, tracks the balance of warmth and firmness, and ends with a debrief on how it landed. Replay to explore other paths.",
-      "path": "projects/048-wedding-pressure-dialogue-simulator/index.html"
-    },
-    {
-      "number": 49,
-      "slug": "049-elder-advice-response-tool",
-      "title": "Elder Advice Response Tool",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Elders often advise from deep love and a different era. This tool drafts a reply that honours their care and wisdom while keeping your boundary — respect and self-respect together. Pick the relationship and the concern underneath, set the warmth, generate variants, and decode what they may really mean.",
-      "path": "projects/049-elder-advice-response-tool/index.html"
-    },
-    {
-      "number": 50,
-      "slug": "050-childfree-faq",
-      "title": "Childfree FAQ",
-      "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "Calm, respectful answers to the questions childfree people hear most — across identity, relationships, family pressure, the future, society, and meaning. Filter by topic, search, open any question, and copy an answer to reuse. 24 original Q&As; respects people who choose differently.",
-      "path": "projects/050-childfree-faq/index.html"
-    },
-    {
-      "number": 51,
-      "slug": "051-antinatalism-faq",
-      "title": "Antinatalism FAQ",
-      "category": "Philosophy",
-      "difficulty": "Intermediate",
-      "description": "Clear, respectful answers to frequent questions and misconceptions about antinatalism — basics, the main arguments, common myths (tagged), ethics, living with it, and criticisms. Filter by topic, search, open a question, copy any answer. Explains the position fairly and notes where people disagree.",
-      "path": "projects/051-antinatalism-faq/index.html"
-    },
-    {
-      "number": 52,
-      "slug": "052-beginner-study-plan",
-      "title": "Beginner Study Plan",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "A gentle four-week path through this collection — foundations, the arguments, society and autonomy, then living it. Pick a pace, tick items as you go, and watch per-week and overall progress fill in. Each step links straight to a project in the archive.",
-      "path": "projects/052-beginner-study-plan/index.html"
-    },
-    {
-      "number": 53,
-      "slug": "053-30-day-reading-challenge",
-      "title": "30-Day Reading Challenge",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "One small reflective prompt a day for thirty days. See today's prompt, jot a private note, tick each day, and watch the grid fill in. Jump to any day; skip and return freely — no streak to break. Thirty original prompts; progress and notes save on this device.",
-      "path": "projects/053-30-day-reading-challenge/index.html"
-    },
-    {
-      "number": 54,
-      "slug": "054-study-circle-dashboard",
-      "title": "Study Circle Dashboard",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "Organise a respectful reading group in one place: topic, schedule, roles, discussion questions (add your own or seed starters), and toggleable ground rules. A readiness meter tracks how complete it is, and you can export a tidy plan to share. Saves on this device.",
-      "path": "projects/054-study-circle-dashboard/index.html"
-    },
-    {
-      "number": 55,
-      "slug": "055-philosophy-comparison-tool",
-      "title": "Philosophy Comparison Tool",
-      "category": "Learning Tools",
-      "difficulty": "Intermediate",
-      "description": "Pick any two of nine positions and compare them side by side across seven dimensions — core claim, view on procreation and suffering, meaning, key figures, strongest point, and main objection. A neutral map for understanding, with a glossary; it doesn't rank the positions.",
-      "path": "projects/055-philosophy-comparison-tool/index.html"
-    },
-    {
-      "number": 56,
-      "slug": "056-stoicism-and-antinatalism-notes",
-      "title": "Stoicism and Antinatalism Notes",
-      "category": "Philosophy",
-      "difficulty": "Advanced",
-      "description": "Study notes putting Stoic ideas (dichotomy of control, amor fati, premeditatio malorum, oikeiosis, virtue, death) in conversation with questions about birth. The Stoics were not antinatalists — a clear myth-buster — and the notes map honestly where the two views converge and diverge.",
-      "path": "projects/056-stoicism-and-antinatalism-notes/index.html"
-    },
-    {
-      "number": 57,
-      "slug": "057-buddhism-and-antinatalism-notes",
-      "title": "Buddhism and Antinatalism Notes",
-      "category": "Philosophy",
-      "difficulty": "Advanced",
-      "description": "Respectful study notes on Buddhist themes (Four Noble Truths, dukkha, tanha, samsara, the Middle Way, compassion) alongside questions about birth. Buddhism is not antinatalist — a clear myth-buster — with an honest converge/diverge map. Speaks about ideas, never for any practitioner.",
-      "path": "projects/057-buddhism-and-antinatalism-notes/index.html"
-    },
-    {
-      "number": 58,
-      "slug": "058-periyarism-and-childfree-reflection",
-      "title": "Periyarism and Childfree Reflection",
-      "category": "Society",
-      "difficulty": "Advanced",
-      "description": "Periyar E. V. Ramasamy led the rationalist Self-Respect Movement in twentieth-century Tamil Nadu, championing reason, dignity, anti-caste justice, and women's autonomy. These notes connect his ideas to childfree reflection — accurately, framing him as a reformer (not an antinatalist) — with a bio, idea cards, and a resonance picker.",
-      "path": "projects/058-periyarism-and-childfree-reflection/index.html"
-    },
-    {
-      "number": 59,
-      "slug": "059-nietzsche-misuse-explainer",
-      "title": "Nietzsche Misuse Explainer",
-      "category": "Philosophy",
-      "difficulty": "Advanced",
-      "description": "Nietzsche is one of the most misquoted thinkers online. This explainer shows how the distortions happen, decodes six common misuses against closer readings with sources, and tests whether famous lines are genuine, distorted, or misattributed. He was life-affirming — not a patron saint for nihilism.",
-      "path": "projects/059-nietzsche-misuse-explainer/index.html"
-    },
-    {
-      "number": 60,
-      "slug": "060-rationalism-toolkit",
-      "title": "Rationalism Toolkit",
-      "category": "Learning Tools",
-      "difficulty": "Intermediate",
-      "description": "Seven practical tools for thinking clearly about emotive topics — steelman, separate fact/value/definition, what-would-change-my-mind, seek disconfirmation, taboo the word, check the base rate, notice motivated reasoning. Learn each, run any on a claim you choose, and audit how often you use them.",
-      "path": "projects/060-rationalism-toolkit/index.html"
-    },
-    {
-      "number": 61,
-      "slug": "061-mini-car-race-game",
-      "title": "Mini Car Race Game: Escape Pronatalist Pressure",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Steer your car between three lanes and slip past the falling 'pressure' blocks — a light, playful metaphor for steering past pressure with a steady hand. Keyboard, on-screen buttons, or tap to play; the speed ramps up and your best score is saved.",
-      "path": "projects/061-mini-car-race-game/index.html"
-    },
-    {
-      "number": 62,
-      "slug": "062-pong-game-choice-vs-pressure",
-      "title": "Pong Game: Choice vs Pressure",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Keep 'Choice' bouncing and don't let it drop. Each return scores and the ball speeds up — a light reminder that staying in the game takes a steady paddle and a calm eye. Keyboard, on-screen buttons, or drag to play; best rally saved.",
-      "path": "projects/062-pong-game-choice-vs-pressure/index.html"
-    },
-    {
-      "number": 63,
-      "slug": "063-platform-game-boundary-runner",
-      "title": "Platform Game: Boundary Runner",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Keep running and hop over each hurdle in this tiny endless runner — a light metaphor for clearing the small obstacles that come at you, one jump at a time. Space, tap, or click to jump; speed ramps up and your best is saved.",
-      "path": "projects/063-platform-game-boundary-runner/index.html"
-    },
-    {
-      "number": 64,
-      "slug": "064-quiz-game-myth-vs-reality",
-      "title": "Quiz Game: Myth vs Reality",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Myth or reality? Read each of 14 statements about antinatalism and childfree life and decide — then see the explanation. A friendly way to test and sharpen what you know, with a score, a streak, best-streak saved, and no trick questions.",
-      "path": "projects/064-quiz-game-myth-vs-reality/index.html"
-    },
-    {
-      "number": 65,
-      "slug": "065-memory-game-ethical-concepts",
-      "title": "Memory Game: Ethical Concepts",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Flip the cards and match each key ethics term to its definition. Every match reveals the concept in a sentence — a playful way to make the vocabulary stick. Six term/definition pairs, move counter, and a best (fewest-moves) score saved.",
-      "path": "projects/065-memory-game-ethical-concepts/index.html"
-    },
-    {
-      "number": 66,
-      "slug": "066-decision-tree-game",
-      "title": "Decision Tree Game",
-      "category": "Games",
-      "difficulty": "Intermediate",
-      "description": "Walk a short, branching scenario about handling family pressure at the dinner table. Your choices change the path and earn 'freedom points' for calm, self-respecting moves, ending with a tailored debrief and your path. Replay to explore other routes; best run saved.",
-      "path": "projects/066-decision-tree-game/index.html"
-    },
-    {
-      "number": 67,
-      "slug": "067-auntie-uncle-chase-arcade-game",
-      "title": "“Auntie Uncle Chase” Arcade Game",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Scoot around collecting gold 'freedom tokens' while keeping your distance from the well-meaning 'pressure' chasers. A friendly metaphor — nobody's the villain — and a playful test of holding your own space. Arrows, WASD, or the on-screen pad; chasers speed up over time; best saved.",
-      "path": "projects/067-auntie-uncle-chase-arcade-game/index.html"
-    },
-    {
-      "number": 68,
-      "slug": "068-population-growth-visual-toy",
-      "title": "Population Growth Visual Toy",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "A simple toy for an idea that surprises almost everyone: how fast exponential growth compounds. Slide starting size, yearly growth rate, and years, watch the curve (with a lower-rate comparison line), and read the final size, doublings, and doubling time. Pure maths; implies nothing about anyone's choices.",
-      "path": "projects/068-population-growth-visual-toy/index.html"
-    },
-    {
-      "number": 69,
-      "slug": "069-resource-allocation-simulator",
-      "title": "Resource Allocation Simulator",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "A simple toy showing how a fixed pool (budget, free hours, or living space) divides per person as a household grows. Pick a resource, set the pool and the number of people, and see each share and a row of people. Just division — it implies nothing about ideal family size, and real households share in ways division ignores.",
-      "path": "projects/069-resource-allocation-simulator/index.html"
-    },
-    {
-      "number": 70,
-      "slug": "070-freedom-points-game",
-      "title": "Freedom Points Game",
-      "category": "Games",
-      "difficulty": "Beginner",
-      "description": "Five everyday moments, one choice each — pick the response that protects your autonomy and stays kind. Each choice gives feedback on the 'freedom' and 'warmth' dials and points; the top answers keep both. A playful mirror and good practice. Best score saved; replay anytime.",
-      "path": "projects/070-freedom-points-game/index.html"
-    },
-    {
-      "number": 71,
-      "slug": "071-personal-manifesto-builder",
-      "title": "Personal Manifesto Builder",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Put your choices into words you can stand on. Answer four prompts and assemble a short, dignified manifesto in one of four tones, building live as you type. Save more than one version, load any back, and copy. For yourself, a journal, or a quiet reminder.",
-      "path": "projects/071-personal-manifesto-builder/index.html"
-    },
-    {
-      "number": 72,
-      "slug": "072-childfree-bio-generator",
-      "title": "Childfree Bio Generator",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "A friendly profile bio that reflects a childfree life. Pick a vibe and platform, toggle a few interests, generate variants, and edit until it sounds like you. Warm by design (no dig at anyone), with a live character count against the platform's limit and saved favourites.",
-      "path": "projects/072-childfree-bio-generator/index.html"
-    },
-    {
-      "number": 73,
-      "slug": "073-antinatalist-statement-builder",
-      "title": "Antinatalist Statement Builder",
-      "category": "Writing Tools",
-      "difficulty": "Intermediate",
-      "description": "Draft a clear, careful statement of an antinatalist view that argues the idea and never demeans people. Pick the basis (asymmetry, consent, risk, suffering-focused, or environmental), a tone, and a length; the builder assembles claim + reasoning + an explicit no-judgement caveat, with a built-in respect check.",
-      "path": "projects/073-antinatalist-statement-builder/index.html"
-    },
-    {
-      "number": 74,
-      "slug": "074-instagram-carousel-text-builder",
-      "title": "Instagram Carousel Text Builder",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Generate the text for a five-slide educational carousel — a hook, three clear points, and a kind closing — across five topics and three tones. Copy each slide or all at once. Respectful and accurate by design.",
-      "path": "projects/074-instagram-carousel-text-builder/index.html"
-    },
-    {
-      "number": 75,
-      "slug": "075-protest-poster-text-generator",
-      "title": "Protest Poster Text Generator",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "Short, positive, rights-based slogans for awareness about reproductive autonomy. Pick a focus and a style (plain, rhyming, or gentle), generate a line for a poster, placard, or post, cycle for more, and save favourites. Always affirming — never anti-anyone.",
-      "path": "projects/075-protest-poster-text-generator/index.html"
-    },
-    {
-      "number": 76,
-      "slug": "076-debate-notes-organizer",
-      "title": "Debate Notes Organizer",
-      "category": "Writing Tools",
-      "difficulty": "Intermediate",
-      "description": "Prepare for a respectful discussion by sorting your thoughts into four boxes: your claims, their strongest points (steelman), the evidence, and the common ground. Add items to each, get a balance check, and export a tidy prep sheet. Saves on this device.",
-      "path": "projects/076-debate-notes-organizer/index.html"
-    },
-    {
-      "number": 77,
-      "slug": "077-book-summary-template-tool",
-      "title": "Book Summary Template Tool",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "A reusable template for summarising any book — title, author, thesis, key ideas, lines worth remembering (in your own words), your critique, one takeaway, and a rating. Builds a live summary you can copy, and keeps a small saved library of books to load or remove.",
-      "path": "projects/077-book-summary-template-tool/index.html"
-    },
-    {
-      "number": 78,
-      "slug": "078-video-script-generator",
-      "title": "Video Script Generator",
-      "category": "Writing Tools",
-      "difficulty": "Intermediate",
-      "description": "Draft a short, respectful explainer-video script — a hook, a clear body, and a kind call-to-action — with rough time markers that adjust to length (30s/60s/3min) and tone. Four topics; the number of points scales with length. Edit to your voice and copy.",
-      "path": "projects/078-video-script-generator/index.html"
-    },
-    {
-      "number": 79,
-      "slug": "079-article-outline-generator",
-      "title": "Article Outline Generator",
-      "category": "Writing Tools",
-      "difficulty": "Intermediate",
-      "description": "Scaffold a fair, well-structured article outline. Pick a topic, framing (persuasive/balanced/explainer/personal), and number of body sections; every outline includes built-in space for the opposing view or common objections — because the strongest writing takes the other side seriously. Edit and copy.",
-      "path": "projects/079-article-outline-generator/index.html"
-    },
-    {
-      "number": 80,
-      "slug": "080-community-newsletter-template",
-      "title": "Community Newsletter Template",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "A friendly, reusable skeleton for a community newsletter — greeting, highlight, what's next, member spotlight, useful resource, and sign-off. Toggle the sections you want, fill them in, watch it assemble live, and copy. Warm and inclusive by default; saves on this device.",
-      "path": "projects/080-community-newsletter-template/index.html"
-    },
-    {
-      "number": 81,
-      "slug": "081-legal-rights-awareness-page",
-      "title": "Legal Rights Awareness Page",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "A plain-language overview of the rights and documents people often want to understand around reproductive autonomy and later life — especially when there are no children to default to. Expandable area cards, a saved 'documents to consider' checklist, and next-step guidance. General education only, not legal advice; laws vary by place.",
-      "path": "projects/081-legal-rights-awareness-page/index.html"
-    },
-    {
-      "number": 82,
-      "slug": "082-workplace-childfree-bias-notes",
-      "title": "Workplace Childfree Bias Notes",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Some workplaces quietly assume people without children have 'more time,' fewer commitments, or should always cover the holidays. These notes name five common biases, generate calm professional replies for four situations (warm/neutral/firm), and offer fairness principles for you and allies.",
-      "path": "projects/082-workplace-childfree-bias-notes/index.html"
-    },
-    {
-      "number": 83,
-      "slug": "083-healthcare-conversation-checklist",
-      "title": "Healthcare Conversation Checklist",
-      "category": "Childfree Life",
-      "difficulty": "Intermediate",
-      "description": "Prepare for a clear, respectful conversation with a healthcare provider: a before/during/after checklist with progress, a question bank you tap to build into a copyable list, and calm non-clinical lines for if you feel dismissed. Preparation support, not medical advice.",
-      "path": "projects/083-healthcare-conversation-checklist/index.html"
-    },
-    {
-      "number": 84,
-      "slug": "084-sterilization-discussion-preparation-tool",
-      "title": "Sterilization Discussion Preparation Tool",
-      "category": "Childfree Life",
-      "difficulty": "Intermediate",
-      "description": "If you're considering a conversation with a provider about permanent contraception, this builds a tidy list of questions to ask — by topic (options, permanence, risks, recovery, alternatives, consent/autonomy, access). Copyable, with 'worth thinking through first' cards. Educational preparation only, not medical advice.",
-      "path": "projects/084-sterilization-discussion-preparation-tool/index.html"
-    },
-    {
-      "number": 85,
-      "slug": "085-couple-compatibility-questions",
-      "title": "Couple Compatibility Questions",
-      "category": "Childfree Life",
-      "difficulty": "Beginner",
-      "description": "Whether to have children is one of the biggest things partners can align on — better discussed early and openly than assumed. Work through a 12-question deck together, mark each aligned/unsure/need-to-talk, and the tool gathers a focused conversation agenda. With tips for talking it through.",
-      "path": "projects/085-couple-compatibility-questions/index.html"
-    },
-    {
-      "number": 86,
-      "slug": "086-mental-health-boundary-notice",
-      "title": "Mental Health Boundary Notice",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "Online spaces about big life topics can get heavy. Draft a short, caring notice — for a group, post, or thread — that asks for content warnings, flags a heavy thread, encourages breaks, points toward support, or pauses a spiralling thread. Five purposes, warm/brief tones, non-clinical by design.",
-      "path": "projects/086-mental-health-boundary-notice/index.html"
-    },
-    {
-      "number": 87,
-      "slug": "087-crisis-safe-community-policy-page",
-      "title": "Crisis-Safe Community Policy Page",
-      "category": "Community Tools",
-      "difficulty": "Advanced",
-      "description": "If you run a community that discusses heavy topics, agree in advance how moderators respond when someone seems in distress. Build an adaptable policy template (purpose, do/don't, resources, moderator care) you can export — a community-conduct guide to refine with qualified input, explicitly NOT a clinical protocol.",
-      "path": "projects/087-crisis-safe-community-policy-page/index.html"
-    },
-    {
-      "number": 88,
-      "slug": "088-anti-harassment-rules-page",
-      "title": "Anti-Harassment Rules Page",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "A safe community needs clear rules that protect everyone, whatever their background or views. Toggle the protections you need (harassment, slurs, threats, doxxing, respect across views, unwanted sexual conduct, pile-ons, reporting) and generate a copyable, ready-to-pin anti-harassment policy with a reporting process and proportionate consequences.",
-      "path": "projects/088-anti-harassment-rules-page/index.html"
-    },
-    {
-      "number": 89,
-      "slug": "089-respectful-language-guide",
-      "title": "Respectful Language Guide",
-      "category": "Community Tools",
-      "difficulty": "Beginner",
-      "description": "You can hold a firm view and still speak kindly. A 'say this, not that' library of 14 word-choice swaps across five contexts (about parents, the childfree, in debate, about groups, self-talk), each with the reason behind it. Filter, search, and copy the kinder version.",
-      "path": "projects/089-respectful-language-guide/index.html"
-    },
-    {
-      "number": 90,
-      "slug": "090-safe-moderation-checklist",
-      "title": "Safe Moderation Checklist",
-      "category": "Community Tools",
-      "difficulty": "Intermediate",
-      "description": "Moderating a community well is quiet, steady work. This 20-item checklist gathers the habits that keep a space safe and fair — setup, day-to-day, handling conflict — and crucially includes real care for the moderators themselves. Tick as you go, copy the list, with core-principle cards. Saves on this device.",
-      "path": "projects/090-safe-moderation-checklist/index.html"
-    },
-    {
-      "number": 91,
-      "slug": "091-global-childfree-voices-map",
-      "title": "Global Childfree Voices Map",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "People choose childfree lives everywhere, and the conversation looks a little different from place to place. A gentle overview of broad regional patterns (tone, common pressures, hopeful threads) across eight world regions, with shared universal threads — and a firm reminder these are generalisations about conversations, never labels for individuals.",
-      "path": "projects/091-global-childfree-voices-map/index.html"
-    },
-    {
-      "number": 92,
-      "slug": "092-tamil-childfree-voices-page",
-      "title": "Tamil Childfree Voices Page",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "A warm acknowledgement of Tamil readers and a long cultural thread that prizes self-respect, reason, and dignity. Speaks with, not for — connecting childfree reflection to the Self-Respect heritage, with idea cards, a few Tamil terms (suya mariyathai, pakuttarivu, suthanthiram), and a resonance picker.",
-      "path": "projects/092-tamil-childfree-voices-page/index.html"
-    },
-    {
-      "number": 93,
-      "slug": "093-south-asian-pronatalism-explainer",
-      "title": "South Asian Pronatalism Explainer",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Pronatalism is the social push toward having children, and in many South Asian settings it's especially strong. Six common patterns, each with the worry underneath and the practice worth questioning, plus calm response lines — aimed squarely at practices and norms, never at any community, caste, or faith.",
-      "path": "projects/093-south-asian-pronatalism-explainer/index.html"
-    },
-    {
-      "number": 94,
-      "slug": "094-women-and-reproductive-pressure-page",
-      "title": "Women and Reproductive Pressure Page",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Reproductive pressure often lands hardest on women — through the 'motherhood mandate,' body-clock talk, the care default, and worth measured in motherhood. Six named shapes plus a line decoder (assumption + grounded reframe) for the lines women hear most. A pattern, not a prescription.",
-      "path": "projects/094-women-and-reproductive-pressure-page/index.html"
-    },
-    {
-      "number": 95,
-      "slug": "095-men-and-provider-pressure-page",
-      "title": "Men and Provider Pressure Page",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Men feel reproductive pressure too — often quieter, wrapped in ideas of being a provider, carrying on a name, or proving maturity. Six named shapes (provider mandate, carrying the name, fatherhood-as-maturity, the 'real man' trope, the silent assumption, legacy) plus a line decoder with assumption + grounded reframe.",
-      "path": "projects/095-men-and-provider-pressure-page/index.html"
-    },
-    {
-      "number": 96,
-      "slug": "096-lgbtq-childfree-inclusion-page",
-      "title": "LGBTQ+ Childfree Inclusion Page",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "LGBTQ+ people belong fully in conversations about childfree life and reproductive autonomy. Paths to family are wonderfully varied, and the choice to remain childfree is equally valid. Six points to hold, six copyable affirmations, and a welcome that names the assumptions cutting both ways.",
-      "path": "projects/096-lgbtq-childfree-inclusion-page/index.html"
-    },
-    {
-      "number": 97,
-      "slug": "097-disabled-people-and-reproductive-autonomy-page",
-      "title": "Disabled People and Reproductive Autonomy Page",
-      "category": "Ethics",
-      "difficulty": "Advanced",
-      "description": "Reproductive autonomy belongs to everyone, including disabled people, fully and without exception. Six core principles (autonomy, presumption of capacity, support-not-override, coercion-free both ways, learning from history, nothing-about-us-without-us) and a two-direction view of coercion. Disability-led and affirming.",
-      "path": "projects/097-disabled-people-and-reproductive-autonomy-page/index.html"
-    },
-    {
-      "number": 98,
-      "slug": "098-poverty-and-parenthood-pressure-explainer",
-      "title": "Poverty and Parenthood Pressure Explainer",
-      "category": "Society",
-      "difficulty": "Intermediate",
-      "description": "Money shapes how free a reproductive choice really is — and it pushes in both directions. This explains those pressures (toward and away from parenthood) by looking at systems — wages, costs, safety nets, access — not blaming individuals. A choice constrained by poverty is a matter of justice, not a personal failing.",
-      "path": "projects/098-poverty-and-parenthood-pressure-explainer/index.html"
-    },
-    {
-      "number": 99,
-      "slug": "099-future-without-forced-parenthood-vision-board",
-      "title": "Future Without Forced Parenthood Vision Board",
-      "category": "Writing Tools",
-      "difficulty": "Beginner",
-      "description": "A hopeful vision board for a world where every reproductive choice is free and supported — children or none, by genuine choice. Add prebuilt sparks or your own vision, build and rearrange your board, and export it. The future the whole collection points toward.",
-      "path": "projects/099-future-without-forced-parenthood-vision-board/index.html"
-    },
-    {
-      "number": 100,
-      "slug": "100-ancf-digital-projects-final-archive",
-      "title": "ANCF Digital Projects Final Archive",
-      "category": "Learning Tools",
-      "difficulty": "Beginner",
-      "description": "The whole collection at once: one hundred small, open, ad-free, tracking-free projects about thinking clearly and living freely. An at-a-glance stats panel, plus search, category filters, a random-project button, and linked cards for all 100 in one browsable archive.",
-      "path": "projects/100-ancf-digital-projects-final-archive/index.html"
-    }
+    {"number":1,"slug":"001-antinatalism-intro-guide","title":"Antinatalism Intro Guide","category":"Philosophy","type":"Guide","difficulty":"Beginner","estimatedTime":"20 min","collection":["beginner","ethics"],"featured":true,"description":"A calm, plain-language introduction to what antinatalism is — and is not. Now includes The Antinatalism Reader: a full 43-chapter companion book.","path":"projects/001-antinatalism-intro-guide/index.html"},
+    {"number":2,"slug":"002-childfree-life-intro-guide","title":"Childfree Life Intro Guide","category":"Childfree Life","type":"Guide","difficulty":"Beginner","estimatedTime":"20 min","collection":["beginner"],"featured":false,"description":"An introduction to choosing a life without children — practically and emotionally. Now includes The Childfree Life: a full 44-chapter companion book.","path":"projects/002-childfree-life-intro-guide/index.html"},
+    {"number":3,"slug":"003-pronatalism-pressure-detector","title":"Pronatalism Pressure Detector","category":"Society","type":"Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":["family-pressure"],"featured":true,"description":"A 360-degree interactive toolkit on pronatalism: understand its four levels and history, a message pressure-detector, a decoded field guide, a personal pressure profile, a coercion safety-check, a boundary composer, and rehearsal scenarios.","path":"projects/003-pronatalism-pressure-detector/index.html"},
+    {"number":4,"slug":"004-parenthood-assumption-quiz","title":"Parenthood Assumption Quiz","category":"Society","type":"Quiz","difficulty":"Beginner","estimatedTime":"10 min","collection":[],"featured":false,"description":"A 360-degree toolkit for examining the assumptions behind parenthood talk: an assumption decoder, an 18-entry library, a self-profile radar, a Socratic belief-examiner, root-tracing, a quiz, and reflection.","path":"projects/004-parenthood-assumption-quiz/index.html"},
+    {"number":5,"slug":"005-is-this-my-choice-reflection-tool","title":"“Is This My Choice?” Reflection Tool","category":"Childfree Life","type":"Reflection","difficulty":"Intermediate","estimatedTime":"15 min","collection":["beginner"],"featured":true,"description":"A decision-clarity studio for telling your own wishes from inherited pressure: a desire-vs-pressure map, a values clarifier, a whose-voice-is-it sorter, clarity signals, five classic perspective tools, and a private clarity report.","path":"projects/005-is-this-my-choice-reflection-tool/index.html"},
+    {"number":6,"slug":"006-reproductive-autonomy-explainer","title":"Reproductive Autonomy Explainer","category":"Ethics","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["beginner","ethics"],"featured":false,"description":"A 360-degree explainer on reproductive autonomy: the conditions a free choice needs, how coercion runs in both directions, a short history of reproductive rights, a personal autonomy self-check, scenarios, and an autonomy-respecting response generator.","path":"projects/006-reproductive-autonomy-explainer/index.html"},
+    {"number":7,"slug":"007-consent-and-birth-philosophy-page","title":"Consent and Birth Philosophy Page","category":"Philosophy","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"An interactive look at the consent argument in birth ethics: build the argument premise by premise, explore three senses of consent, Shiffrin's gold-coins analogy, an objection explorer, and a position finder.","path":"projects/007-consent-and-birth-philosophy-page/index.html"},
+    {"number":8,"slug":"008-suffering-risk-thought-experiment","title":"Suffering Risk Thought Experiment","category":"Philosophy","type":"Reflection","difficulty":"Intermediate","estimatedTime":"10 min","collection":["ethics"],"featured":false,"description":"A structured thought experiment about risk, certainty, and bringing life into the world.","path":"projects/008-suffering-risk-thought-experiment/index.html"},
+    {"number":9,"slug":"009-adoption-vs-birth-ethics-explainer","title":"Adoption vs Birth Ethics Explainer","category":"Ethics","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"A balanced comparison of ethical considerations around adoption and biological birth.","path":"projects/009-adoption-vs-birth-ethics-explainer/index.html"},
+    {"number":10,"slug":"010-no-means-no-family-boundary-tool","title":"“No Means No” Family Boundary Tool","category":"Community Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["beginner","family-pressure"],"featured":true,"description":"Generate calm, firm boundary statements for repeated family questions.","path":"projects/010-no-means-no-family-boundary-tool/index.html"},
+    {"number":11,"slug":"011-childfree-budget-calculator","title":"Childfree Budget Calculator","category":"Calculators","type":"Calculator","difficulty":"Beginner","estimatedTime":"5 min","collection":["practical"],"featured":false,"description":"Estimate annual discretionary money a childfree household might allocate differently.","path":"projects/011-childfree-budget-calculator/index.html"},
+    {"number":12,"slug":"012-parenthood-cost-estimator","title":"Parenthood Cost Estimator","category":"Calculators","type":"Calculator","difficulty":"Beginner","estimatedTime":"5 min","collection":["practical"],"featured":false,"description":"A neutral, editable estimate of cumulative child-rearing costs over years.","path":"projects/012-parenthood-cost-estimator/index.html"},
+    {"number":13,"slug":"013-time-freedom-calculator","title":"Time Freedom Calculator","category":"Calculators","type":"Calculator","difficulty":"Beginner","estimatedTime":"5 min","collection":["practical"],"featured":false,"description":"Estimate weekly discretionary hours under different care commitments.","path":"projects/013-time-freedom-calculator/index.html"},
+    {"number":14,"slug":"014-sleep-loss-simulator","title":"Sleep Loss Simulator","category":"Calculators","type":"Calculator","difficulty":"Beginner","estimatedTime":"5 min","collection":["practical"],"featured":false,"description":"Model cumulative sleep debt over a period of reduced nightly sleep.","path":"projects/014-sleep-loss-simulator/index.html"},
+    {"number":15,"slug":"015-life-goals-priority-mapper","title":"Life Goals Priority Mapper","category":"Writing Tools","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"Sort your life goals into now / soon / someday columns. Saved on your device.","path":"projects/015-life-goals-priority-mapper/index.html"},
+    {"number":16,"slug":"016-personal-peace-checklist","title":"Personal Peace Checklist","category":"Childfree Life","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":["beginner"],"featured":false,"description":"A gentle checklist for protecting your peace around family-pressure season.","path":"projects/016-personal-peace-checklist/index.html"},
+    {"number":17,"slug":"017-pressure-from-parents-response-generator","title":"Pressure From Parents Response Generator","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["family-pressure","writing"],"featured":false,"description":"Draft warm, respectful replies to parental pressure about children.","path":"projects/017-pressure-from-parents-response-generator/index.html"},
+    {"number":18,"slug":"018-marriage-and-children-conversation-tool","title":"Marriage and Children Conversation Tool","category":"Community Tools","type":"Community Tool","difficulty":"Intermediate","estimatedTime":"15 min","collection":["practical"],"featured":false,"description":"Prepare honest talking points for discussing children with a partner.","path":"projects/018-marriage-and-children-conversation-tool/index.html"},
+    {"number":19,"slug":"019-childfree-couple-planning-board","title":"Childfree Couple Planning Board","category":"Childfree Life","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"A shared planning board for a childfree couple’s shared and personal goals.","path":"projects/019-childfree-couple-planning-board/index.html"},
+    {"number":20,"slug":"020-retirement-without-children-planner","title":"Retirement Without Children Planner","category":"Calculators","type":"Calculator","difficulty":"Intermediate","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"A simple model of savings needed for later-life support without relying on children.","path":"projects/020-retirement-without-children-planner/index.html"},
+    {"number":21,"slug":"021-antinatalist-quote-archive","title":"Antinatalist Quote Archive","category":"Learning Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":["beginner"],"featured":false,"description":"A small, copyable archive of reflective lines on the ethics of birth (paraphrased for study).","path":"projects/021-antinatalist-quote-archive/index.html"},
+    {"number":22,"slug":"022-childfree-quote-archive","title":"Childfree Quote Archive","category":"Learning Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":["beginner"],"featured":false,"description":"Copyable affirmations and reflections on living childfree.","path":"projects/022-childfree-quote-archive/index.html"},
+    {"number":23,"slug":"023-ethics-flashcards","title":"Ethics Flashcards","category":"Learning Tools","type":"Flashcard","difficulty":"Beginner","estimatedTime":"15 min","collection":[],"featured":false,"description":"Flip-cards for key terms in birth ethics and autonomy.","path":"projects/023-ethics-flashcards/index.html"},
+    {"number":24,"slug":"024-philosophy-timeline","title":"Philosophy Timeline","category":"Learning Tools","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"A neutral timeline of ideas relevant to antinatalist and childfree thought.","path":"projects/024-philosophy-timeline/index.html"},
+    {"number":25,"slug":"025-benatar-argument-explainer","title":"Benatar Argument Explainer","category":"Philosophy","type":"Guide","difficulty":"Advanced","estimatedTime":"20 min","collection":["ethics"],"featured":true,"description":"A clear, fair summary of the well-known asymmetry argument — and its critics.","path":"projects/025-benatar-argument-explainer/index.html"},
+    {"number":26,"slug":"026-consent-argument-explainer","title":"Consent Argument Explainer","category":"Philosophy","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"The consent-based line of reasoning, presented with its rebuttals.","path":"projects/026-consent-argument-explainer/index.html"},
+    {"number":27,"slug":"027-risk-argument-explainer","title":"Risk Argument Explainer","category":"Philosophy","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"How risk and uncertainty feature in arguments about creating life.","path":"projects/027-risk-argument-explainer/index.html"},
+    {"number":28,"slug":"028-environmental-argument-explainer","title":"Environmental Argument Explainer","category":"Ethics","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"The ecological strand of antinatalist and childfree reasoning, fairly stated.","path":"projects/028-environmental-argument-explainer/index.html"},
+    {"number":29,"slug":"029-feminist-childfree-explainer","title":"Feminist Childfree Explainer","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How feminist thought connects to reproductive autonomy and the childfree choice.","path":"projects/029-feminist-childfree-explainer/index.html"},
+    {"number":30,"slug":"030-economic-pressure-explainer","title":"Economic Pressure Explainer","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How economic forces shape family decisions — without shaming anyone’s choices.","path":"projects/030-economic-pressure-explainer/index.html"},
+    {"number":31,"slug":"031-comic-strip-prompt-generator","title":"Comic Strip Prompt Generator","category":"Comics","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Generate gentle, metaphor-based comic ideas — never mocking real groups.","path":"projects/031-comic-strip-prompt-generator/index.html"},
+    {"number":32,"slug":"032-instagram-caption-generator","title":"Instagram Caption Generator","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Create thoughtful captions about childfree/antinatalist themes — respectful by design.","path":"projects/032-instagram-caption-generator/index.html"},
+    {"number":33,"slug":"033-debate-reply-generator","title":"Debate Reply Generator","category":"Writing Tools","type":"Generator","difficulty":"Intermediate","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Draft calm, non-hostile replies to common arguments — aimed at ideas, not people.","path":"projects/033-debate-reply-generator/index.html"},
+    {"number":34,"slug":"034-family-function-survival-script","title":"Family Function Survival Script","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["family-pressure","writing"],"featured":false,"description":"Build a pocket script of replies and exits for big family gatherings.","path":"projects/034-family-function-survival-script/index.html"},
+    {"number":35,"slug":"035-when-are-you-having-kids-reply-tool","title":"“When Are You Having Kids?” Reply Tool","category":"Community Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["family-pressure","writing"],"featured":false,"description":"Instant, kind one-liners for the most common question of all.","path":"projects/035-when-are-you-having-kids-reply-tool/index.html"},
+    {"number":36,"slug":"036-whatsapp-group-rules-generator","title":"WhatsApp Group Rules Generator","category":"Community Tools","type":"Community Tool","difficulty":"Beginner","estimatedTime":"5 min","collection":["community-admin"],"featured":false,"description":"Generate clear, inclusive rules for an online childfree/antinatalist community group.","path":"projects/036-whatsapp-group-rules-generator/index.html"},
+    {"number":37,"slug":"037-community-notice-generator","title":"Community Notice Generator","category":"Community Tools","type":"Community Tool","difficulty":"Beginner","estimatedTime":"5 min","collection":["community-admin"],"featured":false,"description":"Draft clear community announcements (events, policy updates, welcomes).","path":"projects/037-community-notice-generator/index.html"},
+    {"number":38,"slug":"038-admin-warning-message-generator","title":"Admin Warning Message Generator","category":"Community Tools","type":"Community Tool","difficulty":"Intermediate","estimatedTime":"5 min","collection":["community-admin"],"featured":false,"description":"Compose firm-but-fair moderation warnings that de-escalate.","path":"projects/038-admin-warning-message-generator/index.html"},
+    {"number":39,"slug":"039-respectful-debate-guide","title":"Respectful Debate Guide","category":"Community Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":["community-admin"],"featured":false,"description":"Principles and phrases for debating sensitive topics without harm.","path":"projects/039-respectful-debate-guide/index.html"},
+    {"number":40,"slug":"040-bad-argument-detector","title":"Bad Argument Detector","category":"Learning Tools","type":"Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":[],"featured":true,"description":"Spot common logical fallacies in any argument text, for learning.","path":"projects/040-bad-argument-detector/index.html"},
+    {"number":41,"slug":"041-pronatalist-phrase-translator","title":"Pronatalist Phrase Translator","category":"Society","type":"Tool","difficulty":"Beginner","estimatedTime":"5 min","collection":["family-pressure"],"featured":false,"description":"Translate a loaded pressure phrase into what it often assumes underneath.","path":"projects/041-pronatalist-phrase-translator/index.html"},
+    {"number":42,"slug":"042-emotional-blackmail-detector","title":"Emotional Blackmail Detector","category":"Society","type":"Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":["family-pressure"],"featured":false,"description":"Notice guilt-and-obligation patterns in a message, for your own clarity.","path":"projects/042-emotional-blackmail-detector/index.html"},
+    {"number":43,"slug":"043-gaslighting-phrase-detector","title":"Gaslighting Phrase Detector","category":"Society","type":"Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":["family-pressure"],"featured":false,"description":"Identify phrases that deny your reality, to help you trust your perception.","path":"projects/043-gaslighting-phrase-detector/index.html"},
+    {"number":44,"slug":"044-caste-community-name-warning-tool","title":"Caste/Community Name Warning Tool","category":"Community Tools","type":"Community Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":["community-admin"],"featured":false,"description":"A safety tool that warns when text names castes, communities, or ethnic groups in a targeting way.","path":"projects/044-caste-community-name-warning-tool/index.html"},
+    {"number":45,"slug":"045-identity-pressure-reflection-page","title":"Identity Pressure Reflection Page","category":"Society","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":[],"featured":false,"description":"Reflect on how identity and belonging shape reproductive expectations.","path":"projects/045-identity-pressure-reflection-page/index.html"},
+    {"number":46,"slug":"046-social-shame-explainer","title":"Social Shame Explainer","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How shame operates around reproductive choices — and how to loosen its grip.","path":"projects/046-social-shame-explainer/index.html"},
+    {"number":47,"slug":"047-cultural-pressure-map","title":"Cultural Pressure Map","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"A conceptual map of where reproductive pressure tends to come from.","path":"projects/047-cultural-pressure-map/index.html"},
+    {"number":48,"slug":"048-wedding-pressure-dialogue-simulator","title":"Wedding Pressure Dialogue Simulator","category":"Society","type":"Simulation","difficulty":"Intermediate","estimatedTime":"10 min","collection":["family-pressure"],"featured":false,"description":"Rehearse calm responses to wedding-season questions through guided prompts.","path":"projects/048-wedding-pressure-dialogue-simulator/index.html"},
+    {"number":49,"slug":"049-elder-advice-response-tool","title":"Elder Advice Response Tool","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["family-pressure","writing"],"featured":false,"description":"Respectful replies that honour elders while keeping your boundary.","path":"projects/049-elder-advice-response-tool/index.html"},
+    {"number":50,"slug":"050-childfree-faq","title":"Childfree FAQ","category":"Childfree Life","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":["beginner"],"featured":false,"description":"Straight answers to the questions childfree people hear most.","path":"projects/050-childfree-faq/index.html"},
+    {"number":51,"slug":"051-antinatalism-faq","title":"Antinatalism FAQ","category":"Philosophy","type":"Guide","difficulty":"Intermediate","estimatedTime":"10 min","collection":["beginner"],"featured":false,"description":"Clear answers to frequent questions and misconceptions about antinatalism.","path":"projects/051-antinatalism-faq/index.html"},
+    {"number":52,"slug":"052-beginner-study-plan","title":"Beginner Study Plan","category":"Learning Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"20 min","collection":["beginner"],"featured":false,"description":"A gentle first-month study plan for these topics.","path":"projects/052-beginner-study-plan/index.html"},
+    {"number":53,"slug":"053-30-day-reading-challenge","title":"30-Day Reading Challenge","category":"Learning Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"5 min/day","collection":[],"featured":false,"description":"A 30-day prompt-a-day challenge to build a thoughtful view.","path":"projects/053-30-day-reading-challenge/index.html"},
+    {"number":54,"slug":"054-study-circle-dashboard","title":"Study Circle Dashboard","category":"Community Tools","type":"Community Tool","difficulty":"Intermediate","estimatedTime":"15 min","collection":["community-admin"],"featured":false,"description":"Organise a small study circle: topics, roles, and questions.","path":"projects/054-study-circle-dashboard/index.html"},
+    {"number":55,"slug":"055-philosophy-comparison-tool","title":"Philosophy Comparison Tool","category":"Learning Tools","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"Compare several positions side by side on key questions.","path":"projects/055-philosophy-comparison-tool/index.html"},
+    {"number":56,"slug":"056-stoicism-and-antinatalism-notes","title":"Stoicism and Antinatalism Notes","category":"Philosophy","type":"Guide","difficulty":"Advanced","estimatedTime":"20 min","collection":["ethics"],"featured":false,"description":"Study notes connecting Stoic ideas with reflective questions about birth.","path":"projects/056-stoicism-and-antinatalism-notes/index.html"},
+    {"number":57,"slug":"057-buddhism-and-antinatalism-notes","title":"Buddhism and Antinatalism Notes","category":"Philosophy","type":"Guide","difficulty":"Advanced","estimatedTime":"20 min","collection":["ethics"],"featured":false,"description":"Respectful study notes on Buddhist themes and questions about birth.","path":"projects/057-buddhism-and-antinatalism-notes/index.html"},
+    {"number":58,"slug":"058-periyarism-and-childfree-reflection","title":"Periyarism and Childfree Reflection","category":"Society","type":"Guide","difficulty":"Advanced","estimatedTime":"20 min","collection":[],"featured":false,"description":"Notes on rationalist, self-respect traditions and personal autonomy.","path":"projects/058-periyarism-and-childfree-reflection/index.html"},
+    {"number":59,"slug":"059-nietzsche-misuse-explainer","title":"Nietzsche Misuse Explainer","category":"Philosophy","type":"Guide","difficulty":"Advanced","estimatedTime":"20 min","collection":[],"featured":false,"description":"How Nietzsche is often misquoted in these debates — and a fairer reading.","path":"projects/059-nietzsche-misuse-explainer/index.html"},
+    {"number":60,"slug":"060-rationalism-toolkit","title":"Rationalism Toolkit","category":"Learning Tools","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"Practical thinking tools for reasoning clearly about emotive topics.","path":"projects/060-rationalism-toolkit/index.html"},
+    {"number":61,"slug":"061-mini-car-race-game","title":"Mini Car Race Game: Escape Pronatalist Pressure","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"A lightweight lane-dodging game where you steer past pressure blocks.","path":"projects/061-mini-car-race-game/index.html"},
+    {"number":62,"slug":"062-pong-game-choice-vs-pressure","title":"Pong Game: Choice vs Pressure","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"Classic one-paddle pong: 'Choice' rallies against 'Pressure'.","path":"projects/062-pong-game-choice-vs-pressure/index.html"},
+    {"number":63,"slug":"063-platform-game-boundary-runner","title":"Platform Game: Boundary Runner","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"Hop over obstacles in this tiny endless runner about keeping boundaries.","path":"projects/063-platform-game-boundary-runner/index.html"},
+    {"number":64,"slug":"064-quiz-game-myth-vs-reality","title":"Quiz Game: Myth vs Reality","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"10 min","collection":["games"],"featured":true,"description":"A myth-busting quiz about childfree and antinatalist topics.","path":"projects/064-quiz-game-myth-vs-reality/index.html"},
+    {"number":65,"slug":"065-memory-game-ethical-concepts","title":"Memory Game: Ethical Concepts","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"10 min","collection":["games"],"featured":false,"description":"Match pairs of key ethics terms to reinforce learning.","path":"projects/065-memory-game-ethical-concepts/index.html"},
+    {"number":66,"slug":"066-decision-tree-game","title":"Decision Tree Game","category":"Games","type":"Game","difficulty":"Intermediate","estimatedTime":"10 min","collection":["games"],"featured":false,"description":"Walk a branching scenario about handling pressure, earning 'freedom points'.","path":"projects/066-decision-tree-game/index.html"},
+    {"number":67,"slug":"067-auntie-uncle-chase-arcade-game","title":"“Auntie Uncle Chase” Arcade Game","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"Collect 'freedom tokens' while gently avoiding the well-meaning chasers.","path":"projects/067-auntie-uncle-chase-arcade-game/index.html"},
+    {"number":68,"slug":"068-population-growth-visual-toy","title":"Population Growth Visual Toy","category":"Games","type":"Simulation","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"A slider toy that shows how exponential growth curves behave.","path":"projects/068-population-growth-visual-toy/index.html"},
+    {"number":69,"slug":"069-resource-allocation-simulator","title":"Resource Allocation Simulator","category":"Games","type":"Simulation","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"See how a fixed resource pool divides among different household sizes.","path":"projects/069-resource-allocation-simulator/index.html"},
+    {"number":70,"slug":"070-freedom-points-game","title":"Freedom Points Game","category":"Games","type":"Game","difficulty":"Beginner","estimatedTime":"5 min","collection":["games"],"featured":false,"description":"A quick branching game rewarding self-respecting, kind choices.","path":"projects/070-freedom-points-game/index.html"},
+    {"number":71,"slug":"071-personal-manifesto-builder","title":"Personal Manifesto Builder","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"10 min","collection":["writing"],"featured":true,"description":"Assemble a short, dignified personal manifesto about your choices.","path":"projects/071-personal-manifesto-builder/index.html"},
+    {"number":72,"slug":"072-childfree-bio-generator","title":"Childfree Bio Generator","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Generate a friendly profile bio that reflects a childfree identity.","path":"projects/072-childfree-bio-generator/index.html"},
+    {"number":73,"slug":"073-antinatalist-statement-builder","title":"Antinatalist Statement Builder","category":"Writing Tools","type":"Generator","difficulty":"Intermediate","estimatedTime":"10 min","collection":["writing"],"featured":false,"description":"Draft a careful, non-hateful statement of an antinatalist view.","path":"projects/073-antinatalist-statement-builder/index.html"},
+    {"number":74,"slug":"074-instagram-carousel-text-builder","title":"Instagram Carousel Text Builder","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Generate slide-by-slide text for an educational carousel post.","path":"projects/074-instagram-carousel-text-builder/index.html"},
+    {"number":75,"slug":"075-protest-poster-text-generator","title":"Protest Poster Text Generator","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Create short, positive slogans for awareness about reproductive autonomy.","path":"projects/075-protest-poster-text-generator/index.html"},
+    {"number":76,"slug":"076-debate-notes-organizer","title":"Debate Notes Organizer","category":"Writing Tools","type":"Generator","difficulty":"Intermediate","estimatedTime":"10 min","collection":["writing"],"featured":false,"description":"Organise a debate: your claims, their claims, evidence, and common ground.","path":"projects/076-debate-notes-organizer/index.html"},
+    {"number":77,"slug":"077-book-summary-template-tool","title":"Book Summary Template Tool","category":"Writing Tools","type":"Generator","difficulty":"Beginner","estimatedTime":"5 min","collection":["writing"],"featured":false,"description":"Generate a clean template to summarise any book you read on these topics.","path":"projects/077-book-summary-template-tool/index.html"},
+    {"number":78,"slug":"078-video-script-generator","title":"Video Script Generator","category":"Writing Tools","type":"Generator","difficulty":"Intermediate","estimatedTime":"10 min","collection":["writing"],"featured":false,"description":"Draft a short, respectful explainer-video script.","path":"projects/078-video-script-generator/index.html"},
+    {"number":79,"slug":"079-article-outline-generator","title":"Article Outline Generator","category":"Writing Tools","type":"Generator","difficulty":"Intermediate","estimatedTime":"10 min","collection":["writing"],"featured":false,"description":"Produce a balanced article outline on a chosen topic.","path":"projects/079-article-outline-generator/index.html"},
+    {"number":80,"slug":"080-community-newsletter-template","title":"Community Newsletter Template","category":"Community Tools","type":"Community Tool","difficulty":"Beginner","estimatedTime":"10 min","collection":["community-admin","writing"],"featured":false,"description":"Generate a friendly newsletter skeleton for a community group.","path":"projects/080-community-newsletter-template/index.html"},
+    {"number":81,"slug":"081-legal-rights-awareness-page","title":"Legal Rights Awareness Page","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"General awareness of rights related to reproductive autonomy — not legal advice.","path":"projects/081-legal-rights-awareness-page/index.html"},
+    {"number":82,"slug":"082-workplace-childfree-bias-notes","title":"Workplace Childfree Bias Notes","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":["practical"],"featured":false,"description":"Notes on subtle workplace assumptions about parenthood — and staying professional.","path":"projects/082-workplace-childfree-bias-notes/index.html"},
+    {"number":83,"slug":"083-healthcare-conversation-checklist","title":"Healthcare Conversation Checklist","category":"Childfree Life","type":"Checklist","difficulty":"Intermediate","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"Prepare for a respectful, productive talk with a healthcare provider.","path":"projects/083-healthcare-conversation-checklist/index.html"},
+    {"number":84,"slug":"084-sterilization-discussion-preparation-tool","title":"Sterilization Discussion Preparation Tool","category":"Childfree Life","type":"Checklist","difficulty":"Intermediate","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"Draft respectful questions to discuss permanent contraception with a doctor.","path":"projects/084-sterilization-discussion-preparation-tool/index.html"},
+    {"number":85,"slug":"085-couple-compatibility-questions","title":"Couple Compatibility Questions","category":"Childfree Life","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":["practical"],"featured":false,"description":"Conversation-starter questions to explore alignment on children and life.","path":"projects/085-couple-compatibility-questions/index.html"},
+    {"number":86,"slug":"086-mental-health-boundary-notice","title":"Mental Health Boundary Notice","category":"Community Tools","type":"Community Tool","difficulty":"Beginner","estimatedTime":"5 min","collection":["community-admin"],"featured":false,"description":"Draft a caring notice that sets a topic boundary while signposting support.","path":"projects/086-mental-health-boundary-notice/index.html"},
+    {"number":87,"slug":"087-crisis-safe-community-policy-page","title":"Crisis-Safe Community Policy Page","category":"Community Tools","type":"Community Tool","difficulty":"Advanced","estimatedTime":"15 min","collection":["community-admin"],"featured":false,"description":"A model policy for handling crisis moments safely and kindly in a community.","path":"projects/087-crisis-safe-community-policy-page/index.html"},
+    {"number":88,"slug":"088-anti-harassment-rules-page","title":"Anti-Harassment Rules Page","category":"Community Tools","type":"Community Tool","difficulty":"Beginner","estimatedTime":"10 min","collection":["community-admin"],"featured":false,"description":"Clear anti-harassment rules that protect every member.","path":"projects/088-anti-harassment-rules-page/index.html"},
+    {"number":89,"slug":"089-respectful-language-guide","title":"Respectful Language Guide","category":"Community Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":["community-admin"],"featured":false,"description":"Word choices that keep advocacy firm yet kind.","path":"projects/089-respectful-language-guide/index.html"},
+    {"number":90,"slug":"090-safe-moderation-checklist","title":"Safe Moderation Checklist","category":"Community Tools","type":"Community Tool","difficulty":"Intermediate","estimatedTime":"10 min","collection":["community-admin"],"featured":false,"description":"A pre-flight checklist for moderators keeping a space safe and fair.","path":"projects/090-safe-moderation-checklist/index.html"},
+    {"number":91,"slug":"091-global-childfree-voices-map","title":"Global Childfree Voices Map","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"10 min","collection":[],"featured":false,"description":"A conceptual map of how childfree conversations appear across regions.","path":"projects/091-global-childfree-voices-map/index.html"},
+    {"number":92,"slug":"092-tamil-childfree-voices-page","title":"Tamil Childfree Voices Page","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"10 min","collection":[],"featured":false,"description":"A respectful page acknowledging Tamil-language voices on autonomy and childfree life.","path":"projects/092-tamil-childfree-voices-page/index.html"},
+    {"number":93,"slug":"093-south-asian-pronatalism-explainer","title":"South Asian Pronatalism Explainer","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"A careful explainer on pronatalist pressures in South Asian contexts — without stereotyping.","path":"projects/093-south-asian-pronatalism-explainer/index.html"},
+    {"number":94,"slug":"094-women-and-reproductive-pressure-page","title":"Women and Reproductive Pressure Page","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How reproductive pressure specifically affects women — with full respect for mothers.","path":"projects/094-women-and-reproductive-pressure-page/index.html"},
+    {"number":95,"slug":"095-men-and-provider-pressure-page","title":"Men and Provider Pressure Page","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How provider and 'legacy' pressures affect men — with empathy.","path":"projects/095-men-and-provider-pressure-page/index.html"},
+    {"number":96,"slug":"096-lgbtq-childfree-inclusion-page","title":"LGBTQ+ Childfree Inclusion Page","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"Centring LGBTQ+ experiences within childfree and autonomy conversations.","path":"projects/096-lgbtq-childfree-inclusion-page/index.html"},
+    {"number":97,"slug":"097-disabled-people-and-reproductive-autonomy-page","title":"Disabled People and Reproductive Autonomy Page","category":"Ethics","type":"Guide","difficulty":"Advanced","estimatedTime":"15 min","collection":["ethics"],"featured":false,"description":"Affirming the full reproductive autonomy of disabled people.","path":"projects/097-disabled-people-and-reproductive-autonomy-page/index.html"},
+    {"number":98,"slug":"098-poverty-and-parenthood-pressure-explainer","title":"Poverty and Parenthood Pressure Explainer","category":"Society","type":"Guide","difficulty":"Intermediate","estimatedTime":"15 min","collection":[],"featured":false,"description":"How poverty shapes family pressures — critiquing systems, never poor people.","path":"projects/098-poverty-and-parenthood-pressure-explainer/index.html"},
+    {"number":99,"slug":"099-future-without-forced-parenthood-vision-board","title":"Future Without Forced Parenthood Vision Board","category":"Writing Tools","type":"Reflection","difficulty":"Beginner","estimatedTime":"10 min","collection":["writing"],"featured":false,"description":"Imagine and sketch a future built on free, supported reproductive choice.","path":"projects/099-future-without-forced-parenthood-vision-board/index.html"},
+    {"number":100,"slug":"100-ancf-digital-projects-final-archive","title":"ANCF Digital Projects Final Archive","category":"Learning Tools","type":"Guide","difficulty":"Beginner","estimatedTime":"10 min","collection":[],"featured":false,"description":"The closing archive: a thank-you and a map back into the whole collection.","path":"projects/100-ancf-digital-projects-final-archive/index.html"}
   ]
 }
