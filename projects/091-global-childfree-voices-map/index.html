@@ -1,62 +1,35 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Global Childfree Voices Map · ANCF Digital Projects</title><meta name="description" content="An interactive overview of broad conversational themes about childfree life across world regions — explicitly not stereotyping any place or person."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Global Childfree Voices Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Global Childfree Voices Map · ANCF Digital Projects</title><meta name="description" content="People choose childfree lives everywhere — and the conversation looks a little different from place to place. A gentle overview of broad regional patterns and shared threads, with the firm reminder that these are generalisations, never rules about any individual."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Global Childfree Voices Map</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../090-safe-moderation-checklist/index.html">← Previous</a><a class="btn btn-primary" href="../092-tamil-childfree-voices-page/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 091</span><h2>Global Childfree Voices Map</h2><div><span class="cat">Inclusion</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
-<p class="lead">People choose childfree lives everywhere — and the conversation looks a little different from place to place. This is a gentle overview of broad <strong>themes</strong>, not a verdict on any region or person. Tap a region to read its theme.</p>
+<div class="proj-head"><span class="num">PROJECT 091</span><h2>Global Childfree Voices Map</h2><div><span class="cat">Society</span> <span class="note">· Difficulty: Intermediate · ~15 min · overview</span></div></div>
+<p class="lead">People choose childfree lives <strong>everywhere</strong> — and the conversation looks a little different from place to place. This is a gentle overview of broad regional patterns and the threads that run through all of them. Browse the regions, filter, and reflect.</p>
+<div class="notice"><b>A necessary caveat:</b> these are sweeping generalisations about <em>conversations and pressures</em>, not statements about individuals. Every region contains enormous internal variety, and no one is defined by where they live. Treat this as a loose map, never a label.</div>
+<nav class="jump" aria-label="Jump to a section"><a href="#regions">① Around the world</a><a href="#shared">② Shared threads</a><a href="#reflect">③ Reflection</a></nav>
 
-<p class="disclaimer">These are broad, respectful generalisations about public conversation — <strong>not stereotypes</strong>. Every place holds a full range of views, and individuals vary enormously. No region is "better" or "worse."</p>
+<h3 id="regions" style="scroll-margin-top:70px">① Around the world</h3>
+<div class="panel"><p class="note">Filter or browse. Each note covers the general tone, common pressures, and a hopeful thread.</p>
+<div class="fil-chips" id="chips"></div>
+<div id="regionBox"></div></div>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>That childfree choices are a worldwide reality.</li>
-<li>How social context shapes the conversation.</li>
-<li>Why respect for individuals always comes first.</li>
-</ul></div>
+<h3 id="shared" style="scroll-margin-top:70px">② Shared threads</h3>
+<div class="panel"><p class="note">What turns up almost everywhere. Tap to expand.</p><div class="cards3" id="sharedCards"></div></div>
 
-<div class="panel"><h3>1. Explore the themes</h3>
-<p class="note">Tap a region to read a broad theme in how the childfree conversation tends to show up there.</p>
-<div id="regions" class="region-grid">
-<button class="region" type="button" data-k="sasia">South Asia</button>
-<button class="region" type="button" data-k="easia">East Asia</button>
-<button class="region" type="button" data-k="europe">Europe</button>
-<button class="region" type="button" data-k="namerica">North America</button>
-<button class="region" type="button" data-k="latam">Latin America</button>
-<button class="region" type="button" data-k="mena">Middle East &amp; N. Africa</button>
-<button class="region" type="button" data-k="ssa">Sub-Saharan Africa</button>
-<button class="region" type="button" data-k="oceania">Oceania</button>
-</div>
-<div class="region-detail" id="detail" role="status" aria-live="polite"><p class="note">Select a region above to read its theme.</p></div>
-</div>
-
-<div class="panel"><h3>2. A shared thread</h3>
-<div class="kv">
-<strong>Everywhere</strong><span>Some people want children; some don't. Both are part of every culture.</span>
-<strong>Context shapes voice</strong><span>How freely people discuss it depends on local norms, not on anyone's worth.</span>
-<strong>Respect is universal</strong><span>Wherever you are, your reproductive choices are yours.</span>
-</div>
-</div>
-
-<div class="panel"><h3>3. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. This map offers…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Stereotypes of each region</div><div class="opt" data-q="0" data-i="1">Broad themes, respecting individual variation</div><div class="opt" data-q="0" data-i="2">A ranking of cultures</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Childfree choices exist…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Only in some places</div><div class="opt" data-q="1" data-i="1">In every culture and region</div><div class="opt" data-q="1" data-i="2">Nowhere</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Wherever you are: what's one pressure that feels local to your context, and one that feels universal?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>The childfree choice is human, not regional. Cultures shape how openly the topic is discussed, but never whose choice it is. Hold the themes lightly, and the people behind them with respect.</p></div>
+<p>The specifics of reproductive pressure shift with culture, economy, and history — but the heart of it is strikingly universal: a default assumed, and the quiet courage of choosing your own path within it. Whatever the local accent, you're part of a worldwide, very human conversation.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../092-tamil-childfree-voices-page/index.html">Tamil Childfree Voices<span>A closer look</span></a>
-<a href="../093-south-asian-pronatalism-explainer/index.html">South Asian Pronatalism<span>Context</span></a>
-<a href="../096-lgbtq-childfree-inclusion-page/index.html">LGBTQ+ Inclusion<span>Everyone belongs</span></a>
-<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy<span>The principle</span></a>
+<a href="../092-tamil-childfree-voices-page/index.html">Tamil Voices<span>A closer look</span></a>
+<a href="../093-south-asian-pronatalism-explainer/index.html">South Asian Pronatalism<span>Regional patterns</span></a>
+<a href="../003-pronatalism-pressure-detector/index.html">Pressure Detector<span>The mechanics</span></a>
+<a href="../047-cultural-pressure-map/index.html">Pressure Map<span>Your own sources</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../090-safe-moderation-checklist/index.html">← Previous</a><a class="btn btn-primary" href="../092-tamil-childfree-voices-page/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

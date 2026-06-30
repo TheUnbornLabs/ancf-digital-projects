@@ -1,12 +1,7 @@
-# Women and Reproductive Pressure Page
+# Women and Reproductive Pressure
 
 *Project 094 · Category: Society · Difficulty: Intermediate*
 
-How reproductive pressure specifically affects women — with full respect for mothers.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Six "shapes" cards (motherhood mandate [Russo 1976], biological clock [1978 column], care default,
+incomplete-woman trope, worth-as-mother, double standard) plus a line decoder that surfaces the
+assumption and a grounded reframe for five common lines. Vanilla JS; DOM test 4/4.

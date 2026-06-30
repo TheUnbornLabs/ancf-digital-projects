@@ -2,11 +2,7 @@
 
 *Project 088 · Category: Community Tools · Difficulty: Beginner*
 
-Clear anti-harassment rules that protect every member.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Generates a ready-to-pin anti-harassment policy from a community name, three enforcement levels, and
+eight toggleable protections, with an always-on dignity rule, a reporting section, and proportionate
+consequences. Live preview, select-all, copy. Protects everyone incl. those who disagree. Vanilla JS;
+DOM test 7/7.

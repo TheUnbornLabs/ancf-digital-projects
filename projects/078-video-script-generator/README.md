@@ -2,11 +2,6 @@
 
 *Project 078 · Category: Writing Tools · Difficulty: Intermediate*
 
-Draft a short, respectful explainer-video script.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Generates a timed explainer-video script (hook / scaling body points / call-to-action) across four
+topics, three tones, and three lengths, with mm:ss markers computed from the chosen duration (point
+count scales with length). Filming-tip cards + copy. Respectful by design. Vanilla JS; DOM test 8/8.

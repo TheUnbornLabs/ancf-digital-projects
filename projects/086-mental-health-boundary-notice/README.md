@@ -2,11 +2,7 @@
 
 *Project 086 · Category: Community Tools · Difficulty: Beginner*
 
-Draft a caring notice that sets a topic boundary while signposting support.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Generates short caring notices across five purposes (content warnings, heavy-thread flag, encourage
+breaks, point toward support, pause a thread), three "where" contexts, and warm/brief tones, with
+variants and copy. Care-not-diagnose framing; points to professionals for real distress. Vanilla JS;
+DOM test 6/6.

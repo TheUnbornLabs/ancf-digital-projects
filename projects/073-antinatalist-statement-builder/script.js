@@ -1,26 +1,51 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var core={consent:'I hold that creating a new person imposes the risks of a whole life on someone who cannot consent in advance, and that this deserves serious ethical justification.',suffering:'I hold that because every life carries some risk of serious suffering, choosing not to create a new person is a reasonable way to avoid imposing that risk on someone who cannot weigh it.',asymmetry:'I find the asymmetry argument compelling: the absence of suffering is good even with no one to enjoy it, while the absence of pleasure is not a loss when there is no one to be deprived.',autonomy:'I hold that whether to bring a new person into existence is a weighty ethical decision rather than an automatic duty, and that the question belongs to careful reflection.',ecology:'I weigh ecological limits as one personal consideration among many, focused on systems and consumption rather than on judging any family.'};
-var pre={measured:'After careful thought, ',personal:'For me, ',academic:'On the view I find most defensible, '};
-var basis=document.getElementById('basis'),tone=document.getElementById('tone'),out=document.getElementById('out');
-function build(){out.value=(pre[tone.value]||'')+(core[basis.value]||core.consent)+' I hold this view about the ethics of creating life, not as any judgement of parents, children, or families — for whom I have full respect — and I welcome disagreement made in good faith.';if(A.set)A.set('stmt',out.value);}
-var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',build);
-if(basis)basis.addEventListener('change',build);if(tone)tone.addEventListener('change',build);
-if(out){if(A.get)out.value=A.get('stmt','');out.addEventListener('input',function(){if(A.set)A.set('stmt',out.value);});if(!out.value)build();}
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
-
-var QZ=[{a:1,e:'Argue the idea, with respect for people.'},{a:1,e:'A respect line keeps a strong claim civil and fair.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 073 script error',e);}
+/* Project 073 · Antinatalist Statement Builder — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var BASIS={
+    asymmetry:{claim:'I hold that coming into existence carries a net harm, and that this gives us strong moral reason not to procreate.',
+      reason:'This rests on an asymmetry argued by David Benatar: the absence of pain is good even when no one exists to enjoy that absence, whereas the absence of pleasure is only bad when there is someone for whom it is a deprivation. If that asymmetry holds, then never coming to exist spares a person all harm at the cost of no real loss.'},
+    consent:{claim:'I hold that procreation is ethically fraught because it imposes serious, unavoidable risks on someone who cannot consent.',
+      reason:'We normally require consent before exposing a person to significant risk. A being who does not yet exist cannot agree to be born, yet birth guarantees exposure to pain, loss, and eventual death. That a future person also cannot refuse does not, I think, dissolve the difficulty of acting on their behalf in so consequential a way.'},
+    risk:{claim:'I hold that procreation is a grave gamble with another\'s wellbeing, and that this counsels caution rather than confidence.',
+      reason:'No parent can guarantee a life free of severe suffering, and the possible downsides — chronic illness, trauma, despair — are irreversible once a life begins. Imposing that non-consensual risk on someone else, when the alternative harms no one, is at least worth taking far more seriously than we usually do.'},
+    suffering:{claim:'I hold that reducing suffering takes moral priority, and that this weighs against creating new beings who will inevitably suffer.',
+      reason:'On a suffering-focused view, preventing severe suffering matters more than, or before, creating new happiness. Since a new life reliably contains real suffering and only possible goods, the prevention of that suffering can carry decisive weight. I grant that how one balances this against life\'s genuine goods is exactly where reasonable people differ.'},
+    environmental:{claim:'I hold that, given finite ecological limits, the decision to procreate deserves honest moral scrutiny.',
+      reason:'Each new life draws on shared and strained resources, and on a damaged climate that the new person did not choose to inherit. I do not claim this settles the matter — systems and policy dwarf any individual choice — but I think it belongs in an honest accounting rather than being treated as taboo.'}
+  };
+  var FRAME={
+    plain:{open:'My view, stated plainly:',close:''},
+    academic:{open:'A statement of position:',close:''},
+    personal:{open:'Speaking for myself:',close:''}
+  };
+  var CAVEAT='To be clear: this is a claim about the ethics of creating new lives, not a judgement of anyone who has children. Parenthood is a near-universal, deeply human, and socially encouraged choice, and I hold the people who make it in full respect. I also recognise this view faces serious objections, and I hold it provisionally, open to argument.';
+  function build(){
+    var b=BASIS[$('basis').value], f=FRAME[$('tone').value], full=$('length').value==='full';
+    var parts=[f.open,'',b.claim];
+    parts.push(''); parts.push(b.reason);
+    parts.push(''); parts.push(CAVEAT);
+    var txt=parts.join('\n');
+    if(!full){ txt=f.open+'\n\n'+b.claim+'\n\n'+CAVEAT; }
+    $('out').textContent=txt; check(txt); return txt;
+  }
+  function check(txt){ // confirm no demeaning language slipped in
+    var bad=/\b(idiot|stupid|selfish breeders?|breeders?|inferior|subhuman|deserve|losers?)\b/i;
+    var w=$('warn'); if(!w) return;
+    if(bad.test(txt)){ w.classList.add('show'); w.innerHTML='<b>Heads up:</b> this draft contains language that could read as demeaning. A statement is strongest when it targets the idea, not people.'; }
+    else { w.classList.remove('show'); w.textContent=''; }
+  }
+  ['basis','tone','length'].forEach(function(id){ var el=$(id); if(el) el.addEventListener('change',build); });
+  $('buildBtn').addEventListener('click',build);
+  $('copyBtn').addEventListener('click',function(){ if(A.copy) A.copy($('out').textContent,$('copyBtn')); });
+  (function(){ var box=$('respectList'); if(!box) return;
+    var R=['Argues the idea, never attacks people','States the claim, then the reasoning behind it','Explicitly declines to judge those who choose differently','Concedes the view faces serious objections','Holds the position provisionally, open to argument'];
+    box.innerHTML=R.map(function(t){ return '<div class="r"><span class="ok">✓</span><span>'+esc(t)+'</span></div>'; }).join(''); })();
+  build();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 073 script error', e); }
 });

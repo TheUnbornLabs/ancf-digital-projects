@@ -1,40 +1,33 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var Q={
- options:['What options are available to me, and how do they differ?'],
- permanence:['How permanent is each option, and is reversal ever possible?'],
- risks:['What are the risks, the recovery like, and what should I expect afterwards?'],
- eligibility:['Am I eligible, and is there any required waiting period or timing?'],
- access:['Where can this be done, and what would it cost?'],
- secondopinion:['If I want a second opinion, how would I go about that?']
-};
-var boxes=[].slice.call(document.querySelectorAll('#focus input[type=checkbox]'));
-var out=document.getElementById('out');
-function build(){
-  var L=['Questions for my provider:',''];var n=1;
-  boxes.forEach(function(b){if(b.checked){(Q[b.getAttribute('data-key')]||[]).forEach(function(q){L.push(n+'. '+q);n++;});}});
-  if(n===1){L.push('(Tick some topics above to add questions.)');}
-  L.push('','I would like time to think before deciding anything.');
-  out.value=L.join('\n');if(A.set)A.set('sterq',out.value);
-}
-var saved=A.getJSON?A.getJSON('focus',{}):{};saved=saved||{};
-boxes.forEach(function(b){var k=b.getAttribute('data-key');if(saved[k])b.checked=true;b.addEventListener('change',function(){saved[k]=b.checked;if(A.setJSON)A.setJSON('focus',saved);});});
-var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',build);
-if(out){if(A.get)out.value=A.get('sterq','');out.addEventListener('input',function(){if(A.set)A.set('sterq',out.value);});if(!out.value)build();}
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
-
-var QZ=[{a:1,e:'This tool only helps you prepare questions — it makes no recommendation.'},{a:1,e:'The decision belongs to you and a qualified provider.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 084 script error',e);}
+/* Project 084 · Sterilization Discussion Preparation Tool — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var CATS=[
+    {id:'options',label:'Options & suitability',qs:['What options are available to someone in my situation?','Which might suit me, and why?','How effective is each, in plain terms?']},
+    {id:'permanence',label:'Permanence & reversibility',qs:['How permanent should I consider this?','What is known about reversibility, and how reliable is that?','How should I weigh permanence in my decision?']},
+    {id:'risks',label:'Risks & side effects',qs:['What are the possible risks and side effects?','How common are they, and which are serious?','What should I watch for afterwards?']},
+    {id:'recovery',label:'Procedure & recovery',qs:['What does the process involve, at a high level?','What is recovery typically like, and how long?','What support or time off might I need?']},
+    {id:'alternatives',label:'Alternatives',qs:['What non-permanent alternatives exist?','How do they compare for someone who is sure they don\'t want children?','Is there any reason to try those first?']},
+    {id:'consent',label:'Consent & autonomy',qs:['Is this decision mine to make, and will my informed choice be respected?','If you\'re not able to help, can you refer me to someone who can?','Can I have the key information and any decision noted in writing?']},
+    {id:'access',label:'Access & cost',qs:['Is there a waiting period, age rule, or approval process here?','What are the costs, and what is covered?','How do I book the next step if I decide to proceed?']}
+  ];
+  var on={}; CATS.forEach(function(c){ on[c.id]=['options','consent'].indexOf(c.id)>=0; });
+  function renderCats(){ var box=$('cats'); if(!box) return; box.innerHTML=CATS.map(function(c){ return '<label data-id="'+c.id+'" class="'+(on[c.id]?'on':'')+'"><input type="checkbox" '+(on[c.id]?'checked':'')+'><span>'+esc(c.label)+'</span></label>'; }).join('');
+    box.querySelectorAll('input').forEach(function(ch){ ch.addEventListener('change',function(){ var id=ch.closest('label').getAttribute('data-id'); on[id]=ch.checked; ch.closest('label').classList.toggle('on',ch.checked); build(); }); }); }
+  function build(){ var L=['QUESTIONS FOR MY PROVIDER','========================','']; var n=1; var any=false;
+    CATS.forEach(function(c){ if(!on[c.id]) return; any=true; L.push(c.label.toUpperCase()); c.qs.forEach(function(q){ L.push('  '+(n++)+'. '+q); }); L.push(''); });
+    $('out').textContent=any?L.join('\n').trim():'Pick one or more topics above to build your question list.'; }
+  $('allBtn').addEventListener('click',function(){ CATS.forEach(function(c){ on[c.id]=true; }); renderCats(); build(); });
+  $('copyBtn').addEventListener('click',function(){ if(A.copy) A.copy($('out').textContent,$('copyBtn')); });
+  (function(){ var box=$('thinkCards'); if(!box) return;
+    var T=[['Your own certainty','It\'s worth being honest with yourself about how settled you feel. Confidence helps you advocate clearly — and a good provider will explore it with you, not against you.'],['Conversations with a partner','If you have a partner, talking it through together first can help, even though the decision about your body is ultimately yours.'],['Attitudes vary','Some providers are more supportive than others. If you feel dismissed, you\'re allowed to seek another opinion — that\'s not difficult, it\'s thorough.'],['Informed choice is your right','You deserve full information and to have your decision respected. Asking for things in writing and taking your time are completely reasonable.']];
+    box.innerHTML=T.map(function(p){ return '<div class="scard"><h4>'+esc(p[0])+'</h4><span class="tg">Tap to expand</span><div class="more">'+esc(p[1])+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  renderCats(); build();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 084 script error', e); }
 });

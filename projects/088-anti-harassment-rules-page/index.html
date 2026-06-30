@@ -1,61 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anti-Harassment Rules Page · ANCF Digital Projects</title><meta name="description" content="Clear, copyable anti-harassment rules that protect every member, with a reporting and response process. Ready to adapt for your community."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Anti-Harassment Rules Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anti-Harassment Rules Page · ANCF Digital Projects</title><meta name="description" content="A safe community needs clear rules that protect everyone — members and visitors, whatever their background or views. Toggle the protections you need and generate a copyable, ready-to-pin anti-harassment policy with a reporting process and fair consequences."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Anti-Harassment Rules Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../087-crisis-safe-community-policy-page/index.html">← Previous</a><a class="btn btn-primary" href="../089-respectful-language-guide/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 088</span><h2>Anti-Harassment Rules Page</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Intermediate · ~9 min</span></div></div>
-<p class="lead">A safe community needs clear rules that protect <strong>everyone</strong> — members and visitors, whatever their background or views. These are copyable anti-harassment rules with a simple reporting process you can adapt.</p>
+<div class="proj-head"><span class="num">PROJECT 088</span><h2>Anti-Harassment Rules Page</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Beginner · ~10 min · generator</span></div></div>
+<p class="lead">A safe community needs clear rules that protect everyone — members and visitors, <strong>whatever their background or views</strong>. Toggle the protections you need and generate a copyable, ready-to-pin anti-harassment policy, complete with a reporting process and fair, proportionate consequences.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Build the policy</a><a href="#preview">② Your policy (live)</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>What clear, fair anti-harassment rules look like.</li>
-<li>Why a reporting process matters as much as the rules.</li>
-<li>How to protect every member equally.</li>
-</ul></div>
-
-<div class="panel"><h3>1. The rules (copy &amp; adapt)</h3>
-<label class="field" for="out">Rules text (editable)</label>
-<textarea id="out" style="min-height:240px"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="copyBtn" type="button">Copy rules</button><button class="btn" id="resetBtn" type="button">Reset to template</button></div>
+<h3 id="build" style="scroll-margin-top:70px">① Build the policy</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="cname">Community name</label><input id="cname" type="text" placeholder="e.g. The Collective"></div>
+<div><label class="field" for="strict">Enforcement</label><select id="strict"><option value="gentle">Gentle</option><option value="balanced" selected>Balanced</option><option value="strict">Strict</option></select></div>
 </div>
-
-<div class="panel"><h3>2. What harassment can look like</h3>
-<div class="kv">
-<strong>Personal attacks</strong><span>Insults, name-calling, or demeaning someone instead of addressing ideas.</span>
-<strong>Targeting identity</strong><span>Hostility based on someone's gender, religion, caste, ethnicity, disability, orientation, or background — never acceptable.</span>
-<strong>Pressure &amp; intimidation</strong><span>Threats, stalking, or repeated unwanted contact.</span>
-<strong>Disrespecting choices</strong><span>Shaming people for their reproductive choices — in any direction.</span>
-</div>
+<p class="field" style="margin-top:8px">Include these protections</p>
+<div class="toggles" id="toggles"></div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Update policy</button><button class="btn" id="copyBtn" type="button">Copy policy</button><button class="btn" id="allBtn" type="button">Select all</button></div>
 </div>
 
-<div class="panel"><h3>3. Reporting process</h3>
-<div class="kv">
-<strong>1. Report</strong><span>Members can report privately to moderators at [contact].</span>
-<strong>2. Acknowledge</strong><span>Moderators respond promptly and treat reports seriously and discreetly.</span>
-<strong>3. Review</strong><span>Both sides are considered fairly before any action.</span>
-<strong>4. Act</strong><span>Clear, proportionate steps — a reminder, warning, or removal as needed.</span>
-</div>
-</div>
+<h3 id="preview" style="scroll-margin-top:70px">② Your policy (live)</h3>
+<div class="panel"><div class="preview" id="out"></div></div>
 
-<div class="panel"><h3>4. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Good rules protect…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Only people who agree with us</div><div class="opt" data-q="0" data-i="1">Every member, whatever their background or views</div><div class="opt" data-q="0" data-i="2">Only moderators</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. A reporting process…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Is optional decoration</div><div class="opt" data-q="1" data-i="1">Makes the rules real and usable</div><div class="opt" data-q="1" data-i="2">Encourages drama</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What behaviour has most threatened the safety of a space you've been in — and which rule here addresses it?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Rules without a process are just words. Name what harassment looks like, protect everyone equally, and give members a clear, fair way to report — that's what makes a community genuinely safe.</p></div>
+<p>Anti-harassment rules aren't about control — they're a promise that everyone, including people who disagree, will be treated with basic dignity. Stated clearly, with a real reporting path and fair consequences, they let a community relax into itself. Protect the people first, and the conversation follows.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Words matter</span></a>
-<a href="../090-safe-moderation-checklist/index.html">Safe Moderation Checklist<span>For moderators</span></a>
-<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set up a group</span></a>
-<a href="../087-crisis-safe-community-policy-page/index.html">Crisis-Safe Policy<span>When it's heavy</span></a>
+<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules<span>General rules</span></a>
+<a href="../038-admin-warning-message-generator/index.html">Admin Warnings<span>Enforce kindly</span></a>
+<a href="../090-safe-moderation-checklist/index.html">Moderation Checklist<span>Day-to-day</span></a>
+<a href="../089-respectful-language-guide/index.html">Language Guide<span>Model good speech</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../087-crisis-safe-community-policy-page/index.html">← Previous</a><a class="btn btn-primary" href="../089-respectful-language-guide/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

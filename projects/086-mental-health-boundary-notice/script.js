@@ -1,35 +1,29 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var open={group:'A gentle note for our group:',post:'A gentle note on this thread:',event:'A gentle note for this meetup:'};
-var ctx=document.getElementById('ctx'),warmth=document.getElementById('warmth'),out=document.getElementById('out');
-function build(){
-  var L=[open[ctx.value]||open.group,''];
-  L.push('We talk about some big, heavy topics here, and we want this to be a kind place for everyone.');
-  if(warmth.value==='full'){
-    L.push('','Please be gentle with yourself and with each other. It\'s okay to step back from a conversation any time. If something here feels like too much, that\'s a sign to take care of you first.');
-  }
-  L.push('','This space is for support and reflection — it can\'t replace professional help. If you\'re going through a hard time, please reach out to someone you trust or a qualified professional.');
-  L.push('','If you or someone else may be in immediate danger, please contact local emergency services or a crisis line right away: [local support].');
-  L.push('','Thank you for helping keep this a safe, caring place. 💛');
-  out.value=L.join('\n');if(A.set)A.set('notice',out.value);
-}
-var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',build);
-if(ctx)ctx.addEventListener('change',build);if(warmth)warmth.addEventListener('change',build);
-if(out){if(A.get)out.value=A.get('notice','');out.addEventListener('input',function(){if(A.set)A.set('notice',out.value);});if(!out.value)build();}
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
-
-var QZ=[{a:1,e:'A good notice conveys care and points to real support — it isn\'t a telling-off.'},{a:1,e:'A group can support people and signpost professional help, not replace it.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 086 script error',e);}
+/* Project 086 · Mental Health Boundary Notice — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  var WHERE={group:'this group',post:'this post',thread:'this thread'};
+  var P={
+    cw:{warm:['💛 A gentle ask for {w}: some topics here can land heavily for people. Could we add a short content warning before sensitive subjects (loss, trauma, etc.)? It lets everyone choose when to engage. Thank you for caring for each other.','Hi all — a kind request for {w}. Many of us hold heavy experiences. A one-line heads-up before sensitive content goes a long way. Appreciated. 🌿'],brief:['Reminder for {w}: please add a brief content warning before sensitive topics. Thanks all.','Quick ask: content warnings before heavy subjects in {w}, please.']},
+    heavy:{warm:['💛 Heads-up: {w} touches some heavy ground. Take it at your own pace — it\'s completely okay to read later, skip, or step away. Look after yourselves.','Note for {w}: this gets into difficult territory. No pressure to engage — your wellbeing comes first. 🌿'],brief:['Heads-up: {w} covers heavy topics. Engage at your own pace.','CW: {w} is a heavy one. Skip or step away anytime.']},
+    break:{warm:['A soft reminder for {w}: if any of this is weighing on you, it\'s okay to close the app and come back later. Rest is allowed. We\'ll still be here. 💛','Friendly nudge for {w}: these conversations can be a lot. Stepping away for a bit isn\'t quitting — it\'s self-care. 🌿'],brief:['Reminder: it\'s okay to take a break from {w} anytime.','If {w} feels heavy, step away. Rest is allowed.']},
+    support:{warm:['💛 A caring note for {w}: if anything here is bringing up real distress, please be gentle with yourself — and consider reaching out to someone you trust or a qualified professional. You don\'t have to carry it alone.','For anyone in {w} who\'s finding this hard: your feelings are valid, and support is okay to seek — a trusted person or a professional can help in ways a thread can\'t. 🌿'],brief:['If {w} is bringing up distress, please reach out to someone you trust or a professional.','Be gentle with yourself. Support beyond {w} is okay to seek.']},
+    pause:{warm:['💛 Let\'s gently pause {w} for a moment. Things have gotten intense, and a breath helps everyone. We can pick it back up with cooler heads — no one\'s in trouble.','Pausing {w} kindly for a bit. The heat\'s risen; let\'s let it settle and return with care. 🌿'],brief:['Let\'s pause {w} for a bit to let things cool down. Thanks all.','Gentle pause on {w} — back when things have settled.']}
+  };
+  var current='';
+  function gen(){ var pool=P[$('purpose').value][$('tone').value]; var w=WHERE[$('where').value]; var t=pick(pool).replace(/\{w\}/g,w); if(t===current&&pool.length>1) t=pick(pool).replace(/\{w\}/g,w); current=t; $('out').textContent=t; }
+  $('genBtn').addEventListener('click',gen); $('anotherBtn').addEventListener('click',gen);
+  ['purpose','where','tone'].forEach(function(id){ var el=$(id); if(el) el.addEventListener('change',gen); });
+  $('copyBtn').addEventListener('click',function(){ if(current&&A.copy) A.copy(current,$('copyBtn')); });
+  (function(){ var box=$('prinCards'); if(!box) return;
+    var C=[['Care, don\'t diagnose','Speak to the space and the feeling, never label a person\'s mental state. "This is heavy" is kind; "you seem unwell" is not yours to say.'],['Make leaving easy','The most caring message often just gives permission to step back. "It\'s okay to read later" lifts a quiet pressure.'],['Point outward when needed','For real distress, the kindest thing is to gently encourage trusted people or professionals — a community thread can hold someone, but it can\'t treat them.']];
+    box.innerHTML=C.map(function(p){ return '<div class="scard"><h4>'+p[0]+'</h4><span class="tg">Tap to expand</span><div class="more">'+p[1]+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  gen();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 086 script error', e); }
 });

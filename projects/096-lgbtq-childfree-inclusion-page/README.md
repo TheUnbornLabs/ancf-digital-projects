@@ -1,12 +1,7 @@
-# LGBTQ+ Childfree Inclusion Page
+# LGBTQ+ Childfree Inclusion
 
 *Project 096 · Category: Society · Difficulty: Intermediate*
 
-Centring LGBTQ+ experiences within childfree and autonomy conversations.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Six expandable "what to hold" cards (varied paths to family, childfree fully valid, assumptions cut
+both ways, chosen family, intersecting pressures, you-define-family) and six copyable affirmations.
+Welcoming and inclusive; names assumptions in both directions. Vanilla JS; DOM test 5/5.

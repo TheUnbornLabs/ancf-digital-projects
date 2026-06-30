@@ -651,7 +651,7 @@
       "title": "Personal Manifesto Builder",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Assemble a short, dignified personal manifesto about your choices.",
+      "description": "Put your choices into words you can stand on. Answer four prompts and assemble a short, dignified manifesto in one of four tones, building live as you type. Save more than one version, load any back, and copy. For yourself, a journal, or a quiet reminder.",
       "path": "projects/071-personal-manifesto-builder/index.html"
     },
     {
@@ -660,7 +660,7 @@
       "title": "Childfree Bio Generator",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Generate a friendly profile bio that reflects a childfree identity.",
+      "description": "A friendly profile bio that reflects a childfree life. Pick a vibe and platform, toggle a few interests, generate variants, and edit until it sounds like you. Warm by design (no dig at anyone), with a live character count against the platform's limit and saved favourites.",
       "path": "projects/072-childfree-bio-generator/index.html"
     },
     {
@@ -669,7 +669,7 @@
       "title": "Antinatalist Statement Builder",
       "category": "Writing Tools",
       "difficulty": "Intermediate",
-      "description": "Draft a careful, non-hateful statement of an antinatalist view.",
+      "description": "Draft a clear, careful statement of an antinatalist view that argues the idea and never demeans people. Pick the basis (asymmetry, consent, risk, suffering-focused, or environmental), a tone, and a length; the builder assembles claim + reasoning + an explicit no-judgement caveat, with a built-in respect check.",
       "path": "projects/073-antinatalist-statement-builder/index.html"
     },
     {
@@ -678,7 +678,7 @@
       "title": "Instagram Carousel Text Builder",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Generate slide-by-slide text for an educational carousel post.",
+      "description": "Generate the text for a five-slide educational carousel — a hook, three clear points, and a kind closing — across five topics and three tones. Copy each slide or all at once. Respectful and accurate by design.",
       "path": "projects/074-instagram-carousel-text-builder/index.html"
     },
     {
@@ -687,7 +687,7 @@
       "title": "Protest Poster Text Generator",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Create short, positive slogans for awareness about reproductive autonomy.",
+      "description": "Short, positive, rights-based slogans for awareness about reproductive autonomy. Pick a focus and a style (plain, rhyming, or gentle), generate a line for a poster, placard, or post, cycle for more, and save favourites. Always affirming — never anti-anyone.",
       "path": "projects/075-protest-poster-text-generator/index.html"
     },
     {
@@ -696,7 +696,7 @@
       "title": "Debate Notes Organizer",
       "category": "Writing Tools",
       "difficulty": "Intermediate",
-      "description": "Organise a debate: your claims, their claims, evidence, and common ground.",
+      "description": "Prepare for a respectful discussion by sorting your thoughts into four boxes: your claims, their strongest points (steelman), the evidence, and the common ground. Add items to each, get a balance check, and export a tidy prep sheet. Saves on this device.",
       "path": "projects/076-debate-notes-organizer/index.html"
     },
     {
@@ -705,7 +705,7 @@
       "title": "Book Summary Template Tool",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Generate a clean template to summarise any book you read on these topics.",
+      "description": "A reusable template for summarising any book — title, author, thesis, key ideas, lines worth remembering (in your own words), your critique, one takeaway, and a rating. Builds a live summary you can copy, and keeps a small saved library of books to load or remove.",
       "path": "projects/077-book-summary-template-tool/index.html"
     },
     {
@@ -714,7 +714,7 @@
       "title": "Video Script Generator",
       "category": "Writing Tools",
       "difficulty": "Intermediate",
-      "description": "Draft a short, respectful explainer-video script.",
+      "description": "Draft a short, respectful explainer-video script — a hook, a clear body, and a kind call-to-action — with rough time markers that adjust to length (30s/60s/3min) and tone. Four topics; the number of points scales with length. Edit to your voice and copy.",
       "path": "projects/078-video-script-generator/index.html"
     },
     {
@@ -723,7 +723,7 @@
       "title": "Article Outline Generator",
       "category": "Writing Tools",
       "difficulty": "Intermediate",
-      "description": "Produce a balanced article outline on a chosen topic.",
+      "description": "Scaffold a fair, well-structured article outline. Pick a topic, framing (persuasive/balanced/explainer/personal), and number of body sections; every outline includes built-in space for the opposing view or common objections — because the strongest writing takes the other side seriously. Edit and copy.",
       "path": "projects/079-article-outline-generator/index.html"
     },
     {
@@ -732,7 +732,7 @@
       "title": "Community Newsletter Template",
       "category": "Community Tools",
       "difficulty": "Beginner",
-      "description": "Generate a friendly newsletter skeleton for a community group.",
+      "description": "A friendly, reusable skeleton for a community newsletter — greeting, highlight, what's next, member spotlight, useful resource, and sign-off. Toggle the sections you want, fill them in, watch it assemble live, and copy. Warm and inclusive by default; saves on this device.",
       "path": "projects/080-community-newsletter-template/index.html"
     },
     {
@@ -741,7 +741,7 @@
       "title": "Legal Rights Awareness Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "General awareness of rights related to reproductive autonomy — not legal advice.",
+      "description": "A plain-language overview of the rights and documents people often want to understand around reproductive autonomy and later life — especially when there are no children to default to. Expandable area cards, a saved 'documents to consider' checklist, and next-step guidance. General education only, not legal advice; laws vary by place.",
       "path": "projects/081-legal-rights-awareness-page/index.html"
     },
     {
@@ -750,7 +750,7 @@
       "title": "Workplace Childfree Bias Notes",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "Notes on subtle workplace assumptions about parenthood — and staying professional.",
+      "description": "Some workplaces quietly assume people without children have 'more time,' fewer commitments, or should always cover the holidays. These notes name five common biases, generate calm professional replies for four situations (warm/neutral/firm), and offer fairness principles for you and allies.",
       "path": "projects/082-workplace-childfree-bias-notes/index.html"
     },
     {
@@ -759,7 +759,7 @@
       "title": "Healthcare Conversation Checklist",
       "category": "Childfree Life",
       "difficulty": "Intermediate",
-      "description": "Prepare for a respectful, productive talk with a healthcare provider.",
+      "description": "Prepare for a clear, respectful conversation with a healthcare provider: a before/during/after checklist with progress, a question bank you tap to build into a copyable list, and calm non-clinical lines for if you feel dismissed. Preparation support, not medical advice.",
       "path": "projects/083-healthcare-conversation-checklist/index.html"
     },
     {
@@ -768,7 +768,7 @@
       "title": "Sterilization Discussion Preparation Tool",
       "category": "Childfree Life",
       "difficulty": "Intermediate",
-      "description": "Draft respectful questions to discuss permanent contraception with a doctor.",
+      "description": "If you're considering a conversation with a provider about permanent contraception, this builds a tidy list of questions to ask — by topic (options, permanence, risks, recovery, alternatives, consent/autonomy, access). Copyable, with 'worth thinking through first' cards. Educational preparation only, not medical advice.",
       "path": "projects/084-sterilization-discussion-preparation-tool/index.html"
     },
     {
@@ -777,7 +777,7 @@
       "title": "Couple Compatibility Questions",
       "category": "Childfree Life",
       "difficulty": "Beginner",
-      "description": "Conversation-starter questions to explore alignment on children and life.",
+      "description": "Whether to have children is one of the biggest things partners can align on — better discussed early and openly than assumed. Work through a 12-question deck together, mark each aligned/unsure/need-to-talk, and the tool gathers a focused conversation agenda. With tips for talking it through.",
       "path": "projects/085-couple-compatibility-questions/index.html"
     },
     {
@@ -786,7 +786,7 @@
       "title": "Mental Health Boundary Notice",
       "category": "Community Tools",
       "difficulty": "Beginner",
-      "description": "Draft a caring notice that sets a topic boundary while signposting support.",
+      "description": "Online spaces about big life topics can get heavy. Draft a short, caring notice — for a group, post, or thread — that asks for content warnings, flags a heavy thread, encourages breaks, points toward support, or pauses a spiralling thread. Five purposes, warm/brief tones, non-clinical by design.",
       "path": "projects/086-mental-health-boundary-notice/index.html"
     },
     {
@@ -795,7 +795,7 @@
       "title": "Crisis-Safe Community Policy Page",
       "category": "Community Tools",
       "difficulty": "Advanced",
-      "description": "A model policy for handling crisis moments safely and kindly in a community.",
+      "description": "If you run a community that discusses heavy topics, agree in advance how moderators respond when someone seems in distress. Build an adaptable policy template (purpose, do/don't, resources, moderator care) you can export — a community-conduct guide to refine with qualified input, explicitly NOT a clinical protocol.",
       "path": "projects/087-crisis-safe-community-policy-page/index.html"
     },
     {
@@ -804,7 +804,7 @@
       "title": "Anti-Harassment Rules Page",
       "category": "Community Tools",
       "difficulty": "Beginner",
-      "description": "Clear anti-harassment rules that protect every member.",
+      "description": "A safe community needs clear rules that protect everyone, whatever their background or views. Toggle the protections you need (harassment, slurs, threats, doxxing, respect across views, unwanted sexual conduct, pile-ons, reporting) and generate a copyable, ready-to-pin anti-harassment policy with a reporting process and proportionate consequences.",
       "path": "projects/088-anti-harassment-rules-page/index.html"
     },
     {
@@ -813,7 +813,7 @@
       "title": "Respectful Language Guide",
       "category": "Community Tools",
       "difficulty": "Beginner",
-      "description": "Word choices that keep advocacy firm yet kind.",
+      "description": "You can hold a firm view and still speak kindly. A 'say this, not that' library of 14 word-choice swaps across five contexts (about parents, the childfree, in debate, about groups, self-talk), each with the reason behind it. Filter, search, and copy the kinder version.",
       "path": "projects/089-respectful-language-guide/index.html"
     },
     {
@@ -822,7 +822,7 @@
       "title": "Safe Moderation Checklist",
       "category": "Community Tools",
       "difficulty": "Intermediate",
-      "description": "A pre-flight checklist for moderators keeping a space safe and fair.",
+      "description": "Moderating a community well is quiet, steady work. This 20-item checklist gathers the habits that keep a space safe and fair — setup, day-to-day, handling conflict — and crucially includes real care for the moderators themselves. Tick as you go, copy the list, with core-principle cards. Saves on this device.",
       "path": "projects/090-safe-moderation-checklist/index.html"
     },
     {
@@ -831,7 +831,7 @@
       "title": "Global Childfree Voices Map",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "A conceptual map of how childfree conversations appear across regions.",
+      "description": "People choose childfree lives everywhere, and the conversation looks a little different from place to place. A gentle overview of broad regional patterns (tone, common pressures, hopeful threads) across eight world regions, with shared universal threads — and a firm reminder these are generalisations about conversations, never labels for individuals.",
       "path": "projects/091-global-childfree-voices-map/index.html"
     },
     {
@@ -840,7 +840,7 @@
       "title": "Tamil Childfree Voices Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "A respectful page acknowledging Tamil-language voices on autonomy and childfree life.",
+      "description": "A warm acknowledgement of Tamil readers and a long cultural thread that prizes self-respect, reason, and dignity. Speaks with, not for — connecting childfree reflection to the Self-Respect heritage, with idea cards, a few Tamil terms (suya mariyathai, pakuttarivu, suthanthiram), and a resonance picker.",
       "path": "projects/092-tamil-childfree-voices-page/index.html"
     },
     {
@@ -849,7 +849,7 @@
       "title": "South Asian Pronatalism Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "A careful explainer on pronatalist pressures in South Asian contexts — without stereotyping.",
+      "description": "Pronatalism is the social push toward having children, and in many South Asian settings it's especially strong. Six common patterns, each with the worry underneath and the practice worth questioning, plus calm response lines — aimed squarely at practices and norms, never at any community, caste, or faith.",
       "path": "projects/093-south-asian-pronatalism-explainer/index.html"
     },
     {
@@ -858,7 +858,7 @@
       "title": "Women and Reproductive Pressure Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How reproductive pressure specifically affects women — with full respect for mothers.",
+      "description": "Reproductive pressure often lands hardest on women — through the 'motherhood mandate,' body-clock talk, the care default, and worth measured in motherhood. Six named shapes plus a line decoder (assumption + grounded reframe) for the lines women hear most. A pattern, not a prescription.",
       "path": "projects/094-women-and-reproductive-pressure-page/index.html"
     },
     {
@@ -867,7 +867,7 @@
       "title": "Men and Provider Pressure Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How provider and 'legacy' pressures affect men — with empathy.",
+      "description": "Men feel reproductive pressure too — often quieter, wrapped in ideas of being a provider, carrying on a name, or proving maturity. Six named shapes (provider mandate, carrying the name, fatherhood-as-maturity, the 'real man' trope, the silent assumption, legacy) plus a line decoder with assumption + grounded reframe.",
       "path": "projects/095-men-and-provider-pressure-page/index.html"
     },
     {
@@ -876,7 +876,7 @@
       "title": "LGBTQ+ Childfree Inclusion Page",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "Centring LGBTQ+ experiences within childfree and autonomy conversations.",
+      "description": "LGBTQ+ people belong fully in conversations about childfree life and reproductive autonomy. Paths to family are wonderfully varied, and the choice to remain childfree is equally valid. Six points to hold, six copyable affirmations, and a welcome that names the assumptions cutting both ways.",
       "path": "projects/096-lgbtq-childfree-inclusion-page/index.html"
     },
     {
@@ -885,7 +885,7 @@
       "title": "Disabled People and Reproductive Autonomy Page",
       "category": "Ethics",
       "difficulty": "Advanced",
-      "description": "Affirming the full reproductive autonomy of disabled people.",
+      "description": "Reproductive autonomy belongs to everyone, including disabled people, fully and without exception. Six core principles (autonomy, presumption of capacity, support-not-override, coercion-free both ways, learning from history, nothing-about-us-without-us) and a two-direction view of coercion. Disability-led and affirming.",
       "path": "projects/097-disabled-people-and-reproductive-autonomy-page/index.html"
     },
     {
@@ -894,7 +894,7 @@
       "title": "Poverty and Parenthood Pressure Explainer",
       "category": "Society",
       "difficulty": "Intermediate",
-      "description": "How poverty shapes family pressures — critiquing systems, never poor people.",
+      "description": "Money shapes how free a reproductive choice really is — and it pushes in both directions. This explains those pressures (toward and away from parenthood) by looking at systems — wages, costs, safety nets, access — not blaming individuals. A choice constrained by poverty is a matter of justice, not a personal failing.",
       "path": "projects/098-poverty-and-parenthood-pressure-explainer/index.html"
     },
     {
@@ -903,7 +903,7 @@
       "title": "Future Without Forced Parenthood Vision Board",
       "category": "Writing Tools",
       "difficulty": "Beginner",
-      "description": "Imagine and sketch a future built on free, supported reproductive choice.",
+      "description": "A hopeful vision board for a world where every reproductive choice is free and supported — children or none, by genuine choice. Add prebuilt sparks or your own vision, build and rearrange your board, and export it. The future the whole collection points toward.",
       "path": "projects/099-future-without-forced-parenthood-vision-board/index.html"
     },
     {
@@ -912,7 +912,7 @@
       "title": "ANCF Digital Projects Final Archive",
       "category": "Learning Tools",
       "difficulty": "Beginner",
-      "description": "The closing archive: a thank-you and a map back into the whole collection.",
+      "description": "The whole collection at once: one hundred small, open, ad-free, tracking-free projects about thinking clearly and living freely. An at-a-glance stats panel, plus search, category filters, a random-project button, and linked cards for all 100 in one browsable archive.",
       "path": "projects/100-ancf-digital-projects-final-archive/index.html"
     }
   ]

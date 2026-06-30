@@ -1,1 +1,50 @@
-/* Per-project overrides for Healthcare Conversation Checklist. Shared design system lives in ../../style.css */
+/* Project 083 · Healthcare Conversation Checklist */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin:var(--sp-4) 0 var(--sp-2)}
+.jump a{font-size:var(--fs-sm);font-weight:600;border:1px solid var(--line);border-radius:var(--radius-pill);padding:6px 13px;background:var(--surface);color:var(--muted)}
+.jump a:hover{border-color:var(--accent);color:var(--ink);text-decoration:none}
+.ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:8px 0}
+.outbox{border:2px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:16px;margin:10px 0;white-space:pre-wrap;font-size:var(--fs-base);line-height:1.55}
+.outmeta{font-size:var(--fs-xs);color:var(--muted);margin:4px 2px}
+.favs{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.favrow{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;background:var(--surface);font-size:var(--fs-sm)}
+.favrow span{flex:1}.favrow button{cursor:pointer;border:none;background:none;color:var(--muted);font-size:1rem}
+/* cards */
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.scard{border:1px solid var(--line);border-left:4px solid var(--info);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface-2);cursor:pointer;transition:.15s}
+.scard:hover,.scard.open{border-color:var(--accent)}.scard h4{margin:0 0 4px;font-size:var(--fs-base)}
+.scard .tg{font-size:var(--fs-sm);color:var(--muted)}.scard .more{display:none;font-size:var(--fs-sm);margin-top:8px}.scard.open .more{display:block}
+/* storyboard */
+.storyboard{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+@media(max-width:620px){.storyboard{grid-template-columns:1fr}}
+.panel-c{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+.panel-c .ph{background:var(--surface-2);border-bottom:1px solid var(--line);padding:6px 10px;font-size:var(--fs-xs);font-weight:700;color:var(--accent-2);text-transform:uppercase;letter-spacing:.05em}
+.panel-c .frame{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:var(--bg)}
+.panel-c .cap{padding:10px 12px;font-size:var(--fs-sm)}
+/* detector findings */
+.samples{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.sample-btn{cursor:pointer;border:1px dashed var(--line);background:var(--surface-2);color:var(--muted);border-radius:var(--radius-sm);padding:6px 12px;font-size:var(--fs-sm)}
+.sample-btn:hover{border-color:var(--accent);color:var(--ink)}
+.finding{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--radius-sm);padding:12px 15px;margin:10px 0;background:var(--surface)}
+.finding .tac{font-weight:800;color:var(--accent-2)}.finding .what{font-size:var(--fs-sm);color:var(--muted);margin:5px 0}
+.finding .quote{font-style:italic;color:var(--muted)}
+.fil-chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.fchip{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:5px 12px;border-radius:var(--radius-pill);font-size:var(--fs-sm);font-weight:600}
+.fchip:hover{border-color:var(--accent);color:var(--ink)}.fchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.lib details{border:1px solid var(--line);border-radius:var(--radius-sm);margin:8px 0;background:var(--surface)}
+.lib summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;gap:8px;align-items:center}
+.lib summary::-webkit-details-marker{display:none}.lib summary .chev{margin-left:auto;color:var(--muted)}
+.lib .body{padding:0 14px 12px;font-size:var(--fs-sm)}
+/* checklist/builder */
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+/* preview block */
+.preview{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);padding:14px 16px;white-space:pre-wrap;font-size:var(--fs-sm);font-family:ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+.phase{border:1px solid var(--line);border-radius:var(--radius-sm);margin:10px 0;background:var(--surface)}
+.phase .ph{background:var(--surface-2);border-bottom:1px solid var(--line);padding:9px 13px;font-weight:700;font-size:var(--fs-base);border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;justify-content:space-between}
+.phase .ph .pp{font-size:var(--fs-xs);color:var(--muted)}
+.phase .items{padding:6px 10px}
+.phase label{display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-bottom:1px solid var(--line);font-size:var(--fs-sm);cursor:pointer}
+.phase label:last-child{border-bottom:none}.phase label.done span{text-decoration:line-through;color:var(--muted)}.phase input{margin-top:3px}
+.qbank{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.qopt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;background:var(--surface);cursor:pointer;font-size:var(--fs-sm)}
+.qopt.on{border-color:var(--accent);background:var(--accent-soft)}
+.mylist{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);padding:11px 13px;white-space:pre-wrap;font-size:var(--fs-sm);margin:8px 0}

@@ -1,23 +1,24 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var ref=document.getElementById('reflect'),refStatus=document.getElementById('refStatus'),timer=null;
-function flash(m){if(!refStatus)return;refStatus.textContent=m;if(timer)clearTimeout(timer);timer=setTimeout(function(){refStatus.textContent='';},1600);}
-if(ref&&A.get)ref.value=A.get('reflect','');
-if(ref)ref.addEventListener('input',function(){if(A.set)A.set('reflect',ref.value);});
-var saveBtn=document.getElementById('saveBtn'),copyRef=document.getElementById('copyRef');
-if(saveBtn)saveBtn.addEventListener('click',function(){if(A.set)A.set('reflect',ref.value);flash('Saved ✓');});
-if(copyRef)copyRef.addEventListener('click',function(){A.copy&&A.copy(ref.value||'',copyRef);});
-
-var QZ=[{a:1,e:'It critiques economic systems and pressures, never poor people.'},{a:1,e:'Real freedom requires security, dignity, and real options for everyone.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 098 script error',e);}
+/* Project 098 · Poverty and Parenthood Pressure — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  $('dirBox').innerHTML=
+    '<div class="col a"><span class="lbl">Pressures toward having children</span><ul>'+
+    ['Children as future labour or household help where work is scarce','Children as old-age security where pensions and safety nets are thin','Social standing and belonging tied to having a family','Limited access to contraception, information, or reproductive healthcare'].map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>'+
+    '<div class="col b"><span class="lbl">Pressures away from having children</span><ul>'+
+    ['The sheer cost of raising a child on a low or unstable income','Housing, time, and job insecurity that make parenting feel impossible','Stigma and judgement aimed at people who have children while poor','Wanting to give a child more than current conditions allow'].map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>';
+  var SYS=[
+    ['Wages & work','When wages don\'t cover the cost of a child — or of not having one — the "choice" is really being made by the labour market. Better pay widens real options.'],
+    ['The cost of children','Childcare, housing, healthcare, and education costs shape decisions far more than personal "responsibility" does. These are policy choices, not facts of nature.'],
+    ['Safety nets','Where pensions, healthcare, and support are strong, children stop being an old-age insurance policy — and people get to choose more freely.'],
+    ['Access & information','Real reproductive freedom needs access to contraception, healthcare, and clear information. Where these are scarce, "choice" is constrained from the start.']
+  ];
+  (function(){ var box=$('sysCards'); if(!box) return; box.innerHTML=SYS.map(function(p){ return '<div class="scard"><h4>'+esc(p[0])+'</h4><span class="tg">Tap to expand</span><div class="more">'+esc(p[1])+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 098 script error', e); }
 });

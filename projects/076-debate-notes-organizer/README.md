@@ -2,11 +2,6 @@
 
 *Project 076 · Category: Writing Tools · Difficulty: Intermediate*
 
-Organise a debate: your claims, their claims, evidence, and common ground.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Sort discussion prep into four add/remove boxes (your claims, their strongest points, evidence,
+common ground) plus a topic, with a balance check that nudges you to steelman and find common
+ground, and an exportable/copyable prep sheet. Saved on-device. Vanilla JS; DOM test 7/7.

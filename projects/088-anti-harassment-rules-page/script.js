@@ -1,35 +1,41 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var TEMPLATE=[
-'Our community welcomes everyone and protects everyone.',
-'',
-'1. Treat every member with respect. Address ideas, never attack people.',
-'2. No harassment of any kind — including insults, threats, stalking, or repeated unwanted contact.',
-'3. No hostility based on gender, religion, caste, ethnicity, nationality, disability, sexual orientation, age, or background.',
-'4. Respect everyone\'s reproductive choices — in any direction. No shaming people for having, or not having, children.',
-'5. Disagree freely, but kindly. Strong views are welcome; cruelty is not.',
-'6. Respect privacy. Don\'t share others\' personal information.',
-'',
-'How to report: contact a moderator privately at [contact]. Reports are taken seriously and handled discreetly. Both sides are considered fairly, and we act in proportion — a reminder, a warning, or removal as needed.',
-'',
-'Thank you for helping keep this a safe and welcoming place for all.'
-].join('\n');
-var out=document.getElementById('out');
-if(out){if(A.get)out.value=A.get('rules','')||TEMPLATE;else out.value=TEMPLATE;out.addEventListener('input',function(){if(A.set)A.set('rules',out.value);});}
-var copyBtn=document.getElementById('copyBtn'),resetBtn=document.getElementById('resetBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
-if(resetBtn)resetBtn.addEventListener('click',function(){if(!window.confirm('Reset to the default template?'))return;out.value=TEMPLATE;if(A.set)A.set('rules',out.value);});
-
-var QZ=[{a:1,e:'Good rules protect every member, whatever their background or views.'},{a:1,e:'A clear reporting process is what makes the rules real and usable.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You got '+sc+' of '+QZ.length+'.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 088 script error',e);}
+/* Project 088 · Anti-Harassment Rules Page — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var RULES=[
+    {id:'noharass',label:'No harassment or intimidation',gentle:'Please don\'t harass, intimidate, or repeatedly target anyone.',strict:'Harassment, intimidation, or targeting of any member is prohibited and acted on immediately.'},
+    {id:'noslurs',label:'No slurs or hate speech',gentle:'No slurs or hateful language about anyone\'s identity or background.',strict:'Zero tolerance for slurs or hate speech targeting any group or identity. Immediate removal.'},
+    {id:'nothreats',label:'No threats',gentle:'No threats of harm, ever — even in jest.',strict:'Any threat of harm, explicit or veiled, results in immediate removal and may be reported.'},
+    {id:'nodox',label:'No doxxing / privacy violations',gentle:'Don\'t share anyone\'s private information without consent.',strict:'Sharing or threatening to share private information (doxxing) is strictly forbidden and removed on sight.'},
+    {id:'respectviews',label:'Respect across views & backgrounds',gentle:'Disagree about ideas without attacking people for who they are or what they believe.',strict:'Members must engage ideas, not attack persons. Contempt for someone\'s identity or beliefs is not tolerated.'},
+    {id:'nosexual',label:'No unwanted sexual conduct',gentle:'No unwanted sexual messages, advances, or content toward anyone.',strict:'Unwanted sexual advances, messages, or content directed at members are prohibited and removed.'},
+    {id:'nopileon',label:'No pile-ons',gentle:'If someone errs, let mods handle it — please don\'t organise group pile-ons.',strict:'Coordinated pile-ons or mass targeting of a member are prohibited; instigators face action.'},
+    {id:'bystander',label:'Speak up / report',gentle:'If you see harassment, report it — quietly is fine. We take it seriously.',strict:'Members are expected to report harassment they witness. Reports are handled confidentially and promptly.'}
+  ];
+  var DEFAULT_ON=['noharass','noslurs','nothreats','respectviews','nodox'];
+  var on={}; RULES.forEach(function(r){ on[r.id]=DEFAULT_ON.indexOf(r.id)>=0; });
+  function renderToggles(){ var box=$('toggles'); if(!box) return; box.innerHTML=RULES.map(function(r){ return '<label data-id="'+r.id+'" class="'+(on[r.id]?'on':'')+'"><input type="checkbox" '+(on[r.id]?'checked':'')+'><span>'+esc(r.label)+'</span></label>'; }).join('');
+    box.querySelectorAll('input').forEach(function(c){ c.addEventListener('change',function(){ var id=c.closest('label').getAttribute('data-id'); on[id]=c.checked; c.closest('label').classList.toggle('on',c.checked); build(); }); }); }
+  function build(){ var name=($('cname').value||'').trim()||'this community'; var strict=$('strict').value;
+    var L=['🛡️ ANTI-HARASSMENT POLICY — '+name,'','Everyone here deserves to feel safe — members and visitors, of every background and view. By taking part, you agree to the following:',''];
+    var n=1;
+    L.push(n++ +'. Treat every person with basic dignity, including those you disagree with.');
+    RULES.forEach(function(r){ if(!on[r.id]) return; L.push(n++ +'. '+(strict==='strict'?r.strict:r.gentle)); });
+    L.push('');
+    L.push('REPORTING: If you experience or witness any of the above, contact a moderator privately. Reports are taken seriously and handled discreetly.');
+    var cons=(strict==='strict')?'CONSEQUENCES: Breaches lead to warning, removal, or an immediate ban for serious cases. Moderators\' decisions stand.':(strict==='gentle'?'CONSEQUENCES: We\'ll usually talk it through first; repeated or serious breaches may lead to removal.':'CONSEQUENCES: Depending on severity, breaches lead to a warning, temporary mute, or removal. Serious cases (threats, doxxing) may be immediate.');
+    L.push(cons);
+    $('out').textContent=L.join('\n');
+  }
+  $('cname').addEventListener('input',build); $('strict').addEventListener('change',build);
+  $('genBtn').addEventListener('click',build);
+  $('allBtn').addEventListener('click',function(){ RULES.forEach(function(r){ on[r.id]=true; }); renderToggles(); build(); });
+  $('copyBtn').addEventListener('click',function(){ if(A.copy) A.copy($('out').textContent,$('copyBtn')); });
+  renderToggles(); build();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 088 script error', e); }
 });

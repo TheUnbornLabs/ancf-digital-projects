@@ -1,47 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Article Outline Generator · ANCF Digital Projects</title><meta name="description" content="Scaffold a fair, well-structured article outline by topic and framing — with built-in space for the opposing view. Editable and copyable."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Article Outline Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Article Outline Generator · ANCF Digital Projects</title><meta name="description" content="Scaffold a fair, well-structured article outline. Pick a topic and framing, and the outline includes built-in space for the opposing view — because the strongest writing takes the other side seriously. Edit and copy."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Article Outline Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../078-video-script-generator/index.html">← Previous</a><a class="btn btn-primary" href="../080-community-newsletter-template/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 079</span><h2>Article Outline Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate · ~7 min</span></div></div>
-<p class="lead">Scaffold a fair, well-structured article outline. Pick a topic and framing, and the outline includes built-in space for the <strong>opposing view</strong> — because the most persuasive writing takes objections seriously. Edit and copy.</p>
+<div class="proj-head"><span class="num">PROJECT 079</span><h2>Article Outline Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Intermediate · ~12 min · generator</span></div></div>
+<p class="lead">Scaffold a fair, well-structured article outline. Pick a topic and a framing, and the outline includes <strong>built-in space for the opposing view</strong> — because the strongest writing takes the other side seriously. You get a hook, a thesis, body sections, a steelman of the counter-case, and a considered conclusion. Edit and copy.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#gen">① Generate an outline</a><a href="#about">② Why the opposing-view section</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The skeleton of a balanced article.</li>
-<li>Why including the opposing view strengthens your case.</li>
-<li>How a synthesis section earns trust.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Build an outline</h3>
-<div class="row">
-<div><label class="field" for="topic">Topic</label><select id="topic"><option value="autonomy">Reproductive autonomy</option><option value="antinatalism">Antinatalism, explained</option><option value="childfree">The childfree choice</option><option value="pressure">Pronatalist pressure</option></select></div>
-<div><label class="field" for="frame">Framing</label><select id="frame"><option value="balanced">Balanced explainer</option><option value="personal">Personal essay</option></select></div>
+<h3 id="gen" style="scroll-margin-top:70px">① Generate an outline</h3>
+<div class="panel">
+<label class="field" for="topic">Your topic / working title</label><input id="topic" type="text" placeholder="e.g. Is it ethical to have children given the risks?" style="width:100%;box-sizing:border-box;margin-bottom:10px">
+<div class="ctrls">
+<div><label class="field" for="framing">Framing</label><select id="framing"><option value="persuasive">Persuasive (argue a position)</option><option value="balanced">Balanced (weigh both sides)</option><option value="explainer">Explainer (inform neutrally)</option><option value="personal">Personal essay</option></select></div>
+<div><label class="field" for="depth">Body sections</label><select id="depth"><option value="3">Three</option><option value="4">Four</option></select></div>
 </div>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<label class="field" for="out">Outline (editable)</label>
-<textarea id="out" style="min-height:200px" placeholder="Your outline appears here; edit freely. Saved on this device."></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate outline</button><button class="btn" id="copyBtn" type="button">Copy outline</button></div>
+<div class="preview" id="out"></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Including the opposing view tends to…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Weaken your article</div><div class="opt" data-q="0" data-i="1">Strengthen it and build trust</div><div class="opt" data-q="0" data-i="2">Confuse readers</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. A synthesis section…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Restates without thought</div><div class="opt" data-q="1" data-i="1">Weighs the views and earns trust</div><div class="opt" data-q="1" data-i="2">Is filler</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="about" style="scroll-margin-top:70px">② Why the opposing-view section</h3>
+<div class="panel"><div class="cards3" id="aboutCards"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">Could you write the opposing-view section so well that someone on that side would nod? If not, you're not ready yet.</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>A balanced outline isn't weaker — it's more persuasive. Make your case, give the opposing view its due, then synthesise. Readers trust a writer who has clearly listened.</p></div>
+<p>An outline that reserves real space for the other side does two things: it makes your own argument stronger by stress-testing it, and it earns the reader's trust by showing you're not hiding from the hard parts. Fairness isn't a weakness in persuasion — it's the foundation of it.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../077-book-summary-template-tool/index.html">Book Summary Template<span>Summarise reads</span></a>
-<a href="../076-debate-notes-organizer/index.html">Debate Notes Organizer<span>Both sides</span></a>
-<a href="../039-respectful-debate-guide/index.html">Respectful Debate Guide<span>Fair argument</span></a>
-<a href="../073-antinatalist-statement-builder/index.html">Statement Builder<span>State a view</span></a>
+<a href="../076-debate-notes-organizer/index.html">Debate Notes<span>Sort your thoughts</span></a>
+<a href="../073-antinatalist-statement-builder/index.html">Statement Builder<span>State a position</span></a>
+<a href="../039-respectful-debate-guide/index.html">Debate Guide<span>Argue fairly</span></a>
+<a href="../077-book-summary-template-tool/index.html">Book Summary<span>Gather material</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../078-video-script-generator/index.html">← Previous</a><a class="btn btn-primary" href="../080-community-newsletter-template/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

@@ -1,12 +1,8 @@
-# ANCF Digital Projects Final Archive
+# The Final Archive
 
 *Project 100 · Category: Learning Tools · Difficulty: Beginner*
 
-The closing archive: a thank-you and a map back into the whole collection.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+The capstone: a browsable directory of all 100 projects. An embedded data.js (generated from
+data/projects.json) powers an at-a-glance stats panel, category-count filter chips, live search, a
+"surprise me" random-jump, and linked cards for every project — all offline-capable. Vanilla JS;
+DOM test 8/8.

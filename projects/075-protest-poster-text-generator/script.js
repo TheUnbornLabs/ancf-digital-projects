@@ -1,30 +1,31 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var S={
- autonomy:['My body, my future, my choice','Autonomy is for everyone','Trust people to decide their own lives','Whose life? Mine to live'],
- choice:['Every choice deserves respect','Childfree is a valid choice','Choice, not pressure','Free to choose, in every direction'],
- respect:['Respect the choice, all choices','Different paths, equal dignity','No judgement, just respect','Families come in every shape'],
- freedom:['Freedom to choose, freedom to be','Build the life that fits you','Live by your own reasons','Free people, free choices']
-};
-var focus=document.getElementById('focus'),out=document.getElementById('out');var idx=0;
-function show(){var arr=S[focus.value]||S.autonomy;out.textContent='“'+arr[idx%arr.length]+'”';}
-var genBtn=document.getElementById('genBtn'),anotherBtn=document.getElementById('anotherBtn');
-if(genBtn)genBtn.addEventListener('click',function(){idx=Math.floor(Math.random()*(S[focus.value]||S.autonomy).length);show();});
-if(anotherBtn)anotherBtn.addEventListener('click',function(){idx++;show();});
-if(focus)focus.addEventListener('change',function(){idx=0;show();});
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.textContent&&out.textContent.indexOf('Pick a focus')<0?out.textContent:'“'+(S[focus.value]||S.autonomy)[0]+'”',copyBtn);});
-
-var QZ=[{a:1,e:'A strong slogan is short, positive, and memorable.'},{a:1,e:'The best advocacy stands for a value, inclusively.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 075 script error',e);}
+/* Project 075 · Protest Poster Text Generator — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  var S={
+    autonomy:{plain:['MY BODY, MY DECISION','BODILY AUTONOMY FOR ALL','MY LIFE, MY CHOICE TO MAKE'],rhyme:['MY BODY, MY SAY — TODAY AND EVERY DAY','MY CHOICE, MY VOICE'],gentle:['This body is mine to steward','My choices, made with care, are mine to make']},
+    choice:{plain:['EVERY CHOICE DESERVES RESPECT','FREE TO CHOOSE — WHETHER, WHEN, OR IF','TO HAVE OR NOT: BOTH ARE VALID'],rhyme:['WHETHER, WHEN, OR IF — THE CHOICE IS A GIFT','CHOOSE WITH PRIDE, NOT PUSHED ASIDE'],gentle:['Whatever you choose, may it be freely chosen','Room for every path, respect for each']},
+    dignity:{plain:['DIGNITY IS NOT CONDITIONAL','RESPECT EVERY REPRODUCTIVE CHOICE','NO ONE OWES A REASON FOR THEIR LIFE'],rhyme:['DIGNITY STANDS, IN EVERYONE\'S HANDS','LIVE AND LET LIVE, RESPECT TO GIVE'],gentle:['Every life path holds equal worth','Kindness for choices unlike your own']},
+    education:{plain:['ASK, DON\'T ASSUME','CURIOSITY OVER JUDGEMENT','DIFFERENT CHOICES, EQUAL DIGNITY'],rhyme:['LEARN BEFORE YOU JUDGE THE TURN','QUESTIONS OPEN, JUDGEMENT CLOSED'],gentle:['Understanding before opinion','A question is kinder than a verdict']},
+    solidarity:{plain:['YOUR CHOICE, MY SUPPORT','TOGETHER FOR EVERYONE\'S FREEDOM','WE STAND FOR ALL CHOICES'],rhyme:['YOUR PATH, MY RESPECT — WE PROTECT','SIDE BY SIDE, EACH CHOICE OUR PRIDE'],gentle:['Beside you, whatever you choose','Freedom is something we hold together']}
+  };
+  var current='';
+  function gen(){ var pool=S[$('focus').value][$('style').value]; var s=pick(pool); if(s===current&&pool.length>1) s=pick(pool); current=s; $('out').textContent=s; }
+  $('genBtn').addEventListener('click',gen); $('anotherBtn').addEventListener('click',gen);
+  $('focus').addEventListener('change',gen); $('style').addEventListener('change',gen);
+  $('copyBtn').addEventListener('click',function(){ if(current&&A.copy) A.copy(current,$('copyBtn')); });
+  var favs=(A.getJSON?A.getJSON('favs',[]):[])||[];
+  function renderFavs(){ var box=$('favs'); if(!box) return; if(!favs.length){ box.innerHTML='<p class="note">No saved slogans yet — tap ☆ Save on one you like.</p>'; return; }
+    box.innerHTML=favs.map(function(t,i){ return '<div class="favrow"><span>'+esc(t)+'</span><button type="button" class="cp" data-i="'+i+'">Copy</button><button type="button" data-i="'+i+'" aria-label="Remove">×</button></div>'; }).join('');
+    box.querySelectorAll('.cp').forEach(function(b){ b.addEventListener('click',function(){ if(A.copy) A.copy(favs[+b.getAttribute('data-i')],b); }); });
+    box.querySelectorAll('button:not(.cp)').forEach(function(b){ b.addEventListener('click',function(){ favs.splice(+b.getAttribute('data-i'),1); if(A.setJSON)A.setJSON('favs',favs); renderFavs(); }); }); }
+  $('saveBtn').addEventListener('click',function(){ if(current&&favs.indexOf(current)<0){ favs.push(current); if(A.setJSON)A.setJSON('favs',favs); renderFavs(); } });
+  renderFavs(); gen();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 075 script error', e); }
 });

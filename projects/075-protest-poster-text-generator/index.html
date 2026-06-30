@@ -1,46 +1,40 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Protest Poster Text Generator · ANCF Digital Projects</title><meta name="description" content="Create short, positive, rights-based slogans for awareness about reproductive autonomy — several per focus, editable. Positive and non-hateful by design."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Protest Poster Text Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Protest Poster Text Generator · ANCF Digital Projects</title><meta name="description" content="Short, positive, rights-based slogans for awareness about reproductive autonomy. Pick a focus and a style, generate a line for a poster, placard, or post, cycle for more, and save your favourites. Always affirming — pro-choice in the fullest sense, never anti-anyone."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Protest Poster Text Generator</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../074-instagram-carousel-text-builder/index.html">← Previous</a><a class="btn btn-primary" href="../076-debate-notes-organizer/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 075</span><h2>Protest Poster Text Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~4 min</span></div></div>
-<p class="lead">Short, positive, rights-based slogans for awareness about reproductive autonomy. Pick a focus and generate a line for a poster, placard, or post. Positive and non-hateful by design — it stands <em>for</em> something.</p>
+<div class="proj-head"><span class="num">PROJECT 075</span><h2>Protest Poster Text Generator</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~10 min · generator</span></div></div>
+<p class="lead">Short, positive, rights-based slogans for awareness about <strong>reproductive autonomy</strong>. Pick a focus and a style, and generate a line for a poster, placard, or post. Always affirming — pro-choice in the fullest sense, celebrating freedom rather than attacking anyone.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#gen">① Generate a slogan</a><a href="#saved">② Saved slogans</a><a href="#reflect">③ Reflection</a></nav>
 
-<p class="disclaimer">For positive, peaceful, rights-based messaging only. Slogans here never demean any group and never call for harm. Stand for autonomy and respect.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>What makes a slogan land: short, positive, memorable.</li>
-<li>How to stand <em>for</em> a value rather than against people.</li>
-<li>How to keep advocacy kind and inclusive.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Generate a slogan</h3>
-<label class="field" for="focus">Focus</label>
-<select id="focus"><option value="autonomy">Autonomy</option><option value="choice">Choice</option><option value="respect">Respect</option><option value="freedom">Freedom</option></select>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="anotherBtn" type="button">Another</button><button class="btn" id="copyBtn" type="button">Copy</button></div>
-<div class="result" id="out" role="status" aria-live="polite" style="font-size:var(--fs-xl);text-align:center;font-weight:800">Pick a focus and tap Generate.</div>
+<h3 id="gen" style="scroll-margin-top:70px">① Generate a slogan</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="focus">Focus</label><select id="focus"><option value="autonomy">Bodily autonomy</option><option value="choice">Freedom to choose</option><option value="dignity">Dignity &amp; respect</option><option value="education">Awareness &amp; education</option><option value="solidarity">Solidarity</option></select></div>
+<div><label class="field" for="style">Style</label><select id="style"><option value="plain">Plain &amp; strong</option><option value="rhyme">A little rhyme</option><option value="gentle">Gentle</option></select></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="anotherBtn" type="button">Another</button><button class="btn" id="copyBtn" type="button">Copy</button><button class="btn" id="saveBtn" type="button">☆ Save</button></div>
+<div class="poster" id="out">Your slogan appears here.</div>
+<p class="outmeta">Keep it short for a placard, or pair it with a sentence for a post. Positive lines travel further than angry ones.</p>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A strong slogan is…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Long and detailed</div><div class="opt" data-q="0" data-i="1">Short, positive, memorable</div><div class="opt" data-q="0" data-i="2">Aimed at a group</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. The best advocacy stands…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Against people</div><div class="opt" data-q="1" data-i="1">For a value, inclusively</div><div class="opt" data-q="1" data-i="2">For no one</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="saved" style="scroll-margin-top:70px">② Saved slogans</h3>
+<div class="panel"><div class="favs" id="favs"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What do you want a passer-by to feel, not just read? Which slogan does that best?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>The slogans that move people are short, positive, and <em>for</em> something. Stand for autonomy and respect, and your message invites rather than alienates.</p></div>
+<p>The slogans that change minds tend to invite rather than accuse. "Every choice deserves respect" opens a door that "you're all wrong" slams shut. Keep it short, keep it positive, and let the affirmation do the work.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../074-instagram-carousel-text-builder/index.html">Carousel Builder<span>Slide text</span></a>
-<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Stay kind</span></a>
-<a href="../006-reproductive-autonomy-explainer/index.html">Reproductive Autonomy<span>The principle</span></a>
-<a href="../031-comic-strip-prompt-generator/index.html">Comic Prompt Generator<span>Visual ideas</span></a>
+<a href="../074-instagram-carousel-text-builder/index.html">Carousel Builder<span>The longer version</span></a>
+<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>For posts</span></a>
+<a href="../006-reproductive-autonomy-explainer/index.html">Autonomy Explainer<span>The substance</span></a>
+<a href="../022-childfree-quote-archive/index.html">Affirmation Archive<span>More lines</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../074-instagram-carousel-text-builder/index.html">← Previous</a><a class="btn btn-primary" href="../076-debate-notes-organizer/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

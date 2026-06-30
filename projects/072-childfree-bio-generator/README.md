@@ -2,11 +2,6 @@
 
 *Project 072 · Category: Writing Tools · Difficulty: Beginner*
 
-Generate a friendly profile bio that reflects a childfree identity.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Generates warm profile bios from a vibe (warm/witty/minimal/adventurous), up to four toggleable
+interests, and a platform, with variants, a live character count against the platform limit (X/IG/
+dating/general), and saved favourites. Celebratory, never a dig at others. Vanilla JS; DOM test 7/7.

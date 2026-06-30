@@ -1,68 +1,43 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crisis-Safe Community Policy Page · ANCF Digital Projects</title><meta name="description" content="A model, copyable policy for handling crisis moments safely and kindly in a community, with clear moderator response steps. Guidance, not professional advice."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Crisis-Safe Community Policy Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Crisis-Safe Community Policy Page · ANCF Digital Projects</title><meta name="description" content="If you run a community that discusses heavy topics, it helps to agree in advance how moderators respond when someone seems to be in distress. This builds an adaptable policy template — to refine with qualified input. It is not a clinical protocol."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Crisis-Safe Community Policy Page</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../086-mental-health-boundary-notice/index.html">← Previous</a><a class="btn btn-primary" href="../088-anti-harassment-rules-page/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 087</span><h2>Crisis-Safe Community Policy Page</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Advanced · ~10 min</span></div></div>
-<p class="lead">If you run a community that discusses heavy topics, it helps to agree — in advance — how moderators respond when someone seems to be in crisis. This is a model policy you can adapt and copy, plus a simple readiness checklist.</p>
+<div class="proj-head"><span class="num">PROJECT 087</span><h2>Crisis-Safe Community Policy Page</h2><div><span class="cat">Community Tools</span> <span class="note">· Difficulty: Advanced · ~25 min · policy builder</span></div></div>
+<p class="lead">If you run a community that discusses heavy topics, it helps to agree — <strong>in advance</strong> — how moderators respond when someone seems to be in distress. This builds an adaptable <strong>policy template</strong> covering principles, what to do and not do, resources, and care for the mod team.</p>
+<div class="notice"><b>Important:</b> This is a starting template for community conduct, <em>not</em> a clinical or crisis-intervention protocol, and not professional advice. Before relying on it, adapt it with input from qualified mental-health professionals and local emergency/crisis services appropriate to your members' regions. Communities support; they do not treat.</div>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Build your policy</a><a href="#principles">② Guiding principles</a><a href="#policy">③ Your policy (export)</a><a href="#reflect">④ Reflection</a></nav>
 
-<p class="disclaimer">This is general guidance, <strong>not professional or clinical advice</strong>. Moderators are not crisis counsellors. The goal is to respond with care and connect people to real help — fast.</p>
-
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>What a calm, safe crisis-response policy contains.</li>
-<li>The role of a moderator — and its limits.</li>
-<li>Why pre-agreed steps beat improvising in the moment.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Model policy (copy &amp; adapt)</h3>
-<p class="note">A starting template. Replace the bracketed parts with your own local resources, then copy it into your community's rules.</p>
-<label class="field" for="out">Policy text (editable)</label>
-<textarea id="out" style="min-height:240px"></textarea>
-<div class="btn-row"><button class="btn btn-primary" id="copyBtn" type="button">Copy policy</button><button class="btn" id="resetBtn" type="button">Reset to template</button></div>
+<h3 id="build" style="scroll-margin-top:70px">① Build your policy</h3>
+<div class="panel">
+<label class="field" for="cname">Community name</label><input id="cname" type="text" placeholder="e.g. The Childfree Collective" style="width:100%;box-sizing:border-box;margin-bottom:10px">
+<p class="field">Include these sections</p>
+<div class="secs" id="secs"></div>
+<label class="field" for="resources" style="margin-top:10px">Local / regional support resources to list (you fill these in)</label>
+<textarea id="resources" rows="2" placeholder="Add the crisis lines, services, or links appropriate to your members' regions…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="buildBtn" type="button">Update policy</button><button class="btn" id="copyBtn" type="button">Copy policy</button></div>
 </div>
 
-<div class="panel"><h3>2. Moderator response steps</h3>
-<div class="kv">
-<strong>1. Stay calm &amp; kind</strong><span>Respond gently and without judgment. Thank the person for sharing.</span>
-<strong>2. Don't counsel</strong><span>You're a caring human, not a clinician. Avoid diagnosing or advising.</span>
-<strong>3. Signpost support</strong><span>Share local crisis lines and encourage contact with a professional or trusted person.</span>
-<strong>4. Emergencies</strong><span>If someone may be in immediate danger, point to local emergency services right away.</span>
-<strong>5. Protect the space</strong><span>Move on gently; avoid graphic detail; follow up privately if appropriate.</span>
-</div>
-</div>
+<h3 id="principles" style="scroll-margin-top:70px">② Guiding principles</h3>
+<div class="panel"><div class="cards3" id="prinCards"></div></div>
 
-<div class="panel"><h3>3. Readiness checklist</h3>
-<p class="note">Tick what your community already has in place. Saved on this device.</p>
-<div id="docs">
-<label class="check"><input type="checkbox" data-key="lines"> A list of local crisis lines is ready to share</label>
-<label class="check"><input type="checkbox" data-key="steps"> Moderators know the response steps</label>
-<label class="check"><input type="checkbox" data-key="policy"> The policy is posted where members can see it</label>
-<label class="check"><input type="checkbox" data-key="limits"> Moderators understand their limits</label>
-</div>
-<div class="meter" aria-hidden="true"><span id="docBar"></span></div>
-<p class="note" id="docCount" role="status" aria-live="polite">0 of 4 in place.</p>
-</div>
+<h3 id="policy" style="scroll-margin-top:70px">③ Your policy (export)</h3>
+<div class="panel"><div class="preview" id="out"></div></div>
 
-<div class="panel"><h3>4. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. A moderator's role in a crisis is to…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">Act as a therapist</div><div class="opt" data-q="0" data-i="1">Respond kindly and connect people to real help</div><div class="opt" data-q="0" data-i="2">Delete the message and move on</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Agreeing steps in advance…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">Wastes time</div><div class="opt" data-q="1" data-i="1">Helps everyone respond calmly when it matters</div><div class="opt" data-q="1" data-i="2">Isn't needed</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="reflect" style="scroll-margin-top:70px">④ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What worries you most about handling a crisis in your space — and who could you ask for qualified guidance before you need it?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>You can't counsel, but you can care — and caring well means having a plan. A short, pre-agreed policy lets moderators respond calmly, point to real support, and keep the whole community safe.</p></div>
+<p>You can't be a therapist for your community, and you shouldn't try to be — but you can decide, calmly and in advance, how to respond with care, dignity, and good judgement. The best crisis policy is humble: respond kindly, never promise what you can't deliver, point firmly toward qualified help, and look after the moderators too.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../086-mental-health-boundary-notice/index.html">Mental Health Boundary Notice<span>Set the tone</span></a>
-<a href="../088-anti-harassment-rules-page/index.html">Anti-Harassment Rules<span>Keep it kind</span></a>
-<a href="../090-safe-moderation-checklist/index.html">Safe Moderation Checklist<span>Day to day</span></a>
-<a href="../036-whatsapp-group-rules-generator/index.html">Group Rules Generator<span>Set up a group</span></a>
+<a href="../086-mental-health-boundary-notice/index.html">Boundary Notice<span>Everyday care</span></a>
+<a href="../090-safe-moderation-checklist/index.html">Moderation Checklist<span>Steady habits</span></a>
+<a href="../088-anti-harassment-rules-page/index.html">Anti-Harassment Rules<span>Keep it safe</span></a>
+<a href="../038-admin-warning-message-generator/index.html">Admin Warnings<span>Moderation</span></a>
 </div></div>
-
-<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice. This is a sensitive topic; if you're struggling personally, please reach out to a trusted person or a professional where you live.</p>
+<p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../086-mental-health-boundary-notice/index.html">← Previous</a><a class="btn btn-primary" href="../088-anti-harassment-rules-page/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

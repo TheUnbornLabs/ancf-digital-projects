@@ -1,33 +1,47 @@
-document.addEventListener('DOMContentLoaded',function(){
-try{
-var A=window.ANCF||{};
-var titles={autonomy:'Whose Choice Is It? Reproductive Autonomy for Everyone',antinatalism:'Antinatalism, Fairly Explained',childfree:'The Childfree Choice: A Full Life, Freely Chosen',pressure:'Naming Pronatalist Pressure — Kindly'};
-var topic=document.getElementById('topic'),frame=document.getElementById('frame'),out=document.getElementById('out');
-function build(){
-  var t=titles[topic.value]||titles.autonomy;var L=['Working title: '+t,''];
-  if(frame.value==='personal'){
-    L.push('1. Open with a moment','   - A small scene that sets the question.','2. What I used to assume','3. What changed my thinking','4. The strongest objection — and my honest response','5. Where I\'ve landed (held lightly)','6. Close: an invitation, not a verdict');
-  }else{
-    L.push('1. Introduction','   - Hook + the question this piece answers.','2. Background / key terms','3. The main case','   - Point A, Point B, Point C (one idea each).','4. The opposing view (steelmanned)','   - Its strongest form, stated fairly.','5. Synthesis','   - Where the views meet and diverge; what\'s really at stake.','6. Conclusion','   - A measured takeaway + respect for disagreement.');
+/* Project 079 · Article Outline Generator — interactive logic */
+document.addEventListener('DOMContentLoaded', function () {
+try {
+  var A=window.ANCF||{}; function $(id){return document.getElementById(id);}
+  function gen(){
+    var topic=($('topic').value||'').trim()||'Your topic', framing=$('framing').value, depth=+$('depth').value;
+    var L=['ARTICLE OUTLINE','Working title: '+topic,'Framing: '+framing,'',
+      '1. HOOK / OPENING','   • Open with the question, a scene, or a surprising fact','   • Make the reader feel why this matters',''];
+    var n=2;
+    if(framing==='persuasive'){
+      L.push(n++ +'. THESIS'); L.push('   • State your position in one clear sentence'); L.push('   • Preview the reasons to come'); L.push('');
+      for(var i=0;i<depth;i++){ L.push(n++ +'. ARGUMENT '+(i+1)); L.push('   • Claim:'); L.push('   • Evidence / reasoning:'); L.push('   • Example or illustration:'); L.push(''); }
+      L.push(n++ +'. THE STRONGEST OPPOSING VIEW  ⟵ built in'); L.push('   • State the best counter-argument fairly (steelman it)'); L.push('   • Acknowledge what it gets right'); L.push('   • Respond honestly — without strawmanning'); L.push('');
+      L.push(n++ +'. CONCLUSION'); L.push('   • Restate the position, now earned'); L.push('   • End with an invitation, not a lecture');
+    } else if(framing==='balanced'){
+      L.push(n++ +'. FRAME THE QUESTION'); L.push('   • Why reasonable people disagree'); L.push('');
+      L.push(n++ +'. THE CASE FOR'); for(var a=0;a<Math.max(1,depth-1);a++){ L.push('   • Point '+(a+1)+':'); } L.push('');
+      L.push(n++ +'. THE CASE AGAINST  ⟵ equal weight'); for(var b=0;b<Math.max(1,depth-1);b++){ L.push('   • Point '+(b+1)+':'); } L.push('');
+      L.push(n++ +'. WHERE THE EVIDENCE / BALANCE LIES'); L.push('   • Weigh them honestly'); L.push('');
+      L.push(n++ +'. CONCLUSION'); L.push('   • A considered, non-dogmatic close');
+    } else if(framing==='explainer'){
+      L.push(n++ +'. DEFINE THE TERMS'); L.push('   • Plain-language definitions'); L.push('');
+      for(var e=0;e<depth;e++){ L.push(n++ +'. KEY ASPECT '+(e+1)); L.push('   • Explain clearly, with an example'); L.push(''); }
+      L.push(n++ +'. COMMON MISCONCEPTIONS / OBJECTIONS  ⟵ built in'); L.push('   • Address what people often get wrong or push back on'); L.push('');
+      L.push(n++ +'. SUMMARY'); L.push('   • The reader should now be able to explain it themselves');
+    } else { // personal
+      L.push(n++ +'. THE MOMENT'); L.push('   • A specific scene that sparked the reflection'); L.push('');
+      for(var p=0;p<depth;p++){ L.push(n++ +'. REFLECTION '+(p+1)); L.push('   • What you felt / thought / learned'); L.push(''); }
+      L.push(n++ +'. THE OTHER SIDE OF MY OWN STORY  ⟵ built in'); L.push('   • Where you doubt yourself, or see the other view\'s pull'); L.push('   • Honesty here makes the essay trustworthy'); L.push('');
+      L.push(n++ +'. WHERE I\'VE LANDED (FOR NOW)'); L.push('   • A humble, honest close');
+    }
+    $('out').textContent=L.join('\n');
   }
-  L.push('','Reminder: argue the idea, respect the people.');out.value=L.join('\n');if(A.set)A.set('outline',out.value);
-}
-var genBtn=document.getElementById('genBtn');
-if(genBtn)genBtn.addEventListener('click',build);
-if(topic)topic.addEventListener('change',build);if(frame)frame.addEventListener('change',build);
-if(out){if(A.get)out.value=A.get('outline','');out.addEventListener('input',function(){if(A.set)A.set('outline',out.value);});if(!out.value)build();}
-var copyBtn=document.getElementById('copyBtn');
-if(copyBtn)copyBtn.addEventListener('click',function(){A.copy&&A.copy(out.value||'',copyBtn);});
-
-var QZ=[{a:1,e:'Including the opposing view strengthens your article and builds trust.'},{a:1,e:'A synthesis weighs the views and earns trust.'}];
-var picks={},totalQ=document.querySelectorAll('#quiz .quiz-q').length;
-if(A.initOptions)A.initOptions(document.getElementById('quiz'),function(q,i){picks[q]=+i;});
-var sB=document.getElementById('quizScore'),rB=document.getElementById('quizReset'),res=document.getElementById('quizResult');
-if(sB)sB.addEventListener('click',function(){
-  if(Object.keys(picks).length<totalQ){res.style.display='block';res.textContent='Pick an answer for all '+totalQ+' questions first.';return;}
-  var sc=0;QZ.forEach(function(it,i){document.querySelectorAll('#quiz .opt[data-q="'+i+'"]').forEach(function(x){var j=+x.getAttribute('data-i');x.classList.remove('ok','no');if(j===it.a)x.classList.add('ok');else if(j===picks[i])x.classList.add('no');});var ex=document.querySelector('.explain[data-q="'+i+'"]');if(ex){ex.style.display='block';ex.textContent=it.e;}if(picks[i]===it.a)sc++;});
-  res.style.display='block';res.textContent='You matched '+sc+' of '+QZ.length+' with the explained view.';if(rB)rB.style.display='inline-block';
-});
-if(rB)rB.addEventListener('click',function(){picks={};document.querySelectorAll('#quiz .opt').forEach(function(x){x.classList.remove('sel','ok','no');x.setAttribute('aria-pressed','false');});document.querySelectorAll('#quiz .explain').forEach(function(ex){ex.style.display='none';ex.textContent='';});res.style.display='none';rB.style.display='none';});
-}catch(e){console.error('project 079 script error',e);}
+  $('genBtn').addEventListener('click',gen);
+  ['topic','framing','depth'].forEach(function(id){ var el=$(id); if(el) el.addEventListener('input',gen); var e2=$(id); if(e2) e2.addEventListener('change',gen); });
+  $('copyBtn').addEventListener('click',function(){ if(A.copy) A.copy($('out').textContent,$('copyBtn')); });
+  (function(){ var box=$('aboutCards'); if(!box) return;
+    var C=[['It stress-tests your case','Writing the opposing view forces you to find your argument\'s weak joints before a critic does — and to shore them up.'],['It earns trust','Readers can tell when you\'re dodging. Meeting the best counter-argument head-on signals you\'re after truth, not just a win.'],['It\'s how minds actually change','People move when they feel understood. An article that fairly states their view first has a chance of being heard at all.']];
+    box.innerHTML=C.map(function(p){ return '<div class="scard"><h4>'+p[0]+'</h4><span class="tg">Tap to expand</span><div class="more">'+p[1]+'</div></div>'; }).join('');
+    box.querySelectorAll('.scard').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('open'); }); }); })();
+  gen();
+  (function(){ var ta=$('r1'), status=$('saveStatus'), timer=null; function flash(m){ if(!status)return; status.textContent=m; if(timer)clearTimeout(timer); timer=setTimeout(function(){ status.textContent=''; },1600); }
+    if(ta&&A.get){ ta.value=A.get('r1',''); ta.addEventListener('input',function(){ A.set('r1',ta.value); }); }
+    var s=$('rSave'),cl=$('rClear'); if(s) s.addEventListener('click',function(){ if(ta&&A.set)A.set('r1',ta.value); flash('Saved ✓'); });
+    if(cl) cl.addEventListener('click',function(){ if(ta&&ta.value.trim()&&!window.confirm('Clear?'))return; if(ta){ta.value='';A.remove&&A.remove('r1');} flash('Cleared.'); }); })();
+} catch(e){ console.error('project 079 script error', e); }
 });

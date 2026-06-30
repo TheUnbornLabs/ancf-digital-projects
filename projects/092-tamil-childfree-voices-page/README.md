@@ -1,12 +1,7 @@
-# Tamil Childfree Voices Page
+# Tamil Childfree Voices
 
 *Project 092 · Category: Society · Difficulty: Intermediate*
 
-A respectful page acknowledging Tamil-language voices on autonomy and childfree life.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A warm, "speaks-with-not-for" acknowledgement connecting childfree reflection to the Tamil Self-Respect
+heritage: four heritage cards, three respectfully-presented Tamil terms (suya mariyathai, pakuttarivu,
+suthanthiram), and a resonance picker surfacing tailored prompts. Ties to Project 058. Vanilla JS; test 6/6.

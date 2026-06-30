@@ -1,44 +1,38 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instagram Carousel Text Builder · ANCF Digital Projects</title><meta name="description" content="Generate slide-by-slide text for an educational carousel post — per topic, shown as slide cards, editable and copyable. Respectful and hashtag-light."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Instagram Carousel Text Builder</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instagram Carousel Text Builder · ANCF Digital Projects</title><meta name="description" content="Generate the text for a five-slide educational carousel — a hook, three clear points, and a kind closing. Pick a topic and tone, then copy each slide or all of them. Respectful and accurate by design."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Instagram Carousel Text Builder</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../073-antinatalist-statement-builder/index.html">← Previous</a><a class="btn btn-primary" href="../075-protest-poster-text-generator/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 074</span><h2>Instagram Carousel Text Builder</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~6 min</span></div></div>
-<p class="lead">Generate the text for a five-slide educational carousel — a hook, three clear points, and a kind closing. Pick a topic, then copy the slides. Respectful by design, and light on hashtags.</p>
+<div class="proj-head"><span class="num">PROJECT 074</span><h2>Instagram Carousel Text Builder</h2><div><span class="cat">Writing Tools</span> <span class="note">· Difficulty: Beginner · ~10 min · builder</span></div></div>
+<p class="lead">Generate the text for a <strong>five-slide educational carousel</strong> — a hook, three clear points, and a kind closing. Pick a topic and tone, then copy each slide or all of them at once. Respectful and accurate by design — it informs without putting anyone down.</p>
+<nav class="jump" aria-label="Jump to a section"><a href="#build">① Build the carousel</a><a href="#slides">② Your slides</a><a href="#reflect">③ Reflection</a></nav>
 
-<div class="learn"><h3>What you will learn</h3>
-<ul>
-<li>The shape of a strong carousel: hook → points → close.</li>
-<li>How to make each slide one clear idea.</li>
-<li>How to end with warmth, not a lecture.</li>
-</ul></div>
-
-<div class="panel"><h3>1. Build the slides</h3>
-<label class="field" for="topic">Topic</label>
-<select id="topic"><option value="autonomy">Reproductive autonomy</option><option value="joy">Childfree joy</option><option value="consent">The consent idea</option><option value="myth">Myth-busting</option><option value="support">Supporting a friend</option></select>
-<div class="btn-row"><button class="btn btn-primary" id="genBtn" type="button">Generate</button><button class="btn" id="copyBtn" type="button">Copy all slides</button></div>
-<div id="slides" style="margin-top:8px"></div>
+<h3 id="build" style="scroll-margin-top:70px">① Build the carousel</h3>
+<div class="panel">
+<div class="ctrls">
+<div><label class="field" for="topic">Topic</label><select id="topic"></select></div>
+<div><label class="field" for="tone">Tone</label><select id="tone"><option value="warm">Warm</option><option value="punchy">Punchy</option><option value="thoughtful">Thoughtful</option></select></div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" id="buildBtn" type="button">Build slides</button><button class="btn" id="copyAllBtn" type="button">Copy all slides</button></div>
 </div>
 
-<div class="panel"><h3>2. Quick check</h3>
-<div id="quiz">
-<div class="quiz-q"><strong>1. Slide 1 should be…</strong><div class="opts">
-<div class="opt" data-q="0" data-i="0">A dense paragraph</div><div class="opt" data-q="0" data-i="1">A short, clear hook</div><div class="opt" data-q="0" data-i="2">All your hashtags</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
-<div class="quiz-q"><strong>2. Each middle slide works best with…</strong><div class="opts">
-<div class="opt" data-q="1" data-i="0">One clear idea</div><div class="opt" data-q="1" data-i="1">Five ideas crammed in</div><div class="opt" data-q="1" data-i="2">No idea</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
-</div>
-<div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
-<div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+<h3 id="slides" style="scroll-margin-top:70px">② Your slides</h3>
+<div class="panel"><div class="slides" id="slidesBox"></div></div>
+
+<h3 id="reflect" style="scroll-margin-top:70px">③ Your reflection</h3>
+<div class="panel"><p class="note">Saved on this device only.</p>
+<label class="field" for="r1">What one feeling do you want a scroller to leave with? Does the closing slide land it?</label>
+<textarea id="r1" placeholder="Write freely…"></textarea>
+<div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>Hook, three clear points, kind close. One idea per slide keeps a carousel readable — and a warm ending invites people in rather than pushing them away.</p></div>
+<p>A good carousel respects the scroll: a hook that earns the swipe, three points that each stand alone, and a closing that's kind rather than preachy. Use these as a first draft, trim hard, and let your own voice carry the final slide.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
-<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>The caption</span></a>
-<a href="../031-comic-strip-prompt-generator/index.html">Comic Prompt Generator<span>Visual ideas</span></a>
-<a href="../078-video-script-generator/index.html">Video Script Generator<span>For reels</span></a>
-<a href="../089-respectful-language-guide/index.html">Respectful Language Guide<span>Stay kind</span></a>
+<a href="../032-instagram-caption-generator/index.html">Caption Generator<span>The caption to go with it</span></a>
+<a href="../031-comic-strip-prompt-generator/index.html">Comic Prompts<span>Visual ideas</span></a>
+<a href="../075-protest-poster-text-generator/index.html">Poster Slogans<span>Short lines</span></a>
+<a href="../051-antinatalism-faq/index.html">FAQ<span>Get the facts right</span></a>
 </div></div>
-
 <p class="disclaimer">This project is for education and reflection, not medical, legal, financial, or mental health advice.</p>
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../073-antinatalist-statement-builder/index.html">← Previous</a><a class="btn btn-primary" href="../075-protest-poster-text-generator/index.html">Next →</a></div>
 </main><footer class="site-footer"><div class="wrap">ANCF Digital Projects · An open, ad-free, tracking-free static archive for reflection. · <a href="../../index.html">All 100 projects</a></div></footer><script src="../../script.js"></script><script src="../../ancf-ui.js"></script><script src="script.js"></script></body></html>

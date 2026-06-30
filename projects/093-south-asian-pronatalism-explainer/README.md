@@ -2,11 +2,7 @@
 
 *Project 093 · Category: Society · Difficulty: Intermediate*
 
-A careful explainer on pronatalist pressures in South Asian contexts — without stereotyping.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Six common pronatal pressure patterns (life sequence, "what will people say", grandchildren-as-due,
+name continuity, old-age security, adulthood-by-fertility), each with the worry underneath and the
+practice to question, plus four calm response cards. Anti-bigotry: critiques practices/norms, never
+any community, caste, or faith. Vanilla JS; DOM test 5/5.

@@ -2,11 +2,7 @@
 
 *Project 087 · Category: Community Tools · Difficulty: Advanced*
 
-A model policy for handling crisis moments safely and kindly in a community.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+Builds an adaptable community-conduct policy for responding when a member appears distressed:
+toggleable sections (purpose, what mods do / don't, support resources you fill in, moderator care),
+a community-name field, exportable/copyable output, and guiding-principle cards. Explicitly framed
+as NOT a clinical protocol — adapt with qualified input. Careful, non-prescriptive. Vanilla JS; test 8/8.

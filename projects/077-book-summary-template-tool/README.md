@@ -2,11 +2,6 @@
 
 *Project 077 · Category: Writing Tools · Difficulty: Beginner*
 
-Generate a clean template to summarise any book you read on these topics.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A structured book-summary template (title/author/thesis/key-ideas list/paraphrased lines/critique/
+takeaway/rating) with a live formatted preview, copy, and a saved library you can load from or delete.
+Encourages own-words paraphrase (no copyrighted quotes). Saved on-device. Vanilla JS; DOM test 6/6.

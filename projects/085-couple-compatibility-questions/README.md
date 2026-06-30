@@ -2,11 +2,6 @@
 
 *Project 085 · Category: Childfree Life · Difficulty: Beginner*
 
-Conversation-starter questions to explore alignment on children and life.
-
-Part of **ANCF Digital Projects** — an open, ad-free, tracking-free static archive of 100 antinatalism & childfree themed projects.
-
-- Open `index.html` in this folder, or browse from the site homepage.
-- Links: Back to Home, Previous Project, Next Project are built into the page.
-
-> This project is for education and reflection only. It is not medical, legal, financial, or mental health advice.
+A 12-question deck partners work through together, tagging each aligned/unsure/need-to-talk; the
+tool compiles a focused conversation agenda from the unsure/talk items, with a progress line and
+how-to-talk cards. Distinct from the two-stance mapper (018). Saved on-device. Vanilla JS; test 6/6.
