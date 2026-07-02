@@ -120,7 +120,7 @@ try {
     timeLimit:10,tLeft:10,awaiting:false,used:[],cur:-1,missed:[],timer:null};
 
   function tierForLevel(lvl){ return lvl<=2?1:(lvl<=5?2:3); }
-  function timeLimitForLevel(lvl){ return Math.max(4,11-lvl); }
+  function timeLimitForLevel(lvl){ return Math.max(10,14-lvl); }
 
   function pickIndex(){
     var tier=tierForLevel(st.level);
