@@ -1,25 +1,25 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiz Game: Myth vs Reality · ANCF Digital Projects</title><meta name="description" content="Myth or reality? Read each statement about antinatalism and childfree life and decide — then see the explanation. A quick, friendly way to test and sharpen what you know, with a score, a streak, and no trick questions."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Myth vs Reality Quiz</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiz Game: Myth vs Reality · ANCF Digital Projects</title><meta name="description" content="100 myth-or-reality statements about antinatalism and childfree life in an escalating Challenge Mode — every 10 seconds it gets harder: tougher statements, less time, 3 lives. Built to make you question what you assumed was obvious."><link rel="stylesheet" href="../../style.css"><link rel="stylesheet" href="style.css"></head><body><header class="site-header"><div class="wrap"><a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>ANCF Digital Projects</h1><p>Myth vs Reality Quiz</p></span></a><span class="spacer"></span><button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button></div></header><main class="wrap">
 <div class="proj-nav"><a class="btn" href="../../index.html">← Back to Home</a><span class="spacer"></span><a class="btn" href="../063-platform-game-boundary-runner/index.html">← Previous</a><a class="btn btn-primary" href="../065-memory-game-ethical-concepts/index.html">Next →</a></div>
-<div class="proj-head"><span class="num">PROJECT 064</span><h2>Quiz Game: Myth vs Reality</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner · ~10 min · quiz game</span></div></div>
-<p class="lead">Myth or reality? Read each statement and decide — then see the explanation. A quick, friendly way to <strong>test (and sharpen) what you know</strong> about antinatalism and childfree life. There are no trick questions, just a score, a streak, and a little learning each round.</p>
+<div class="proj-head"><span class="num">PROJECT 064</span><h2>Quiz Game: Myth vs Reality</h2><div><span class="cat">Games</span> <span class="note">· Difficulty: Beginner → Expert · ~10 min · escalating quiz game</span></div></div>
+<p class="lead">100 myth-or-reality statements about antinatalism and childfree life, in <strong>Challenge Mode</strong>: every 10 seconds the level gets harder — tougher statements, less time to answer, 3 lives. It's built to move faster than your assumptions, so you notice which ones you were carrying in unchecked.</p>
 <nav class="jump" aria-label="Jump to a section"><a href="#game">① Play</a><a href="#reflect">② Reflection</a></nav>
 
 <h3 id="game" style="scroll-margin-top:70px">① Play</h3>
 <div class="panel">
-<div class="hud"><span>Score: <span id="score">0</span>/<span id="total">0</span></span><span class="best">Streak: <span id="streak">0</span> · Best: <span id="best">0</span></span></div>
-<div class="meter-wrap"><div class="meter" id="meter"></div></div>
+<div class="hud"><span>Score: <span id="score">0</span></span><span>Level: <span id="level">1</span></span><span class="best">Streak: <span id="streak">0</span> · Best: <span id="best">0</span></span><span class="lives">Lives: <span id="lives">♥ ♥ ♥</span></span></div>
+<div class="meter-wrap" aria-label="Time remaining for this question"><div class="meter" id="meter"></div></div>
 <div id="qhost"></div>
 </div>
 
 <h3 id="reflect" style="scroll-margin-top:70px">② Your reflection</h3>
 <div class="panel"><p class="note">Saved on this device only.</p>
-<label class="field" for="r1">Which "myth" had you fooled — or which "reality" surprised you most?</label>
+<label class="field" for="r1">Which statement did you get wrong — or answer fastest — without really thinking it through? What made you so sure?</label>
 <textarea id="r1" placeholder="Write freely…"></textarea>
 <div class="btn-row"><button class="btn btn-primary" id="rSave" type="button">Save</button><button class="btn" id="rClear" type="button">Clear</button><span class="spacer"></span><span class="note" id="saveStatus" role="status" aria-live="polite"></span></div>
 </div>
 
 <div class="takeaway"><h3>Key takeaway</h3>
-<p>A lot of "common knowledge" about this topic is myth dressed as fact. Pausing to ask "is that actually true?" — and checking — is a small habit that pays off well beyond a quiz. However you scored, the explanations are the real prize.</p></div>
+<p>Under time pressure, you answer from instinct, not research — which is exactly how most "common knowledge" gets absorbed in the first place. The level you reached says less than the statements that caught you off guard. Whatever your score, noticing where your snap judgment and the explanation disagreed is the actual point.</p></div>
 
 <div class="panel"><h3>Continue exploring</h3>
 <div class="related">
