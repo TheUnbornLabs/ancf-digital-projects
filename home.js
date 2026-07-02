@@ -20,14 +20,27 @@
 
   var DATA = window.__PROJECTS__ || [];
 
-  /* ── type icons ─────────────────────────────────────────────────────── */
-  var TYPE_ICON = {
-    'Guide': '📖', 'Quiz': '🧩', 'Calculator': '🔢', 'Generator': '✍️',
-    'Game': '🎮', 'Reflection': '💭', 'Community Tool': '🛠', 'Tool': '🔍',
-    'Checklist': '✅', 'Simulation': '⚡', 'Flashcard': '🃏'
+  /* ── type icons (inline SVG — renders identically everywhere, unlike emoji) ── */
+  var TYPE_ICON_PATHS = {
+    'Guide': '<path d="M2.5 4.5c2-1 4.5-1 7 0v11c-2.5-1-5-1-7 0Z"/><path d="M17.5 4.5c-2-1-4.5-1-7 0v11c2.5-1 5-1 7 0Z"/>',
+    'Quiz': '<circle cx="10" cy="10" r="7.5"/><path d="M7.8 7.6a2.2 2.2 0 1 1 3.4 1.8c-.7.5-1.2.9-1.2 1.8"/><circle cx="10" cy="13.8" r=".25" fill="currentColor"/>',
+    'Calculator': '<rect x="4" y="1.5" width="12" height="17" rx="1.5"/><path d="M6.5 4.5h7v3h-7z"/><path d="M6.5 11h1M9.5 11h1M12.5 11h1M6.5 14h1M9.5 14h1M12.5 14h1"/>',
+    'Generator': '<path d="M12.8 2.8 16 6 6.5 15.5 2.5 16.5l1-4 9.3-9.7Z"/><path d="M2.5 18h14"/>',
+    'Game': '<rect x="1.5" y="6" width="17" height="9" rx="4"/><path d="M6 8.5v4M4 10.5h4"/><circle cx="14" cy="9" r="1"/><circle cx="16" cy="12" r="1"/>',
+    'Reflection': '<path d="M6 12.5a4 4 0 1 1 1-7.9 4.5 4.5 0 0 1 8.6 1.5A3.5 3.5 0 0 1 15 13.5H8a4 4 0 0 1-2-1Z"/><circle cx="5" cy="15.5" r="1"/><circle cx="3.2" cy="17.5" r=".6"/>',
+    'Community Tool': '<circle cx="10" cy="10" r="2.3"/><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/>',
+    'Tool': '<circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5 12.7 12.7"/>',
+    'Checklist': '<path d="M3.5 5.5h2M3.5 10h2M3 14.5l.8.8L5.5 13.5"/><path d="M8 5.5h8.5M8 10h8.5M8 14.5h6"/>',
+    'Simulation': '<path d="M11 2.5 4 11.5h5l-1 6 7-9h-5l1-6Z"/>',
+    'Flashcard': '<rect x="5.3" y="4.2" width="11" height="14" rx="1.5" transform="rotate(6 10.8 11.2)"/><rect x="3.5" y="2.5" width="11" height="14" rx="1.5"/>'
   };
+  var DEFAULT_ICON = '<circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none"/>';
 
-  function typeIcon(t) { return TYPE_ICON[t] || '•'; }
+  function typeIcon(t) {
+    var p = TYPE_ICON_PATHS[t] || DEFAULT_ICON;
+    return '<svg class="type-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+  }
 
   /* ── card builder (shared) ──────────────────────────────────────────── */
   function buildCard(p, cls) {
@@ -35,7 +48,7 @@
     a.className = cls || 'card';
     a.href = p.path;
     var icon = typeIcon(p.type || '');
-    var typeLabel = p.type ? '<span class="card-type"><span class="type-icon">' + icon + '</span>' + p.type + '</span>' : '';
+    var typeLabel = p.type ? '<span class="card-type">' + icon + p.type + '</span>' : '';
     var timeLabel = p.estimatedTime ? '<span class="card-time">⏱ ' + p.estimatedTime + '</span>' : '';
     a.innerHTML =
       '<span class="num">PROJECT ' + String(p.number).padStart(3, '0') + '</span>' +

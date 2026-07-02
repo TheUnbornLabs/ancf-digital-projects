@@ -276,7 +276,7 @@ ul.clean{padding-left:18px}
 .card-tags{display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:center;margin:6px 0}
 .card-type{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-weight:700;
   color:var(--info);background:var(--info-soft);padding:3px 10px;border-radius:var(--radius-pill)}
-.type-icon{font-size:.9em}
+.type-icon{width:13px;height:13px;flex:0 0 auto}
 .card-time{font-size:var(--fs-xs);color:var(--muted);font-weight:600}
 .diff-beginner{color:#1c7a3e;background:rgba(28,122,62,.1);
   padding:3px 9px;border-radius:var(--radius-pill);font-size:var(--fs-xs);font-weight:700}
