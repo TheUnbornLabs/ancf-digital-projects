@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moral Philosophy · The Asymmetry — Interactive Track · ANCF</title>
+<meta name="description" content="The interactive deep track for Moral Philosophy, built from The Asymmetry (Book 1). Test the four premises, watch the symmetry objection bite, knock out a pillar, sit with the non-identity problem, face the vulnerabilities — and read the whole book.">
+<link rel="stylesheet" href="../../style.css">
+<link rel="stylesheet" href="../edu.css">
+<link rel="stylesheet" href="mp.css">
+</head>
+<body>
+<header class="site-header"><div class="wrap">
+  <a class="brand" href="../../index.html" style="color:inherit"><svg class="mark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4c2 6 6 9 12 10-5 2-8 5-9 10 4-2 8-1 11 2-5 0-8 2-10 6 3-1 6 0 8 3-6-1-11 1-15 6-1-7-5-12-12-14 5-1 8-4 9-9 1 4 3 6 6 7-2-4-2-8 0-12-1 5 0 9 5 11-3-4-4-9-2-14 1 5 4 8 9 9-5-3-7-8-7-14 1 4 3 7 7 9-3-4-3-8-1-11z" fill="#b3122a"/></svg><span><h1>The Asymmetry</h1><p>Discipline 1 · Moral Philosophy</p></span></a>
+  <span class="spacer"></span>
+  <a class="btn" href="../index.html">The Education</a>
+  <button class="btn toggle" id="themeBtn" aria-label="Toggle dark and light theme">☾ Dark</button>
+</div></header>
+
+<main class="wrap">
+  <div class="proj-nav"><a class="btn" href="../index.html">← The ten disciplines</a><span class="spacer"></span><span class="status complete">Book 1 · complete</span></div>
+  <div class="proj-head"><span class="num">DISCIPLINE 1 · THE FOUNDATION</span><h2>Moral Philosophy — The Asymmetry</h2><div><span class="cat">Ethics of Creation</span> <span class="note">· the volume the other nine borrow their verdict from · interactive + full book</span></div></div>
+
+  <p class="lead">Everything in the series rests here. If this argument fails, the rest becomes description without a verdict. So this track does not ask you to agree — it asks you to <strong>build the argument yourself, attack it at full strength, and see exactly where it holds and where it is still fought.</strong> Close it convinced it is unanswerable and you have not understood it; close it able to state the case <em>and</em> its best refutation, and you have been educated.</p>
+
+  <div class="progwrap"><div class="row">
+    <strong class="pcount" id="pcount">0/5 tools · check open · 0/9 chapters read</strong>
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <span class="note" style="margin:0">Saved on this device only.</span>
+  </div></div>
+
+  <nav class="jump" aria-label="Jump to a section">
+    <a href="#matrix">① The matrix</a><a href="#premises">② Build the argument</a>
+    <a href="#pillars">③ Three pillars</a><a href="#nonid">④ Non-identity</a>
+    <a href="#vuln">⑤ Vulnerabilities</a><a href="#book">⑥ Read the book</a>
+    <a href="#check">⑦ Mastery check</a>
+  </nav>
+
+  <h3 id="matrix" style="scroll-margin-top:80px">① The asymmetry, in one grid</h3>
+  <div class="panel">
+    <p>The whole argument is a comparison: a being who exists, set against that same being never existing. Tap any cell to read how it is meant to count.</p>
+    <div class="amx" id="amxGrid">
+      <div class="cell head"></div><div class="cell head">Existence</div><div class="cell head">Never existing</div>
+      <div class="cell rowlab">Pain</div>
+      <div class="cell bad" data-note="A life that exists contains pain. Pain is bad. (Premise 1)"><b>Present</b>bad</div>
+      <div class="cell good" data-note="If the being never exists, that pain is absent — and its absence is good, even with no one there to enjoy it. (Premise 3)"><b>Absent</b>good</div>
+      <div class="cell rowlab">Pleasure</div>
+      <div class="cell good" data-note="A life that exists contains pleasure. Pleasure is good. (Premise 2)"><b>Present</b>good</div>
+      <div class="cell" data-note="If the being never exists, that pleasure is absent — but its absence is not bad, because no one is deprived of it. (Premise 4)"><b>Absent</b>not bad</div>
+    </div>
+    <p class="amxnote" id="amxNote">On pain, never-existing wins. On pleasure, never-existing does not lose. Across both, never-existing is never worse — that is the shape of the conclusion.</p>
+  </div>
+
+  <h3 id="premises" style="scroll-margin-top:80px">② Build the argument — and try to break it</h3>
+  <div class="panel">
+    <p class="note">Accept or reject each premise. The conclusion updates to show where you land. No setting is “correct” — the point is to feel which premises carry the weight.</p>
+    <div class="premises">
+      <div class="premise" data-p="p1"><span class="ptxt"><b>P1.</b> The presence of pain is bad.</span><span class="toggle-ar"><button type="button" data-v="a">Accept</button><button type="button" data-v="r">Reject</button></span></div>
+      <div class="premise" data-p="p2"><span class="ptxt"><b>P2.</b> The presence of pleasure is good.</span><span class="toggle-ar"><button type="button" data-v="a">Accept</button><button type="button" data-v="r">Reject</button></span></div>
+      <div class="premise" data-p="p3"><span class="ptxt"><b>P3.</b> The absence of pain is good, even with no one to enjoy it.</span><span class="toggle-ar"><button type="button" data-v="a">Accept</button><button type="button" data-v="r">Reject</button></span></div>
+      <div class="premise" data-p="p4"><span class="ptxt"><b>P4.</b> The absence of pleasure is not bad, unless someone is deprived.</span><span class="toggle-ar"><button type="button" data-v="a">Accept</button><button type="button" data-v="r">Reject</button></span></div>
+    </div>
+    <div class="verdict" id="pverdict" role="status" aria-live="polite"></div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn" id="pReset" type="button">Reset to “accept all”</button></div>
+  </div>
+
+  <h3 id="pillars" style="scroll-margin-top:80px">③ Three pillars — the case doesn’t rest on one</h3>
+  <div class="panel">
+    <p class="note">The position stands on three independent arguments. Tap a pillar to <em>concede it fails</em>, and watch what still stands. This is why one refutation is never enough.</p>
+    <div class="pillars">
+      <div class="pillar" data-k="asym"><h4>The Asymmetry</h4><p>Absent pain is good; absent pleasure only “not bad” — so never-existing never loses a category.</p><span class="pstate">standing</span></div>
+      <div class="pillar" data-k="consent"><h4>The Consent Argument</h4><p>Existence imposes a high-stakes condition, with no consent and an exit of unconscionable cost. (Shiffrin)</p><span class="pstate">standing</span></div>
+      <div class="pillar" data-k="prio"><h4>The Priority of Preventing Suffering</h4><p>A strong duty to prevent suffering; no duty at all to create happiness.</p><span class="pstate">standing</span></div>
+    </div>
+    <div class="verdict" id="pillarVerdict" role="status" aria-live="polite"></div>
+  </div>
+
+  <h3 id="nonid" style="scroll-margin-top:80px">④ The non-identity puzzle</h3>
+  <div class="panel">
+    <p>Why is this genuinely hard, and not obviously settled either way? Here is the knot underneath every position in the debate.</p>
+    <p class="claimline" style="border-left:4px solid var(--info);padding-left:16px">A couple can conceive <em>now</em> — the child will have a hard but worthwhile life — or wait, and have a <em>different</em> child with an easier one. If they conceive now, have they <strong>harmed</strong> that child?</p>
+    <div class="opts">
+      <div class="opt ni-opt" data-k="a">Yes — that child would have been better off if they’d waited</div>
+      <div class="opt ni-opt" data-k="b">No — its only alternative was never existing, and its life is worth living</div>
+      <div class="opt ni-opt" data-k="c">The question is confused — “better off” needs someone to compare</div>
+    </div>
+    <p class="note" id="niFb" style="display:none;margin-top:12px"></p>
+  </div>
+
+  <h3 id="vuln" style="scroll-margin-top:80px">⑤ Where the arguments are vulnerable</h3>
+  <p class="lead">A foundation you have never stress-tested is not one you can build on. Chapter Eight gathers the open problems into one place, with no closing reassurance. Tap each to read it honestly.</p>
+  <div id="vulnList"></div>
+  <div class="ingroup" style="margin-top:16px"><b>In the group:</b> most fights start when someone defends the grand claim (“every life is bad,” “the living would be better off dead”) that the book itself sets aside. What survives the attack is the modest, sturdier claim: procreation is a morally serious act, not a weightless default. Defend <em>that</em>, and you are on ground the book has held.</div>
+
+  <h3 id="book" style="scroll-margin-top:80px">⑥ Read the book</h3>
+  <p class="lead">The full volume, ~35,000 words in nine readable chapters. Your place is saved as you go.</p>
+  <div class="chlist" id="chList"></div>
+
+  <h3 id="check" style="scroll-margin-top:80px">⑦ Mastery check</h3>
+  <div class="panel">
+    <p class="note">Six questions — four right is a pass. This is about understanding the structure, not agreeing with the conclusion.</p>
+    <div id="quizbox">
+      <div class="quiz-q"><strong>1. The asymmetry compares…</strong><div class="opts"><div class="opt" data-q="0" data-i="0">Existence with never existing</div><div class="opt" data-q="0" data-i="1">Living with dying</div><div class="opt" data-q="0" data-i="2">One life with another</div></div><p class="note explain" data-q="0" style="display:none"></p></div>
+      <div class="quiz-q"><strong>2. Which premises carry the weight and draw the fire?</strong><div class="opts"><div class="opt" data-q="1" data-i="0">Three and Four</div><div class="opt" data-q="1" data-i="1">One and Two</div><div class="opt" data-q="1" data-i="2">All four equally</div></div><p class="note explain" data-q="1" style="display:none"></p></div>
+      <div class="quiz-q"><strong>3. If the asymmetry is defeated, the moral case…</strong><div class="opts"><div class="opt" data-q="2" data-i="0">Still stands on consent and the priority of suffering</div><div class="opt" data-q="2" data-i="1">Collapses entirely</div><div class="opt" data-q="2" data-i="2">Depends on Benatar alone</div></div><p class="note explain" data-q="2" style="display:none"></p></div>
+      <div class="quiz-q"><strong>4. The consent argument…</strong><div class="opts"><div class="opt" data-q="3" data-i="0">Is an independent pillar, surviving even if the asymmetry fails</div><div class="opt" data-q="3" data-i="1">Depends on the asymmetry being true</div><div class="opt" data-q="3" data-i="2">Is just a restatement of Premise 4</div></div><p class="note explain" data-q="3" style="display:none"></p></div>
+      <div class="quiz-q"><strong>5. Chapter Eight names the position’s vulnerabilities because…</strong><div class="opts"><div class="opt" data-q="4" data-i="0">A foundation you haven’t stress-tested isn’t one you can build on</div><div class="opt" data-q="4" data-i="1">The author lost confidence in it</div><div class="opt" data-q="4" data-i="2">Critics demanded a retraction</div></div><p class="note explain" data-q="4" style="display:none"></p></div>
+      <div class="quiz-q"><strong>6. The claim that survives every chapter of attack is…</strong><div class="opts"><div class="opt" data-q="5" data-i="0">Procreation is a morally serious act, not a weightless default</div><div class="opt" data-q="5" data-i="1">Every life is not worth living</div><div class="opt" data-q="5" data-i="2">The living would be better off dead</div></div><p class="note explain" data-q="5" style="display:none"></p></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" id="quizScore" type="button">See results</button><button class="btn" id="quizReset" type="button" style="display:none">Try again</button></div>
+    <div class="result" id="quizResult" role="status" aria-live="polite" style="display:none"></div>
+  </div>
+
+  <div class="grad locked" id="grad"><h3>Discipline 1 · mastered</h3><p id="gradMsg">Engage all five tools and pass the check to master this discipline.</p><p class="note">Next disciplines open as their volumes come online. Political Theory is next.</p></div>
+
+  <div class="takeaway"><h3>Key takeaway</h3><p>The grandest version of the thesis is not the one that survives. What survives every chapter of attack is smaller and sturdier: procreation is a morally serious act — an unconsented imposition answering no prior need — not the obvious, weightless default it is nearly always assumed to be. That assumption does not survive contact with this book, and its destruction is enough to require everything the next nine disciplines examine.</p></div>
+
+  <p class="disclaimer">From <em>The Asymmetry</em> (Book 1 of the Antinatalist Education). Education and reflection, not medical, legal, financial, or mental-health advice. The position is universal in its reasoning and voluntary in its application, and concerns starting lives, never ending them.</p>
+
+  <div class="proj-nav"><a class="btn" href="../index.html">← The ten disciplines</a><span class="spacer"></span><a class="btn btn-primary" href="#matrix">Back to top ↑</a></div>
+</main>
+
+<footer class="site-footer"><div class="wrap">The Antinatalist Education · Moral Philosophy · <a href="../index.html">All ten disciplines</a> · <a href="../../index.html">100 projects</a></div></footer>
+<script src="../../script.js"></script>
+<script src="../../ancf-ui.js"></script>
+<script src="mp.js"></script>
+</body>
+</html>

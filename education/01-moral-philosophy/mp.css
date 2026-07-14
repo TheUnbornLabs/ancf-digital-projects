@@ -1,0 +1,64 @@
+/* Moral Philosophy track — extends style.css + edu.css. Adds tool bits + reader. */
+
+/* three pillars */
+.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--sp-3);margin:var(--sp-3) 0}
+.pillar{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--info);
+  border-radius:var(--radius-sm);padding:var(--sp-4);cursor:pointer;transition:opacity .2s,transform .15s}
+.pillar h4{margin:0 0 var(--sp-1);font-size:var(--fs-base)}
+.pillar p{margin:0;font-size:var(--fs-sm);color:var(--muted)}
+.pillar .pstate{font-size:var(--fs-xs);font-weight:700;color:var(--info);text-transform:uppercase;letter-spacing:.05em;margin-top:var(--sp-2);display:block}
+.pillar.down{opacity:.5;border-top-color:var(--accent-2);transform:scale(.98)}
+.pillar.down .pstate{color:var(--accent-2)}
+.verdict{background:var(--surface-2);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:var(--radius-sm);padding:var(--sp-3) var(--sp-4);margin-top:var(--sp-3);font-size:var(--fs-sm);min-height:2.5em}
+
+/* premise tester */
+.premises{display:flex;flex-direction:column;gap:var(--sp-2);margin:var(--sp-3) 0}
+.premise{display:flex;gap:var(--sp-3);align-items:center;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:var(--sp-3)}
+.premise .ptxt{flex:1 1 auto;font-size:var(--fs-sm)}
+.premise .ptxt b{color:var(--accent-2)}
+.toggle-ar{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-pill);overflow:hidden;flex:0 0 auto}
+.toggle-ar button{border:none;background:var(--surface-2);color:var(--muted);padding:6px 14px;cursor:pointer;font-weight:600;font-size:var(--fs-sm)}
+.toggle-ar button.on{background:var(--info);color:#fff}
+.toggle-ar button.on.rej{background:var(--accent)}
+
+/* vulnerabilities list reuses .disc pattern from edu.css via .vuln */
+.vuln{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--grey);
+  border-radius:var(--radius-sm);margin:var(--sp-2) 0;overflow:hidden}
+.vuln button{width:100%;text-align:left;background:none;border:none;color:var(--ink);font-family:inherit;
+  padding:var(--sp-3) var(--sp-4);cursor:pointer;font-weight:700;font-size:var(--fs-sm);display:flex;gap:10px;align-items:center}
+.vuln button:hover{background:var(--surface-2)}
+.vuln .vnum{color:var(--accent-2);font-weight:800}
+.vuln .vbody{display:none;padding:0 var(--sp-4) var(--sp-4);font-size:var(--fs-sm);color:var(--muted)}
+.vuln.open .vbody{display:block}
+
+/* chapter list */
+.chlist{display:grid;gap:var(--sp-2);margin:var(--sp-3) 0}
+.chrow{display:flex;gap:var(--sp-3);align-items:center;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:var(--sp-3) var(--sp-4);color:var(--ink)}
+.chrow:hover{border-color:var(--accent);text-decoration:none;transform:translateY(-2px)}
+.chrow .cn{font-weight:800;color:var(--accent-2);background:var(--accent-soft);min-width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);flex:0 0 auto}
+.chrow .ct{flex:1 1 auto}
+.chrow .ct b{display:block}
+.chrow .ct span{font-size:var(--fs-xs);color:var(--muted)}
+.chrow .cw{font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+
+/* ---------- reader pages ---------- */
+.reader{max-width:70ch;margin:0 auto}
+.reader .rkicker{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.1em;color:var(--accent-2);font-weight:800}
+.reader h2.rtitle{font-size:var(--fs-2xl);letter-spacing:-.02em;margin:var(--sp-2) 0 var(--sp-5);line-height:1.2}
+.reader p{margin:0 0 var(--sp-4);line-height:1.72;font-size:1.05rem}
+.reader h4{font-size:var(--fs-lg);margin:var(--sp-6) 0 var(--sp-3);letter-spacing:-.01em;color:var(--ink)}
+.reader p+h4{margin-top:var(--sp-6)}
+.booktable{margin:var(--sp-4) 0}
+.booktable table{border-collapse:collapse;width:100%;font-size:var(--fs-sm)}
+.booktable caption{font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:var(--sp-2)}
+.booktable th,.booktable td{border:1px solid var(--line);padding:var(--sp-3);text-align:center}
+.booktable thead th{background:var(--surface-2)}
+.booktable tbody th{background:var(--surface-2);text-align:left}
+.booktable td.tgood{background:var(--info-soft)}
+.booktable small{color:var(--muted)}
+.rnav{display:flex;gap:var(--sp-3);align-items:center;margin:var(--sp-6) 0;flex-wrap:wrap}
+.rprog{position:sticky;top:0;height:4px;background:var(--accent);width:0;z-index:30;transition:width .1s}
