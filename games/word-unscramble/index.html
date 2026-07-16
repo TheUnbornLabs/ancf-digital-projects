@@ -82,11 +82,18 @@ function startRound(){
   queue.sort((a,b)=>a.w.length-b.w.length);
   game.idx=0;game.skips=1;game.score=0;game.shakeT=0;game.combo=0;game.bestCombo=0;
   game.lives=game.maxLives;game.revealsLeft=1;
+  game.hintUsed=false;game.hintPenalty=0; // else a hint used before dying docks the next round's first word
+  // Clear the finished state before advancing: nextWord() refuses to run while the
+  // game is over, and the restart button calls straight in here from that screen.
+  game.state='playing';
   transitioning=false;popups=[];
   nextWord();
 }
 function nextWord(){
-  if(transitioning)return; // guard against double-advance (item 15)
+  // No transitioning guard here: every caller sets transitioning=true immediately
+  // before calling, so a guard would refuse every real advance. Double-advance is
+  // already prevented at the three scheduling sites (clickLetter, skipWord, and the
+  // update() timeout), each of which bails out early while a transition is pending.
   if(game.state==='gameover')return;
   if(game.idx>=queue.length){onWin();return;}
   current=queue[game.idx++];
