@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Decode Signal</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03040a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#controls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#controls button{width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(120,170,255,.35);background:rgba(4,6,16,.75);color:#bcd8ff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#controls button:active{background:rgba(60,100,180,.5);}
+#controls button.off{color:rgba(160,180,210,.35);border-color:rgba(120,140,180,.2);}
+#hintBtn{position:fixed;left:10px;top:10px;height:38px;border-radius:10px;border:1.5px solid rgba(120,170,255,.35);background:rgba(4,6,16,.75);color:#bcd8ff;font-size:12px;cursor:pointer;padding:0 12px;z-index:5;}
+#hintBtn:active{background:rgba(60,100,180,.5);}
+#hintBtn:disabled{opacity:.35;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="hintBtn" type="button">Hint (-1)</button>
+<div id="controls">
+<button id="restartBtn" type="button" title="Reshuffle round">&#8635;</button>
+<button id="muteBtn" type="button" title="Mute">&#128266;</button>
+</div>
+<div id="hint">A scrambled affirmation appears — click tiles to unscramble it &middot; 12 puzzles</div>
+<script>
+'use strict';
+// Decode Signal (#94)
+// An affirmation is shown as scrambled tiles. Click tiles to swap them into correct order.
+// Two-click swap mechanic: click first tile, then second to swap.
+// 12 affirmations, tile count grows from 4 to 8.
+// Theme: decoding your true signal through the noise.
+// NOTE: correctness checks below rely on words.indexOf(w) — none of the 12 AFFIRMATIONS
+// phrases repeat a word, which is required for this to work correctly. If phrases are
+// ever edited/added, avoid repeating a word within a single phrase, or switch the
+// correctness check to compare by tile position/id instead of word text.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const AFFIRMATIONS=['My life is enough','I choose my path','Rest is productive','Joy needs no reason','My pace is right','Freedom is real','Peace is mine','I trust myself','My time is mine','I am complete','Calm is power','Wonder is valid'];
+const TOTAL=12;
+
+// ---- persistence ----
+const LS_KEY='decodeSignal_v1';
+function loadSave(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return{best:0,bestMoves:0};const o=JSON.parse(raw);return{best:Number(o.best)||0,bestMoves:Number(o.bestMoves)||0};}catch(e){return{best:0,bestMoves:0};}}
+function saveSave(){try{localStorage.setItem(LS_KEY,JSON.stringify({best:game.best,bestMoves:game.bestMoves}));}catch(e){}}
+const saved=loadSave();
+
+const game={state:'title',time:0,round:0,score:0,best:saved.best,bestMoves:saved.bestMoves,moves:0,muted:false,roundMoves:0,roundStars:0,hintUsed:false,popup:null,flashT:0};
+let tiles=[],selected=-1,solved=false,rng;
+const TILE_H=70,TILE_GAP=12;
+
+// ---- fisher-yates shuffle with seeded RNG ----
+function shuffle(arr,rndFn){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rndFn()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function arraysEqual(a,b){if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;}
+
+function parRoundMoves(n){return Math.max(1,n-1);} // minimum swaps to sort n tiles (upper heuristic)
+
+function buildRound(r){
+  rng=seeded(r*6007+47);
+  const aff=AFFIRMATIONS[r%AFFIRMATIONS.length];
+  const words=aff.split(' ');
+  let scrambled=shuffle(words,rng);
+  let guard=0;
+  while(arraysEqual(scrambled,words)&&guard<20){scrambled=shuffle(words,rng);guard++;}
+  tiles=scrambled.map((w,pos)=>({word:w,correctIdx:words.indexOf(w),pos,flashT:0}));
+  selected=-1;solved=false;game.moves=0;game.roundMoves=0;game.roundStars=0;game.hintUsed=false;game.state='playing';game.popup=null;
+}
+function resetGame(){game.round=0;game.score=0;buildRound(0);}
+function restartRound(){buildRound(game.round);}
+
+function starsFor(moves,n){
+  const par=parRoundMoves(n);
+  if(moves<=par)return 3;
+  if(moves<=par*2)return 2;
+  return 1;
+}
+
+function clickTile(i){
+  if(solved)return;
+  if(selected===-1){selected=i;sndSelect();}
+  else if(selected===i){selected=-1;}
+  else{
+    const tmp=tiles[selected].word;tiles[selected].word=tiles[i].word;tiles[i].word=tmp;
+    game.moves++;game.roundMoves++;selected=-1;sndSwap();
+    const aff=AFFIRMATIONS[game.round%AFFIRMATIONS.length].split(' ');
+    if(tiles.every((t,idx)=>t.word===aff[idx])){
+      solved=true;
+      const n=tiles.length;
+      const stars=starsFor(game.roundMoves,n);
+      game.roundStars=stars;
+      const parBonus=Math.max(0,parRoundMoves(n)*3-game.roundMoves*2);
+      const hintPenalty=game.hintUsed?3:0;
+      const roundScore=Math.max(1,10+parBonus-hintPenalty);
+      game.score+=roundScore;
+      game.popup={text:'+'+roundScore,t:0};
+      tiles.forEach(t=>t.flashT=1);
+      if(game.score>game.best){game.best=game.score;saveSave();}
+      if(game.bestMoves===0||game.moves<game.bestMoves){/* per-run tracking only at win */}
+      sndWin2();
+      setTimeout(()=>{
+        game.round++;
+        if(game.round>=TOTAL){
+          if(game.bestMoves===0||game.moves<game.bestMoves){game.bestMoves=game.moves;}
+          if(game.score>game.best){game.best=game.score;}
+          saveSave();
+          sndWin();game.state='won';
+        }else{buildRound(game.round);}
+      },700);
+    }
+  }
+}
+
+function useHint(){
+  if(game.state!=='playing'||solved)return;
+  const aff=AFFIRMATIONS[game.round%AFFIRMATIONS.length].split(' ');
+  // find a tile not yet correctly placed
+  const wrongIdx=[];
+  for(let i=0;i<tiles.length;i++)if(tiles[i].word!==aff[i])wrongIdx.push(i);
+  if(wrongIdx.length===0)return;
+  const i=wrongIdx[0];
+  // find where the correct word for position i currently sits, swap it in
+  const correctWord=aff[i];
+  const j=tiles.findIndex(t=>t.word===correctWord);
+  if(j===-1)return;
+  const tmp=tiles[i].word;tiles[i].word=tiles[j].word;tiles[j].word=tmp;
+  tiles[i].flashT=1;
+  game.hintUsed=true;
+  game.moves++;game.roundMoves++;
+  sndSelect();
+  if(tiles.every((t,idx)=>t.word===aff[idx])){
+    // hinting completed the round
+    clickTile.__noop=true; // no-op marker
+    selected=-1;
+    finishByHint();
+  }
+}
+function finishByHint(){
+  solved=true;
+  const n=tiles.length;
+  const stars=Math.max(1,starsFor(game.roundMoves,n)-1);
+  game.roundStars=stars;
+  const roundScore=Math.max(1,8-3);
+  game.score+=roundScore;
+  game.popup={text:'+'+roundScore,t:0};
+  tiles.forEach(t=>t.flashT=1);
+  if(game.score>game.best){game.best=game.score;saveSave();}
+  sndWin2();
+  setTimeout(()=>{
+    game.round++;
+    if(game.round>=TOTAL){
+      if(game.bestMoves===0||game.moves<game.bestMoves){game.bestMoves=game.moves;}
+      if(game.score>game.best){game.best=game.score;}
+      saveSave();
+      sndWin();game.state='won';
+    }else{buildRound(game.round);}
+  },700);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  for(const t of tiles){if(t.flashT>0)t.flashT=Math.max(0,t.flashT-dt/500);}
+  if(game.popup){game.popup.t+=dt;if(game.popup.t>1100)game.popup=null;}
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndSelect=()=>tone(440,0.06,'sine',0.03);
+const sndSwap=()=>tone(380,0.08,'sine',0.04);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#03040a'],[1,'#020308']]);ctx.fillRect(0,0,W,H);}
+
+// ---- shared layout math (used by both drawTiles and tileAt) ----
+function layoutTiles(){
+  const n=tiles.length;
+  const tileW=Math.min(160,Math.floor((W-80)/n)-TILE_GAP);
+  const totalW=n*(tileW+TILE_GAP)-TILE_GAP;
+  const tx=(W-totalW)/2;
+  const ty=H/2-TILE_H/2+20;
+  return {n,tileW,tx,ty};
+}
+
+function drawTiles(){
+  const {n,tileW,tx,ty}=layoutTiles();
+  const aff=AFFIRMATIONS[game.round%AFFIRMATIONS.length].split(' ');
+  for(let i=0;i<n;i++){
+    const t=tiles[i];
+    const x=tx+i*(tileW+TILE_GAP);
+    const isSel=selected===i;
+    const isCorrect=solved||(t.word===aff[i]);
+    const flash=t.flashT||0;
+    const pulse=flash>0?1+flash*0.06:1;
+    const col=isSel?'rgba(100,180,255,.9)':isCorrect?'rgba(60,160,80,.7)':'rgba(40,60,120,.8)';
+    ctx.save();
+    if(pulse!==1){
+      const cx=x+tileW/2,cy=ty+TILE_H/2;
+      ctx.translate(cx,cy);ctx.scale(pulse,pulse);ctx.translate(-cx,-cy);
+    }
+    ctx.shadowColor=isSel?'rgba(100,180,255,.4)':isCorrect?'rgba(60,200,80,.35)':'rgba(40,60,120,.2)';
+    ctx.shadowBlur=isSel?12:(flash>0?10:4);
+    ctx.fillStyle=col;
+    rr(x,ty,tileW,TILE_H,10);ctx.fill();
+    ctx.strokeStyle=isSel?'rgba(160,220,255,.8)':isCorrect?'rgba(100,220,120,.6)':'rgba(80,120,200,.3)';
+    ctx.lineWidth=isSel?2:1.5;
+    if(isSel)ctx.setLineDash([5,4]);else ctx.setLineDash([]);
+    rr(x,ty,tileW,TILE_H,10);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur=0;
+    ctx.fillStyle=isCorrect?'rgba(200,255,200,.95)':'rgba(200,220,255,.9)';
+    ctx.font=`bold ${Math.min(16,Math.floor(tileW*0.18))}px Arial`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(t.word,x+tileW/2,ty+TILE_H/2);
+    // checkmark glyph for correctly-placed tiles (colorblind-safe backup to color)
+    if(isCorrect){
+      ctx.fillStyle='rgba(180,255,190,.95)';
+      ctx.font='bold 13px Arial';
+      ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText('✓',x+6,ty+TILE_H-6);
+    }
+    ctx.restore();
+    // position number
+    ctx.fillStyle='rgba(160,200,255,.3)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(i+1,x+tileW/2,ty+4);
+  }
+  ctx.fillStyle='rgba(234,242,246,.3)';ctx.font='11px Arial';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('Arrange into correct order (click a tile, then click where it should go)',W/2,ty-28);
+}
+
+function tileAt(px,py){
+  const {n,tileW,tx,ty}=layoutTiles();
+  for(let i=0;i<n;i++){
+    const x=tx+i*(tileW+TILE_GAP);
+    if(px>=x&&px<=x+tileW&&py>=ty&&py<=ty+TILE_H)return i;
+  }
+  return -1;
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Decode Signal — Puzzle '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Moves: '+game.roundMoves+'  Click a tile to select, click another to swap',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  if(game.roundStars>0){
+    ctx.fillStyle='rgba(255,220,120,.85)';ctx.font='12px Arial';
+    ctx.fillText('★'.repeat(game.roundStars)+'☆'.repeat(3-game.roundStars),W-18,28);
+  }
+  ctx.restore();
+  if(game.popup){
+    ctx.save();
+    const p=game.popup;
+    const alpha=1-clamp(p.t/1100,0,1);
+    const dy=-30*(p.t/1100);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle='rgba(150,255,180,.95)';
+    ctx.font='bold 22px Arial';
+    ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(p.text,W/2,H/2-70+dy);
+    ctx.restore();
+  }
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    drawBg();
+    if(game.state!=='title')drawTiles();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title')panelDraw('Decode Signal',['An affirmation appears in scrambled tiles.','Click one tile, then another to swap them.','Unscramble the message. 12 puzzles.','','Your true signal is there — beneath the noise.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('Decoded! ✓',['Score: '+game.score,'Best score: '+game.best,'Total moves this run: '+game.moves+(game.bestMoves?'  (best '+game.bestMoves+')':''),'','12 affirmations decoded.','','Click / tap to play again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state==='playing'){const i=tileAt(px,py);if(i>=0)clickTile(i);}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// on-screen controls
+const muteBtn=document.getElementById('muteBtn');
+const restartBtn=document.getElementById('restartBtn');
+const hintBtn=document.getElementById('hintBtn');
+function updateMuteBtn(){muteBtn.innerHTML=game.muted?'&#128263;':'&#128266;';muteBtn.classList.toggle('off',game.muted);}
+muteBtn.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();game.muted=!game.muted;updateMuteBtn();});
+restartBtn.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();if(game.state==='playing')restartRound();});
+hintBtn.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();useHint();});
+['mousedown','touchstart'].forEach(evt=>{
+  muteBtn.addEventListener(evt,e=>e.stopPropagation());
+  restartBtn.addEventListener(evt,e=>e.stopPropagation());
+  hintBtn.addEventListener(evt,e=>e.stopPropagation());
+});
+updateMuteBtn();
+
+// keyboard bonus input
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='m'||e.key==='M'){game.muted=!game.muted;updateMuteBtn();}
+  else if(e.key==='r'||e.key==='R'){if(game.state==='playing')restartRound();}
+  else if(e.key==='h'||e.key==='H'){useHint();}
+});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get tiles(){return tiles;},
+  get selected(){return selected;},
+  get solved(){return solved;},
+  resetGame,buildRound,restartRound,clickTile,useHint,tileAt,layoutTiles,update,draw,
+  AFFIRMATIONS,TOTAL
+};
+</script>
+</body>
+</html>

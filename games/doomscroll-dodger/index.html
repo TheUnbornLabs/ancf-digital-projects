@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Doomscroll Dodger</title>
+<style>
+  :root{--bg:#0b1024;--panel:rgba(10,14,30,.86);--line:rgba(255,255,255,.16);--text:#eef2ff;--accent:#8fd4ff;--calm:#7be0a4;--bad:#ff7a8a;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#05070f;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 18%,#16204a,#05070f 72%);}
+  canvas{width:100vw;height:100vh;display:block;background:#0b1024;image-rendering:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:18px;display:flex;gap:12px;pointer-events:auto;align-items:flex-end;}
+  .pad.left{left:18px}.pad.right{right:18px}
+  .btn{width:62px;height:62px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.40);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;}
+  .btn:active{transform:translateY(2px);background:rgba(143,212,255,.28);}
+  @media (min-width:900px){.btn{opacity:.40}.btn:hover{opacity:.95}}
+  #hudControls{position:fixed;top:10px;right:10px;display:flex;gap:8px;pointer-events:auto;z-index:6;}
+  .hbtn{width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.85;}
+  .hbtn:active{transform:translateY(1px);background:rgba(143,212,255,.28);}
+  #vignetteDanger{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 0 0 rgba(255,60,80,0);transition:box-shadow .15s;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="vignetteDanger"></div>
+<div id="hudControls">
+  <div class="hbtn" data-hact="pause" title="Pause">&#10073;&#10073;</div>
+  <div class="hbtn" data-hact="mute" title="Mute">&#128266;</div>
+</div>
+<div id="touchControls">
+  <div class="pad left">
+    <div class="btn" data-act="left">&#9664;</div>
+    <div class="btn" data-act="right">&#9654;</div>
+  </div>
+  <div class="pad right">
+    <div class="btn" data-act="start" id="startBtn">&#9658;</div>
+  </div>
+</div>
+<script>
+'use strict';
+
+// =========================================================
+// Doomscroll Dodger
+// Single-file HTML5 canvas dodge game.
+// Theme: attention is a resource; digital wellbeing.
+// Critiques the attention economy / always-on pressure --
+// NEVER people. Obstacles are distractions. Original assets.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+// NOTE: canvas internal resolution is fixed at 960x540 but CSS stretches it
+// to 100vw/100vh with no getBoundingClientRect-based scaling. There is
+// currently no pointer/mouse gameplay (only keyboard + on-screen buttons
+// outside the canvas), so this is safe today. If a future feature adds
+// canvas pointer interaction, coordinates must be scaled via
+// canvas.getBoundingClientRect() and the W/H-to-rect ratio before hit-testing.
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const rects = (a,b)=>a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+
+// ---- seeded deterministic RNG (reproducible for tests) ----
+function seeded(n){let s=(n>>>0)*928371+17; return ()=>{s=(s*1664525+1013904223)>>>0; return s/4294967296;};}
+
+// ---- gameplay constants ----
+const GROUND_Y = 470;
+const PLAYER_W = 44, PLAYER_H = 64;
+const CALM_MAX = 100;
+const PROGRESS_MAX = 100;
+const CALM_REGEN = 6.5;
+const HIT_COST = 18;
+const PROGRESS_RATE = 9.5;
+const DND_DURATION = 4.2;
+const HIT_FLASH = 0.6;
+const FINAL_NIGHT = 5;
+
+// Distraction archetypes -- pressures, not people.
+const HAZARD_TYPES = [
+  {key:'outrage', label:'Outrage bait', col:'#ff7a8a', col2:'#c2304a', r:22},
+  {key:'fomo',    label:'FOMO ping',    col:'#ffd86b', col2:'#c79a2a', r:19},
+  {key:'always',  label:'Always-on',    col:'#9b8cff', col2:'#5b49c2', r:20},
+  {key:'breaking',label:'Breaking now', col:'#ff9d5c', col2:'#c25f24', r:21},
+  {key:'compare', label:'Compare trap', col:'#6fd0ff', col2:'#2c84c2', r:18}
+];
+
+// ---- localStorage persistence (guarded: private browsing can throw) ----
+const STORAGE_KEY = 'doomscrollDodger.save.v1';
+function loadSave(){
+  let out = {bestNight:1, bestScore:0};
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ const p = JSON.parse(raw); if(p && typeof p==='object'){
+      if(typeof p.bestNight==='number') out.bestNight = p.bestNight;
+      if(typeof p.bestScore==='number') out.bestScore = p.bestScore;
+    }}
+  }catch(e){ /* ignore -- private browsing / disabled storage */ }
+  return out;
+}
+function saveProgress(bestNight, bestScore){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({bestNight:bestNight, bestScore:bestScore})); }
+  catch(e){ /* ignore -- private browsing / disabled storage */ }
+}
+
+const input = {left:false,right:false,startPressed:false,pausePressed:false};
+const keyMap = {ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right'};
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){input.pausePressed=true; return;}
+  if(e.code==='Enter'||e.code==='Space'){input.startPressed=true; e.preventDefault(); return;}
+  const a=keyMap[e.code]; if(!a) return; e.preventDefault(); input[a]=true;
+  if(audio) audio.init();
+});
+window.addEventListener('keyup', e=>{const a=keyMap[e.code]; if(a) input[a]=false;});
+document.querySelectorAll('#touchControls .btn').forEach(b=>{
+  const act=b.dataset.act;
+  const on=ev=>{ev.preventDefault(); if(audio)audio.init(); if(act==='start')input.startPressed=true; else input[act]=true;};
+  const off=ev=>{ev.preventDefault(); if(act!=='start')input[act]=false;};
+  b.addEventListener('touchstart',on,{passive:false}); b.addEventListener('mousedown',on);
+  b.addEventListener('touchend',off,{passive:false}); b.addEventListener('mouseup',off); b.addEventListener('mouseleave',off);
+});
+document.querySelectorAll('#hudControls .hbtn').forEach(b=>{
+  const act=b.dataset.hact;
+  const fire=ev=>{ev.preventDefault(); if(audio)audio.init();
+    if(act==='pause') input.pausePressed=true;
+    else if(act==='mute'){ audio.on=!audio.on; b.innerHTML = audio.on ? '&#128266;' : '&#128263;'; }
+  };
+  b.addEventListener('click',fire); b.addEventListener('touchstart',fire,{passive:false});
+});
+
+// ---- Web Audio (guarded) ----
+const audio = {
+  ctx:null, master:null, on:true,
+  init(){ if(this.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ this.ctx=new AC(); this.master=this.ctx.createGain(); this.master.gain.value=0.5; this.master.connect(this.ctx.destination);}catch(e){this.ctx=null;} },
+  tone(freq,dur,type='sine',gain=0.16){ if(!this.ctx||!this.on) return; try{
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain(); o.type=type; o.frequency.value=freq;
+    o.connect(g); g.connect(this.master); const t=this.ctx.currentTime;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(gain,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.03);}catch(e){} },
+  sfx(name){ if(!this.ctx) return;
+    if(name==='hit'){ this.tone(180,0.18,'sawtooth',0.18); this.tone(120,0.22,'square',0.12); }
+    else if(name==='powerup'){ this.tone(520,0.10,'triangle',0.16); this.tone(780,0.16,'triangle',0.14); }
+    else if(name==='win'){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.tone(f,0.30,'sine',0.16),i*120)); }
+    else if(name==='over'){ this.tone(220,0.4,'sine',0.16); this.tone(160,0.5,'sine',0.12); }
+  }
+};
+
+// =========================================================
+// Game state
+// =========================================================
+const persisted = loadSave();
+const game = {
+  state:'title',
+  time:0, dt:0,
+  night:1,
+  calm:CALM_MAX,
+  progress:0,
+  hazards:[],
+  powerups:[],
+  particles:[],
+  shield:0,
+  invuln:0,
+  hitFlash:0,
+  spawnTimer:0,
+  puTimer:0,
+  rng:seeded(1),
+  spawnSeq:0,
+  nightsCleared:0,
+  // bestNight/bestScore: session-run trackers, reset each run by design (see reset()).
+  // Persisted best values live in game.saved and survive reset()/reloads via localStorage.
+  bestNight:1,
+  stars:[],
+  score:0,
+  closeCalls:0,
+  streak:0,
+  bestStreakRun:0,
+  hitsTaken:0,
+  powerupsCollected:0,
+  saved: persisted // {bestNight, bestScore} -- persisted across runs/reloads
+};
+
+const player = {
+  x: W/2 - PLAYER_W/2,
+  y: GROUND_Y - PLAYER_H,
+  w: PLAYER_W, h: PLAYER_H,
+  vx:0, face:1, walk:0
+};
+
+function setState(s){ game.state = s; }
+
+function spawnInterval(){ return Math.max(0.42, 1.15 - game.night*0.07); }
+function hazardFallSpeed(){ return 150 + game.night*22; }
+function puInterval(){ return Math.max(6.5, 11 - game.night*0.4); }
+// Shield duration shortens slightly at higher nights so late-game doesn't
+// trivialize via near-permanent shield uptime; always clamped to a floor.
+function dndDuration(){ return Math.max(2.2, DND_DURATION - (game.night-1)*0.35); }
+
+function endRun(state){
+  setState(state);
+  game.saved.bestNight = Math.max(game.saved.bestNight, game.bestNight, game.night);
+  game.saved.bestScore = Math.max(game.saved.bestScore, Math.round(game.score));
+  saveProgress(game.saved.bestNight, game.saved.bestScore);
+}
+
+// ---- deterministic star field for parallax ----
+function buildStars(){
+  game.stars.length = 0;
+  const r = seeded(777);
+  for(let i=0;i<90;i++){
+    game.stars.push({x:r()*W, y:r()*(GROUND_Y-60), s:0.6+r()*1.8, tw:r()*6.28, layer:i%3});
+  }
+}
+buildStars();
+
+// =========================================================
+// Spawning (deterministic via seeded RNG)
+// =========================================================
+function spawnHazard(){
+  const r = game.rng;
+  const t = HAZARD_TYPES[Math.floor(r()*HAZARD_TYPES.length)%HAZARD_TYPES.length];
+  const rad = t.r;
+  const x = lerp(40, W-40, r());
+  const wob = (r()*2-1)*40;
+  const spd = hazardFallSpeed()*(0.85+r()*0.4);
+  const hz = {type:t, x:x, y:-30, r:rad, vy:spd, wob:wob, baseX:x, phase:r()*6.28, hit:false, id:++game.spawnSeq};
+  game.hazards.push(hz);
+  return hz;
+}
+
+function spawnPowerup(){
+  const r = game.rng;
+  const x = lerp(60, W-60, r());
+  const pu = {x:x, y:-26, r:18, vy:hazardFallSpeed()*0.7, phase:r()*6.28, id:++game.spawnSeq};
+  game.powerups.push(pu);
+  return pu;
+}
+
+function spawnParticles(x,y,col,n){
+  for(let i=0;i<n;i++){
+    const a = (i/n)*6.2832 + Math.random()*0.6;
+    const spd = 60 + Math.random()*90;
+    game.particles.push({x:x,y:y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:0.5+Math.random()*0.3,maxLife:0.8,col:col,r:2+Math.random()*2});
+  }
+}
+
+function applyPowerup(){
+  game.shield = dndDuration();
+  game.powerupsCollected++;
+  spawnParticles(player.x+player.w/2, player.y+player.h/2, '#7be0a4', 12);
+  audio.sfx('powerup');
+}
+
+// One-hit-per-hazard by design: hz.hit=true retires a hazard from dealing
+// further calm damage without removing it from the array, so it still falls
+// through and despawns naturally off-screen (keeps fall animation intact
+// instead of popping it out of existence on contact).
+function hitHazard(hz){
+  if(hz && hz.hit) return false;
+  if(hz) hz.hit = true;
+  if(game.shield > 0){ return false; }
+  if(game.invuln > 0){ return false; }
+  game.calm = clamp(game.calm - HIT_COST, 0, CALM_MAX);
+  game.hitFlash = HIT_FLASH;
+  game.hitsTaken++;
+  game.streak = 0;
+  game.invuln = 0.3; // brief grace window so overlapping hazards can't double-hit the same frame
+  if(hz) spawnParticles(hz.x, hz.y, hz.type.col, 14);
+  audio.sfx('hit');
+  if(game.calm <= 0){ game.calm = 0; endRun('gameover'); audio.sfx('over'); }
+  return true;
+}
+
+// =========================================================
+// Reset / nights
+// =========================================================
+function reset(seed){
+  game.state='playing'; game.time=0; game.dt=0;
+  game.night=1; game.calm=CALM_MAX; game.progress=0;
+  game.hazards.length=0; game.powerups.length=0; game.particles.length=0;
+  game.shield=0; game.hitFlash=0; game.invuln=0;
+  game.spawnTimer=spawnInterval(); game.puTimer=puInterval();
+  game.rng = seeded(seed===undefined?1:seed);
+  game.spawnSeq=0; game.nightsCleared=0; game.bestNight=1;
+  game.score=0; game.closeCalls=0; game.streak=0; game.bestStreakRun=0;
+  game.hitsTaken=0; game.powerupsCollected=0;
+  player.x = W/2 - PLAYER_W/2; player.vx=0; player.face=1; player.walk=0;
+}
+
+function nextNight(){
+  game.nightsCleared++;
+  game.night++;
+  game.bestNight = Math.max(game.bestNight, game.night);
+  game.progress = 0;
+  game.calm = clamp(game.calm + 22, 0, CALM_MAX);
+  game.hazards.length=0; game.powerups.length=0;
+  game.shield=0;
+  game.spawnTimer=spawnInterval(); game.puTimer=puInterval();
+}
+
+// =========================================================
+// Update
+// =========================================================
+function update(dt){
+  game.dt = dt; game.time += dt;
+
+  if(input.pausePressed){ input.pausePressed=false;
+    if(game.state==='playing') game.state='paused';
+    else if(game.state==='paused') game.state='playing';
+  }
+
+  if(game.state==='title'){
+    if(input.startPressed){ input.startPressed=false; reset(1); }
+    input.startPressed=false; return;
+  }
+  if(game.state==='gameover'||game.state==='win'){
+    if(input.startPressed){ input.startPressed=false; reset(1); }
+    input.startPressed=false; return;
+  }
+  if(game.state==='paused'){ input.startPressed=false; return; }
+
+  // ---- playing ----
+  input.startPressed=false;
+
+  const speed = 250;
+  player.vx = 0;
+  if(input.left)  player.vx -= speed;
+  if(input.right) player.vx += speed;
+  if(player.vx < 0) player.face = -1; else if(player.vx > 0) player.face = 1;
+  player.x = clamp(player.x + player.vx*dt, 8, W - PLAYER_W - 8);
+  player.y = GROUND_Y - PLAYER_H;
+  if(player.vx !== 0) player.walk += dt*10;
+
+  if(game.shield > 0) game.shield = Math.max(0, game.shield - dt);
+  if(game.invuln > 0) game.invuln = Math.max(0, game.invuln - dt);
+  if(game.hitFlash > 0) game.hitFlash = Math.max(0, game.hitFlash - dt);
+
+  game.progress = clamp(game.progress + PROGRESS_RATE*dt, 0, PROGRESS_MAX);
+  game.calm = clamp(game.calm + CALM_REGEN*dt, 0, CALM_MAX);
+
+  // score: time survived + calm upkeep + close-call focus bonus
+  game.score += dt*8 + (game.calm/CALM_MAX)*dt*4;
+
+  game.spawnTimer -= dt;
+  if(game.spawnTimer <= 0){ spawnHazard(); game.spawnTimer += spawnInterval(); }
+  game.puTimer -= dt;
+  if(game.puTimer <= 0){ spawnPowerup(); game.puTimer += puInterval(); }
+
+  const pb = {x:player.x+6, y:player.y+8, w:player.w-12, h:player.h-10};
+  const pcx = pb.x+pb.w/2, pcy = pb.y+pb.h/2;
+
+  for(let i=game.hazards.length-1;i>=0;i--){
+    const hz = game.hazards[i];
+    hz.y += hz.vy*dt;
+    hz.x = hz.baseX + Math.sin(game.time*1.6 + hz.phase)*hz.wob*0.5;
+    const cb = {x:hz.x-hz.r, y:hz.y-hz.r, w:hz.r*2, h:hz.r*2};
+    if(!hz.hit && rects(cb, pb)){ hitHazard(hz); }
+    else if(!hz.hit && !hz.grazed){
+      // "close call": hazard center passes within 1.5x its radius of the
+      // player center without ever intersecting -- rewards skillful dodging.
+      const dx = hz.x-pcx, dy = hz.y-pcy;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if(dist < hz.r*1.5 + Math.max(pb.w,pb.h)*0.5){
+        hz.grazed = true;
+        game.closeCalls++; game.streak++;
+        game.bestStreakRun = Math.max(game.bestStreakRun, game.streak);
+        game.score += 12 + game.streak*1.5;
+      }
+    }
+    if(hz.y - hz.r > H + 20) game.hazards.splice(i,1);
+  }
+  for(let i=game.powerups.length-1;i>=0;i--){
+    const pu = game.powerups[i];
+    pu.y += pu.vy*dt;
+    const cb = {x:pu.x-pu.r, y:pu.y-pu.r, w:pu.r*2, h:pu.r*2};
+    if(rects(cb, pb)){ applyPowerup(); game.powerups.splice(i,1); continue; }
+    if(pu.y - pu.r > H + 20) game.powerups.splice(i,1);
+  }
+
+  for(let i=game.particles.length-1;i>=0;i--){
+    const p = game.particles[i];
+    p.life -= dt;
+    if(p.life <= 0){ game.particles.splice(i,1); continue; }
+    p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 220*dt;
+  }
+
+  if(game.progress >= PROGRESS_MAX){
+    if(game.night >= FINAL_NIGHT){ endRun('win'); audio.sfx('win'); }
+    else { nextNight(); }
+  }
+}
+
+// =========================================================
+// Render helpers
+// =========================================================
+function rgrad(x,y,r0,r1,stops){ const g=ctx.createRadialGradient(x,y,r0,x,y,r1); stops.forEach(s=>g.addColorStop(s[0],s[1])); return g; }
+function lgrad(x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); stops.forEach(s=>g.addColorStop(s[0],s[1])); return g; }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function shadowBlob(cx,cy,w,h,a){ ctx.save(); ctx.globalAlpha=a===undefined?0.35:a; ctx.fillStyle='rgba(0,0,0,1)'; ctx.beginPath(); ctx.ellipse(cx,cy,w,h,0,0,6.2832); ctx.fill(); ctx.restore(); }
+
+// =========================================================
+// Background: night scene + parallax
+// =========================================================
+function drawNight(){
+  const deep = clamp(0.0 + (game.night-1)*0.06, 0, 0.4);
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#0c1430'],[0.5,'#101a3e'],[1,'#1a2348']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(4,6,20,'+deep+')'; ctx.fillRect(0,0,W,H);
+
+  const mx=782, my=104, mr=44;
+  ctx.fillStyle = rgrad(mx,my,mr*0.4,mr*4,[[0,'rgba(200,224,255,0.45)'],[0.4,'rgba(160,196,255,0.12)'],[1,'rgba(160,196,255,0)']]);
+  ctx.beginPath(); ctx.arc(mx,my,mr*4,0,6.2832); ctx.fill();
+  ctx.fillStyle = rgrad(mx-8,my-8,4,mr,[[0,'#fdfbf0'],[1,'#cdd7ef']]);
+  ctx.beginPath(); ctx.arc(mx,my,mr,0,6.2832); ctx.fill();
+  ctx.fillStyle='rgba(150,170,210,0.30)';
+  ctx.beginPath(); ctx.arc(mx+12,my-6,8,0,6.2832); ctx.arc(mx-10,my+10,6,0,6.2832); ctx.arc(mx+6,my+16,5,0,6.2832); ctx.fill();
+
+  for(const st of game.stars){
+    const tw = 0.5 + 0.5*Math.sin(game.time*1.5 + st.tw);
+    ctx.globalAlpha = 0.25 + tw*0.6;
+    ctx.fillStyle = st.layer===2 ? '#bcd2ff' : '#f4f7ff';
+    ctx.fillRect(st.x, st.y, st.s, st.s);
+  }
+  ctx.globalAlpha = 1;
+
+  drawSkyline(370, '#141d3e', 0.22, 13, 1);
+  drawSkyline(405, '#1b2750', 0.5, 9, 2);
+
+  ctx.fillStyle = lgrad(0,GROUND_Y-6,0,H,[[0,'#202b52'],[1,'#0f1730']]);
+  ctx.fillRect(0,GROUND_Y-6,W,H-(GROUND_Y-6));
+  ctx.strokeStyle='rgba(143,212,255,0.10)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y-4); ctx.lineTo(W,GROUND_Y-4); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.05)';
+  for(let i=0;i<W;i+=64){ ctx.beginPath(); ctx.moveTo(i+18,GROUND_Y+18); ctx.lineTo(i+44,GROUND_Y+18); ctx.stroke(); }
+}
+
+function drawSkyline(baseY, col, alpha, count, seed){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=col;
+  for(let i=0;i<count;i++){
+    const bw = 46 + Math.abs(Math.sin(i*1.7+seed))*46;
+    const bx = (i*(W/count)) + Math.sin(i*2.1+seed)*8;
+    const bh = 70 + Math.abs(Math.sin(i*3.3+seed*2))*120;
+    ctx.fillRect(bx, baseY-bh, bw, bh);
+    ctx.save(); ctx.globalAlpha=alpha*0.5; ctx.fillStyle='#ffe6a8';
+    for(let wy=baseY-bh+10; wy<baseY-12; wy+=18){
+      for(let wx=bx+6; wx<bx+bw-8; wx+=14){
+        if((Math.sin(wx*0.7+wy*0.3+i)) > 0.55) ctx.fillRect(wx,wy,5,7);
+      }
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// =========================================================
+// Character (walk cycle, mirror by facing)
+// =========================================================
+function drawPlayer(){
+  const baseX = player.x + player.w/2;
+  const baseY = player.y + player.h;
+  shadowBlob(baseX, baseY-2, 26, 7, 0.35);
+  ctx.save();
+  ctx.translate(baseX, baseY);
+  ctx.scale(player.face, 1);
+  const moving = player.vx !== 0;
+  const t = player.walk;
+  const swing = moving ? Math.sin(t)*0.5 : 0;
+  const bob = moving ? Math.abs(Math.sin(t))*2.2 : Math.sin(game.time*2)*1.2;
+  ctx.strokeStyle = '#3a4f8c'; ctx.lineWidth = 9; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-3,-26); ctx.lineTo(-3-swing*10, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3,-26); ctx.lineTo(3+swing*10, -2); ctx.stroke();
+  ctx.fillStyle='#cdd7ef';
+  ctx.beginPath(); ctx.ellipse(-3-swing*10,0,7,4,0,0,6.2832); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(3+swing*10,0,7,4,0,0,6.2832); ctx.fill();
+  ctx.fillStyle = lgrad(-12,-58,12,-26,[[0,'#7aa2e8'],[1,'#3f5fb0']]);
+  rr(-13,-58-bob, 26, 34, 9); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1.5; rr(-13,-58-bob,26,34,9); ctx.stroke();
+  ctx.strokeStyle = '#5f7fce'; ctx.lineWidth=7; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-9,-50-bob); ctx.lineTo(-12+swing*9, -30-bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9,-50-bob); ctx.lineTo(12-swing*9, -30-bob); ctx.stroke();
+  const hy = -70 - bob;
+  ctx.fillStyle = rgrad(-3,hy-2,2,14,[[0,'#ffe6cf'],[1,'#e8c39e']]);
+  ctx.beginPath(); ctx.arc(0,hy,12,0,6.2832); ctx.fill();
+  ctx.fillStyle='#2b2540';
+  ctx.beginPath(); ctx.arc(0,hy-2,12,Math.PI*1.05,Math.PI*2.0); ctx.lineTo(8,hy-2); ctx.fill();
+  ctx.strokeStyle='#3a2f2a'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(4,hy,3,0.1,Math.PI-0.1); ctx.stroke();
+  if(game.calm>60){
+    ctx.fillStyle='rgba(190,210,255,0.7)'; ctx.font='bold 11px Arial';
+    const zb = Math.sin(game.time*2)*2;
+    ctx.fillText('z', 14, hy-10+zb); ctx.font='bold 8px Arial'; ctx.fillText('z', 21, hy-16+zb);
+  }
+  ctx.restore();
+  if(game.shield > 0){
+    const pulse = 0.6 + 0.4*Math.sin(game.time*8);
+    const cx = baseX, cy = baseY - player.h/2;
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.3*pulse;
+    ctx.strokeStyle = '#7be0a4'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 38, 46, 0, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = rgrad(cx,cy,20,52,[[0,'rgba(123,224,164,0.05)'],[1,'rgba(123,224,164,0.18)']]);
+    ctx.beginPath(); ctx.ellipse(cx, cy, 40, 48, 0, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.fillStyle='#dffbe9';
+    ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    ctx.fillText('DND', cx, cy-52);
+    ctx.restore();
+    ctx.textAlign='left';
+  }
+}
+function drawHazard(hz){
+  const t = hz.type; const x=hz.x, y=hz.y, r=hz.r;
+  ctx.fillStyle = rgrad(x,y,r*0.3,r*2.4,[[0,t.col+'55'],[1,t.col+'00']]);
+  ctx.beginPath(); ctx.arc(x,y,r*2.4,0,6.2832); ctx.fill();
+  ctx.fillStyle = rgrad(x-r*0.3,y-r*0.3,r*0.2,r,[[0,t.col],[1,t.col2]]);
+  rr(x-r,y-r,r*2,r*2,r*0.55); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.5; rr(x-r,y-r,r*2,r*2,r*0.55); ctx.stroke();
+  ctx.fillStyle = t.col2; ctx.beginPath(); ctx.moveTo(x-r*0.4,y+r*0.7); ctx.lineTo(x-r*0.9,y+r*1.2); ctx.lineTo(x-r*0.05,y+r*0.85); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='bold '+Math.round(r*1.0)+'px Arial';
+  let g='!';
+  if(t.key==='fomo') g='@'; else if(t.key==='always') g='8'; else if(t.key==='breaking') g='!'; else if(t.key==='compare') g='%';
+  ctx.fillText(g, x, y+1);
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+function drawPowerup(pu){
+  const x=pu.x, y=pu.y, r=pu.r;
+  const pulse = 0.6+0.4*Math.sin(game.time*6 + pu.phase);
+  ctx.fillStyle = rgrad(x,y,r*0.3,r*2.6,[[0,'rgba(123,224,164,'+(0.35*pulse)+')'],[1,'rgba(123,224,164,0)']]);
+  ctx.beginPath(); ctx.arc(x,y,r*2.6,0,6.2832); ctx.fill();
+  ctx.fillStyle = rgrad(x-4,y-4,2,r,[[0,'#d6ffe9'],[1,'#43b777']]);
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.stroke();
+  ctx.fillStyle='#0f3d28'; ctx.beginPath(); ctx.arc(x,y,r*0.55,0,6.2832); ctx.fill();
+  ctx.fillStyle = rgrad(x-4,y-4,2,r,[[0,'#d6ffe9'],[1,'#43b777']]);
+  ctx.beginPath(); ctx.arc(x+r*0.22,y-r*0.18,r*0.5,0,6.2832); ctx.fill();
+}
+
+// =========================================================
+// HUD: calm meter + progress-to-bed bar
+// =========================================================
+function drawParticles(){
+  ctx.save();
+  for(const p of game.particles){
+    ctx.globalAlpha = clamp(p.life/p.maxLife, 0, 1);
+    ctx.fillStyle = p.col;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.2832); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawHUD(){
+  ctx.save();
+  // top panel
+  ctx.fillStyle='rgba(8,12,28,0.55)'; ctx.fillRect(0,0,W,52);
+  // CALM meter (left)
+  ctx.fillStyle='#cfe0ff'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+  ctx.fillText('CALM', 20, 22);
+  const cw=220, cx=72, cy=14;
+  ctx.fillStyle='rgba(255,255,255,0.10)'; rr(cx,cy,cw,16,8); ctx.fill();
+  const cf = game.calm/CALM_MAX;
+  const ccol = cf>0.5 ? '#7be0a4' : (cf>0.25 ? '#ffd86b' : '#ff7a8a');
+  ctx.fillStyle = lgrad(cx,cy,cx+cw,cy,[[0,ccol],[1,'#3f9c6a']]);
+  rr(cx,cy,Math.max(2,cw*cf),16,8); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; rr(cx,cy,cw,16,8); ctx.stroke();
+  ctx.fillStyle='#0b1024'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+  ctx.fillText(Math.round(cf*100)+'%', cx+cw/2, cy+12);
+  ctx.textAlign='left';
+
+  // NIGHT indicator (center)
+  ctx.textAlign='center'; ctx.fillStyle='#eef2ff'; ctx.font='bold 15px Arial';
+  ctx.fillText('Night '+game.night+' / '+FINAL_NIGHT, W/2, 24);
+
+  // PROGRESS-to-bed bar (right)
+  ctx.textAlign='right'; ctx.fillStyle='#cfe0ff'; ctx.font='bold 13px Arial';
+  ctx.fillText('BED', W-20, 22);
+  const pw=220, px=W-72-pw, py=14;
+  ctx.fillStyle='rgba(255,255,255,0.10)'; rr(px,py,pw,16,8); ctx.fill();
+  const pf=game.progress/PROGRESS_MAX;
+  ctx.fillStyle = lgrad(px,py,px+pw,py,[[0,'#6fa8ff'],[1,'#b58cff']]);
+  rr(px,py,Math.max(2,pw*pf),16,8); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; rr(px,py,pw,16,8); ctx.stroke();
+  ctx.fillStyle='#0b1024'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+  ctx.fillText(Math.round(pf*100)+'%', px+pw/2, py+12);
+  ctx.textAlign='right';
+  // bed icon at end of bar
+  ctx.fillStyle='#cdd7ef'; ctx.font='12px Arial'; ctx.textAlign='left';
+  ctx.fillText('🛏', px+pw+4, 27);
+
+  // score + streak chip
+  ctx.textAlign='left'; ctx.fillStyle='#9fb6e8'; ctx.font='bold 12px Arial';
+  ctx.fillText('Score '+Math.round(game.score)+(game.streak>1?'   Focus x'+game.streak:''), 20, 45);
+
+  // shield timer chip
+  if(game.shield>0){
+    ctx.textAlign='center';
+    const chw=150, chx=W/2-chw/2, chy=58;
+    ctx.fillStyle='rgba(123,224,164,0.18)'; rr(chx,chy,chw,22,11); ctx.fill();
+    ctx.strokeStyle='#7be0a4'; ctx.lineWidth=1.5; rr(chx,chy,chw,22,11); ctx.stroke();
+    ctx.fillStyle='#dffbe9'; ctx.font='bold 12px Arial';
+    ctx.fillText('Do-Not-Disturb '+game.shield.toFixed(1)+'s', W/2, chy+15);
+  }
+  ctx.restore();
+  ctx.textAlign='left';
+}
+
+function drawVignette(){
+  ctx.save();
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.8);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.45)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // hit flash
+  if(game.hitFlash>0){ ctx.fillStyle='rgba(255,90,110,'+(game.hitFlash/HIT_FLASH*0.30)+')'; ctx.fillRect(0,0,W,H); }
+  // low-calm pulsing danger tint (visceral telegraph below ~25% calm)
+  if(game.state==='playing' && game.calm/CALM_MAX < 0.25){
+    const pulse = 0.5 + 0.5*Math.sin(game.time*6);
+    ctx.fillStyle = 'rgba(255,40,60,'+(pulse*0.16)+')';
+    ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+}
+
+// DOM-side low-calm vignette pulse (extra visceral cue outside canvas bounds)
+const vignetteDangerEl = document.getElementById('vignetteDanger');
+function syncDangerVignette(){
+  if(!vignetteDangerEl) return;
+  const low = game.state==='playing' && game.calm/CALM_MAX < 0.25;
+  if(low){
+    const pulse = 0.5 + 0.5*Math.sin(game.time*6);
+    vignetteDangerEl.style.boxShadow = 'inset 0 0 '+(40+pulse*40)+'px '+(10+pulse*10)+'px rgba(255,40,60,'+(0.25+pulse*0.25)+')';
+  } else {
+    vignetteDangerEl.style.boxShadow = 'inset 0 0 0 0 rgba(255,60,80,0)';
+  }
+}
+
+// =========================================================
+// Screens
+// =========================================================
+function panel(x,y,w,h){
+  ctx.fillStyle='rgba(10,14,30,0.86)'; rr(x,y,w,h,18); ctx.fill();
+  ctx.strokeStyle='rgba(143,212,255,0.25)'; ctx.lineWidth=1.5; rr(x,y,w,h,18); ctx.stroke();
+}
+function drawTitle(){
+  drawNight();
+  // decorative falling distraction on title (deterministic)
+  for(let i=0;i<5;i++){
+    const t=HAZARD_TYPES[i];
+    drawHazard({type:t, x:140+i*150, y:150+Math.sin(game.time*0.8+i)*30, r:t.r});
+  }
+  panel(W/2-300,150,600,250);
+  ctx.textAlign='center';
+  ctx.fillStyle='#eef2ff'; ctx.font='bold 44px Arial';
+  ctx.fillText('🌙 Doomscroll Dodger', W/2, 215);
+  ctx.fillStyle='#9fb6e8'; ctx.font='16px Arial';
+  ctx.fillText('Walk to bed across a calm night. Dodge the distractions.', W/2, 250);
+  ctx.fillStyle='#cfe0ff'; ctx.font='15px Arial';
+  ctx.fillText('← / →  or  A / D  to move  •  P to pause', W/2, 290);
+  ctx.fillText('Grab the Do-Not-Disturb moon for a brief shield.', W/2, 314);
+  ctx.fillStyle='#7be0a4'; ctx.font='bold 18px Arial';
+  ctx.fillText('Press Enter / Space / ▶ to begin', W/2, 360);
+  ctx.fillStyle='#6f82ad'; ctx.font='12px Arial';
+  ctx.fillText('Attention is a resource. A note on digital wellbeing, not medical advice.', W/2, 388);
+  ctx.fillStyle='#9fb6e8'; ctx.font='bold 13px Arial';
+  ctx.fillText('Best night: '+game.saved.bestNight+' / '+FINAL_NIGHT+'   Best score: '+Math.round(game.saved.bestScore), W/2, 408);
+  ctx.textAlign='left';
+}
+function drawMessage(title, lines, accent){
+  panel(W/2-300,140,600,290);
+  ctx.textAlign='center';
+  ctx.fillStyle=accent||'#eef2ff'; ctx.font='bold 34px Arial';
+  ctx.fillText(title, W/2, 195);
+  ctx.fillStyle='#cfe0ff'; ctx.font='15px Arial';
+  lines.forEach((l,i)=>ctx.fillText(l, W/2, 228+i*24));
+  const statsY = 228 + lines.length*24 + 18;
+  ctx.strokeStyle='rgba(255,255,255,0.14)'; ctx.beginPath(); ctx.moveTo(W/2-220,statsY); ctx.lineTo(W/2+220,statsY); ctx.stroke();
+  ctx.fillStyle='#9fb6e8'; ctx.font='13px Arial';
+  const stats = [
+    'Nights survived: '+game.nightsCleared,
+    'Hits taken: '+game.hitsTaken,
+    'Powerups collected: '+game.powerupsCollected,
+    'Longest focus streak: '+game.bestStreakRun,
+    'Score: '+Math.round(game.score)+'   Best score: '+Math.round(game.saved.bestScore)
+  ];
+  stats.forEach((l,i)=>ctx.fillText(l, W/2, statsY+20+i*20));
+  ctx.fillStyle='#7be0a4'; ctx.font='bold 14px Arial';
+  ctx.fillText('Press Enter / Space / ▶ to play again', W/2, statsY+20+stats.length*20+14);
+  ctx.textAlign='left';
+}
+
+// =========================================================
+// Main draw -- never throws in any state
+// =========================================================
+function draw(){
+  try{
+    if(game.state==='title'){ drawTitle(); drawVignette(); syncDangerVignette(); return; }
+
+    drawNight();
+    for(const hz of game.hazards){ if(hz.y < H+40) drawHazard(hz); }
+    for(const pu of game.powerups){ if(pu.y < H+40) drawPowerup(pu); }
+    drawParticles();
+    drawPlayer();
+    drawHUD();
+    drawVignette();
+    syncDangerVignette();
+
+    if(game.state==='paused'){
+      ctx.fillStyle='rgba(5,7,15,0.55)'; ctx.fillRect(0,0,W,H);
+      drawMessage('Paused', ['Take a breath.', 'Press P to continue.'], '#8fd4ff');
+    }
+    if(game.state==='gameover'){
+      ctx.fillStyle='rgba(5,7,15,0.55)'; ctx.fillRect(0,0,W,H);
+      drawMessage('Calm ran out', ['The noise won this night.', 'Reached Night '+game.night+'.'], '#ff7a8a');
+    }
+    if(game.state==='win'){
+      ctx.fillStyle='rgba(5,7,15,0.55)'; ctx.fillRect(0,0,W,H);
+      drawMessage('Good night 🌙', ['You reached bed with calm to spare.', 'You protected your attention across '+FINAL_NIGHT+' nights.'], '#7be0a4');
+    }
+  }catch(e){ /* draw must never throw */ }
+}
+
+// =========================================================
+// Main loop
+// =========================================================
+const startBtnEl = document.getElementById('startBtn');
+let lastLabelState = null;
+function syncStartLabel(){
+  if(!startBtnEl || game.state===lastLabelState) return;
+  lastLabelState = game.state;
+  if(game.state==='gameover'||game.state==='win') startBtnEl.innerHTML = '&#8635;'; // replay icon
+  else if(game.state==='paused') startBtnEl.innerHTML = '&#9658;';
+  else startBtnEl.innerHTML = '&#9658;';
+}
+
+let last = 0;
+function frame(ts){
+  const now = ts||0;
+  let dt = (now - last)/1000; last = now;
+  if(!isFinite(dt) || dt<0) dt=0;
+  if(dt>0.05) dt=0.05;
+  update(dt);
+  draw();
+  syncStartLabel();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// =========================================================
+// Test hook (harmless in production)
+// =========================================================
+window.__game = {
+  get game(){return game;},
+  get player(){return player;},
+  get input(){return input;},
+  get calm(){return game.calm;},
+  get progress(){return game.progress;},
+  get shield(){return game.shield;},
+  get score(){return game.score;},
+  get saved(){return game.saved;},
+  update, draw, reset, resetGame:reset, spawnHazard, hitHazard, applyPowerup, setState, endRun
+};
+
+</script>
+</body>
+</html>

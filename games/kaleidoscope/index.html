@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Kaleidoscope</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03020a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#hud-btns{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#hud-btns button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(160,100,255,.35);background:rgba(8,4,18,.85);color:#eaf2f6;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#hud-btns button:active{background:rgba(160,100,255,.35);}
+#ctrl-btns{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);display:flex;gap:10px;z-index:5;}
+#ctrl-btns button{min-width:44px;height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(160,100,255,.35);background:rgba(8,4,18,.85);color:#eaf2f6;font-size:13px;font-weight:bold;cursor:pointer;}
+#ctrl-btns button:active{background:rgba(160,100,255,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="hud-btns">
+  <button id="btnMute" aria-label="Mute" title="Mute (M)">&#128266;</button>
+  <button id="btnPause" aria-label="Pause" title="Pause (P)">&#10074;&#10074;</button>
+</div>
+<div id="ctrl-btns">
+  <button id="btnUndo" aria-label="Undo last stroke" title="Undo (U)">Undo</button>
+  <button id="btnPalette" aria-label="Cycle palette" title="Palette (Space)">Palette</button>
+  <button id="btnReset" aria-label="Reset canvas" title="Reset (hold, R)">Reset</button>
+</div>
+<div id="hint">Move / touch to paint</div>
+<script>
+'use strict';
+// Kaleidoscope (#52)
+// A meditative drawing toy. Mouse/touch leaves trails that are
+// mirrored in 8 segments — symmetric kaleidoscope art.
+// Fill enough of the canvas to "win" (coverage meter).
+// Theme: finding beauty in your own unique pattern.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const SEGS=8,TARGET_COVERAGE=0.45;
+const PALETTES=[
+  ['#ff6b9d','#c44bff','#6b9dff','#4bffdf'],
+  ['#ffb347','#ff6b6b','#ffd700','#ff8c00'],
+  ['#6bff9d','#4bdfff','#9d6bff','#dfff4b'],
+  ['#ff4b9d','#ff9d4b','#9dff4b','#4b9dff'],
+];
+const IS_TOUCH=(('ontouchstart' in window)||(navigator.maxTouchPoints>0));
+
+// --- localStorage persistence (best fill time / fewest strokes) ---
+const LS_KEY='kaleidoscope_best_v1';
+function loadBest(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw)return{bestTime:null,bestStrokes:null};
+    const p=JSON.parse(raw);
+    return{bestTime:(typeof p.bestTime==='number')?p.bestTime:null,bestStrokes:(typeof p.bestStrokes==='number')?p.bestStrokes:null};
+  }catch(e){return{bestTime:null,bestStrokes:null};}
+}
+function saveBest(b){
+  try{localStorage.setItem(LS_KEY,JSON.stringify(b));}catch(e){}
+}
+let best=loadBest();
+
+const game={state:'title',time:0,paused:false,muted:false,coverage:0,palIdx:0,brushR:8,shakeT:0,won:false,
+  strokeCount:0,winTimeMs:0,playStartMs:0,idleT:0,pulseT:0,winBurstT:0};
+let drawing=false,lastX=null,lastY=null,rng;
+// offscreen for coverage calc
+let offCanvas,offCtx;
+let offSnapshot=null; // ImageData snapshot before current stroke, for undo
+let mainSnapshot=null; // dataURL-free: we keep a canvas copy instead
+let undoOffData=null,undoMainCanvas=null;
+let strokeActive=false;
+
+function initOff(){offCanvas=document.createElement('canvas');offCanvas.width=W;offCanvas.height=H;offCtx=offCanvas.getContext('2d');offCtx.fillStyle='#000';offCtx.fillRect(0,0,W,H);}
+function resetCanvas(){
+  ctx.clearRect(0,0,W,H);
+  if(offCtx){offCtx.fillStyle='#000';offCtx.fillRect(0,0,W,H);}
+  game.coverage=0;game.won=false;game.strokeCount=0;game.winTimeMs=0;
+  game.playStartMs=game.time;game.idleT=0;
+  undoOffData=null;undoMainCanvas=null;
+}
+
+function calcCoverage(){
+  if(game.won)return; // stop rescanning after win — avoids needless per-frame work
+  const data=offCtx.getImageData(0,0,W,H).data;let lit=0;for(let i=0;i<data.length;i+=4){if(data[i]+data[i+1]+data[i+2]>30)lit++;}game.coverage=lit/(W*H);
+}
+
+function getPalColor(t){const pal=PALETTES[game.palIdx];const i=Math.floor(t*pal.length)%pal.length;return pal[i];}
+
+function drawSegment(x,y,col){// draw at (x,y) relative to centre, then rotate by each segment
+ctx.save();ctx.translate(CX,CY);for(let s=0;s<SEGS;s++){ctx.save();ctx.rotate(s*(Math.PI*2/SEGS));ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fillStyle=col;ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(x,y,game.brushR,0,Math.PI*2);ctx.fill();// mirror
+ctx.scale(-1,1);ctx.beginPath();ctx.arc(x,y,game.brushR,0,Math.PI*2);ctx.fill();ctx.restore();}ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.restore();}
+
+function drawSegmentLine(x1,y1,x2,y2,col){ctx.save();ctx.translate(CX,CY);for(let s=0;s<SEGS;s++){ctx.save();ctx.rotate(s*(Math.PI*2/SEGS));ctx.shadowColor=col;ctx.shadowBlur=5;ctx.strokeStyle=col;ctx.lineWidth=game.brushR*2;ctx.globalAlpha=0.65;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.scale(-1,1);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.restore();}
+
+function paint(mx,my,col){const rx=mx-CX,ry=my-CY;if(lastX!==null){drawSegmentLine(lastX,lastY,rx,ry,col);if(offCtx){offCtx.save();offCtx.translate(CX,CY);for(let s=0;s<SEGS;s++){offCtx.save();offCtx.rotate(s*(Math.PI*2/SEGS));offCtx.fillStyle='#fff';offCtx.beginPath();offCtx.arc(rx,ry,game.brushR,0,Math.PI*2);offCtx.fill();offCtx.scale(-1,1);offCtx.beginPath();offCtx.arc(rx,ry,game.brushR,0,Math.PI*2);offCtx.fill();offCtx.restore();}offCtx.restore();}}else{drawSegment(rx,ry,col);if(offCtx){offCtx.save();offCtx.translate(CX,CY);for(let s=0;s<SEGS;s++){offCtx.save();offCtx.rotate(s*(Math.PI*2/SEGS));offCtx.fillStyle='#fff';offCtx.beginPath();offCtx.arc(rx,ry,game.brushR,0,Math.PI*2);offCtx.fill();offCtx.scale(-1,1);offCtx.beginPath();offCtx.arc(rx,ry,game.brushR,0,Math.PI*2);offCtx.fill();offCtx.restore();}offCtx.restore();}}lastX=rx;lastY=ry;
+game.idleT=0;}
+
+let coverageT=0;
+
+// --- particles for win burst ---
+let particles=[];
+function spawnWinBurst(){
+  particles=[];
+  const col=PALETTES[game.palIdx];
+  for(let s=0;s<SEGS;s++){
+    const baseAng=s*(Math.PI*2/SEGS);
+    for(let i=0;i<6;i++){
+      const a=baseAng+(Math.random()-0.5)*0.6;
+      const spd=1.2+Math.random()*2.2;
+      particles.push({
+        x:CX,y:CY,
+        vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+        life:600+Math.random()*400,age:0,
+        col:col[i%col.length],r:2+Math.random()*2.5
+      });
+    }
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.age+=dt;
+    if(p.age>=p.life){particles.splice(i,1);continue;}
+    p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);
+    p.vx*=0.985;p.vy*=0.985;
+  }
+}
+function drawParticles(){
+  if(!particles.length)return;
+  ctx.save();
+  for(const p of particles){
+    const t=1-(p.age/p.life);
+    ctx.globalAlpha=clamp(t,0,1)*0.85;
+    ctx.fillStyle=p.col;
+    ctx.shadowColor=p.col;ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.pulseT>0)game.pulseT=Math.max(0,game.pulseT-dt);
+  if(particles.length)updateParticles(dt);
+  if(game.state!=='playing'||game.paused)return;
+  coverageT+=dt;
+  if(coverageT>=500){
+    coverageT=0;
+    if(offCtx)calcCoverage();
+    if(game.coverage>=TARGET_COVERAGE&&!game.won){
+      game.won=true;
+      game.winTimeMs=Math.max(0,game.time-game.playStartMs);
+      sndWin();
+      spawnWinBurst();
+      // persistence: best (fastest) time, and best (fewest) strokes at win
+      const winSeconds=game.winTimeMs/1000;
+      let changed=false;
+      if(best.bestTime===null||winSeconds<best.bestTime){best.bestTime=winSeconds;changed=true;}
+      if(best.bestStrokes===null||game.strokeCount<best.bestStrokes){best.bestStrokes=game.strokeCount;changed=true;}
+      if(changed)saveBest(best);
+    }
+  }
+  // idle nudge: no coverage after ~8s of playing
+  if(!game.won && game.coverage<=0.001){
+    game.idleT+=dt;
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}
+}
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndUI=()=>{tone(440,0.08,'sine',0.04);};
+const sndUndo=()=>{tone(300,0.1,'triangle',0.05);};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function drawHUD(){
+ctx.save();
+ctx.fillStyle='rgba(1,1,6,.7)';rr(0,0,W,46,0);ctx.fill();
+ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#d0a0ff';ctx.font='bold 13px Arial';ctx.fillText('Kaleidoscope',18,8);
+ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+ctx.fillText(game.paused?'PAUSED':'Draw to fill the canvas ('+(Math.round(game.coverage*100))+'% / '+(TARGET_COVERAGE*100|0)+'%) · strokes: '+game.strokeCount,18,28);
+
+// coverage bar + palette label
+const bw=180,bh=6,bx=W-210,by=14;
+ctx.fillStyle='rgba(255,255,255,.08)';rr(bx,by,bw,bh,3);ctx.fill();
+ctx.fillStyle=PALETTES[game.palIdx][0];rr(bx,by,bw*clamp(game.coverage/TARGET_COVERAGE,0,1),bh,3);ctx.fill();
+// palette swatch label (numbered) for colorblind clarity
+ctx.textAlign='left';ctx.font='bold 10px Arial';
+const swX=bx-26;
+ctx.fillStyle='rgba(255,255,255,.7)';
+ctx.fillText('P'+(game.palIdx+1),swX,13);
+for(let i=0;i<PALETTES[game.palIdx].length;i++){
+  ctx.fillStyle=PALETTES[game.palIdx][i];
+  ctx.beginPath();ctx.arc(swX+2+i*8,26,3,0,Math.PI*2);ctx.fill();
+}
+ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+ctx.fillText(IS_TOUCH?'use buttons below':'SPACE=colour  R=reset  U=undo  P=pause  M=mute',W-18,28);
+ctx.restore();
+}
+
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // subtle vignette pulse on palette change
+  if(game.pulseT>0){
+    const t=game.pulseT/260;
+    ctx.save();
+    ctx.globalAlpha=0.35*t;
+    const pg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,H*0.9);
+    pg.addColorStop(0,'rgba(255,255,255,0)');
+    pg.addColorStop(0.7,'rgba(255,255,255,0)');
+    pg.addColorStop(1,PALETTES[game.palIdx][0]);
+    ctx.fillStyle=pg;ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+}
+
+function panelDraw(title,lines){
+ctx.save();
+ctx.fillStyle='rgba(1,1,6,.78)';ctx.fillRect(0,0,W,H);
+const pw=540,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(8,4,18,.97)'],[1,'rgba(4,2,12,.97)']]);
+rr(px,py,pw,ph,22);ctx.fill();
+ctx.strokeStyle='rgba(160,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+ctx.textAlign='center';ctx.textBaseline='alphabetic';
+ctx.fillStyle='#d0a0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+58);
+ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+let ly=py+92;
+for(const l of lines){ctx.fillText(l,W/2,ly);ly+=25;}
+ctx.restore();
+}
+
+function drawIdleNudge(){
+  if(game.state!=='playing'||game.won||game.paused)return;
+  if(game.idleT<8000)return;
+  const pulse=(Math.sin(game.time/300)+1)/2;
+  ctx.save();
+  ctx.globalAlpha=0.35+0.35*pulse;
+  ctx.fillStyle='#eaf2f6';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='bold 20px Arial';
+  ctx.fillText('keep drawing!',CX,CY);
+  ctx.restore();
+}
+
+function draw(){
+try{
+ctx.setTransform(1,0,0,1,0,0);
+if(game.state==='playing'){
+  // dark bg under art
+  ctx.fillStyle='rgba(3,2,10,.06)';ctx.fillRect(0,0,W,H);
+}else{
+  ctx.clearRect(0,0,W,H);
+}
+drawParticles();
+vignette();
+if(game.state==='playing'){
+  drawIdleNudge();
+  drawHUD();
+  if(game.won){
+    ctx.fillStyle='rgba(1,1,6,.6)';ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#d0a0ff';ctx.font='bold 42px Arial';
+    ctx.fillText('Pattern Complete!',W/2,H/2-46);
+    ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='16px Arial';
+    ctx.fillText('Your unique pattern, beautifully made.',W/2,H/2-4);
+    ctx.fillText('Time: '+(game.winTimeMs/1000).toFixed(1)+'s · Strokes: '+game.strokeCount,W/2,H/2+24);
+    let bestLine='Best: —';
+    if(best.bestTime!==null){
+      bestLine='Best time: '+best.bestTime.toFixed(1)+'s';
+      if(best.bestStrokes!==null)bestLine+='  ·  Fewest strokes: '+best.bestStrokes;
+    }
+    ctx.fillStyle='rgba(200,255,220,.85)';ctx.font='14px Arial';
+    ctx.fillText(bestLine,W/2,H/2+50);
+    ctx.fillStyle='rgba(234,242,246,.55)';ctx.font='13px Arial';
+    ctx.fillText(IS_TOUCH?'Tap Palette button for a new palette.':'Keep painting or click / press space for new palette.',W/2,H/2+78);
+  }
+}
+if(game.state==='title'){
+  const bestLine=(best.bestTime!==null)?('Best fill time: '+best.bestTime.toFixed(1)+'s'+(best.bestStrokes!==null?'  ·  Fewest strokes: '+best.bestStrokes:'')):'No best time yet — be the first!';
+  panelDraw('Kaleidoscope',[
+    'Move the mouse / touch to paint.',
+    'Your brush is reflected in 8 segments.',
+    'Fill '+((TARGET_COVERAGE*100)|0)+'% of the canvas to complete the pattern.',
+    '',
+    IS_TOUCH?'Use the on-screen buttons to pause, mute, undo, reset, or change colour.':'P pause · M mute · Space colour · R reset (hold) · U undo',
+    '',
+    bestLine,
+    '',
+    'Beauty in your own unique design.',
+    '',
+    'Click / tap to begin.'
+  ]);
+}
+}catch(e){}
+}
+
+function getPos(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};
+}
+
+// --- undo support: snapshot both canvases at stroke start ---
+function snapshotForUndo(){
+  try{
+    undoOffData=offCtx?offCtx.getImageData(0,0,W,H):null;
+    if(!undoMainCanvas){undoMainCanvas=document.createElement('canvas');undoMainCanvas.width=W;undoMainCanvas.height=H;}
+    const uctx=undoMainCanvas.getContext('2d');
+    uctx.clearRect(0,0,W,H);
+    uctx.drawImage(canvas,0,0);
+  }catch(e){}
+}
+function undoLastStroke(){
+  if(!undoOffData||!undoMainCanvas)return;
+  try{
+    offCtx.putImageData(undoOffData,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.drawImage(undoMainCanvas,0,0);
+    if(game.strokeCount>0)game.strokeCount--;
+    calcCoverage();
+    sndUndo();
+  }catch(e){}
+}
+
+function startDraw(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'){
+    // fresh session guard: ensure canvases + palette/state are clean before first play
+    initOff();
+    resetCanvas();
+    game.palIdx=0;
+    lastX=null;lastY=null;
+    game.state='playing';
+    return;
+  }
+  if(game.won){
+    game.palIdx=(game.palIdx+1)%PALETTES.length;
+    resetCanvas();
+    game.pulseT=260;
+    return;
+  }
+  if(game.paused)return;
+  drawing=true;lastX=null;lastY=null;
+  strokeActive=true;
+  snapshotForUndo();
+  game.strokeCount++;
+  const{x,y}=getPos(e);
+  const col=getPalColor((game.time%3000)/3000);
+  paint(x,y,col);
+}
+function moveDraw(e){
+  e.preventDefault();
+  if(!drawing||game.state!=='playing'||game.paused)return;
+  const{x,y}=getPos(e);
+  const col=getPalColor((game.time%3000)/3000);
+  paint(x,y,col);
+}
+function endDraw(e){
+  e.preventDefault();
+  drawing=false;lastX=null;lastY=null;strokeActive=false;
+}
+canvas.addEventListener('mousedown',startDraw);canvas.addEventListener('mousemove',moveDraw);canvas.addEventListener('mouseup',endDraw);
+canvas.addEventListener('touchstart',startDraw,{passive:false});canvas.addEventListener('touchmove',moveDraw,{passive:false});canvas.addEventListener('touchend',endDraw,{passive:false});
+
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  sndUI();
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  updateHudBtnLabels();
+}
+function cyclePalette(){
+  game.palIdx=(game.palIdx+1)%PALETTES.length;
+  game.pulseT=260;
+  sndUI();
+}
+function doReset(){
+  resetCanvas();
+  sndUI();
+}
+function updateHudBtnLabels(){
+  const bm=document.getElementById('btnMute');
+  const bp=document.getElementById('btnPause');
+  if(bm)bm.innerHTML=game.muted?'&#128263;':'&#128266;';
+  if(bp)bp.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){e.preventDefault();togglePause();updateHudBtnLabels();}
+  if(e.code==='KeyM'){e.preventDefault();toggleMute();}
+  if(e.code==='KeyR'){e.preventDefault();doReset();}
+  if(e.code==='KeyU'){e.preventDefault();undoLastStroke();}
+  if(e.code==='Space'){e.preventDefault();cyclePalette();}
+});
+
+// on-screen buttons
+document.getElementById('btnPause').addEventListener('click',(e)=>{e.preventDefault();togglePause();updateHudBtnLabels();});
+document.getElementById('btnMute').addEventListener('click',(e)=>{e.preventDefault();toggleMute();});
+document.getElementById('btnUndo').addEventListener('click',(e)=>{e.preventDefault();undoLastStroke();});
+document.getElementById('btnPalette').addEventListener('click',(e)=>{e.preventDefault();cyclePalette();});
+// reset requires press-and-hold (600ms) to avoid accidental wipe
+(function(){
+  const btn=document.getElementById('btnReset');
+  let holdTimer=null,holding=false;
+  function startHold(e){e.preventDefault();holding=true;btn.textContent='Hold…';holdTimer=setTimeout(()=>{if(holding){doReset();btn.textContent='Reset';holding=false;}},600);}
+  function cancelHold(e){if(e)e.preventDefault();holding=false;btn.textContent='Reset';if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}}
+  btn.addEventListener('mousedown',startHold);btn.addEventListener('touchstart',startHold,{passive:false});
+  btn.addEventListener('mouseup',cancelHold);btn.addEventListener('mouseleave',cancelHold);
+  btn.addEventListener('touchend',cancelHold);btn.addEventListener('touchcancel',cancelHold);
+})();
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  resetCanvas,calcCoverage,paint,update,draw,
+  SEGS,TARGET_COVERAGE,PALETTES,
+  undoLastStroke,togglePause,toggleMute,cyclePalette,doReset,
+  getBest:()=>best
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Escape the Script</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#080608;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{display:block;background:#080608;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;z-index:5;}
+#ctrls{position:fixed;inset:0;pointer-events:none;z-index:10;}
+#ctrls button{position:absolute;pointer-events:auto;width:46px;height:46px;border-radius:12px;border:1px solid rgba(160,120,255,.35);background:rgba(10,8,18,.72);color:#eaf2f6;font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+#ctrls button:active{background:rgba(160,120,255,.28);}
+#btnPause{top:10px;left:10px;}
+#btnMute{top:10px;right:10px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+  <button id="btnMute" aria-label="Mute">&#128266;</button>
+</div>
+<div id="hint">Arrow keys / WASD / swipe to move &middot; reach the EXIT &middot; avoid the script enforcers</div>
+<script>
+'use strict';
+// Escape the Script (#42)
+// Top-down maze. Navigate the player to the EXIT while dodging
+// script-enforcer enemies that patrol corridors.
+// 10 procedural levels.
+// Theme: escaping the prescribed life-script through your own path.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const CELL=44,MCOLS=19,MROWS=11;
+const MX=(W-MCOLS*CELL)/2,MY=(H-MROWS*CELL)/2+10;
+const ENFORCERS=['conform','hustle','settle','obey','comply','submit'];
+
+// ---- persistence (localStorage may throw in private mode) ----
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+let muted=lsGet('escScript_muted','0')==='1';
+let bestTimeMs=parseFloat(lsGet('escScript_bestTime','Infinity'));
+let bestDeaths=parseFloat(lsGet('escScript_bestDeaths','Infinity'));
+
+const game={state:'title',time:0,level:1,deaths:0,shakeT:0,runStart:0,runMs:0,score:0,grade:''};
+let maze,player,exit2,enemies,rng,moveCD=0,particles=[];
+
+function buildMaze(lv){rng=seeded(lv*6971+3);
+maze=Array.from({length:MROWS},()=>Array(MCOLS).fill(1));
+function carve(r,c){maze[r][c]=0;const dirs=[[2,0],[-2,0],[0,2],[0,-2]].sort(()=>rng()-.5);for(const[dr,dc]of dirs){const nr=r+dr,nc=c+dc;if(nr>0&&nr<MROWS-1&&nc>0&&nc<MCOLS-1&&maze[nr][nc]===1){maze[r+dr/2][c+dc/2]=0;carve(nr,nc);}}}
+carve(1,1);
+// add extra exits (noise)
+for(let i=0;i<lv+2;i++){const r=2*Math.floor(rng()*(MROWS/2-1))+1,c=2*Math.floor(rng()*(MCOLS/2-1))+1;if(maze[r][c]===0&&r+1<MROWS-1)maze[r+1][c]=0;}
+player={row:1,col:1};exit2={row:MROWS-2,col:MCOLS-2};maze[exit2.row][exit2.col]=0;
+// enemies — clamped count & speed so late levels stay fair rather than unsolvable
+const count=clamp(2+lv,2,7);enemies=[];
+for(let i=0;i<count;i++){let er,ec,tries=0;
+  do{er=2*Math.floor(rng()*(MROWS/2-1))+1;ec=2*Math.floor(rng()*(MCOLS/2-1))+1;tries++;}
+  while(tries<200&&(maze[er][ec]!==0||(Math.abs(er-1)+Math.abs(ec-1)<4)||(er===exit2.row&&ec===exit2.col)));
+  const spd=clamp(1+(lv+i)*0.05,1,2.2);
+  enemies.push({row:er,col:ec,dir:0,t:0,spd,label:ENFORCERS[i%ENFORCERS.length]});
+}
+moveCD=0;heldDir=null;particles=[];game.state='playing';game.runStart=performance.now();game.runMs=0;
+}
+
+function spawnBurst(cx,cy,color,n){n=n||14;for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*2.6;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:400+Math.random()*300,maxLife:700,color});}}
+
+function tryMove(dr,dc){
+  if(game.state!=='playing')return; // defensive: never act outside playing state (e.g. stale heldDir across death/pause transitions)
+  if(moveCD>0)return;
+  const nr=player.row+dr,nc=player.col+dc;
+  if(nr<0||nr>=MROWS||nc<0||nc>=MCOLS||maze[nr][nc]===1)return;
+  player.row=nr;player.col=nc;moveCD=120;sndStep();
+  if(nr===exit2.row&&nc===exit2.col){
+    sndWin();
+    const ex=MX+exit2.col*CELL+CELL/2,ey=MY+exit2.row*CELL+CELL/2;
+    spawnBurst(ex,ey,'80,220,140',20);
+    if(game.level>=10){finishRun();}
+    else{game.level++;buildMaze(game.level);}
+  }
+}
+function finishRun(){
+  game.runMs+=performance.now()-game.runStart;
+  const timeSec=game.runMs/1000;
+  game.score=Math.max(0,Math.round(10000-timeSec*20-game.deaths*150));
+  let improvedTime=false,improvedDeaths=false;
+  if(game.runMs<bestTimeMs){bestTimeMs=game.runMs;lsSet('escScript_bestTime',String(bestTimeMs));improvedTime=true;}
+  if(game.deaths<bestDeaths){bestDeaths=game.deaths;lsSet('escScript_bestDeaths',String(bestDeaths));improvedDeaths=true;}
+  game.improvedTime=improvedTime;game.improvedDeaths=improvedDeaths;
+  const g=game.deaths===0&&timeSec<60?'S':game.deaths<=2&&timeSec<120?'A':game.deaths<=5?'B':'C';
+  game.grade=g;
+  game.state='won';
+}
+const DIRS=[[0,1],[1,0],[0,-1],[-1,0]];
+function update(dt){
+  dt=clamp(dt,0,48);game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(moveCD>0)moveCD=Math.max(0,moveCD-dt);
+  // particles always animate (visual polish independent of pause state, but frozen while paused below)
+  if(game.state==='paused')return;
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vx*=0.96;p.vy*=0.96;}
+  if(game.state!=='playing')return;
+  game.runMs=performance.now()-game.runStart;
+  // keyboard held
+  if(heldDir){const[dr,dc]=heldDir;tryMove(dr,dc);}
+  // enemies patrol
+  for(const e of enemies){e.t+=dt*e.spd;if(e.t>=300){e.t=0;const shuffled=DIRS.slice().sort(()=>rng()-.5);let moved=false;for(const[dr,dc]of shuffled){const nr=e.row+dr,nc=e.col+dc;if(nr>=0&&nr<MROWS&&nc>=0&&nc<MCOLS&&maze[nr][nc]===0){e.row=nr;e.col=nc;moved=true;break;}}}}
+  // collision
+  for(const e of enemies){if(e.row===player.row&&e.col===player.col){
+    game.deaths++;game.shakeT=400;sndBad();
+    const px=MX+player.col*CELL+CELL/2,py=MY+player.row*CELL+CELL/2;
+    spawnBurst(px,py,'220,80,80',18);
+    heldDir=null; // clear held direction so a stale keydown can't re-fire tryMove into the freshly rebuilt maze
+    buildMaze(game.level);
+    return;
+  }}
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndStep=()=>tone(320+Math.random()*20,0.05,'sine',0.03);
+const sndBad=()=>tone(200,0.35,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndUI=()=>tone(440,0.06,'square',0.02);
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='#080608';ctx.fillRect(0,0,W,H);}
+function drawMaze(){for(let r=0;r<MROWS;r++)for(let c=0;c<MCOLS;c++){const x=MX+c*CELL,y=MY+r*CELL;if(maze[r][c]===1){ctx.fillStyle='rgba(30,20,50,.9)';ctx.fillRect(x,y,CELL,CELL);}else{ctx.fillStyle='rgba(14,10,24,.6)';ctx.fillRect(x,y,CELL,CELL);}}
+// exit
+const ex=MX+exit2.col*CELL+CELL/2,ey=MY+exit2.row*CELL+CELL/2;ctx.shadowColor='rgba(80,220,140,.8)';ctx.shadowBlur=18;ctx.fillStyle='rgba(80,220,140,.9)';rr(MX+exit2.col*CELL+4,MY+exit2.row*CELL+4,CELL-8,CELL-8,6);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(0,0,0,.8)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('EXIT',ex,ey);
+// enemies (circle shape = enforcer; distinct from player circle only via color+label, exit is a rounded square — shape+color+label triad for colorblind-safety)
+let nearDanger=0;
+for(const e of enemies){const ex2=MX+e.col*CELL+CELL/2,ey2=MY+e.row*CELL+CELL/2;
+  const dist=Math.abs(e.row-player.row)+Math.abs(e.col-player.col);
+  if(dist<=2&&game.state==='playing')nearDanger=Math.max(nearDanger,dist<=1?1:0.5);
+  ctx.shadowColor='rgba(220,80,80,.7)';ctx.shadowBlur=10;ctx.fillStyle='rgba(180,60,60,.9)';ctx.beginPath();ctx.arc(ex2,ey2,14,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(255,220,220,.95)';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e.label,ex2,ey2+16);}
+game._nearDanger=nearDanger;
+// player
+const px=MX+player.col*CELL+CELL/2,py=MY+player.row*CELL+CELL/2;ctx.shadowColor='rgba(100,200,255,.8)';ctx.shadowBlur=14;ctx.fillStyle='rgba(100,200,255,.9)';ctx.beginPath();ctx.arc(px,py,12,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+// particles
+for(const p of particles){const a=Math.max(0,p.life/p.maxLife);ctx.fillStyle='rgba('+p.color+','+(a*0.9).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,3*a+1,0,Math.PI*2);ctx.fill();}
+}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,3,6,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#c090ff';ctx.font='bold 13px Arial';ctx.fillText('Level '+game.level+' / 10',18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Reach the EXIT — avoid the script enforcers',18,28);
+ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Deaths  '+game.deaths,W-18,8);
+const secs=((game.runMs||0)/1000).toFixed(1);ctx.fillText('Time  '+secs+'s',W-18,26);
+ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+// danger pulse: subtle red vignette warning when an enforcer is within 1-2 cells
+if(game._nearDanger>0){const pulse=(Math.sin(game.time*0.008)+1)/2;const alpha=game._nearDanger*0.22*pulse;const g2=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);g2.addColorStop(0,'rgba(220,40,40,0)');g2.addColorStop(1,'rgba(220,40,40,'+alpha.toFixed(3)+')');ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);}
+}
+function tapButton(){ // pulsing "tap to continue" affordance inside panels
+  const bw=220,bh=44,bx=W/2-bw/2,by=H/2+118;
+  const pulse=(Math.sin(game.time*0.006)+1)/2;
+  ctx.save();
+  ctx.globalAlpha=0.7+pulse*0.3;
+  ctx.fillStyle=lgrad(bx,by,bx,by+bh,[[0,'rgba(160,120,255,.9)'],[1,'rgba(120,80,220,.9)']]);
+  rr(bx,by,bw,bh,12);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;rr(bx+.5,by+.5,bw-1,bh-1,12);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='bold 15px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('TAP TO PLAY',W/2,by+bh/2);
+  ctx.restore();
+}
+function panelDraw(title,lines,showTapBtn){ctx.save();ctx.fillStyle='rgba(4,3,6,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(14,10,26,.97)'],[1,'rgba(8,6,16,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(160,120,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#c090ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+56);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+90;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}ctx.restore();
+if(showTapBtn)tapButton();
+}
+function draw(){try{
+ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+let dx=0,dy=0;if(game.shakeT>0){const m=game.shakeT/400*6;dx=Math.sin(game.time*.06)*m;dy=Math.cos(game.time*.08)*m;}
+ctx.save();ctx.translate(dx,dy);drawBg();
+if(game.state!=='title')drawMaze();
+vignette();
+if(game.state==='playing'||game.state==='paused')drawHUD();
+if(game.state==='title'){
+  panelDraw('Escape the Script',['Navigate the maze to the EXIT.','Avoid the script-enforcer enemies.','10 levels of increasing complexity.','','Your path is yours — not theirs.'],true);
+}else if(game.state==='paused'){
+  panelDraw('Paused',['Take a breath — the enforcers wait.','','Tap the pause button or press Esc to resume.'],false);
+}else if(game.state==='won'){
+  const secs=(game.runMs/1000).toFixed(1);
+  const bestSecs=isFinite(bestTimeMs)?(bestTimeMs/1000).toFixed(1)+'s':'—';
+  const bestD=isFinite(bestDeaths)?bestDeaths:'—';
+  const lines=[
+    'You found your own path through all 10 levels.',
+    'Time: '+secs+'s   Deaths: '+game.deaths+'   Score: '+game.score,
+    'Grade: '+game.grade+(game.improvedTime?'   New best time!':'')+(game.improvedDeaths?'   New best deaths!':''),
+    'Best time: '+bestSecs+'   Best deaths: '+bestD,
+    '',
+    'No script can hold you.'
+  ];
+  panelDraw('Script Escaped! ✓',lines,true);
+}
+ctx.restore();
+}catch(e){}}
+
+// ---- input ----
+let heldDir=null;
+function setPaused(p){
+  if(p&&game.state==='playing'){game.state='paused';game._pauseAt=performance.now();}
+  else if(!p&&game.state==='paused'){game.state='playing';if(game._pauseAt)game.runStart+=performance.now()-game._pauseAt;}
+  btnPause.textContent=game.state==='paused'?'▶':'❚❚';
+  sndUI();
+}
+function togglePause(){setPaused(game.state!=='paused');}
+function toggleMute(){muted=!muted;lsSet('escScript_muted',muted?'1':'0');btnMute.textContent=muted?'🔇':'🔊';if(!muted)sndUI();}
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Escape'){e.preventDefault();togglePause();return;}
+  if(e.code==='KeyM'){toggleMute();return;}
+  if(game.state==='paused')return;
+  if(e.code==='ArrowUp'||e.code==='KeyW'){e.preventDefault();heldDir=[-1,0];tryMove(-1,0);}
+  if(e.code==='ArrowDown'||e.code==='KeyS'){e.preventDefault();heldDir=[1,0];tryMove(1,0);}
+  if(e.code==='ArrowLeft'||e.code==='KeyA'){e.preventDefault();heldDir=[0,-1];tryMove(0,-1);}
+  if(e.code==='ArrowRight'||e.code==='KeyD'){e.preventDefault();heldDir=[0,1];tryMove(0,1);}
+});
+window.addEventListener('keyup',()=>heldDir=null);
+
+let touchStart3=null;
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'){if(game.state==='won'){game.level=1;game.deaths=0;}buildMaze(game.level);return;}
+  if(game.state!=='playing')return;
+  touchStart3={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();if(!touchStart3||game.state!=='playing')return;const dx2=e.changedTouches[0].clientX-touchStart3.x,dy2=e.changedTouches[0].clientY-touchStart3.y;if(Math.abs(dx2)<10&&Math.abs(dy2)<10){touchStart3=null;return;}if(Math.abs(dx2)>Math.abs(dy2)){tryMove(0,dx2>0?1:-1);}else{tryMove(dy2>0?1:-1,0);}touchStart3=null;},{passive:false});
+canvas.addEventListener('mousedown',e=>{e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'){if(game.state==='won'){game.level=1;game.deaths=0;}buildMaze(game.level);}
+});
+
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();});
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnMute.textContent=muted?'🔇':'🔊';
+['touchstart','mousedown'].forEach(ev=>{btnPause.addEventListener(ev,e=>e.stopPropagation());btnMute.addEventListener(ev,e=>e.stopPropagation());});
+
+// ---- aspect-ratio-preserving letterbox resize (avoids CSS stretch distortion) ----
+function resize(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  canvas.style.width=(W*scale)+'px';
+  canvas.style.height=(H*scale)+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get maze(){return maze;},get player(){return player;},get enemies(){return enemies;},get heldDir(){return heldDir;},buildMaze,tryMove,update,draw,resetGame:buildMaze,togglePause,toggleMute,MCOLS,MROWS,CELL};
+</script>
+</body>
+</html>

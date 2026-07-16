@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Pattern Copy</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#030408;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+.ctrlBtn{position:fixed;top:8px;width:42px;height:42px;border-radius:10px;background:rgba(6,10,20,.72);border:1.5px solid rgba(120,160,255,.35);color:#bcd4ff;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;-webkit-tap-highlight-color:transparent;}
+.ctrlBtn:active{background:rgba(80,140,255,.35);}
+#muteBtn{left:8px;}
+#pauseBtn{right:8px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="muteBtn" class="ctrlBtn" aria-label="Mute">🔊</button>
+<button id="pauseBtn" class="ctrlBtn" aria-label="Pause">⏸</button>
+<div id="hint">Watch the pattern light up &middot; then repeat it by clicking the same cells &middot; endless after round 10</div>
+<script>
+'use strict';
+// Pattern Copy (#74)
+// Simon-says style on a 4x4 grid. A pattern lights up; player repeats it.
+// Each round adds one more step. 10 rounds (steps 3→12), then endless mode.
+// Theme: learning your own rhythm — not someone else's beat.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const GRID_N=4,CELL=90,GAP=10;
+const GX=(W-GRID_N*(CELL+GAP))/2,GY=(H-GRID_N*(CELL+GAP))/2;
+const TOTAL=10;
+// 16 unique hues, one per cell (GRID_N*GRID_N) — plus per-cell glyphs as a shape/pattern backup for colorblind accessibility.
+const COLS_PALETTE=['#6080ff','#e060e0','#60d080','#ffa040','#60d0d0','#ff8080','#ffe060','#c0a0ff','#40a0ff','#ff60a0','#a0e060','#ff9060','#20c0a0','#c06080','#e0d040','#8080ff'];
+const CELL_GLYPHS=['●','■','▲','◆','★','✚','◐','⬟','◉','▼','⬢','✦','◒','⬣','✳','◈'];
+
+// localStorage helpers (private browsing can throw)
+function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
+function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
+
+const game={
+  state:'title',time:0,round:0,score:0,best:0,shakeT:0,
+  phase:'show',showIdx:0,showT:0,
+  muted:lsGet('pc_muted','0')==='1',
+  mistakes:0,lives:3,endless:false,streak:0,
+  popups:[],particles:[],
+  transitionT:0,lastInputT:0,rhythmGaps:[]
+};
+game.best=parseInt(lsGet('pc_best','0'),10)||0;
+let sequence=[],playerInput=[],rng,litCell=-1;
+function stepDur(){return Math.max(350,600-game.round*20);} // difficulty ramp: flashes speed up as rounds progress, clamped floor
+function buildRound(r){rng=seeded(r*6007+41);const steps=game.endless?sequence.length+1:3+r;// extend sequence
+while(sequence.length<steps)sequence.push(Math.floor(rng()*GRID_N*GRID_N));playerInput=[];litCell=-1;game.phase='transition';game.transitionT=0;game.showIdx=0;game.showT=0;game.lastInputT=0;game.rhythmGaps=[];}
+function resetGame(){game.round=0;game.score=0;game.shakeT=0;game.mistakes=0;game.lives=3;game.endless=false;game.streak=0;sequence=[];game.popups=[];game.particles=[];buildRound(0);game.state='playing';}
+function addPopup(text,x,y,col){game.popups.push({text,x,y,t:0,col:col||'#7CFFB2'});}
+function addBurst(x,y,col){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*2.4;game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:420+Math.random()*200,col:col||'#7CFFB2'});}}
+function clickCell(idx){
+  if(game.state!=='playing'||game.phase!=='input')return;
+  const now=game.time;
+  if(game.lastInputT>0)game.rhythmGaps.push(now-game.lastInputT);
+  game.lastInputT=now;
+  playerInput.push(idx);sndClick3();
+  if(idx!==sequence[playerInput.length-1]){
+    sndBad();game.shakeT=300;game.mistakes++;game.streak=0;
+    const{x,y}=cellPos(idx);addBurst(x+CELL/2,y+CELL/2,'#ff6060');
+    playerInput=[];
+    if(!game.endless){
+      game.lives--;
+      if(game.lives<=0){
+        setTimeout(()=>{game.state='gameover';sndLose();},450);
+        return;
+      }
+    } else {
+      // endless mode: a mistake ends the run
+      setTimeout(()=>{game.state='gameover';sndLose();},450);
+      return;
+    }
+    setTimeout(()=>{litCell=-1;game.phase='transition';game.transitionT=0;game.showIdx=0;game.showT=0;game.lastInputT=0;},500);
+    return;
+  }
+  if(playerInput.length===sequence.length){
+    // scoring: base + streak bonus + reaction/rhythm consistency bonus + perfect-round bonus
+    game.streak++;
+    let gain=1;
+    if(game.mistakesThisRound===undefined)game.mistakesThisRound=0;
+    const perfect=true; // reached here with no mid-round mistake since last reset
+    if(perfect)gain+=1;
+    if(game.streak>=3)gain+=1;
+    // rhythm bonus: reward consistent (not wildly varying) gaps between clicks
+    if(game.rhythmGaps.length>=2){
+      const avg=game.rhythmGaps.reduce((a,b)=>a+b,0)/game.rhythmGaps.length;
+      const variance=game.rhythmGaps.reduce((a,b)=>a+(b-avg)*(b-avg),0)/game.rhythmGaps.length;
+      const sd=Math.sqrt(variance);
+      if(avg>120&&avg<900&&sd<180)gain+=1; // confident, steady tapping — not rushed, not sluggish
+    }
+    game.score+=gain;
+    if(game.score>game.best){game.best=game.score;lsSet('pc_best',String(game.best));}
+    sndWin2();
+    const{x,y}=cellPos(idx);
+    addPopup('+'+gain,x+CELL/2,y,'#7CFFB2');
+    addBurst(x+CELL/2,y+CELL/2,'#7CFFB2');
+    setTimeout(()=>{
+      game.round++;
+      if(!game.endless&&game.round>=TOTAL){
+        game.endless=true; // after round 10, sequence keeps growing until first mistake
+      }
+      buildRound(game.round);
+    },600);
+  }
+}
+function update(dt){
+  dt=clamp(dt,0,48);game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(const p of game.popups)p.t+=dt;
+  game.popups=game.popups.filter(p=>p.t<900);
+  for(const p of game.particles)p.t+=dt;
+  game.particles=game.particles.filter(p=>p.t<p.life);
+  if(game.state!=='playing')return;
+  const SD=stepDur();
+  if(game.phase==='transition'){
+    game.transitionT+=dt;
+    if(game.transitionT>=280){game.phase='show';game.showT=0;game.showIdx=0;}
+    return;
+  }
+  if(game.phase==='show'){
+    game.showT+=dt;
+    if(game.showT<SD/2){litCell=game.showIdx<sequence.length?sequence[game.showIdx]:-1;}else{litCell=-1;}
+    if(game.showT>=SD){game.showT=0;game.showIdx++;if(game.showIdx>=sequence.length){game.phase='input';litCell=-1;playerInput=[];}}
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndClick3=()=>tone(440+playerInput.length*25,0.08,'sine',0.05);
+const sndBad=()=>tone(200,0.2,'sawtooth',0.05);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndLose=()=>{[300,240,180].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sawtooth',0.05),i*90));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function cellPos(idx){const c=idx%GRID_N,r=Math.floor(idx/GRID_N);return{x:GX+c*(CELL+GAP),y:GY+r*(CELL+GAP)};}
+function cellColor(idx){return COLS_PALETTE[idx%COLS_PALETTE.length];}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#030408'],[1,'#020307']]);ctx.fillRect(0,0,W,H);}
+function drawGrid(){
+  for(let i=0;i<GRID_N*GRID_N;i++){
+    const{x,y}=cellPos(i);const col=cellColor(i);const lit=i===litCell;
+    const playerHit=game.phase==='input'&&playerInput[playerInput.length-1]===i;
+    const alpha=lit?1:playerHit?0.9:0.25;
+    ctx.globalAlpha=alpha;ctx.shadowColor=col+'80';ctx.shadowBlur=lit?16:0;
+    ctx.fillStyle=col;rr(x,y,CELL,CELL,10);ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;
+    ctx.strokeStyle=col+'40';ctx.lineWidth=1.5;rr(x,y,CELL,CELL,10);ctx.stroke();
+    // glyph backup for colorblind accessibility / unique cell identity beyond hue
+    ctx.globalAlpha=lit?1:0.55;
+    ctx.fillStyle=lit?'#03040a':'rgba(255,255,255,.55)';
+    ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(CELL_GLYPHS[i],x+CELL/2,y+CELL/2);
+    ctx.globalAlpha=1;
+  }
+  // round 10 / final-round stakes cue: pulsing gold border around the whole grid
+  if(game.round===TOTAL-1&&!game.endless){
+    const pulse=0.5+0.5*Math.sin(game.time/160);
+    ctx.save();ctx.globalAlpha=0.35+0.35*pulse;ctx.strokeStyle='#ffd24a';ctx.lineWidth=3;
+    rr(GX-8,GY-8,GRID_N*(CELL+GAP)-GAP+16,GRID_N*(CELL+GAP)-GAP+16,16);ctx.stroke();ctx.restore();
+  }
+  if(game.endless){
+    const pulse=0.5+0.5*Math.sin(game.time/120);
+    ctx.save();ctx.globalAlpha=0.3+0.3*pulse;ctx.strokeStyle='#ff60e0';ctx.lineWidth=3;
+    rr(GX-8,GY-8,GRID_N*(CELL+GAP)-GAP+16,GRID_N*(CELL+GAP)-GAP+16,16);ctx.stroke();ctx.restore();
+  }
+}
+function drawPopups(){
+  for(const p of game.popups){
+    const t=p.t/900;ctx.save();ctx.globalAlpha=clamp(1-t,0,1);
+    ctx.fillStyle=p.col;ctx.font='bold 20px Arial';ctx.textAlign='center';
+    ctx.fillText(p.text,p.x,p.y-t*36);
+    ctx.restore();
+  }
+}
+function drawParticles(){
+  for(const p of game.particles){
+    const t=p.t/p.life;ctx.save();ctx.globalAlpha=clamp(1-t,0,1);
+    ctx.fillStyle=p.col;
+    ctx.beginPath();ctx.arc(p.x+p.vx*p.t*0.06,p.y+p.vy*p.t*0.06,3*(1-t)+1,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+function drawHUD(){
+  ctx.save();ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';
+  const roundLabel=game.endless?('Endless — Round '+(game.round+1)):('Round '+(game.round+1)+' / '+TOTAL);
+  ctx.fillText('Pattern Copy — '+roundLabel,18,8);
+  ctx.fillStyle='rgba(234,242,246,.55)';ctx.font='11px Arial';
+  let msg;
+  if(game.phase==='transition')msg='Get ready...';
+  else if(game.phase==='show')msg='Watch the pattern...';
+  else msg='Repeat it! ('+playerInput.length+' / '+sequence.length+')';
+  if(game.phase==='transition'){
+    const pulse=0.5+0.5*Math.sin(game.time/90);
+    ctx.save();ctx.globalAlpha=0.6+0.4*pulse;ctx.fillText(msg,18,28);ctx.restore();
+  } else {
+    ctx.fillText(msg,18,28);
+  }
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.55)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-56,8);
+  ctx.fillText((game.endless?'Endless mode':'Lives '+'♥'.repeat(Math.max(0,game.lives))+'♡'.repeat(Math.max(0,3-game.lives)))+'  Streak '+game.streak,W-56,28);
+  ctx.restore();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    // screen shake wired into actual canvas translation
+    if(game.shakeT>0){
+      const mag=(game.shakeT/300)*6;
+      ctx.translate((Math.random()-0.5)*mag,(Math.random()-0.5)*mag);
+    }
+    drawBg();
+    if(game.state!=='title')drawGrid();
+    if(game.state==='playing'){drawParticles();drawPopups();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title')panelDraw('Pattern Copy',['Coloured, shaped cells flash in sequence — remember it.','Then click them in the same order.','Wrong? You lose a life (3 total).','10 rounds, then endless mode until your first mistake.','','Learn your own rhythm.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('All Remembered! ✓',['Score: '+game.score,'Best: '+game.best,'','You kept your own rhythm through '+TOTAL+' rounds.','Endless mode unlocked — click to keep going.','','Click / tap to continue.']);
+    else if(game.state==='gameover')panelDraw('Round Over',['Score: '+game.score,'Best: '+game.best,'Rounds reached: '+(game.round+1),'Mistakes: '+game.mistakes,'','Every rhythm has its own pace.','','Click / tap to try again.']);
+    if(game.state==='paused')panelDraw('Paused',['Take a breath.','','Click / tap resume, or press P.']);
+    ctx.restore();
+  }catch(e){}
+}
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';}
+  else if(game.state==='paused'){game.state='playing';}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('pc_muted',game.muted?'1':'0');
+  updateBtnLabels();
+}
+function updateBtnLabels(){
+  const mb=document.getElementById('muteBtn');if(mb)mb.textContent=game.muted?'🔇':'🔊';
+  const pb=document.getElementById('pauseBtn');if(pb)pb.textContent=game.state==='paused'?'▶':'⏸';
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height)return; // defensive guard: canvas layout not settled yet
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused'){return;}
+  if(game.state!=='playing')return;
+  // find clicked cell
+  for(let i=0;i<GRID_N*GRID_N;i++){const{x,y}=cellPos(i);if(px>=x&&px<=x+CELL&&py>=y&&py<=y+CELL){clickCell(i);return;}}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'){togglePause();updateBtnLabels();}
+  if(e.key==='m'||e.key==='M'){toggleMute();}
+});
+const muteBtnEl=document.getElementById('muteBtn');
+const pauseBtnEl=document.getElementById('pauseBtn');
+if(muteBtnEl)muteBtnEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+if(pauseBtnEl)pauseBtnEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();updateBtnLabels();});
+if(muteBtnEl)muteBtnEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+if(pauseBtnEl)pauseBtnEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();updateBtnLabels();},{passive:false});
+updateBtnLabels();
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get sequence(){return sequence;},get playerInput(){return playerInput;},get litCell(){return litCell;},resetGame,buildRound,clickCell,cellPos,update,draw,togglePause,toggleMute,TOTAL,GRID_N,CELL};
+</script>
+</body>
+</html>

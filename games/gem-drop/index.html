@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Gem Drop</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#060a12;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;right:10px;top:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(120,160,220,.4);background:rgba(10,14,28,.75);color:#cfe0ff;font-size:18px;line-height:1;-webkit-tap-highlight-color:transparent;}
+#ctrls button:active{background:rgba(60,100,180,.5);}
+#touchpad{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:10px;padding:8px;z-index:5;pointer-events:none;}
+#touchpad button{pointer-events:auto;min-width:52px;min-height:52px;border-radius:12px;border:1px solid rgba(120,160,220,.4);background:rgba(10,14,28,.65);color:#cfe0ff;font-size:16px;-webkit-tap-highlight-color:transparent;}
+#touchpad button:active{background:rgba(60,100,180,.5);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" title="Mute">🔊</button>
+  <button id="btnPause" title="Pause">⏸</button>
+</div>
+<div id="touchpad">
+  <button id="tLeft">◀</button>
+  <button id="tRot">⟳</button>
+  <button id="tDrop">⬇</button>
+  <button id="tHard">⤓</button>
+  <button id="tRight">▶</button>
+</div>
+<div id="hint">← → move &middot; Space / up: rotate &middot; Down: fast drop &middot; Shift: hard drop &middot; C: hold &middot; P pause &middot; M mute</div>
+<script>
+'use strict';
+// Gem Drop (#27) — Tetris-style falling pairs of gems
+// Drop coloured gem pairs; match 3+ same-colour in a row/col to clear.
+// Theme: collecting your own joys, discarding what doesn't fit.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const COLS=8,ROWS=14,CELL=34;
+const GX=(W-COLS*CELL)/2-60,GY=H-ROWS*CELL-30;
+const COLORS=['#5be0b0','#ffd560','#6090ff','#c070f0','#f07070','#80e870'];
+const LABELS=['rest','joy','peace','agency','focus','growth'];
+const GLYPHS=['R','J','P','A','F','G'];
+const LINES_TO_WIN=60;
+// ---- persistence ----
+function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
+function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
+const game={state:'title',time:0,score:0,best:0,level:1,lines:0,shakeT:0,combo:0,muted:false};
+game.best=parseInt(lsGet('gemdrop_best','0'),10)||0;
+game.muted=lsGet('gemdrop_muted','0')==='1';
+let grid,pair,next,hold=null,canHold=true,fallT=0,FALL_MS=600,rng;
+function makeGrid(){return Array.from({length:ROWS},()=>Array(COLS).fill(null));}
+function newRng(){rng=seeded(game.score+game.level*9973+Math.floor(game.time));}
+function randGem(){return Math.floor(rng()*COLORS.length);}
+function newPair(){pair={c:[randGem(),randGem()],col:Math.floor(COLS/2)-1,row:-1,rot:0};}
+function resetGame(){grid=makeGrid();newRng();newPair();next=[randGem(),randGem()];hold=null;canHold=true;game.score=0;game.level=1;game.lines=0;game.combo=0;game.shakeT=0;game.state='playing';fallT=0;FALL_MS=600;}
+// rotation: rot=0 vertical (top=c[0], bot=c[1]); rot=1 horizontal (left=c[0], right=c[1])
+function pairCells(){if(pair.rot===0)return[[pair.row,pair.col],[pair.row+1,pair.col]];return[[pair.row,pair.col],[pair.row,pair.col+1]];}
+function canPlace(cells){for(const[r,c]of cells){if(c<0||c>=COLS||r>=ROWS)return false;if(r>=0&&grid[r][c]!==null)return false;}return true;}
+function lock(){const cells=pairCells();let ok=true;for(const[r,c]of cells){if(r<0){ok=false;break;}}if(!ok){game.state='gameover';if(game.score>game.best){game.best=game.score;lsSet('gemdrop_best',String(game.best));}return;}cells.forEach(([r,c],i)=>{grid[r][c]=pair.c[i];});canHold=true;clearMatches();spawnNext();}
+function spawnNext(){pair={c:next,col:Math.floor(COLS/2)-1,row:-1,rot:0};next=[randGem(),randGem()];fallT=0;if(!canPlace(pairCells())){game.state='gameover';if(game.score>game.best){game.best=game.score;lsSet('gemdrop_best',String(game.best));}}}
+function clearMatches(){let cleared=0;let changed=true;while(changed){changed=false;const mark=Array.from({length:ROWS},()=>Array(COLS).fill(false));for(let r=0;r<ROWS;r++){for(let c=0;c<COLS;c++){if(grid[r][c]===null)continue;// horiz
+if(c+2<COLS&&grid[r][c]===grid[r][c+1]&&grid[r][c]===grid[r][c+2]){let e=c+2;while(e+1<COLS&&grid[r][e+1]===grid[r][c])e++;for(let x=c;x<=e;x++)mark[r][x]=true;}// vert
+if(r+2<ROWS&&grid[r][c]===grid[r+1][c]&&grid[r][c]===grid[r+2][c]){let e=r+2;while(e+1<ROWS&&grid[e+1][c]===grid[r][c])e++;for(let y=r;y<=e;y++)mark[y][c]=true;}}}let count=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(mark[r][c]){grid[r][c]=null;count++;changed=true;}cleared+=count;}
+if(cleared){game.combo++;const comboMult=Math.min(4,1+0.25*(game.combo-1));game.score+=Math.round(cleared*10*game.level*comboMult);game.lines+=cleared;game.level=1+Math.floor(game.lines/20);FALL_MS=Math.max(120,600-game.level*50);game.shakeT=Math.min(220,120+cleared*8);sndClear();
+if(game.lines>=LINES_TO_WIN){game.state='won';if(game.score>game.best){game.best=game.score;lsSet('gemdrop_best',String(game.best));}sndWin();}
+}else{game.combo=0;}
+// gravity
+dropDown();}
+function dropDown(){let moved=true;while(moved){moved=false;for(let r=ROWS-2;r>=0;r--)for(let c=0;c<COLS;c++)if(grid[r][c]!==null&&grid[r+1][c]===null){grid[r+1][c]=grid[r][c];grid[r][c]=null;moved=true;}}}
+function moveLeft(){pair.col--;if(!canPlace(pairCells()))pair.col++;}
+function moveRight(){pair.col++;if(!canPlace(pairCells()))pair.col--;}
+function rotate(){const old=pair.rot;pair.rot=(pair.rot+1)%2;if(pair.rot===1&&pair.col+1>=COLS)pair.col--;if(!canPlace(pairCells()))pair.rot=old;}
+function fastDrop(){pair.row++;if(!canPlace(pairCells())){pair.row--;lock();}else{game.score+=1;}}
+function hardDrop(){let moved=0;while(true){pair.row++;if(!canPlace(pairCells())){pair.row--;break;}moved++;}game.score+=moved*2;sndHard();lock();}
+function holdSwap(){if(!canHold||game.state!=='playing')return;canHold=false;const cur={c:[pair.c[0],pair.c[1]]};if(hold===null){hold=cur;spawnNext();}else{const h=hold;hold=cur;pair={c:h.c,col:Math.floor(COLS/2)-1,row:-1,rot:0};fallT=0;if(!canPlace(pairCells())){game.state='gameover';if(game.score>game.best){game.best=game.score;lsSet('gemdrop_best',String(game.best));}}}}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndMove=()=>tone(320,0.05,'sine',0.04);
+const sndLock=()=>tone(260,0.1,'sine',0.05);
+const sndHard=()=>tone(180,0.09,'square',0.05);
+const sndClear=()=>{[440,550,660].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function update(dt){dt=clamp(dt,0,48);game.time+=dt;if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);if(game.state!=='playing')return;fallT+=dt;if(fallT>=FALL_MS){fallT=0;pair.row++;if(!canPlace(pairCells())){pair.row--;sndLock();lock();}}}
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawGem(x,y,ci){if(ci===null)return;const col=COLORS[ci];ctx.shadowColor=col;ctx.shadowBlur=6;const g=ctx.createRadialGradient(x+CELL*0.35,y+CELL*0.3,2,x+CELL/2,y+CELL/2,CELL*0.48);g.addColorStop(0,'rgba(255,255,255,.5)');g.addColorStop(0.4,col);g.addColorStop(1,'rgba(0,0,0,.4)');ctx.fillStyle=g;rr(x+3,y+3,CELL-6,CELL-6,7);ctx.fill();ctx.shadowBlur=0;
+ctx.fillStyle='rgba(10,14,24,.55)';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(GLYPHS[ci],x+CELL/2,y+CELL/2+1);}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#060a12'],[1,'#030609']]);ctx.fillRect(0,0,W,H);}
+function drawGrid2(){ctx.fillStyle='rgba(12,18,30,.88)';rr(GX-4,GY-4,COLS*CELL+8,ROWS*CELL+8,8);ctx.fill();ctx.strokeStyle='rgba(40,60,100,.5)';ctx.lineWidth=1;rr(GX-4,GY-4,COLS*CELL+8,ROWS*CELL+8,8);ctx.stroke();
+// near-topout warning: flash top rows when stack reaches close to spawn row
+let maxHeight=0;for(let c=0;c<COLS;c++){for(let r=0;r<ROWS;r++){if(grid[r][c]!==null){maxHeight=Math.max(maxHeight,ROWS-r);break;}}}
+if(maxHeight>=ROWS-3){const pulse=0.15+0.15*Math.abs(Math.sin(game.time/180));ctx.fillStyle='rgba(255,60,60,'+pulse.toFixed(3)+')';ctx.fillRect(GX-4,GY-4,COLS*CELL+8,3*CELL);}
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const x=GX+c*CELL,y=GY+r*CELL;ctx.strokeStyle='rgba(20,35,60,.4)';ctx.lineWidth=0.5;ctx.strokeRect(x,y,CELL,CELL);drawGem(x,y,grid[r][c]);}
+// falling pair
+if(pair&&game.state==='playing'){const cells=pairCells();cells.forEach(([r,c],i)=>{if(r>=0)drawGem(GX+c*CELL,GY+r*CELL,pair.c[i]);});}}
+function drawNext(){const nx=GX+COLS*CELL+24,ny=GY+40;ctx.fillStyle='rgba(12,18,30,.7)';rr(nx,ny,80,110,8);ctx.fill();ctx.fillStyle='rgba(200,220,255,.4)';ctx.font='10px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('NEXT',nx+40,ny+6);drawGem(nx+23,ny+28,next[0]);drawGem(nx+23,ny+28+CELL,next[1]);
+const hy=ny+130;ctx.fillStyle='rgba(12,18,30,.7)';rr(nx,hy,80,90,8);ctx.fill();ctx.fillStyle='rgba(200,220,255,.4)';ctx.font='10px Arial';ctx.fillText('HOLD',nx+40,hy+6);if(hold){drawGem(nx+23,hy+28,hold.c[0]);drawGem(nx+23,hy+28+CELL,hold.c[1]);}}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(3,6,12,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#60c0ff';ctx.font='bold 13px Arial';ctx.fillText('Level '+game.level,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Lines: '+game.lines+' / '+LINES_TO_WIN,18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('SCORE',W/2,8);ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('BEST  '+game.best,W-18,8);if(game.combo>1){ctx.fillStyle='#ff9060';ctx.font='bold 11px Arial';ctx.fillText('COMBO x'+game.combo,W-18,28);}ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(3,5,10,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(10,14,28,.97)'],[1,'rgba(6,9,18,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+let sx=0,sy=0;if(game.shakeT>0){const mag=Math.min(6,game.shakeT/24);sx=(Math.random()*2-1)*mag;sy=(Math.random()*2-1)*mag;}
+ctx.translate(sx,sy);
+drawBg();if(game.state!=='title'){drawGrid2();drawNext();}vignette();if(game.state==='playing'||game.state==='paused')drawHUD();if(game.state==='title')panelDraw('Gem Drop',['Drop gem pairs; match 3+ same colour to clear.','← → move  |  Up/Space rotate  |  Down fast-drop  |  Shift hard-drop','C hold  |  Reach '+LINES_TO_WIN+' lines to win.','','Keep what fits your life — drop what does not.','','Click / tap to begin.']);else if(game.state==='paused')panelDraw('Paused',['Breathe.','','Press P to resume.']);else if(game.state==='won')panelDraw('You Win',['Score: '+game.score+'  Best: '+game.best,'Lines: '+game.lines,'','You kept what mattered.','','Click / tap to play again.']);else if(game.state==='gameover')panelDraw('Game Over',['Score: '+game.score+'  Best: '+game.best,'Level: '+game.level+'  Lines: '+game.lines,'','Every jam is a chance to reassemble.','','Click / tap to try again.']);ctx.restore();}catch(e){}}
+let keys={};
+function togglePause(){if(game.state==='playing')game.state='paused';else if(game.state==='paused')game.state='playing';}
+function toggleMute(){game.muted=!game.muted;lsSet('gemdrop_muted',game.muted?'1':'0');const b=document.getElementById('btnMute');if(b)b.textContent=game.muted?'🔇':'🔊';}
+window.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyP'){e.preventDefault();togglePause();return;}if(e.code==='KeyM'){e.preventDefault();toggleMute();return;}if(game.state!=='playing')return;if(e.code==='ArrowLeft'){e.preventDefault();moveLeft();sndMove();}if(e.code==='ArrowRight'){e.preventDefault();moveRight();sndMove();}if(e.code==='ArrowUp'||e.code==='Space'){e.preventDefault();rotate();}if(e.code==='ArrowDown'){e.preventDefault();fastDrop();}if(e.code==='ShiftLeft'||e.code==='ShiftRight'){e.preventDefault();hardDrop();}if(e.code==='KeyC'){e.preventDefault();holdSwap();}});
+window.addEventListener('keyup',e=>{keys[e.code]=false;});
+let touchStart=null;
+canvas.addEventListener('touchstart',e=>{e.preventDefault();touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='gameover'||game.state==='won'){resetGame();}},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();if(!touchStart||game.state!=='playing')return;const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;if(Math.abs(dx)>Math.abs(dy)){if(dx<-30){moveLeft();sndMove();}else if(dx>30){moveRight();sndMove();}}else{if(dy<-30)rotate();else if(dy>30)fastDrop();}touchStart=null;},{passive:false});
+canvas.addEventListener('mousedown',e=>{e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='gameover'||game.state==='won'){resetGame();}});
+// on-screen controls
+function btn(id,fn){const el=document.getElementById(id);if(!el)return;el.addEventListener('touchstart',e=>{e.preventDefault();fn();},{passive:false});el.addEventListener('click',e=>{e.preventDefault();fn();});}
+btn('btnPause',()=>{togglePause();});
+btn('btnMute',()=>{toggleMute();});
+btn('tLeft',()=>{if(game.state==='playing'){moveLeft();sndMove();}});
+btn('tRight',()=>{if(game.state==='playing'){moveRight();sndMove();}});
+btn('tRot',()=>{if(game.state==='playing')rotate();});
+btn('tDrop',()=>{if(game.state==='playing')fastDrop();});
+btn('tHard',()=>{if(game.state==='playing')hardDrop();});
+(function initMuteLabel(){const b=document.getElementById('btnMute');if(b)b.textContent=game.muted?'🔇':'🔊';})();
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get grid(){return grid;},get pair(){return pair;},get hold(){return hold;},resetGame,clearMatches,dropDown,moveLeft,moveRight,rotate,fastDrop,hardDrop,holdSwap,update,draw,keys,COLS,ROWS,CELL,COLORS};
+</script>
+</body>
+</html>

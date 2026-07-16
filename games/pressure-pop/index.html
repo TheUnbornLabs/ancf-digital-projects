@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Pressure Pop</title>
+<style>
+  :root{--bg:#0d1022;--panel:rgba(10,14,28,.86);--line:rgba(255,255,255,.16);--text:#f3f1ff;--accent:#7fe3ff;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#06070f;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 18%,#1a2150,#06070f 72%);}
+  canvas{width:100vw;height:100vh;display:block;background:#0d1022;image-rendering:auto;cursor:crosshair;}
+  #controls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+  #controls button{width:42px;height:42px;border-radius:10px;border:1px solid rgba(127,227,255,0.35);
+    background:rgba(8,12,26,0.78);color:#dff6ff;font-size:18px;cursor:pointer;pointer-events:auto;touch-action:manipulation;}
+  #controls button:active{background:rgba(127,227,255,0.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="controls">
+  <button id="btnMute" aria-label="Toggle sound" title="Toggle sound">&#128266;</button>
+  <button id="btnPause" aria-label="Pause" title="Pause">&#10074;&#10074;</button>
+</div>
+<script>
+'use strict';
+
+// =========================================================
+// Pressure Pop  -  ANCF 100 HTML Games (#5)
+// Single-file HTML5 canvas bubble-shooter.
+// Match colored bubbles to pop clusters of intrusive
+// pressure-questions. Theme: deflecting nosy questions
+// with grace. Bubbles are myths/pressures, never people.
+// No external libraries. Canvas + Web Audio, all inline.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const TAU = Math.PI*2;
+
+function seeded(seed){let s=(seed*928371+17)>>>0; return ()=>{s=(s*1664525+1013904223)>>>0; return s/4294967296;};}
+
+const R = 24;
+const COLS = 15;
+const ROW_H = Math.round(R*2*0.866);
+const GRID_X = 60;
+const GRID_TOP = 70;
+const BOTTOM_LINE = H - 64;
+
+const COLORS = [
+  {key:'rose',  base:'#ff6f91', hi:'#ffc2d2', lo:'#c63f63', label:'When kids?'},
+  {key:'amber', base:'#ffb14e', hi:'#ffe0a8', lo:'#c97e1e', label:"You'll regret it"},
+  {key:'teal',  base:'#36d1c4', hi:'#aef4ee', lo:'#149a8f', label:'Who cares for you?'},
+  {key:'violet',base:'#9d7bff', hi:'#d8c8ff', lo:'#6a47d6', label:'Selfish?'},
+  {key:'sky',   base:'#52a8ff', hi:'#bcdcff', lo:'#246fcf', label:"It's different yours"},
+  {key:'lime',  base:'#8fd64a', hi:'#d7f3a8', lo:'#5fa11f', label:'Settle down?'}
+];
+const SHORT = {rose:'kids?', amber:'regret', teal:'who?', violet:'selfish?', sky:'yours', lime:'settle?'};
+
+const REFRAMES = [
+  'A full life needs no permission.',
+  '"No" is a complete sentence.',
+  'My plans are not public property.',
+  'Curiosity is not consent to answer.',
+  'I get to choose what I share.',
+  'Peace is a valid life plan.',
+  'Care has many forms.',
+  'My time is my own.',
+  'Different is not lesser.',
+  'I can let that question pass.'
+];
+
+const input = { mx:W/2, my:H/2, aiming:true, firePressed:false };
+
+const game = {
+  state:'title',
+  level:1, maxLevel:8,
+  score:0, best:0,
+  time:0,
+  shots:0,
+  descendTimer:0,
+  descendEvery:7.0,
+  descendCount:0,
+  offsetRows:0,
+  reframe:'', reframeT:0,
+  shake:0,
+  msg:'', msgT:0,
+  colorsInPlay:3,
+  combo:0, bestCombo:0,
+  clustersPopped:0,
+  muted:false,
+  danger:0
+};
+
+const MAX_GRID_ROWS = 40;
+const MAX_DESCENDS_PER_LEVEL = 24;
+
+const grid = { cells:[], rows:0 };
+
+let flight = null;
+let nextColor = null;
+let launcher = { x:W/2, y:H-40, angle:-Math.PI/2 };
+const particles = [];
+const scorePopups = [];
+let shootRng = Math.random;
+let gameRng = Math.random;
+
+function loadBest(){
+  try{
+    const v = localStorage.getItem('pressurePopBest');
+    if(v!==null){ const n=parseInt(v,10); if(!isNaN(n)) game.best = n; }
+  }catch(e){}
+}
+function saveBest(){
+  try{ localStorage.setItem('pressurePopBest', String(game.best)); }catch(e){}
+}
+function loadMuted(){
+  try{
+    const v = localStorage.getItem('pressurePopMuted');
+    game.muted = (v==='1');
+  }catch(e){}
+}
+function saveMuted(){
+  try{ localStorage.setItem('pressurePopMuted', game.muted ? '1':'0'); }catch(e){}
+}
+
+let actx = null;
+function audio(){ if(actx) return actx; try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; } return actx; }
+function blip(freq, dur, type, vol){
+  if(game.muted) return;
+  const a = audio(); if(!a) return;
+  try{
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    g.gain.value=0.0001;
+    o.connect(g); g.connect(a.destination);
+    const t=a.currentTime;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||0.18,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.16));
+    o.start(t); o.stop(t+(dur||0.16)+0.02);
+  }catch(e){}
+}
+function sShoot(){ blip(520,0.10,'triangle',0.14); }
+function sPop(n){ const f=380+Math.min(n,8)*60; blip(f,0.16,'sine',0.18); blip(f*1.5,0.12,'sine',0.10); }
+function sDrop(){ blip(200,0.22,'sawtooth',0.10); }
+function sWin(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,0.22,'triangle',0.16),i*120)); }
+function sLose(){ [330,247,196,147].forEach((f,i)=>setTimeout(()=>blip(f,0.26,'sawtooth',0.12),i*120)); }
+
+function rowCols(r){ return ((r & 1) === 0) ? COLS : COLS-1; }
+function cellCenter(r, c){
+  const odd = (r & 1) === 1;
+  const x = GRID_X + c*(R*2) + (odd ? R : 0);
+  const y = GRID_TOP + (r + game.offsetRows) * ROW_H;
+  return {x,y};
+}
+function inBounds(r,c){
+  if(r<0 || r>=grid.cells.length) return false;
+  if(c<0 || c>=rowCols(r)) return false;
+  return true;
+}
+function cellAt(r,c){ return inBounds(r,c) ? grid.cells[r][c] : null; }
+function neighbors(r,c){
+  const odd = (r & 1) === 1;
+  const list = odd
+    ? [[0,-1],[0,1],[-1,0],[-1,1],[1,0],[1,1]]
+    : [[0,-1],[0,1],[-1,-1],[-1,0],[1,-1],[1,0]];
+  const out=[];
+  for(const [dr,dc] of list){
+    const nr=r+dr, nc=c+dc;
+    if(inBounds(nr,nc)) out.push([nr,nc]);
+  }
+  return out;
+}
+function pointToCell(x,y){
+  let r = Math.round((y - GRID_TOP)/ROW_H) - game.offsetRows;
+  if(r<0) r=0;
+  const odd = (r & 1) === 1;
+  let c = Math.round((x - GRID_X - (odd?R:0))/(R*2));
+  c = clamp(c, 0, rowCols(r)-1);
+  return {r,c};
+}
+function clusterAt(r,c){
+  const start = cellAt(r,c);
+  if(!start) return [];
+  const color = start.color;
+  const seen = new Set();
+  const key = (rr,cc)=>rr+'_'+cc;
+  const stack=[[r,c]]; const out=[];
+  seen.add(key(r,c));
+  while(stack.length){
+    const [cr,cc]=stack.pop();
+    const cell=cellAt(cr,cc);
+    if(!cell || cell.color!==color) continue;
+    out.push([cr,cc]);
+    for(const [nr,nc] of neighbors(cr,cc)){
+      if(seen.has(key(nr,nc))) continue;
+      const nb=cellAt(nr,nc);
+      if(nb && nb.color===color){ seen.add(key(nr,nc)); stack.push([nr,nc]); }
+    }
+  }
+  return out;
+}
+function countCells(){
+  let n=0;
+  for(const row of grid.cells) for(const c of row) if(c) n++;
+  return n;
+}
+function findFloating(){
+  const anchored = new Set();
+  const key=(r,c)=>r+'_'+c;
+  const stack=[];
+  if(grid.cells[0]) for(let c=0;c<grid.cells[0].length;c++){
+    if(grid.cells[0][c]){ stack.push([0,c]); anchored.add(key(0,c)); }
+  }
+  while(stack.length){
+    const [r,c]=stack.pop();
+    for(const [nr,nc] of neighbors(r,c)){
+      if(anchored.has(key(nr,nc))) continue;
+      if(cellAt(nr,nc)){ anchored.add(key(nr,nc)); stack.push([nr,nc]); }
+    }
+  }
+  const floating=[];
+  for(let r=0;r<grid.cells.length;r++){
+    for(let c=0;c<grid.cells[r].length;c++){
+      if(grid.cells[r][c] && !anchored.has(key(r,c))) floating.push([r,c]);
+    }
+  }
+  return floating;
+}
+
+function makeCell(r,c,colorKey){
+  const ctr = cellCenter(r,c);
+  return { r, c, color:colorKey, x:ctr.x, y:ctr.y, pop:false, popT:0, fall:false, vy:0, alive:true };
+}
+
+function buildBoard(level, seedOverride){
+  const rng = seeded(seedOverride!==undefined ? seedOverride : (level*101+7));
+  game.colorsInPlay = clamp(2 + level, 3, COLORS.length);
+  const startRows = clamp(4 + Math.floor(level/2), 4, 9);
+  grid.cells = [];
+  for(let r=0;r<startRows;r++){
+    const cols = rowCols(r);
+    const row = [];
+    for(let c=0;c<cols;c++){
+      if(r>=3 && rng() < 0.14){ row.push(null); continue; }
+      const ci = Math.floor(rng()*game.colorsInPlay);
+      row.push(makeCell(r,c,COLORS[ci].key));
+    }
+    grid.cells.push(row);
+  }
+  grid.rows = startRows;
+  game.offsetRows = 0;
+  nextColor = pickAvailableColor(rng);
+  return grid;
+}
+
+function pickAvailableColor(rng){
+  const present = new Set();
+  for(const row of grid.cells) for(const c of row) if(c) present.add(c.color);
+  const pool = COLORS.slice(0, game.colorsInPlay).filter(c=>present.has(c.key));
+  const arr = pool.length ? pool : COLORS.slice(0, game.colorsInPlay);
+  const idx = Math.floor((rng?rng():Math.random())*arr.length);
+  return arr[idx].key;
+}
+
+function shootBubble(angleOverride){
+  if(flight) return false;
+  if(game.state!=='playing') return false;
+  const ang = (angleOverride!==undefined) ? angleOverride : launcher.angle;
+  const speed = 560;
+  flight = {
+    x:launcher.x, y:launcher.y - 6,
+    vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+    color:nextColor, r:R
+  };
+  game.shots++;
+  nextColor = pickAvailableColor(shootRng);
+  sShoot();
+  return true;
+}
+
+const MATCH_MIN = 3;
+
+function ensureRow(r){
+  while(grid.cells.length <= r){
+    const idx = grid.cells.length;
+    grid.cells.push(new Array(rowCols(idx)).fill(null));
+  }
+  grid.rows = grid.cells.length;
+}
+
+function findEmptyNear(r,c,x,y){
+  ensureRow(r);
+  c = clamp(c,0,rowCols(r)-1);
+  if(!cellAt(r,c)) return {r,c};
+  let best=null, bestD=Infinity;
+  ensureRow(r+1);
+  const cands=[[r,c],...neighbors(r,c)];
+  for(let nc=0;nc<rowCols(r+1);nc++) cands.push([r+1,nc]);
+  for(const [nr,nc] of cands){
+    ensureRow(nr);
+    if(!inBounds(nr,nc)) continue;
+    if(cellAt(nr,nc)) continue;
+    const ctr=cellCenter(nr,nc);
+    const d=(ctr.x-x)**2+(ctr.y-y)**2;
+    if(d<bestD){ bestD=d; best={r:nr,c:nc}; }
+  }
+  return best || {r,c};
+}
+
+function snapFlight(){
+  if(!flight) return;
+  const {r,c} = pointToCell(flight.x, flight.y);
+  const target = findEmptyNear(r,c, flight.x, flight.y);
+  ensureRow(target.r);
+  const col = flight.color;
+  grid.cells[target.r][target.c] = makeCell(target.r, target.c, col);
+  flight = null;
+  const cluster = clusterAt(target.r, target.c);
+  if(cluster.length >= MATCH_MIN){
+    popCluster(cluster, col);
+    const floating = findFloating();
+    if(floating.length){ dropCells(floating); sDrop(); }
+    showReframe();
+  } else {
+    game.combo = 0;
+    blip(300,0.08,'sine',0.10);
+  }
+  afterTurn();
+}
+
+function popCluster(cluster, color){
+  let gained = 0;
+  let cx=0, cy=0, n=0;
+  for(const [r,c] of cluster){
+    const cell = cellAt(r,c);
+    if(!cell) continue;
+    spawnPop(cell.x, cell.y, color || cell.color);
+    cx+=cell.x; cy+=cell.y; n++;
+    grid.cells[r][c] = null;
+    gained += 10;
+  }
+  const bonus = Math.max(0, cluster.length-3)*15;
+  game.combo = Math.max(0, game.combo)+1;
+  game.bestCombo = Math.max(game.bestCombo, game.combo);
+  const comboMult = 1 + Math.max(0, game.combo-1)*0.25;
+  const total = Math.round((gained + bonus) * comboMult);
+  game.score += total;
+  game.clustersPopped++;
+  game.shake = Math.min(10, 4 + cluster.length);
+  if(n){ spawnScorePopup(cx/n, cy/n, total, game.combo); }
+  sPop(cluster.length);
+  return total;
+}
+
+function dropCells(cells){
+  for(const [r,c] of cells){
+    const cell = cellAt(r,c);
+    if(!cell) continue;
+    spawnDrop(cell.x, cell.y, cell.color);
+    grid.cells[r][c]=null;
+    game.score += 20;
+  }
+}
+
+function spawnPop(x,y,colorKey){
+  const col = COLORS.find(c=>c.key===colorKey) || COLORS[0];
+  for(let i=0;i<10;i++){
+    const a=gameRng()*TAU, sp=60+gameRng()*160;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0.5+gameRng()*0.4,t:0,col:col.base,colorKey:col.key,r:2+gameRng()*4,kind:'spark'});
+  }
+}
+function spawnDrop(x,y,colorKey){
+  const col = COLORS.find(c=>c.key===colorKey) || COLORS[0];
+  particles.push({x,y,vx:(gameRng()-0.5)*40,vy:40,life:1.1,t:0,col:col.base,colorKey:col.key,r:R*0.8,kind:'fall'});
+}
+function spawnScorePopup(x,y,amount,combo){
+  scorePopups.push({x,y,amount,combo,t:0,life:0.9});
+}
+function showReframe(){
+  game.reframe = REFRAMES[Math.floor(gameRng()*REFRAMES.length)];
+  game.reframeT = 2.2;
+}
+
+function setState(s){ game.state = s; }
+
+function reset(){
+  game.level = 1;
+  game.score = 0;
+  game.shots = 0;
+  game.time = 0;
+  game.offsetRows = 0;
+  game.reframe=''; game.reframeT=0;
+  game.shake=0;
+  game.descendTimer=0;
+  game.descendEvery = 7.0;
+  game.descendCount = 0;
+  game.combo = 0; game.bestCombo = 0;
+  game.clustersPopped = 0;
+  particles.length = 0;
+  scorePopups.length = 0;
+  flight = null;
+  shootRng = seeded(12345);
+  gameRng = seeded(6789);
+  buildBoard(game.level, game.level*101+7);
+  launcher.angle = -Math.PI/2;
+  game.state = 'playing';
+  return grid;
+}
+
+function startLevel(level){
+  game.level = level;
+  game.offsetRows = 0;
+  game.descendTimer = 0;
+  game.descendCount = 0;
+  game.descendEvery = clamp(7.0 - (level-1)*0.5, 2.2, 7.0);
+  particles.length = 0;
+  flight = null;
+  buildBoard(level, level*101+7);
+  game.state = 'playing';
+}
+
+// Lowest occupied cell bottom edge; if below the line -> game over.
+function lowestY(){
+  let maxY = -Infinity;
+  for(let r=0;r<grid.cells.length;r++){
+    for(let c=0;c<grid.cells[r].length;c++){
+      if(grid.cells[r][c]){
+        const y = cellCenter(r,c).y + R;
+        if(y>maxY) maxY=y;
+      }
+    }
+  }
+  return maxY;
+}
+
+// Called after each shot resolves: check win / lose.
+function updateBest(){
+  if(game.score > game.best){
+    game.best = game.score;
+    saveBest();
+  }
+}
+
+function afterTurn(){
+  if(countCells() === 0){
+    updateBest();
+    if(game.level >= game.maxLevel){
+      game.state = 'win';
+      game.msg = 'All pressure cleared!';
+    } else {
+      game.state = 'levelComplete';
+      game.msg = 'Level ' + game.level + ' cleared';
+    }
+    sWin();
+    return;
+  }
+  if(lowestY() >= BOTTOM_LINE){
+    updateBest();
+    game.state = 'gameover';
+    sLose();
+  }
+}
+
+// Descend the ceiling: add a fresh row at the top, shift everything down.
+// Capped by MAX_DESCENDS_PER_LEVEL and MAX_GRID_ROWS to keep long sessions bounded.
+function descendCeiling(){
+  if(game.descendCount >= MAX_DESCENDS_PER_LEVEL) return;
+  if(grid.cells.length >= MAX_GRID_ROWS) return;
+  game.descendCount++;
+  const rng = seeded(game.level*777 + grid.cells.length*13 + 5);
+  const newRow = [];
+  const cols = rowCols(0);
+  for(let c=0;c<cols;c++){
+    const ci = Math.floor(rng()*game.colorsInPlay);
+    newRow.push(makeCell(0,c,COLORS[ci].key));
+  }
+  // shift existing rows down by one index; reindex r and recompute positions
+  grid.cells.unshift(newRow);
+  for(let r=0;r<grid.cells.length;r++){
+    for(let c=0;c<grid.cells[r].length;c++){
+      const cell=grid.cells[r][c];
+      if(cell){ cell.r=r; cell.c=c; const ctr=cellCenter(r,c); cell.x=ctr.x; cell.y=ctr.y; }
+    }
+  }
+  grid.rows = grid.cells.length;
+  game.shake = 6;
+  if(lowestY() >= BOTTOM_LINE){ updateBest(); game.state='gameover'; sLose(); }
+}
+
+// Reflect flight bubble off side walls; stop at ceiling; detect collision with grid.
+function updateFlight(dt){
+  if(!flight) return;
+  const steps = 4;
+  const sdt = dt/steps;
+  for(let i=0;i<steps;i++){
+    flight.x += flight.vx*sdt;
+    flight.y += flight.vy*sdt;
+    if(flight.x < GRID_X){ flight.x = GRID_X; flight.vx = Math.abs(flight.vx); }
+    const rightWall = GRID_X + (COLS-1)*R*2;
+    if(flight.x > rightWall){ flight.x = rightWall; flight.vx = -Math.abs(flight.vx); }
+    // hit ceiling line
+    const topY = GRID_TOP + game.offsetRows*ROW_H - R;
+    if(flight.y <= topY){ snapFlight(); return; }
+    // collide with any grid bubble
+    for(let r=0;r<grid.cells.length;r++){
+      const row=grid.cells[r];
+      for(let c=0;c<row.length;c++){
+        const cell=row[c];
+        if(!cell) continue;
+        const dx=cell.x-flight.x, dy=cell.y-flight.y;
+        if(dx*dx+dy*dy <= (R*2-3)*(R*2-3)){ snapFlight(); return; }
+      }
+    }
+  }
+}
+
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.t+=dt;
+    p.vy += (p.kind==='fall'?700:400)*dt;
+    p.x += p.vx*dt;
+    p.y += p.vy*dt;
+    if(p.t>=p.life || p.y>H+40) particles.splice(i,1);
+  }
+  for(let i=scorePopups.length-1;i>=0;i--){
+    const s=scorePopups[i];
+    s.t+=dt;
+    if(s.t>=s.life) scorePopups.splice(i,1);
+  }
+}
+
+function update(dt){
+  game.time = Math.max(0, game.time + dt);
+  if(game.shake>0) game.shake = Math.max(0, game.shake - dt*30);
+  if(game.reframeT>0) game.reframeT -= dt;
+
+  if(game.state==='playing'){
+    // aim toward mouse
+    const ax = input.mx - launcher.x;
+    const ay = input.my - launcher.y;
+    let ang = Math.atan2(ay, ax);
+    // clamp so you can't shoot downward
+    const minA = -Math.PI + 0.18, maxA = -0.18;
+    ang = clamp(ang, minA, maxA);
+    launcher.angle = ang;
+
+    updateFlight(dt);
+    updateParticles(dt);
+
+    // ceiling descends over time (only when no bubble in flight settling)
+    game.descendTimer = Math.max(0, game.descendTimer + dt);
+    const descendEvery = Math.max(0.5, game.descendEvery);
+    if(game.descendTimer >= descendEvery){
+      game.descendTimer = 0;
+      descendCeiling();
+    }
+
+    // danger cue: how close the lowest bubble is to the bottom line, in row-units
+    const ly = lowestY();
+    if(ly > -Infinity){
+      const dist = BOTTOM_LINE - ly;
+      game.danger = clamp(1 - dist/ROW_H, 0, 1);
+    } else {
+      game.danger = 0;
+    }
+
+    if(input.firePressed){ input.firePressed=false; shootBubble(); }
+  } else {
+    updateParticles(dt);
+  }
+}
+
+// =========================================================
+// Rendering
+// =========================================================
+function rgrad(x,y,r0,r1,stops){
+  const g=ctx.createRadialGradient(x,y,r0,x,y,r1);
+  for(const [o,col] of stops) g.addColorStop(o,col);
+  return g;
+}
+function lgrad(x0,y0,x1,y1,stops){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  for(const [o,col] of stops) g.addColorStop(o,col);
+  return g;
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawBackdrop(){
+  // gradient sky
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#141a3a'],[0.45,'#101637'],[1,'#0a0c1f']]);
+  ctx.fillRect(0,0,W,H);
+  // soft glow top
+  ctx.fillStyle = rgrad(W*0.5,90,10,420,[[0,'rgba(127,227,255,0.18)'],[1,'rgba(127,227,255,0)']]);
+  ctx.fillRect(0,0,W,360);
+  // faint drifting bubbles in background
+  for(let i=0;i<14;i++){
+    const bx = (i*97 + Math.sin(game.time*0.3+i)*30) % W;
+    const by = (i*53 + game.time*12 + Math.cos(i)*40) % (H+60) - 30;
+    const br = 8 + (i%4)*6;
+    ctx.fillStyle = 'rgba(160,190,255,0.05)';
+    ctx.beginPath(); ctx.arc((bx+W)%W, by, br, 0, TAU); ctx.fill();
+  }
+}
+
+// Draw one glossy bubble at (x,y) of a given color, with optional caption.
+function drawBubble(x,y,colorKey,caption,scale){
+  const col = COLORS.find(c=>c.key===colorKey) || COLORS[0];
+  const r = R*(scale||1);
+  // soft shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(x, y+r*0.78, r*0.86, r*0.42, 0, 0, TAU); ctx.fill();
+  // body gradient
+  ctx.fillStyle = rgrad(x-r*0.3, y-r*0.35, r*0.2, r*1.15, [[0,col.hi],[0.45,col.base],[1,col.lo]]);
+  ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+  // rim
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+  ctx.beginPath(); ctx.arc(x,y,r-1,0,TAU); ctx.stroke();
+  // glossy highlight
+  ctx.fillStyle = rgrad(x-r*0.34, y-r*0.42, 0.5, r*0.7, [[0,'rgba(255,255,255,0.85)'],[1,'rgba(255,255,255,0)']]);
+  ctx.beginPath(); ctx.ellipse(x-r*0.28, y-r*0.34, r*0.42, r*0.30, -0.5, 0, TAU); ctx.fill();
+  // caption
+  if(caption){
+    ctx.fillStyle = 'rgba(20,16,30,0.92)';
+    ctx.font = 'bold ' + Math.round(r*0.42) + 'px Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(caption, x, y+r*0.04);
+  }
+}
+
+function drawGrid(){
+  for(let r=0;r<grid.cells.length;r++){
+    const row=grid.cells[r];
+    for(let c=0;c<row.length;c++){
+      const cell=row[c];
+      if(!cell) continue;
+      const ctr=cellCenter(r,c);
+      if(ctr.y < -R || ctr.y > H+R) continue;
+      drawBubble(ctr.x, ctr.y, cell.color, SHORT[cell.color], 1);
+    }
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const a = clamp(1 - p.t/p.life, 0, 1);
+    if(p.kind==='fall'){
+      ctx.globalAlpha = a;
+      drawBubble(p.x, p.y, p.colorKey || 'rose', '', 0.9);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function drawScorePopups(){
+  for(const s of scorePopups){
+    const a = clamp(1 - s.t/s.life, 0, 1);
+    const y = s.y - s.t*40;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#fff59d';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline='middle';
+    let label = '+' + s.amount + (s.combo > 1 ? '  ✦x' + s.combo : '');
+    ctx.fillText(label, s.x, y);
+    ctx.restore();
+  }
+}
+
+function drawAimGuide(){
+  if(flight) return;
+  let x=launcher.x, y=launcher.y-6;
+  let vx=Math.cos(launcher.angle), vy=Math.sin(launcher.angle);
+  ctx.save();
+  ctx.setLineDash([2,10]);
+  ctx.lineWidth=3;
+  ctx.strokeStyle='rgba(127,227,255,0.55)';
+  ctx.beginPath(); ctx.moveTo(x,y);
+  const step=8; let bounced=false;
+  for(let i=0;i<140;i++){
+    x+=vx*step; y+=vy*step;
+    if(x<GRID_X){ x=GRID_X; vx=Math.abs(vx); if(bounced)break; bounced=true; }
+    const rw=GRID_X+(COLS-1)*R*2;
+    if(x>rw){ x=rw; vx=-Math.abs(vx); if(bounced)break; bounced=true; }
+    if(y<GRID_TOP+game.offsetRows*ROW_H) break;
+    let hit=false;
+    for(let r=0;r<grid.cells.length&&!hit;r++)for(let c=0;c<grid.cells[r].length;c++){
+      const cell=grid.cells[r][c]; if(!cell)continue;
+      if((cell.x-x)**2+(cell.y-y)**2<=(R*1.7)**2){hit=true;break;}
+    }
+    ctx.lineTo(x,y);
+    if(hit) break;
+  }
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';
+  ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,R*0.5,0,TAU); ctx.stroke();
+}
+
+function drawLauncher(){
+  const lx=launcher.x, ly=launcher.y;
+  ctx.fillStyle = lgrad(lx-44,ly,lx+44,ly+40,[[0,'#2a3360'],[1,'#161c3a']]);
+  roundRect(lx-46, ly+4, 92, 36, 12); ctx.fill();
+  ctx.strokeStyle='rgba(127,227,255,0.4)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.save();
+  ctx.translate(lx,ly);
+  ctx.rotate(launcher.angle+Math.PI/2);
+  ctx.fillStyle = lgrad(-9,0,9,-44,[[0,'#7fe3ff'],[1,'#3a78c8']]);
+  roundRect(-9,-46,18,46,8); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.restore();
+  if(nextColor) drawBubble(lx, ly, nextColor, SHORT[nextColor], 0.92);
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.font='12px Arial'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('NEXT', lx+70, ly-2);
+}
+
+function drawDangerLine(){
+  ctx.save();
+  ctx.setLineDash([14,10]);
+  ctx.lineWidth=2;
+  const pulse=0.4+0.25*Math.sin(game.time*3);
+  ctx.strokeStyle='rgba(255,110,130,'+pulse+')';
+  ctx.beginPath(); ctx.moveTo(0,BOTTOM_LINE); ctx.lineTo(W,BOTTOM_LINE); ctx.stroke();
+  ctx.restore();
+}
+
+function drawFlight(){
+  if(flight) drawBubble(flight.x, flight.y, flight.color, SHORT[flight.color], 1);
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(8,12,26,0.72)';
+  roundRect(12,12,320,52,12); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#7fe3ff'; ctx.font='bold 13px Arial'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('SCORE', 26, 30);
+  ctx.fillStyle='#fff'; ctx.font='bold 22px Arial';
+  ctx.fillText(String(game.score), 26, 50);
+  ctx.fillStyle='#7fe3ff'; ctx.font='bold 13px Arial';
+  ctx.fillText('LEVEL', 150, 30);
+  ctx.fillStyle='#fff'; ctx.font='bold 22px Arial';
+  ctx.fillText(game.level+' / '+game.maxLevel, 150, 50);
+  ctx.fillStyle='#7fe3ff'; ctx.font='bold 13px Arial';
+  ctx.fillText('BEST', 250, 30);
+  ctx.fillStyle='#fff'; ctx.font='bold 22px Arial';
+  ctx.fillText(String(Math.max(game.best, game.score)), 250, 50);
+  ctx.restore();
+  if(game.combo > 1){
+    ctx.save();
+    const pulse = 0.85+0.15*Math.sin(game.time*8);
+    ctx.fillStyle='rgba(255,193,61,'+(0.7+0.15*pulse)+')';
+    roundRect(12,70,150,30,10); ctx.fill();
+    ctx.fillStyle='#241400'; ctx.font='bold 15px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('✦ STREAK x'+game.combo, 12+75, 85);
+    ctx.restore();
+  }
+  if(game.danger > 0.001 && game.state==='playing'){
+    ctx.save();
+    ctx.globalAlpha = game.danger*0.35*(0.6+0.4*Math.sin(game.time*6));
+    ctx.fillStyle = 'rgba(255,60,80,1)';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+  if(game.reframeT>0 && game.reframe){
+    const a=clamp(game.reframeT/0.6,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle='rgba(8,12,26,0.8)';
+    ctx.font='italic 16px Arial';
+    const tw=ctx.measureText(game.reframe).width;
+    roundRect(W/2-tw/2-22, 70, tw+44, 34, 10); ctx.fill();
+    ctx.fillStyle='#dff6ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(game.reframe, W/2, 88);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawVignette(){
+  ctx.fillStyle = rgrad(W/2,H/2,H*0.42,H*0.9,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,0.45)']]);
+  ctx.fillRect(0,0,W,H);
+}
+
+function panel(x,y,w,h){
+  ctx.fillStyle='rgba(8,12,26,0.86)';
+  roundRect(x,y,w,h,18); ctx.fill();
+  ctx.strokeStyle='rgba(127,227,255,0.35)'; ctx.lineWidth=2; ctx.stroke();
+}
+function centerText(t,x,y,font,col,align){
+  ctx.fillStyle=col; ctx.font=font; ctx.textAlign=align||'center'; ctx.textBaseline='middle';
+  ctx.fillText(t,x,y);
+}
+
+function drawTitle(){
+  drawBackdrop();
+  const demo=['rose','amber','teal','violet','sky'];
+  for(let i=0;i<demo.length;i++){
+    const x=200+i*130, y=150+Math.sin(game.time*1.2+i)*12;
+    drawBubble(x,y,demo[i],SHORT[demo[i]],1.1);
+  }
+  panel(W/2-300, 220, 600, 270);
+  centerText('PRESSURE POP', W/2, 268, 'bold 46px Arial', '#7fe3ff');
+  centerText('Pop the nosy questions. Keep your peace.', W/2, 310, '18px Arial', '#dff6ff');
+  centerText('Aim with the mouse  -  Click or Space to shoot', W/2, 346, '15px Arial', 'rgba(255,255,255,0.8)');
+  centerText('Match 3+ of the same colour to pop a cluster.', W/2, 370, '15px Arial', 'rgba(255,255,255,0.8)');
+  centerText('Best score: '+game.best, W/2, 398, 'bold 16px Arial', '#ffd76b');
+  ctx.fillStyle=lgrad(W/2-90,428,W/2+90,468,[[0,'#7fe3ff'],[1,'#3a78c8']]);
+  roundRect(W/2-90,426,180,46,14); ctx.fill();
+  centerText('CLICK TO PLAY', W/2, 449, 'bold 18px Arial', '#0a0c1f');
+  drawVignette();
+}
+
+function drawPaused(){
+  drawPlayingScene();
+  ctx.fillStyle='rgba(6,8,16,0.6)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-180,200,360,140);
+  centerText('PAUSED', W/2, 250, 'bold 36px Arial', '#7fe3ff');
+  centerText('Press P or tap the pause button to resume', W/2, 300, '15px Arial', '#dff6ff');
+  drawVignette();
+}
+
+function statsLine(){
+  const acc = game.shots>0 ? Math.round(100*game.clustersPopped/game.shots) : 0;
+  return 'Shots: '+game.shots+'   Clusters: '+game.clustersPopped+'   Accuracy: '+acc+'%   Best streak: x'+game.bestCombo;
+}
+
+function drawGameover(){
+  drawPlayingScene();
+  ctx.fillStyle='rgba(6,8,16,0.66)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-280,160,560,240);
+  centerText('The questions piled up', W/2, 206, 'bold 32px Arial', '#ff8da0');
+  centerText('That happens. A boundary is a skill you practise.', W/2, 242, '16px Arial', '#dff6ff');
+  centerText('Score: '+game.score+'   Best: '+game.best, W/2, 274, 'bold 20px Arial', '#fff');
+  centerText(statsLine(), W/2, 300, '13px Arial', 'rgba(255,255,255,0.75)');
+  ctx.fillStyle=lgrad(W/2-90,330,W/2+90,372,[[0,'#7fe3ff'],[1,'#3a78c8']]);
+  roundRect(W/2-90,330,180,42,12); ctx.fill();
+  centerText('TRY AGAIN', W/2, 351, 'bold 17px Arial', '#0a0c1f');
+  drawVignette();
+}
+
+function drawLevelComplete(){
+  drawPlayingScene();
+  ctx.fillStyle='rgba(6,8,16,0.6)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-260,170,520,220);
+  centerText(game.msg||'Level cleared', W/2, 210, 'bold 30px Arial', '#9fe87a');
+  centerText('Score: '+game.score+'   Best: '+game.best, W/2, 246, 'bold 18px Arial', '#fff');
+  centerText(statsLine(), W/2, 272, '13px Arial', 'rgba(255,255,255,0.75)');
+  ctx.fillStyle=lgrad(W/2-100,300,W/2+100,342,[[0,'#9fe87a'],[1,'#4fa12a']]);
+  roundRect(W/2-100,300,200,42,12); ctx.fill();
+  centerText('NEXT LEVEL', W/2, 321, 'bold 17px Arial', '#0a1f0a');
+  drawVignette();
+}
+
+function drawWin(){
+  drawBackdrop();
+  for(let i=0;i<6;i++){
+    const x=160+i*110, y=160+Math.sin(game.time*1.5+i)*16;
+    drawBubble(x,y,COLORS[i].key,'',1);
+  }
+  panel(W/2-280,200,560,240);
+  centerText('All clear!', W/2, 240, 'bold 42px Arial', '#7fe3ff');
+  centerText('You met every question with grace.', W/2, 280, '18px Arial', '#dff6ff');
+  centerText('Final score: '+game.score+'   Best: '+game.best, W/2, 312, 'bold 20px Arial', '#fff');
+  centerText(statsLine(), W/2, 336, '13px Arial', 'rgba(255,255,255,0.75)');
+  ctx.fillStyle=lgrad(W/2-90,366,W/2+90,408,[[0,'#7fe3ff'],[1,'#3a78c8']]);
+  roundRect(W/2-90,366,180,42,12); ctx.fill();
+  centerText('PLAY AGAIN', W/2, 387, 'bold 17px Arial', '#0a0c1f');
+  drawVignette();
+}
+
+function drawPlayingScene(){
+  ctx.save();
+  if(game.shake>0){
+    ctx.translate((Math.random()-0.5)*game.shake, (Math.random()-0.5)*game.shake);
+  }
+  drawBackdrop();
+  drawDangerLine();
+  drawGrid();
+  drawParticles();
+  drawScorePopups();
+  drawAimGuide();
+  drawFlight();
+  drawLauncher();
+  ctx.restore();
+  drawHUD();
+  drawVignette();
+}
+
+function draw(){
+  try{
+    switch(game.state){
+      case 'title': drawTitle(); break;
+      case 'playing': drawPlayingScene(); break;
+      case 'paused': drawPaused(); break;
+      case 'gameover': drawGameover(); break;
+      case 'levelComplete': drawLevelComplete(); break;
+      case 'win': drawWin(); break;
+      default: drawBackdrop();
+    }
+  }catch(e){
+    try{ ctx.fillStyle='#0a0c1f'; ctx.fillRect(0,0,W,H); }catch(_){}
+  }
+}
+
+// =========================================================
+// Input + main loop
+// =========================================================
+function canvasPoint(e){
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width/rect.width, sy = canvas.height/rect.height;
+  return { x:(e.clientX-rect.left)*sx, y:(e.clientY-rect.top)*sy };
+}
+
+canvas.addEventListener('mousemove', e=>{
+  const p=canvasPoint(e); input.mx=p.x; input.my=p.y;
+});
+
+canvas.addEventListener('mousedown', e=>{
+  const p=canvasPoint(e); input.mx=p.x; input.my=p.y;
+  handleClick();
+});
+
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length){
+    const t=e.touches[0];
+    const p=canvasPoint(t); input.mx=p.x; input.my=p.y;
+  }
+  handleClick(); e.preventDefault();
+},{passive:false});
+canvas.addEventListener('touchmove', e=>{
+  if(e.touches.length){ const t=e.touches[0]; const p=canvasPoint(t); input.mx=p.x; input.my=p.y; }
+  e.preventDefault();
+},{passive:false});
+
+function handleClick(){
+  if(actx && actx.state==='suspended') actx.resume();
+  switch(game.state){
+    case 'title': reset(); break;
+    case 'playing': input.firePressed=true; break;
+    case 'gameover': reset(); break;
+    case 'win': reset(); break;
+    case 'levelComplete': startLevel(game.level+1); break;
+    case 'paused': game.state='playing'; break;
+  }
+}
+
+function togglePause(){
+  if(game.state==='playing') game.state='paused';
+  else if(game.state==='paused') game.state='playing';
+}
+
+function toggleMute(){
+  game.muted = !game.muted;
+  saveMuted();
+  updateMuteButton();
+}
+
+function updateMuteButton(){
+  const btn = (typeof document!=='undefined') ? document.getElementById('btnMute') : null;
+  if(btn) btn.innerHTML = game.muted ? '&#128263;' : '&#128266;';
+}
+
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){
+    togglePause();
+    return;
+  }
+  if(e.code==='KeyM'){
+    toggleMute();
+    return;
+  }
+  if(e.code==='Space'){
+    e.preventDefault();
+    handleClick();
+  }
+  if(e.code==='Enter'){
+    if(game.state!=='playing') handleClick();
+  }
+});
+
+if(typeof document!=='undefined'){
+  const btnPause = document.getElementById('btnPause');
+  const btnMute = document.getElementById('btnMute');
+  if(btnPause) btnPause.addEventListener('click', (e)=>{ e.stopPropagation(); togglePause(); });
+  if(btnMute) btnMute.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMute(); });
+}
+
+loadBest();
+loadMuted();
+updateMuteButton();
+
+let last = (typeof performance!=='undefined'?performance.now():Date.now());
+function loop(now){
+  const t = now || (typeof performance!=='undefined'?performance.now():Date.now());
+  let dt = (t-last)/1000; last=t;
+  if(dt>0.05) dt=0.05;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ---- Test hook (harmless in production) ----
+window.__game = {
+  get game(){return game;}, get grid(){return grid;}, get input(){return input;},
+  get flight(){return flight;}, get nextColor(){return nextColor;},
+  update, draw, reset, resetGame:reset, buildBoard, shootBubble, popCluster, clusterAt, setState,
+  snapFlight, findFloating, countCells, descendCeiling, afterTurn, startLevel,
+  cellCenter, neighbors, COLORS, MATCH_MIN, togglePause, toggleMute
+};
+window.__cfq = window.__game;
+</script>
+</body>
+</html>

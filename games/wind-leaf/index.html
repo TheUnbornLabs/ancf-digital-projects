@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Wind Leaf</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#030a08;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:36px;height:36px;border-radius:10px;border:1px solid rgba(120,220,150,.35);background:rgba(3,10,7,.75);color:#bdf0cc;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrls button:active{background:rgba(80,200,100,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" title="Mute/Unmute" aria-label="Toggle sound">&#128266;</button>
+  <button id="btnPause" title="Pause/Resume" aria-label="Toggle pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Move mouse / touch to guide the leaf &middot; hold / double-tap to glide-burst &middot; collect glowing seeds &middot; avoid pressure gusts &middot; Space/Enter to start</div>
+<script>
+'use strict';
+// Wind Leaf (#61)
+// Guide a leaf on the wind toward glowing seed-pods.
+// Pressure gusts try to slam you into walls. Collect 20 seeds to win.
+// Theme: moving freely at your own pace, not blown around by others.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const LEAF_R=12,SEED_R=8,GUST_R=22;
+const SEEDS_NEEDED=20;
+const GUST_LABELS=['conform','hustle','impress','settle','obey'];
+const MAX_GUSTS=10;
+const INVULN_MS=650;
+const COMBO_WINDOW=1600; // ms to keep combo alive between seed collects
+const BOOST_COOLDOWN=3500;
+const BOOST_DURATION=350;
+
+// ---- persistence ----
+let storedBest=0,muted=false;
+try{const b=parseInt(localStorage.getItem('windleaf_best')||'0',10);storedBest=isNaN(b)?0:b;}catch(e){storedBest=0;}
+try{muted=localStorage.getItem('windleaf_muted')==='1';}catch(e){muted=false;}
+function saveBest(v){try{localStorage.setItem('windleaf_best',String(v));}catch(e){}}
+function saveMuted(v){try{localStorage.setItem('windleaf_muted',v?'1':'0');}catch(e){}}
+
+const game={
+  state:'title',time:0,seeds:0,best:storedBest,lives:3,shakeT:0,
+  combo:0,comboT:0,streak:0,bestStreak:0,score:0,
+  invulnT:0,muted:muted,paused:false,
+  boostCd:0,boostT:0,
+  flashT:0 // gust-hit flash
+};
+let leaf,seeds=[],gusts=[],particles=[],popups=[],rng,spawnTimer=0;
+let lastCollectAt=-99999;
+
+function resetGame(){
+  leaf={x:W/2,y:H/2,vx:0,vy:0};
+  seeds=[];gusts=[];particles=[];popups=[];
+  game.seeds=0;game.lives=3;game.shakeT=0;game.combo=0;game.comboT=0;
+  game.streak=0;game.score=0;game.invulnT=0;game.paused=false;
+  game.boostCd=0;game.boostT=0;game.flashT=0;
+  spawnTimer=0;lastCollectAt=-99999;
+  rng=seeded(42);
+  for(let i=0;i<5;i++)spawnSeed();
+  for(let i=0;i<3;i++)spawnGust();
+  game.state='playing';
+}
+function spawnSeed(){seeds.push({x:60+rng()*(W-120),y:60+rng()*(H-120),pulse:rng()*Math.PI*2});}
+function spawnGust(){
+  if(gusts.length>=MAX_GUSTS)return;
+  const side=Math.floor(rng()*4);let x,y,vx,vy;
+  // difficulty ramp: gust speed edges up slightly as seeds collected rises
+  const rampT=clamp(game.seeds/SEEDS_NEEDED,0,1);
+  const spd=(60+rng()*40)*(1+rampT*0.35);
+  if(side===0){x=rng()*W;y=-30;vx=0;vy=spd;}
+  else if(side===1){x=W+30;y=rng()*H;vx=-spd;vy=0;}
+  else if(side===2){x=rng()*W;y=H+30;vx=0;vy=-spd;}
+  else{x=-30;y=rng()*H;vx=spd;vy=0;}
+  const label=GUST_LABELS[Math.floor(rng()*GUST_LABELS.length)];
+  gusts.push({x,y,vx,vy,label,t:rng()*Math.PI*2});
+}
+function spawnParticles(x,y,color,n){
+  n=n||8;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:400+Math.random()*260,maxLife:400+260,color});
+  }
+}
+function spawnPopup(x,y,text,color){
+  popups.push({x,y,text,color:color||'#ffd580',life:700,maxLife:700});
+}
+
+let mx=W/2,my=H/2;
+let heldDown=false,lastTapAt=-99999;
+
+function currentSpawnInterval(){
+  // ramps down from 2000ms to 900ms as seeds progresses, clamped to a fair floor
+  const t=clamp(game.seeds/SEEDS_NEEDED,0,1);
+  return Math.max(900,2000-t*1100);
+}
+
+function tryBoost(){
+  if(game.state!=='playing')return;
+  if(game.boostCd>0)return;
+  game.boostT=BOOST_DURATION;
+  game.boostCd=BOOST_COOLDOWN;
+  // instant velocity kick toward current heading (or cursor direction)
+  const tx=mx-leaf.x,ty=my-leaf.y;
+  const d=Math.hypot(tx,ty)||1;
+  leaf.vx+=(tx/d)*260;
+  leaf.vy+=(ty/d)*260;
+  spawnParticles(leaf.x,leaf.y,'rgba(140,240,170,.9)',10);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.flashT>0)game.flashT=Math.max(0,game.flashT-dt);
+  // particles/popups animate even off-playing state briefly, but simplest: only during playing/paused-frozen
+  if(game.state!=='playing'){
+    return;
+  }
+  if(game.paused)return;
+
+  if(game.invulnT>0)game.invulnT=Math.max(0,game.invulnT-dt);
+  if(game.comboT>0){game.comboT=Math.max(0,game.comboT-dt);if(game.comboT===0)game.combo=0;}
+  if(game.boostCd>0)game.boostCd=Math.max(0,game.boostCd-dt);
+  if(game.boostT>0)game.boostT=Math.max(0,game.boostT-dt);
+
+  // leaf drift toward cursor
+  const tx=mx-leaf.x,ty=my-leaf.y;
+  leaf.vx+=(tx*4-leaf.vx*3)*s;
+  leaf.vy+=(ty*4-leaf.vy*3)*s;
+  leaf.x+=leaf.vx*s;leaf.y+=leaf.vy*s;
+  leaf.x=clamp(leaf.x,LEAF_R,W-LEAF_R);
+  leaf.y=clamp(leaf.y,LEAF_R,H-LEAF_R);
+
+  // seeds pulse
+  for(const sd of seeds)sd.pulse+=s*2;
+
+  // check collect
+  for(let i=seeds.length-1;i>=0;i--){
+    if(Math.hypot(leaf.x-seeds[i].x,leaf.y-seeds[i].y)<LEAF_R+SEED_R+4){
+      const sx=seeds[i].x,sy=seeds[i].y;
+      seeds.splice(i,1);
+      game.seeds++;
+      game.streak++;
+      if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+
+      // combo: fast consecutive collects raise multiplier
+      if(game.time-lastCollectAt<COMBO_WINDOW){game.combo=Math.min(9,game.combo+1);}else{game.combo=1;}
+      lastCollectAt=game.time;
+      game.comboT=COMBO_WINDOW;
+      const mult=1+game.combo*0.5;
+      const gained=Math.round(10*mult);
+      game.score+=gained;
+
+      sndCollect();
+      spawnParticles(sx,sy,'rgba(220,200,60,.9)',10);
+      spawnPopup(sx,sy-4,(game.combo>1?('+'+gained+' x'+game.combo):('+'+gained)),'#ffd580');
+
+      if(game.seeds>=SEEDS_NEEDED){
+        if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+        sndWin();
+        game.state='won';
+        return;
+      }
+      spawnSeed();
+    }
+  }
+
+  // gusts spawn with ramping interval, capped concurrent count
+  spawnTimer+=dt;
+  const interval=currentSpawnInterval();
+  if(spawnTimer>interval){spawnTimer=0;spawnGust();}
+
+  for(let i=gusts.length-1;i>=0;i--){
+    const g=gusts[i];
+    g.x+=g.vx*s;g.y+=g.vy*s;g.t+=s*2;
+    if(g.x<-60||g.x>W+60||g.y<-60||g.y>H+60){gusts.splice(i,1);continue;}
+    // gust hits leaf - respects post-hit invulnerability window
+    if(game.invulnT<=0&&Math.hypot(leaf.x-g.x,leaf.y-g.y)<LEAF_R+GUST_R){
+      game.lives--;
+      game.shakeT=400;
+      game.invulnT=INVULN_MS;
+      game.flashT=280;
+      game.streak=0;
+      game.combo=0;game.comboT=0;
+      sndHurt();
+      spawnParticles(g.x,g.y,'rgba(220,90,90,.9)',14);
+      gusts.splice(i,1);
+      spawnGust();
+      if(game.lives<=0){
+        if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+        sndGameOver();
+        game.state='gameover';
+        return;
+      }
+    }
+  }
+
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.life-=dt;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    p.x+=p.vx*s;p.y+=p.vy*s;
+    p.vx*=0.94;p.vy*=0.94;
+  }
+  // popups
+  for(let i=popups.length-1;i>=0;i--){
+    const p=popups[i];
+    p.life-=dt;
+    if(p.life<=0){popups.splice(i,1);continue;}
+    p.y-=s*22;
+  }
+}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndCollect=()=>tone(660,0.1,'sine',0.05);
+const sndHurt=()=>tone(180,0.3,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndGameOver=()=>{[440,330,220].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sawtooth',0.05),i*110));};
+const sndClick=()=>tone(500,0.06,'square',0.03);
+const sndBoost=()=>tone(880,0.12,'triangle',0.05);
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#030a08'],[1,'#020806']]);ctx.fillRect(0,0,W,H);}
+function drawLeaf(){
+  const a=Math.atan2(leaf.vy,leaf.vx)+Math.PI/2;
+  ctx.save();ctx.translate(leaf.x,leaf.y);ctx.rotate(a);
+  const blinking=game.invulnT>0&&Math.floor(game.time/80)%2===0;
+  ctx.globalAlpha=blinking?0.4:1;
+  ctx.shadowColor=game.boostT>0?'rgba(160,255,190,.9)':'rgba(100,220,120,.4)';
+  ctx.shadowBlur=game.boostT>0?16:8;
+  ctx.fillStyle='rgba(80,200,100,.8)';
+  ctx.beginPath();ctx.ellipse(0,0,LEAF_R*0.6,LEAF_R,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(140,240,160,.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,-LEAF_R);ctx.lineTo(0,LEAF_R);ctx.stroke();
+  ctx.shadowBlur=0;ctx.globalAlpha=1;
+  ctx.restore();
+}
+function drawSeeds(){
+  for(const sd of seeds){
+    const s=0.8+Math.sin(sd.pulse)*0.2;
+    ctx.shadowColor='rgba(220,200,60,.4)';ctx.shadowBlur=6;
+    ctx.fillStyle=`rgba(220,200,60,${0.7+Math.sin(sd.pulse)*0.2})`;
+    ctx.save();ctx.translate(sd.x,sd.y);ctx.scale(s,s);
+    ctx.beginPath();ctx.arc(0,0,SEED_R,0,Math.PI*2);ctx.fill();
+    ctx.restore();ctx.shadowBlur=0;
+  }
+}
+function drawGusts(){
+  for(const g of gusts){
+    const pulse=0.8+Math.sin(g.t)*0.2;
+    ctx.save();
+    ctx.globalAlpha=0.75*pulse;
+    ctx.translate(g.x,g.y);
+    ctx.shadowColor='rgba(200,80,80,.4)';ctx.shadowBlur=8;
+    // jagged/spiky hazard shape distinct from the round seeds
+    const spikes=8;
+    ctx.beginPath();
+    for(let i=0;i<spikes*2;i++){
+      const ang=(Math.PI*2*i)/(spikes*2);
+      const rad=(i%2===0)?GUST_R:GUST_R*0.62;
+      const px=Math.cos(ang)*rad,py=Math.sin(ang)*rad;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba(180,60,60,.55)';
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(220,100,100,.7)';ctx.lineWidth=1.5;
+    ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(255,220,220,.95)';
+    ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(g.label,0,0);
+    ctx.restore();
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,2.4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawPopups(){
+  for(const p of popups){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.globalAlpha=1;
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,5,3,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80e0a0';ctx.font='bold 13px Arial';ctx.fillText('Wind Leaf',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Seeds: '+game.seeds+' / '+SEEDS_NEEDED+'   Streak: '+game.streak,18,28);
+  ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,16);
+  if(game.combo>1){ctx.fillStyle='rgba(255,213,128,.8)';ctx.font='bold 11px Arial';ctx.fillText('combo x'+game.combo,W/2,40);}
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const heartFlash=game.lives===1&&Math.floor(game.time/300)%2===0;
+  ctx.fillStyle=heartFlash?'#ff5a5a':'rgba(234,242,246,.5)';
+  ctx.fillText('♥'.repeat(game.lives)+'  Best: '+game.best,W-18,8);
+  // boost cooldown indicator
+  ctx.fillStyle='rgba(234,242,246,.4)';ctx.font='10px Arial';
+  const boostLabel=game.boostCd>0?('Glide: '+Math.ceil(game.boostCd/1000)+'s'):'Glide: ready (hold/dbl-tap)';
+  ctx.fillText(boostLabel,W-18,28);
+  ctx.restore();
+}
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(game.state==='playing'&&game.lives===1){
+    const pulse=0.15+0.15*Math.abs(Math.sin(game.time/260));
+    const rg=ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,H*0.72);
+    rg.addColorStop(0,'rgba(200,20,20,0)');
+    rg.addColorStop(1,`rgba(200,20,20,${pulse})`);
+    ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  }
+  if(game.flashT>0){
+    ctx.fillStyle=`rgba(220,60,60,${(game.flashT/280)*0.25})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(2,5,3,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,12,7,.97)'],[1,'rgba(3,8,5,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,200,100,.22)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80e0a0';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    // camera shake displacement, clamped small magnitude
+    let shakeX=0,shakeY=0;
+    if(game.shakeT>0){
+      const mag=Math.min(6,game.shakeT/400*6);
+      shakeX=(Math.random()*2-1)*mag;
+      shakeY=(Math.random()*2-1)*mag;
+      ctx.translate(shakeX,shakeY);
+    }
+    drawBg();
+    if(game.state!=='title'){
+      drawSeeds();drawGusts();drawParticles();drawLeaf();drawPopups();
+    }
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='playing'&&game.paused){
+      ctx.fillStyle='rgba(2,5,3,.6)';ctx.fillRect(0,0,W,H);
+      ctx.textAlign='center';ctx.fillStyle='#80e0a0';ctx.font='bold 28px Arial';
+      ctx.fillText('Paused',W/2,H/2-6);
+      ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='13px Arial';
+      ctx.fillText('Tap pause button or press P/Space to resume',W/2,H/2+22);
+    }
+    if(game.state==='title')panelDraw('Wind Leaf',[
+      'Move mouse / touch to guide the leaf.',
+      'Collect glowing seed-pods (yellow, round).',
+      'Avoid pressure gusts (red, spiky). 3 lives.',
+      'Hold / double-tap for a glide burst to escape clumps.',
+      '',
+      'Move at your own pace. The wind is yours.',
+      '',
+      'Click / tap / Space / Enter to begin.'
+    ]);
+    else if(game.state==='won')panelDraw('Free! ✓',[
+      'Score: '+game.score+'   Best: '+game.best,
+      'Best streak: '+game.bestStreak,
+      '',
+      'You moved at your own pace and found your way.',
+      '',
+      'Click / tap / Space / Enter to play again.'
+    ]);
+    else if(game.state==='gameover')panelDraw('Swept Away',[
+      'Score: '+game.score+'   Best: '+game.best,
+      'Best streak: '+game.bestStreak,
+      '',
+      'Try again — the wind will carry you.',
+      '',
+      'Click / tap / Space / Enter to play again.'
+    ]);
+    ctx.restore();
+  }catch(e){}
+}
+
+function onMove(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches){mx=(e.touches[0].clientX-rect.left)*sx;my=(e.touches[0].clientY-rect.top)*sy;}
+  else{mx=(e.clientX-rect.left)*sx;my=(e.clientY-rect.top)*sy;}
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  onMove(e);
+  if(game.state!=='playing'){resetGame();return;}
+  if(game.paused)return;
+  heldDown=true;
+  const now=game.time;
+  if(now-lastTapAt<300){tryBoost();sndBoost();}
+  lastTapAt=now;
+}
+function onUp(){heldDown=false;}
+let holdT=0;
+canvas.addEventListener('mousemove',onMove);
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchmove',e=>{e.preventDefault();onMove(e);},{passive:false});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();onUp();},{passive:false});
+
+// hold-to-boost: track hold duration, fire once threshold crossed
+const HOLD_BOOST_MS=380;
+let heldSince=0;
+canvas.addEventListener('mousedown',()=>{heldSince=performance.now();});
+canvas.addEventListener('touchstart',()=>{heldSince=performance.now();},{passive:true});
+canvas.addEventListener('mouseup',()=>{
+  if(heldSince&&performance.now()-heldSince>=HOLD_BOOST_MS){tryBoost();sndBoost();}
+  heldSince=0;
+});
+canvas.addEventListener('touchend',()=>{
+  if(heldSince&&performance.now()-heldSince>=HOLD_BOOST_MS){tryBoost();sndBoost();}
+  heldSince=0;
+},{passive:true});
+
+// ---- on-screen controls ----
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+function refreshMuteBtn(){btnMute.innerHTML=game.muted?'&#128263;':'&#128266;';}
+function refreshPauseBtn(){btnPause.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';}
+function toggleMute(){
+  game.muted=!game.muted;
+  saveMuted(game.muted);
+  refreshMuteBtn();
+  if(!game.muted)sndClick();
+}
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  refreshPauseBtn();
+  sndClick();
+}
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();});
+btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();},{passive:false});
+refreshMuteBtn();refreshPauseBtn();
+
+// ---- keyboard: Space/Enter to start-restart, P/Space to pause, keys are bonus input ----
+const keys={};
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key===' '||e.key==='Enter'){
+    e.preventDefault();
+    const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+    if(game.state!=='playing'){resetGame();}
+    else if(e.key===' '){togglePause();}
+  }else if(e.key==='p'||e.key==='P'){
+    togglePause();
+  }else if(e.key==='m'||e.key==='M'){
+    toggleMute();
+  }else if(e.key==='Shift'){
+    tryBoost();sndBoost();
+  }
+});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={
+  get game(){return game;},
+  get leaf(){return leaf;},
+  get seeds(){return seeds;},
+  get gusts(){return gusts;},
+  get particles(){return particles;},
+  get popups(){return popups;},
+  resetGame,spawnSeed,spawnGust,update,draw,
+  SEEDS_NEEDED,LEAF_R,SEED_R,GUST_R,
+  keys,
+  toggleMute,togglePause,tryBoost
+};
+</script>
+</body>
+</html>

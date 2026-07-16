@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Photo Arrange</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#080508;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#080508;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(200,180,100,.35);background:rgba(10,8,6,.75);color:#e0c880;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(200,180,100,.25);}
+#hintBtn{position:fixed;top:10px;left:10px;z-index:10;width:40px;height:40px;border-radius:10px;border:1px solid rgba(200,180,100,.35);background:rgba(10,8,6,.75);color:#e0c880;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#hintBtn:active,#ctrls button:active{background:rgba(200,180,100,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="hintBtn" title="Hint">💡</button>
+<div id="ctrls">
+  <button id="pauseBtn" title="Pause">⏸</button>
+  <button id="muteBtn" title="Mute">🔊</button>
+</div>
+<div id="hint">Drag polaroid photos to the correct album slot &middot; match the caption</div>
+<script>
+'use strict';
+// Photo Arrange (#50)
+// Scatter polaroid-style photo tiles (canvas-drawn icons + captions).
+// Drag each to its matching album slot. 6 rounds of 5 photos.
+// Theme: curating the album of a life well-lived on your own terms.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const ALBUMS=[
+  {name:'Adventure',    icon:'mountain',  photos:['summit climbed','trail blazed','horizon found','leap taken','maps redrawn']},
+  {name:'Inner Life',   icon:'book',      photos:['page turned','thought held','mind freed','dream noted','story written']},
+  {name:'Friendship',   icon:'heart',     photos:['laugh shared','silence kept','truth told','arm offered','chosen kin']},
+  {name:'Rest',         icon:'moon',      photos:['nap taken','screen off','phone silenced','hammock found','breath held']},
+  {name:'Creativity',   icon:'palette',   photos:['art begun','colour chosen','mess made','draft kept','voice found']},
+  {name:'Freedom',      icon:'bird',      photos:['plan cancelled','ticket bought','plan changed','door opened','rule dropped']},
+];
+const PW=110,PH=130,SLOTS=5;
+const SY=80,SX_START=100;
+const MIN_ROUND_MS=16000; // clamp: never below 16s of usable time even at hardest round
+
+// ---- localStorage best-score persistence ----
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+let savedBest=0;
+try{const raw=lsGet('photoArrange.best');savedBest=raw?(parseInt(raw,10)||0):0;}catch(e){savedBest=0;}
+
+const game={
+  state:'title',time:0,round:1,score:0,best:savedBest,correctAnim:0,shakeT:0,shakeMag:0,
+  paused:false,muted:false,transitioning:false,
+  mistakes:0,roundMistakes:0,roundTimer:0,roundLimit:0,
+  streak:0,bestStreak:0,hintsLeft:3,hintGlowIdx:-1,hintGlowT:0,
+  flashes:[] // per-photo drop feedback particles/flashes {x,y,ok,t}
+};
+let photos=[],slots=[],dragging=null,dragOx=0,dragOy=0,rng;
+
+function roundTimeLimitFor(r){
+  // later rounds get a lighter time budget, clamped so it never becomes unfair
+  const base=60000; // 60s for round 1
+  const reduction=(r-1)*6000; // 6s less per round
+  return Math.max(MIN_ROUND_MS,base-reduction);
+}
+
+function buildRound(r){
+  rng=seeded(r*5101+7);
+  const album=ALBUMS[(r-1)%ALBUMS.length];
+  const slotSpacing=(W-SX_START*2)/SLOTS;
+  slots=album.photos.map((p,i)=>({x:SX_START+i*slotSpacing,y:SY,label:p,photo:null,idx:i}));
+  const shuffled=[...album.photos.map((p,i)=>({label:p,idx:i}))].sort(()=>rng()-.5);
+  photos=shuffled.map((p,i)=>({label:p.label,idx:p.idx,x:60+i*(PW+28),y:280,slotIdx:-1}));
+  game.state='playing';
+  game.correctAnim=0;
+  game.roundMistakes=0;
+  game.roundTimer=0;
+  game.roundLimit=roundTimeLimitFor(r);
+  game.transitioning=false;
+  game.hintGlowIdx=-1;
+  game.hintGlowT=0;
+}
+function resetGame(){
+  game.round=1;game.score=0;game.shakeT=0;game.shakeMag=0;game.mistakes=0;
+  game.streak=0;game.hintsLeft=3;game.flashes=[];game.paused=false;
+  buildRound(1);
+}
+function slotAt(cx,cy){for(let i=0;i<slots.length;i++){const s=slots[i];if(Math.abs(cx-s.x)<60&&Math.abs(cy-s.y-PH/2)<PH/2+10)return i;}return-1;}
+
+// keep unslotted photos flowing tidily in a single row, no overlap
+function reflowPhotos(){
+  const unslotted=photos.filter(p=>p.slotIdx<0&&p!==dragging);
+  unslotted.forEach((p,i)=>{p.x=60+i*(PW+28);p.y=280;});
+}
+
+function addFlash(x,y,ok){game.flashes.push({x,y,ok,t:420});}
+
+function snapToSlot(ph,si){
+  const old=slots[si].photo;
+  if(old&&old!==ph){old.slotIdx=-1;}
+  if(ph.slotIdx>=0)slots[ph.slotIdx].photo=null;
+  const wasCorrectSlot=(si===ph.idx);
+  slots[si].photo=ph;
+  ph.slotIdx=si;
+  ph.x=slots[si].x-PW/2;
+  ph.y=slots[si].y;
+  if(old&&old!==ph){
+    // bumped photo returns to the scatter row, tidy re-flow after
+    old.x=0;old.y=280;
+  }
+  if(!wasCorrectSlot){
+    game.mistakes++;
+    game.roundMistakes++;
+    game.shakeT=260;game.shakeMag=6;
+    sndWrong();
+    addFlash(ph.x+PW/2,ph.y+PH/2,false);
+  }else{
+    sndSnap();
+    addFlash(ph.x+PW/2,ph.y+PH/2,true);
+  }
+  reflowPhotos();
+  checkDone();
+}
+
+function checkDone(){
+  if(!photos.every(p=>p.slotIdx>=0))return;
+  const correct=photos.filter(p=>p.slotIdx===p.idx).length;
+  const perfect=correct===photos.length;
+  let roundScore=correct*5;
+  // mistake penalty: reduces round score, clamped to never go below 0
+  roundScore=Math.max(0,roundScore-game.roundMistakes*2);
+  // perfect-round bonus
+  if(perfect)roundScore+=15;
+  // speed bonus: reward finishing well under the round's time limit, clamped
+  const timeLeftFrac=clamp(1-(game.roundTimer/game.roundLimit),0,1);
+  const speedBonus=perfect?Math.round(timeLeftFrac*10):0;
+  roundScore+=speedBonus;
+  // streak bonus: consecutive perfect albums
+  if(perfect){game.streak++;if(game.streak>game.bestStreak)game.bestStreak=game.streak;const streakBonus=Math.min(20,(game.streak-1)*5);roundScore+=streakBonus;}
+  else{game.streak=0;}
+  game.score+=roundScore;
+  if(game.score>game.best){game.best=game.score;lsSet('photoArrange.best',String(game.best));}
+  game.correctAnim=700;
+  game.transitioning=true;
+  sndWin();
+  setTimeout(()=>{
+    if(game.round>=ALBUMS.length){game.state='won';game.transitioning=false;}
+    else{game.round++;buildRound(game.round);}
+  },700);
+}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndSnap=()=>tone(500,0.08,'sine',0.04);
+const sndWrong=()=>tone(160,0.14,'square',0.045);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.paused)return;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.correctAnim>0)game.correctAnim=Math.max(0,game.correctAnim-dt);
+  if(game.hintGlowT>0){game.hintGlowT=Math.max(0,game.hintGlowT-dt);if(game.hintGlowT===0)game.hintGlowIdx=-1;}
+  if(game.state==='playing'&&!game.transitioning){
+    game.roundLimit=Math.max(MIN_ROUND_MS,game.roundLimit);
+    game.roundTimer=Math.min(game.roundLimit,game.roundTimer+dt);
+  }
+  for(let i=game.flashes.length-1;i>=0;i--){game.flashes[i].t-=dt;if(game.flashes[i].t<=0)game.flashes.splice(i,1);}
+}
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function drawCheck(cx,cy,size){
+  ctx.save();
+  ctx.strokeStyle='#2e8b3a';
+  ctx.fillStyle='rgba(50,160,70,.92)';
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,size,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=2.2;
+  ctx.beginPath();
+  ctx.moveTo(cx-size*0.45,cy);
+  ctx.lineTo(cx-size*0.1,cy+size*0.4);
+  ctx.lineTo(cx+size*0.5,cy-size*0.4);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPolaroid(x,y,label,dim,highlight){const pw2=PW,ph2=PH;ctx.shadowColor=highlight?'rgba(200,180,100,.5)':'rgba(0,0,0,.5)';ctx.shadowBlur=highlight?16:8;ctx.fillStyle='rgba(240,235,220,.92)';rr(x,y,pw2,ph2,4);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(200,190,160,.4)';ctx.lineWidth=1;rr(x,y,pw2,ph2,4);ctx.stroke();// photo area (top portion)
+ctx.fillStyle=dim?'rgba(80,70,60,.4)':'rgba(120,110,100,.6)';rr(x+8,y+8,pw2-16,ph2-36,3);ctx.fill();// icon in photo area
+ctx.fillStyle=dim?'rgba(180,170,160,.5)':'rgba(220,210,200,.8)';ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('📷',x+pw2/2,y+ph2/2-14);// caption
+ctx.fillStyle=dim?'rgba(80,70,60,.5)':'rgba(60,50,40,.85)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';const words=label.split(' ');words.forEach((wd,wi)=>ctx.fillText(wd,x+pw2/2,y+ph2-22+wi*10));
+if(highlight)drawCheck(x+pw2-16,y+16,10);
+}
+function drawSlots(){const album=ALBUMS[(game.round-1)%ALBUMS.length];ctx.fillStyle='rgba(180,160,100,.5)';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('Album: '+album.name,W/2,55);for(let i=0;i<slots.length;i++){const s=slots[i];const filled=!!s.photo;
+if(game.hintGlowIdx===i&&game.hintGlowT>0){ctx.save();ctx.globalAlpha=0.35+0.25*Math.sin(game.hintGlowT/60);ctx.fillStyle='rgba(120,220,255,.5)';rr(s.x-PW/2-4,s.y-4,PW+8,PH+8,8);ctx.fill();ctx.restore();}
+ctx.fillStyle='rgba(200,180,100,.08)';rr(s.x-PW/2,s.y,PW,PH,4);ctx.fill();ctx.strokeStyle=filled?'rgba(200,180,100,.5)':'rgba(180,160,80,.25)';ctx.setLineDash([4,4]);ctx.lineWidth=1.5;rr(s.x-PW/2,s.y,PW,PH,4);ctx.stroke();ctx.setLineDash([]);if(!filled){ctx.fillStyle='rgba(200,180,100,.3)';ctx.font='8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.label,s.x,s.y+PH/2);}else{drawPolaroid(s.x-PW/2,s.y,s.photo.label,false,s.photo.idx===s.photo.slotIdx);}}}
+function drawPhotos(){const sorted=[...photos].filter(p=>p.slotIdx<0||p===dragging).sort((a,b)=>(a===dragging?1:0)-(b===dragging?1:0));for(const p of sorted)drawPolaroid(p.x,p.y,p.label,false,p===dragging);}
+
+function drawFlashes(){
+  for(const f of game.flashes){
+    const a=clamp(f.t/420,0,1);
+    ctx.save();
+    ctx.globalAlpha=a;
+    ctx.strokeStyle=f.ok?'rgba(90,220,120,.9)':'rgba(230,90,90,.9)';
+    ctx.lineWidth=3;
+    const r=18+(1-a)*26;
+    ctx.beginPath();ctx.arc(f.x,f.y,r,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,2,4,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#e0c880';ctx.font='bold 13px Arial';ctx.fillText('Photo Arrange  Round '+game.round+' / '+ALBUMS.length,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Drag each photo to the matching album slot · Hints: '+game.hintsLeft,18,28);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best+(game.streak>1?'  Streak '+game.streak:''),W-18,8);
+const timeLeft=Math.max(0,game.roundLimit-game.roundTimer);
+const secs=Math.ceil(timeLeft/1000);
+ctx.fillStyle=secs<=10?'rgba(230,120,110,.85)':'rgba(234,242,246,.5)';
+ctx.fillText('Time '+secs+'s',W-18,28);
+ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(4,2,4,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(16,12,8,.97)'],[1,'rgba(10,8,5,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(200,180,100,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#e0c880';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+
+function draw(){try{
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  let sx=0,sy=0;
+  if(game.shakeT>0){
+    const mag=game.shakeMag*(game.shakeT/260);
+    sx=(Math.random()*2-1)*mag;
+    sy=(Math.random()*2-1)*mag;
+    ctx.translate(sx,sy);
+  }
+  drawBg();
+  if(game.state!=='title'){drawSlots();drawPhotos();drawFlashes();}
+  if(game.correctAnim>0){ctx.fillStyle=`rgba(220,200,100,${(game.correctAnim/700*0.2).toFixed(2)})`;ctx.fillRect(0,0,W,H);}
+  vignette();
+  if(game.state==='playing')drawHUD();
+  if(game.state==='title')panelDraw('Photo Arrange',['Drag polaroid photos to their album slots.','Match each photo to its correct memory.','6 themed albums, a light timer, and hints.','','Your life, curated your way.','','Click / tap to begin.']);
+  else if(game.state==='won')panelDraw('Album Complete! ✓',['Score: '+game.score+'  Best: '+game.best,'Best streak: '+game.bestStreak+' perfect album(s) in a row','Every memory in its rightful place.','','A life well-curated.','','Click / tap to play again.']);
+  if(game.paused&&game.state==='playing')panelDraw('Paused',['Tap the pause button or press P to resume.']);
+  ctx.restore();
+}catch(e){}}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#080508'],[1,'#060406']]);ctx.fillRect(0,0,W,H);}
+function hitPhoto(x,y){const vis=photos.filter(p=>p.slotIdx<0);for(let i=vis.length-1;i>=0;i--){const p=vis[i];if(x>=p.x&&x<=p.x+PW&&y>=p.y&&y<=p.y+PH)return p;}return null;}
+
+// ---- letterboxed responsive canvas sizing, preserving 960x540 aspect ----
+function resizeCanvas(){
+  const targetRatio=W/H;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  let cw=vw,ch=vw/targetRatio;
+  if(ch>vh){ch=vh;cw=vh*targetRatio;}
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+function getP(e){const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};}
+function onDown(e){e.preventDefault();if(game.transitioning)return;const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='won'){resetGame();return;}if(game.state!=='playing'||game.paused)return;const{x,y}=getP(e);const p=hitPhoto(x,y);if(p){dragging=p;dragOx=x-p.x;dragOy=y-p.y;photos.splice(photos.indexOf(p),1);photos.push(p);}}
+function onMove(e){e.preventDefault();if(game.transitioning)return;if(!dragging)return;const{x,y}=getP(e);dragging.x=clamp(x-dragOx,0,W-PW);dragging.y=clamp(y-dragOy,0,H-PH);}
+function onUp(e){e.preventDefault();if(game.transitioning){dragging=null;return;}if(!dragging)return;const si=slotAt(dragging.x+PW/2,dragging.y+PH/2);if(si>=0)snapToSlot(dragging,si);else reflowPhotos();dragging=null;}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp,{passive:false});
+
+// ---- pause / mute / hint controls ----
+const pauseBtn=document.getElementById('pauseBtn');
+const muteBtn=document.getElementById('muteBtn');
+const hintBtn=document.getElementById('hintBtn');
+function togglePause(){if(game.state!=='playing')return;game.paused=!game.paused;pauseBtn.textContent=game.paused?'▶':'⏸';pauseBtn.title=game.paused?'Resume':'Pause';}
+function toggleMute(){game.muted=!game.muted;muteBtn.textContent=game.muted?'🔇':'🔊';muteBtn.title=game.muted?'Unmute':'Mute';}
+function useHint(){
+  if(game.state!=='playing'||game.paused||game.transitioning)return;
+  if(game.hintsLeft<=0)return;
+  const target=dragging||photos.find(p=>p.slotIdx<0);
+  if(!target)return;
+  game.hintsLeft--;
+  game.hintGlowIdx=target.idx;
+  game.hintGlowT=1400;
+}
+pauseBtn.addEventListener('click',(e)=>{e.preventDefault();togglePause();});
+muteBtn.addEventListener('click',(e)=>{e.preventDefault();toggleMute();});
+hintBtn.addEventListener('click',(e)=>{e.preventDefault();useHint();});
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='p'||e.key==='P'){togglePause();}
+  else if(e.key==='m'||e.key==='M'){toggleMute();}
+  else if(e.key==='h'||e.key==='H'){useHint();}
+});
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get photos(){return photos;},get slots(){return slots;},resetGame,buildRound,snapToSlot,slotAt,checkDone,hitPhoto,update,draw,ALBUMS,PW,PH,togglePause,toggleMute,useHint};
+</script>
+</body>
+</html>

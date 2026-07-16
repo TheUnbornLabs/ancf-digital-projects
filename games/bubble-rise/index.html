@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Bubble Rise</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#02060e;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:34px;height:34px;border-radius:8px;border:1px solid rgba(120,190,255,.35);background:rgba(2,6,14,.75);color:#bfe6ff;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#ctrls button:active{background:rgba(80,180,255,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute" title="Mute">🔊</button>
+  <button id="btnPause" aria-label="Pause" title="Pause">⏸</button>
+</div>
+<div id="hint">Click joy bubbles to pop them before they exit &middot; let pressure bubbles float away &middot; 60 seconds</div>
+<script>
+'use strict';
+// Bubble Rise (#91)
+// Two types of bubbles rise from the bottom:
+//   JOY bubbles (glowing, labelled joy/freedom/etc) — click to pop for +10
+//   PRESSURE bubbles (dark, labelled obligation/etc) — do NOT click; let them float off-screen
+//   Clicking a pressure bubble = -5 pts, life lost
+// Survive 60 seconds. 3 lives.
+// Theme: recognising and embracing joy, ignoring pressure.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const JOY_LABELS=['Joy','Rest','Play','Flow','Calm','Create','Wander','Laugh','Dream','Ease'];
+const PRESSURE_LABELS=['obey','conform','oblige','rush','impress','sacrifice','regret','schedule'];
+const DURATION=60000;
+
+// localStorage persistence (private browsing can throw)
+const LS_KEY='bubbleRise_best';
+function loadBest(){try{const v=parseInt(localStorage.getItem(LS_KEY),10);return isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+
+const game={state:'title',time:0,elapsed:0,score:0,best:loadBest(),lives:3,popped:0,combo:0,maxCombo:0,pressureAvoided:0,muted:false,newBest:false,flurry:0,flurryUntil:0,nextFlurryAt:15000};
+let bubbles=[],popups=[],spawnTimer=0,spawnInterval=900,rng;
+
+function resetGame(){bubbles=[];popups=[];spawnTimer=0;spawnInterval=900;game.elapsed=0;game.lives=3;game.score=0;game.popped=0;game.combo=0;game.maxCombo=0;game.pressureAvoided=0;game.newBest=false;game.flurry=0;game.flurryUntil=0;game.nextFlurryAt=15000;rng=seeded(Date.now()>>>0);game.state='playing';}
+
+function addPopup(x,y,text,color){popups.push({x,y,text,color,t:0});}
+
+function spawnBubble(){
+  // difficulty ramp: pressure ratio and speed creep up (clamped) as elapsed increases
+  const prog=clamp(game.elapsed/DURATION,0,1);
+  const pressureChance=clamp(0.45+prog*0.15,0.45,0.6); // pressure spawn chance rises slightly
+  const isJoy=rng()>=pressureChance;
+  const r=22+rng()*18;
+  const x=r+rng()*(W-2*r);
+  const speedBoost=1+prog*0.35; // up to +35% speed late game
+  const flurryBoost=game.flurry>0?1.15:1;
+  const speed=(40+rng()*50)*speedBoost*flurryBoost;
+  bubbles.push({x,y:H+r,r,vy:-(speed),joy:isJoy,label:(isJoy?JOY_LABELS:PRESSURE_LABELS)[Math.floor(rng()*(isJoy?JOY_LABELS.length:PRESSURE_LABELS.length))],wobble:rng()*Math.PI*2,wobbleS:(rng()-.5)*1.5,popped:false,popT:0,alpha:1,escaped:false});
+}
+
+function comboBonus(){return 10+Math.max(0,game.combo)*2;} // +10,+12,+14...
+
+function clickBubble(px,py){
+  // prefer nearest center among overlapping hit candidates, not just topmost index
+  let best=null,bestD=Infinity;
+  for(let i=bubbles.length-1;i>=0;i--){
+    const b=bubbles[i];
+    if(b.popped)continue;
+    const d=Math.hypot(px-b.x,py-b.y);
+    if(d<b.r+4&&d<bestD){best=b;bestD=d;}
+  }
+  if(!best)return;
+  const b=best;
+  b.popped=true;
+  if(b.joy){
+    game.combo++;
+    if(game.combo>game.maxCombo)game.maxCombo=game.combo;
+    const gain=comboBonus();
+    game.score+=gain;
+    game.popped++;
+    addPopup(b.x,b.y,'+'+gain,'rgba(180,240,255,.95)');
+    sndPop();
+  }else{
+    game.combo=0;
+    game.score=Math.max(0,game.score-5);
+    game.lives--;
+    addPopup(b.x,b.y,'-5','rgba(255,140,140,.95)');
+    sndBad();
+    shakeT=250;
+    if(game.lives<=0){
+      game.lives=0;
+      if(game.score>game.best){game.best=game.score;game.newBest=true;saveBest(game.best);}
+      sndLose();
+      setTimeout(()=>game.state='gameover',400);
+    }
+  }
+}
+
+let shakeT=0;
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+  for(const p of popups)p.t+=dt;
+  popups=popups.filter(p=>p.t<700);
+  if(game.state!=='playing')return;
+  game.elapsed+=dt;
+
+  // flurry event: every ~15s, doubled spawn rate for 3-4s
+  if(game.elapsed>=game.nextFlurryAt&&game.flurry<=0){
+    game.flurry=3500+rng()*500;
+    game.nextFlurryAt=game.elapsed+15000;
+  }
+  if(game.flurry>0){game.flurry=Math.max(0,game.flurry-dt);}
+
+  spawnTimer+=dt;
+  const curInterval=game.flurry>0?Math.max(200,spawnInterval*0.5):spawnInterval;
+  if(spawnTimer>=curInterval){
+    spawnTimer=0;
+    spawnInterval=Math.max(400,spawnInterval-15);
+    spawnBubble();
+  }
+  for(const b of bubbles){
+    if(b.popped){
+      b.popT+=dt;
+    }else{
+      b.y+=b.vy*s;
+      b.wobble+=b.wobbleS*s;
+      b.x+=Math.sin(b.wobble)*0.5;
+      b.x=clamp(b.x,b.r,W-b.r);
+      if(b.y<=-100+0.001&&!b.escaped){
+        b.escaped=true;
+        if(b.joy){
+          // joy escaped unpopped: small penalty + streak reset + miss cue
+          game.combo=0;
+          game.score=Math.max(0,game.score-3);
+          addPopup(b.x,40,'missed','rgba(255,200,120,.9)');
+          sndMiss();
+        }else{
+          // pressure successfully avoided: positive reinforcement
+          game.pressureAvoided++;
+        }
+      }
+    }
+  }
+  bubbles=bubbles.filter(b=>!(b.popped&&b.popT>400)&&b.y>-100);
+  if(game.elapsed>=DURATION&&game.lives>0){
+    if(game.score>game.best){game.best=game.score;game.newBest=true;saveBest(game.best);}
+    sndWin();
+    game.state='won';
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndPop=()=>tone(600+game.popped*5,0.08,'sine',0.05);
+const sndBad=()=>tone(200,0.15,'sawtooth',0.05);
+const sndMiss=()=>tone(320,0.1,'triangle',0.03);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#02060e'],[1,'#010408']]);ctx.fillRect(0,0,W,H);
+  if(game.flurry>0){
+    // telegraphed screen-edge glow during flurry
+    const a=0.15+0.1*Math.sin(game.time/80);
+    const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.9);
+    g.addColorStop(0,'rgba(255,140,80,0)');
+    g.addColorStop(1,'rgba(255,140,80,'+a+')');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+}
+function drawBubbles(){for(const b of bubbles){if(b.popped){const t=clamp(b.popT/400,0,1);ctx.save();ctx.globalAlpha=1-t;ctx.translate(b.x,b.y);const s=1+t*0.6;ctx.scale(s,s);ctx.strokeStyle=b.joy?'rgba(180,240,255,.7)':'rgba(180,80,80,.5)';ctx.lineWidth=2;for(let i=0;i<6;i++){const a=i/6*Math.PI*2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*b.r*t,Math.sin(a)*b.r*t);ctx.stroke();}ctx.restore();}else{ctx.save();// bubble fill
+const bg=b.joy?ctx.createRadialGradient(b.x-b.r*0.3,b.y-b.r*0.3,1,b.x,b.y,b.r):ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);if(b.joy){bg.addColorStop(0,'rgba(180,240,255,.5)');bg.addColorStop(1,'rgba(60,140,220,.15)');}else{bg.addColorStop(0,'rgba(80,20,80,.5)');bg.addColorStop(1,'rgba(20,0,40,.15)');}ctx.fillStyle=bg;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=b.joy?'rgba(180,240,255,.6)':'rgba(160,60,160,.4)';ctx.lineWidth=1.5;ctx.stroke();// shine
+if(b.joy){ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(b.x-b.r*0.3,b.y-b.r*0.3,b.r*0.2,0,Math.PI*2);ctx.fill();}// label
+ctx.fillStyle=b.joy?'rgba(200,240,255,.9)':'rgba(200,100,200,.6)';ctx.font=`bold ${Math.round(7+b.r*0.2)}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.label,b.x,b.y);ctx.restore();}}}
+function drawPopups(){for(const p of popups){const t=clamp(p.t/700,0,1);ctx.save();ctx.globalAlpha=1-t;ctx.fillStyle=p.color;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.text,p.x,p.y-t*30);ctx.restore();}}
+function drawHUD(){
+  const sec=Math.max(0,Math.ceil((DURATION-game.elapsed)/1000));
+  ctx.save();
+  ctx.fillStyle='rgba(1,3,6,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80d0ff';ctx.font='bold 13px Arial';ctx.fillText('Bubble Rise',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  let livesColor='rgba(234,242,246,.5)';
+  if(game.lives===1){ // low-lives warning
+    const pulse=0.5+0.5*Math.sin(game.time/120);
+    livesColor='rgba('+Math.round(220+35*pulse)+',80,80,.9)';
+  }
+  ctx.fillStyle=livesColor;
+  ctx.fillText('Pop JOY bubbles  Let pressure float away  Time: '+sec+'s  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives),18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  const comboTxt=game.combo>1?'Combo x'+game.combo+'  ':'';
+  ctx.fillText(comboTxt+'Avoided '+game.pressureAvoided,W-18,28);
+  ctx.restore();
+  if(game.lives===1){
+    const pulse=0.15+0.1*Math.sin(game.time/120);
+    ctx.save();ctx.fillStyle='rgba(255,60,60,'+pulse+')';ctx.fillRect(0,0,W,H);ctx.restore();
+  }
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,3,6,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=340,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,8,18,.97)'],[1,'rgba(3,5,12,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,180,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80d0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+100;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  if(game.newBest&&(game.state==='won'||game.state==='gameover')){
+    ctx.fillStyle='#ffd76a';ctx.font='bold 18px Arial';ctx.fillText('New Best!',W/2,ly+8);
+  }
+  ctx.restore();}
+function drawPauseOverlay(){ctx.save();ctx.fillStyle='rgba(1,3,6,.6)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#80d0ff';ctx.font='bold 28px Arial';ctx.fillText('Paused',W/2,H/2-10);ctx.fillStyle='rgba(234,242,246,.8)';ctx.font='14px Arial';ctx.fillText('Tap pause button or press P/Space to resume',W/2,H/2+22);ctx.restore();}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+  if(shakeT>0){const m=shakeT/250;ctx.translate((Math.random()-0.5)*6*m,(Math.random()-0.5)*6*m);}
+  drawBg();
+  if(game.state!=='title')drawBubbles();
+  if(game.state!=='title')drawPopups();
+  vignette();
+  if(game.state==='playing'||game.state==='paused')drawHUD();
+  if(game.state==='title')panelDraw('Bubble Rise',['Glowing bubbles = JOY — click to pop! (+10 & rising combo)','Dark bubbles = PRESSURE — let them float away.','Clicking pressure costs a life.','Letting joy escape unpopped costs a small penalty.','3 lives — survive 60 seconds.','','Recognise joy. Ignore pressure.','','Click / tap to begin.']);
+  else if(game.state==='won')panelDraw('Joy Found! ✓',['Score: '+game.score+'  Best: '+game.best,'Popped: '+game.popped+' joy bubbles  Best combo: '+game.maxCombo,'Pressure avoided: '+game.pressureAvoided,'','60 seconds of pure recognition.','','Click / tap to play again.']);
+  else if(game.state==='gameover')panelDraw('Overwhelmed',['Score: '+game.score+'  Best: '+game.best,'Pressure avoided: '+game.pressureAvoided,'','Mistaken pops ran out the lives.','','Click / tap to retry.']);
+  if(game.state==='paused')drawPauseOverlay();
+  ctx.restore();}catch(e){}}
+
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';}
+  else if(game.state==='paused'){game.state='playing';}
+}
+function toggleMute(){game.muted=!game.muted;const b=document.getElementById('btnMute');if(b)b.textContent=game.muted?'🔇':'🔊';}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused')return;
+  if(game.state==='playing')clickBubble(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// keyboard: pause (P / Space) — bonus input, not the only one
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'||e.code==='Space'){
+    if(game.state==='playing'||game.state==='paused'){e.preventDefault();togglePause();}
+  }
+  if(e.code==='KeyM'){toggleMute();}
+});
+
+// on-screen buttons (mobile-visible, real tap targets)
+const btnMuteEl=document.getElementById('btnMute');
+const btnPauseEl=document.getElementById('btnPause');
+if(btnMuteEl)btnMuteEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+if(btnPauseEl)btnPauseEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get bubbles(){return bubbles;},resetGame,spawnBubble,clickBubble,update,draw,togglePause,toggleMute,JOY_LABELS,PRESSURE_LABELS,DURATION};
+</script>
+</body>
+</html>

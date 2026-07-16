@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Leaf Fall</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#02040a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrl{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrl button{width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(120,220,140,.4);background:rgba(1,4,8,.7);color:#cdeccd;font-size:16px;line-height:1;cursor:pointer;touch-action:manipulation;}
+#ctrl button:active{background:rgba(80,180,100,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrl">
+<button id="btnMute" title="Mute" aria-label="Mute">🔊</button>
+<button id="btnPause" title="Pause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Mouse / swipe to guide the leaf &middot; land on calm patches &middot; avoid pressure gusts &middot; 8 rounds</div>
+<script>
+'use strict';
+// Leaf Fall (#98)
+// A leaf falls from top to bottom. Guide it with the mouse (leaf follows cursor laterally).
+// Wind gusts from the sides — labelled with pressures — push the leaf.
+// Calm landing zones at the bottom. Land on a calm zone to score.
+// Miss the zone or get blown off-screen = life lost.
+// 8 rounds (gusts get stronger). 3 lives.
+// Theme: falling at your own angle — letting go into your own landing.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const GUST_LABELS=['expectations','comparison','judgment','timeline','norm','oblige','should','pressure'];
+const ZONE_LABELS=['Peace','Rest','Calm','Home','Ease'];
+const TOTAL=8;
+const LEAF_W=28,LEAF_H=18;
+const GUST_SPEED_MAX=200+120*TOTAL; // explicit ceiling so future round tuning can't blow up
+const LS_KEY='leaffall_best_v1';
+function loadBest(){try{const v=parseInt(localStorage.getItem(LS_KEY),10);return Number.isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),lives:3,streak:0,muted:false,shake:0};
+let leaf,zones=[],gusts=[],gustTimer=0,rng,mx=W/2,particles=[],popups=[],prevState='title';
+function spawnBurst(x,y,color,n,spread){n=n||14;for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2;const sp=(spread||160)*(0.3+Math.random()*0.7);particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0,maxLife:400+Math.random()*300,color:color||'180,255,180',r:2+Math.random()*2.5});}}
+function spawnPopup(x,y,text,color){popups.push({x,y,text,color:color||'#cdeccd',life:0,maxLife:900});}
+function updateFx(dt){for(const p of particles){p.life+=dt;p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=220*dt/1000;}particles=particles.filter(p=>p.life<p.maxLife);for(const p of popups){p.life+=dt;p.y-=24*dt/1000;}popups=popups.filter(p=>p.life<p.maxLife);if(game.shake>0)game.shake=Math.max(0,game.shake-dt);}
+function triggerMiss(x,y){game.shake=220;spawnBurst(x,y,'200,140,110',18,190);}
+function buildRound(r){rng=seeded(r*6007+61);zones=[];gusts=[];gustTimer=0;// calm zones at bottom
+const nz=3;for(let i=0;i<nz;i++){const zw=90+rng()*40;const zx=80+rng()*(W-160-zw);zones.push({x:zx,y:H-50,w:zw,h:22,label:ZONE_LABELS[Math.floor(rng()*ZONE_LABELS.length)],hit:false});}leaf={x:W/2,y:30,vx:0,vy:60,angle:0,vangle:0,cleanRound:true};game.state='playing';}
+function resetGame(){game.round=0;game.score=0;game.lives=3;game.streak=0;particles=[];popups=[];game.shake=0;buildRound(0);}
+function endGameover(){game.lives=0;if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndLose();game.state='paused_gameover_pending';setTimeout(()=>{if(game.state==='paused_gameover_pending')game.state='gameover';},400);}
+function update(dt){dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+if(game.state==='paused'){return;}
+if(game.state!=='playing'){updateFx(dt);return;}
+updateFx(dt);
+// target x = mouse x, but smooth
+const tx=mx;leaf.vx+=(tx-leaf.x)*3*s;leaf.vx*=0.90;// fall
+leaf.vy+=20*s;leaf.vy=clamp(leaf.vy,20,200);leaf.x+=leaf.vx*s;leaf.y+=leaf.vy*s;
+if(Math.random()<dt/60)particles.push({x:leaf.x,y:leaf.y,vx:(Math.random()-0.5)*20,vy:20+Math.random()*20,life:0,maxLife:500,color:'150,210,110',r:1.5});
+// gusts
+gustTimer+=dt;const gi=Math.max(1200,3000-game.round*200)+rng()*500;if(gustTimer>=gi){gustTimer=0;const fromLeft=rng()<0.5;const spd=clamp(200+rng()*120*game.round,200,GUST_SPEED_MAX);gusts.push({x:fromLeft?-20:W+20,y:80+rng()*(H-200),vx:fromLeft?spd:-spd,w:60,h:36,label:GUST_LABELS[Math.floor(rng()*GUST_LABELS.length)],alpha:1});}
+for(const g of gusts){g.x+=g.vx*s;// collision with leaf
+if(!g.hitDone&&Math.abs(g.x-leaf.x)<40&&Math.abs(g.y-leaf.y)<28){leaf.vx+=g.vx*0.15;g.hitDone=true;leaf.cleanRound=false;spawnBurst(leaf.x,leaf.y,'220,140,100',8,120);}}
+gusts=gusts.filter(g=>g.x>-100&&g.x<W+100);// angle follows vx
+leaf.vangle+=(leaf.vx*0.01-leaf.angle)*s*8;leaf.vangle*=0.7;leaf.angle+=leaf.vangle*s;leaf.angle=clamp(leaf.angle,-Math.PI/3,Math.PI/3);// out of bounds
+if(leaf.x<-40||leaf.x>W+40){game.lives=Math.max(0,game.lives-1);game.streak=0;triggerMiss(clamp(leaf.x,10,W-10),leaf.y);sndHit();if(game.lives<=0){endGameover();return;}buildRound(game.round);return;}// landing
+if(leaf.y>=H-50-LEAF_H){let landed=false,zoneRef=null;for(const z of zones){if(!z.hit&&leaf.x>z.x&&leaf.x<z.x+z.w){z.hit=true;landed=true;zoneRef=z;break;}}
+if(!landed){game.lives=Math.max(0,game.lives-1);game.streak=0;triggerMiss(leaf.x,leaf.y);sndHit();if(game.lives<=0){endGameover();return;}}
+else{let pts=10;if(leaf.cleanRound){game.streak++;pts+=Math.min(20,game.streak*5);}else{game.streak=0;}
+const center=zoneRef.x+zoneRef.w/2;const dist=Math.abs(leaf.x-center)/(zoneRef.w/2);if(dist<0.35)pts+=8;
+game.score+=pts;spawnBurst(leaf.x,H-50,'200,220,150',16,130);spawnPopup(leaf.x,H-70,'+'+pts,'#a6f0a6');sndLand();}
+game.round++;if(game.round>=TOTAL){if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndWin();game.state='won';}else{buildRound(game.round);}}}
+function eventX(e){const rect=canvas.getBoundingClientRect();return (e.clientX-rect.left)*(W/rect.width);}
+canvas.addEventListener('mousemove',e=>{if(game.state==='playing')mx=eventX(e);});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(game.state==='playing')mx=eventX(e.touches[0]);},{passive:false});
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndLand=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndHit=()=>tone(200,0.2,'sawtooth',0.05);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#02040a'],[1,'#010308']]);ctx.fillRect(0,0,W,H);}
+function drawZones(){for(const z of zones){const col=z.hit?'rgba(60,160,80,.5)':'rgba(80,180,100,.3)';ctx.fillStyle=col;ctx.strokeStyle=z.hit?'rgba(80,220,100,.85)':'rgba(120,220,140,.4)';ctx.lineWidth=2;if(!z.hit)ctx.setLineDash([5,4]);rr(z.x,z.y,z.w,z.h,8);ctx.fill();rr(z.x,z.y,z.w,z.h,8);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(180,255,180,.7)';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((z.hit?'✓ ':'')+z.label,z.x+z.w/2,z.y+z.h/2);}}
+function drawGusts(){for(const g of gusts){ctx.save();ctx.globalAlpha=0.6;ctx.fillStyle='rgba(180,100,80,.4)';ctx.strokeStyle='rgba(220,140,100,.5)';ctx.lineWidth=1.5;const dir=g.vx>0?1:-1;ctx.beginPath();ctx.moveTo(g.x,g.y);ctx.lineTo(g.x+dir*g.w,g.y-g.h/2);ctx.lineTo(g.x+dir*g.w,g.y+g.h/2);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,200,160,.8)';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((dir>0?'→ ':'← ')+g.label,g.x+dir*g.w*0.5,g.y);ctx.restore();}}
+function drawLeaf(){ctx.save();ctx.translate(leaf.x,leaf.y);ctx.rotate(leaf.angle);const pulse=0.7+0.3*Math.sin(game.time/400);const nearMax=Math.abs(leaf.angle)>Math.PI/3*0.8;const col=nearMax?`rgba(220,150,80,${pulse})`:`rgba(140,200,80,${pulse})`;ctx.fillStyle=col;ctx.strokeStyle=nearMax?'rgba(200,110,40,.7)':'rgba(80,160,40,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,LEAF_W/2,LEAF_H/2,0,0,Math.PI*2);ctx.fill();ctx.stroke();// vein
+ctx.strokeStyle='rgba(80,140,40,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-LEAF_W/2,0);ctx.lineTo(LEAF_W/2,0);ctx.stroke();ctx.restore();}
+function drawParticles(){for(const p of particles){const a=1-p.life/p.maxLife;ctx.fillStyle=`rgba(${p.color},${Math.max(0,a*0.8)})`;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}}
+function drawPopups(){ctx.save();ctx.textAlign='center';ctx.font='bold 15px Arial';for(const p of popups){const a=1-p.life/p.maxLife;ctx.globalAlpha=Math.max(0,a);ctx.fillStyle=p.color;ctx.fillText(p.text,p.x,p.y);}ctx.restore();}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80e060';ctx.font='bold 13px Arial';ctx.fillText('Leaf Fall — Round '+(game.round+1)+' / '+TOTAL,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Guide leaf with mouse / swipe  Land on calm zones  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives)+(game.streak>1?'  Streak x'+game.streak:''),18,28);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+if(game.state==='playing'&&game.lives===1){const pulse=0.25+0.2*Math.sin(game.time/180);const g2=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.75);g2.addColorStop(0,'rgba(200,30,30,0)');g2.addColorStop(1,`rgba(200,30,30,${pulse})`);ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);}}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(2,6,10,.97)'],[1,'rgba(1,4,8,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,200,80,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80e060';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function draw(){try{const shakeMag=game.shake>0?Math.min(6,game.shake/40):0;const sx=shakeMag?(Math.random()-0.5)*shakeMag:0;const sy=shakeMag?(Math.random()-0.5)*shakeMag:0;
+ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();ctx.translate(sx,sy);drawBg();if(game.state!=='title'){drawZones();drawGusts();drawParticles();drawLeaf();drawPopups();}vignette();if(game.state==='playing')drawHUD();
+if(game.state==='title')panelDraw('Leaf Fall',['Move the mouse / swipe to guide the falling leaf.','Wind gusts push you — steer to calm landing zones.','3 lives — 8 rounds of thicker gusts.','','Let go. Fall at your own angle. Land where you choose.','','Click / tap to begin.']);
+else if(game.state==='paused')panelDraw('Paused',['Score: '+game.score+'  Best: '+game.best,'','Take a breath — the gusts can wait.','','Click / tap resume, or press P.']);
+else if(game.state==='won')panelDraw('Landed! ✓',['Score: '+game.score+'  Best: '+game.best,'','8 falls. Every one your own.','','Click / tap to play again.']);
+else if(game.state==='gameover')panelDraw('Blown Away',['Score: '+game.score+'  Best: '+game.best,'','The gusts won this time.','','Click / tap to retry.']);
+ctx.restore();}catch(e){}}
+function togglePause(){if(game.state==='playing'){prevState='playing';game.state='paused';btnPause.textContent='▶';}else if(game.state==='paused'){game.state='playing';btnPause.textContent='⏸';}}
+function toggleMute(){game.muted=!game.muted;btnMute.textContent=game.muted?'🔇':'🔊';}
+function onDown(e){e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}else if(game.state==='paused'){togglePause();}}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('touchstart',e=>{e.preventDefault();if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}else if(game.state==='paused'){togglePause();}else{mx=eventX(e.touches[0]);}},{passive:false});
+const btnMute=document.getElementById('btnMute'),btnPause=document.getElementById('btnPause');
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnPause.addEventListener('click',e=>{e.stopPropagation();if(game.state==='playing'||game.state==='paused')togglePause();});
+btnMute.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();toggleMute();},{passive:false});
+btnPause.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();if(game.state==='playing'||game.state==='paused')togglePause();},{passive:false});
+window.addEventListener('keydown',e=>{if(e.key==='p'||e.key==='P'||e.key==='Escape'){if(game.state==='playing'||game.state==='paused')togglePause();}else if(e.key==='m'||e.key==='M'){toggleMute();}else if(e.key==='Enter'||e.key===' '){if(game.state==='title'||game.state==='won'||game.state==='gameover')resetGame();}});
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get leaf(){return leaf;},get zones(){return zones;},get gusts(){return gusts;},get particles(){return particles;},get popups(){return popups;},resetGame,buildRound,update,draw,togglePause,toggleMute,TOTAL,LEAF_W,LEAF_H,GUST_SPEED_MAX};
+</script>
+</body>
+</html>

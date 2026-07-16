@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Boundary Catch</title>
+<style>
+  :root{--bg:#0c1424;--panel:rgba(8,14,26,.86);--line:rgba(255,255,255,.16);--text:#f2f6ff;--accent:#7fe0c8;--warn:#ff6f7d;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#060a14;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 18%,#16223e,#060a14 70%);}
+  canvas{width:100vw;height:100vh;display:block;background:#0c1424;image-rendering:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:18px;display:flex;gap:12px;pointer-events:auto;align-items:flex-end;}
+  .pad.left{left:18px}.pad.right{right:18px}
+  .btn{width:64px;height:64px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.25);}
+  .btn:active{transform:translateY(2px);background:rgba(127,224,200,.28);}
+  @media (min-width:900px){.btn{opacity:.4}.btn:hover{opacity:.95}}
+  #hudControls{position:fixed;top:14px;right:14px;display:flex;gap:10px;pointer-events:auto;z-index:6;}
+  .hbtn{width:46px;height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);color:#fff;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;}
+  .hbtn:active{transform:translateY(1px);background:rgba(127,224,200,.28);}
+  .hbtn.muted{color:#ff9aa5;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="touchControls">
+  <div class="pad left"><div class="btn" data-act="left">&#9664;</div></div>
+  <div class="pad right"><div class="btn" data-act="action">&#9889;</div><div class="btn" data-act="right">&#9654;</div></div>
+</div>
+<div id="hudControls">
+  <button type="button" class="hbtn" id="muteBtn" aria-label="Mute">&#128266;</button>
+  <button type="button" class="hbtn" id="pauseBtn" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<script>
+'use strict';
+
+// =========================================================
+// Boundary Catch  -  ANCF 100 HTML Games (#3)
+// Move a basket to KEEP healthy requests, LET overload fall.
+// Catching overload fills a capacity bar; overflow = burnout.
+// Theme: [Autonomy] / [Mental health] - "No" is a complete
+// sentence; capacity is real. Critiques pressure, never people.
+// Single-file: HTML + CSS + canvas + Web Audio. No deps.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const TAU = Math.PI*2;
+
+function makeRng(seed){let s=(seed>>>0)||1; return ()=>{s=(s*1664525+1013904223)>>>0; return s/4294967296;};}
+const randHash = n => { let x = Math.sin(n*999.1337)*10000; return x-Math.floor(x); };
+
+const input = {left:false,right:false,actionPressed:false,pausePressed:false};
+const keyMap = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+window.addEventListener('keydown', e=>{
+  if(e.code==='Enter'||e.code==='Space'){input.actionPressed=true; e.preventDefault(); return;}
+  if(e.code==='KeyP'){input.pausePressed=true; return;}
+  const a=keyMap[e.code]; if(!a) return; e.preventDefault(); input[a]=true;
+});
+window.addEventListener('keyup', e=>{const a=keyMap[e.code]; if(a){e.preventDefault(); input[a]=false;}});
+document.querySelectorAll('.btn').forEach(btn=>{
+  const a=btn.dataset.act;
+  const down=e=>{e.preventDefault(); if(a==='action') input.actionPressed=true; else input[a]=true;};
+  const up=e=>{e.preventDefault(); if(a!=='action') input[a]=false;};
+  btn.addEventListener('touchstart',down,{passive:false}); btn.addEventListener('touchend',up,{passive:false}); btn.addEventListener('touchcancel',up,{passive:false});
+  btn.addEventListener('mousedown',down); btn.addEventListener('mouseup',up); btn.addEventListener('mouseleave',up);
+});
+
+const muteBtn=document.getElementById('muteBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+if(muteBtn) muteBtn.addEventListener('click', e=>{
+  e.preventDefault(); Audio2.on=!Audio2.on;
+  muteBtn.innerHTML=Audio2.on?'&#128266;':'&#128263;';
+  muteBtn.classList.toggle('muted',!Audio2.on);
+});
+if(pauseBtn) pauseBtn.addEventListener('click', e=>{
+  e.preventDefault();
+  if(game.state==='playing') setState('paused');
+  else if(game.state==='paused') setState('playing');
+});
+
+// ---- Pointer/touch drag-to-move basket on canvas ----
+let dragActive=false;
+function canvasXFromClientX(clientX){
+  const rect=canvas.getBoundingClientRect();
+  const scale=W/rect.width;
+  return (clientX-rect.left)*scale;
+}
+canvas.addEventListener('pointerdown', e=>{ dragActive=true; input.dragX=canvasXFromClientX(e.clientX); canvas.setPointerCapture&&canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e=>{ if(dragActive){ input.dragX=canvasXFromClientX(e.clientX); } });
+canvas.addEventListener('pointerup', e=>{ dragActive=false; input.dragX=null; });
+canvas.addEventListener('pointercancel', e=>{ dragActive=false; input.dragX=null; });
+input.dragX=null;
+
+// ---- Content pools (original text) ----
+const GOOD_ITEMS = [
+  'rest','a walk','time with a friend','a full night of sleep','a quiet evening',
+  'a hobby you love','a real lunch break','a day off you earned','reading for fun',
+  'a slow morning','help you actually want','a kind word','fresh air','a deep breath',
+  'water and a stretch','a boundary you set','saying no, kindly','a nap','your own plans first'
+];
+const OVERLOAD_ITEMS = [
+  'guilt-trip favor','unpaid extra shift','obligation you resent','a quick task at 9pm',
+  'comparison spiral','someone elses emergency','a deadline that isnt yours',
+  'doomscroll loop','people-pleasing again','a yes youll regret','an argument online',
+  'over-commitment','manufactured urgency','a chore that isnt yours','a guilt phone call',
+  'apology you dont owe','endless availability','their crisis, your weekend'
+];
+const WAVE_TIPS = [
+  'No is a complete sentence.',
+  'Capacity is real. You can run out.',
+  'Letting it fall is not failure.',
+  'Rest is not a reward you must earn.',
+  'You are not responsible for everyones comfort.',
+  'A full life needs no permission.',
+  'Saying no protects your yes.'
+];
+
+const basket = {x:W/2, y:H-86, w:120, h:52, speed:560, vx:0};
+
+const BEST_KEY='boundarycatch_best';
+function loadBest(){ try{ const v=parseInt(localStorage.getItem(BEST_KEY),10); return isFinite(v)&&v>0?v:0; }catch(e){ return 0; } }
+function saveBest(v){ try{ localStorage.setItem(BEST_KEY,String(v)); }catch(e){} }
+
+const game = {
+  state:'title', time:0,
+  seed:1337, rng:makeRng(1337), spawnSeq:0,
+  items:[], particles:[], floats:[],
+  score:0, kept:0, declined:0,
+  capacity:0, capacityMax:1,
+  wave:1, waveTimer:0, waveLen:24, spawnTimer:0,
+  best:0, shake:0, tip:WAVE_TIPS[0],
+  streak:0, bestStreak:0,
+  waveMissedGood:0, waveCaughtOverload:0, perfectDay:false
+};
+game.best=loadBest();
+
+// ---- Audio (guarded) ----
+const Audio2 = {
+  ctx:null, master:null, on:true,
+  init(){ if(this.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ this.ctx=new AC(); this.master=this.ctx.createGain(); this.master.gain.value=.5; this.master.connect(this.ctx.destination);}catch(e){this.ctx=null;} },
+  tone(freq,dur,type,gain,slideTo){ if(!this.ctx||!this.on) return;
+    try{ const o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type=type||'sine'; const t=this.ctx.currentTime;
+      o.frequency.setValueAtTime(freq,t); if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1,slideTo),t+dur);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(gain||.16,t+.012); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+.03);
+    }catch(e){} },
+  catchGood(){ this.tone(523,.12,'triangle',.18); this.tone(784,.16,'sine',.12,990); },
+  declineGood(){ this.tone(220,.18,'sawtooth',.14,140); },
+  catchBad(){ this.tone(180,.22,'square',.16,120); },
+  declineBad(){ this.tone(660,.08,'sine',.08,820); },
+  overflow(){ this.tone(140,.5,'sawtooth',.2,60); this.tone(90,.6,'square',.16,50); },
+  wave(){ this.tone(523,.12,'sine',.14); this.tone(659,.12,'sine',.14); this.tone(784,.2,'triangle',.14); }
+};
+
+// ---- Classification + deterministic spawning ----
+function classifyText(text){ return OVERLOAD_ITEMS.indexOf(text)>=0 ? 'overload' : 'good'; }
+
+function waveParams(w){
+  const speed = Math.min(120 + (w-1)*26, 420);
+  const overloadShare = clamp(0.30 + (w-1)*0.05, 0, 0.62);
+  const spawnInterval = clamp(1.25 - (w-1)*0.10, 0.55, 1.25);
+  return {speed, overloadShare, spawnInterval};
+}
+
+function waveLenFor(w){ return Math.max(14, 24 - (w-1)*0.6); }
+
+function spawnItem(){
+  const p = waveParams(game.wave);
+  const i = game.spawnSeq++;
+  const r1 = randHash(game.seed*0.013 + i*1.31 + game.wave*7.7);
+  const r2 = randHash(game.seed*0.077 + i*2.17 + game.wave*3.3);
+  const r3 = randHash(game.seed*0.191 + i*0.53 + game.wave*5.1);
+  const r4 = randHash(game.seed*0.331 + i*1.91 + game.wave*2.1);
+  const isOverload = r1 < p.overloadShare;
+  const pool = isOverload ? OVERLOAD_ITEMS : GOOD_ITEMS;
+  const text = pool[Math.floor(r2*pool.length)%pool.length];
+  const kind = isOverload ? 'overload' : 'good';
+  const golden = kind==='good' && r4>0.94;
+  const margin = 90;
+  const x = margin + r3*(W-margin*2);
+  const speed = p.speed*(0.85 + r1*0.4);
+  const it = {x, y:-40, r:30, vy:speed, vx:(r2-0.5)*16, kind, text, golden,
+    spin:(r3-0.5)*0.8, rot:r2*TAU, born:game.time, caught:false, dead:false, flash:0};
+  game.items.push(it);
+  return it;
+}
+
+// ---- Mechanics ----
+function basketCatchZone(){ return {x:basket.x-basket.w/2, y:basket.y-basket.h/2-10, w:basket.w, h:basket.h*0.7+16}; }
+function itemInBasket(it){ const z=basketCatchZone(); return it.x>z.x+8 && it.x<z.x+z.w-8 && it.y>z.y && it.y<z.y+z.h+10; }
+
+function catchItem(it){
+  if(it.caught||it.dead) return;
+  it.caught=true; it.dead=true;
+  if(it.kind==='good'){
+    game.streak++; game.bestStreak=Math.max(game.bestStreak,game.streak);
+    const streakBonus=Math.min(game.streak-1,20);
+    let pts=(10+game.wave*2+streakBonus);
+    if(it.golden) pts*=3;
+    pts=Math.round(pts);
+    const reactMs=(game.time-it.born)*1000;
+    if(reactMs<450){ pts+=5; addFloat(it.x, basket.y-58, 'quick! +5', '#ffe28a'); }
+    game.score+=pts; game.kept++;
+    addFloat(it.x, basket.y-40, '+'+pts+(it.golden?' ★':''), it.golden?'#ffd86b':'#9bf0d6');
+    burst(it.x, basket.y-30, it.golden?'#ffd86b':'#7fe0c8', it.golden?20:12);
+    Audio2.catchGood();
+  } else {
+    game.streak=0; game.waveCaughtOverload++;
+    const fill=0.16+game.wave*0.012; game.capacity=clamp(game.capacity+fill,0,game.capacityMax);
+    addFloat(it.x, basket.y-40, 'overload!', '#ff8a96'); burst(it.x, basket.y-30, '#ff6f7d', 14);
+    Audio2.catchBad(); game.shake=Math.max(game.shake,8);
+    if(game.capacity>=game.capacityMax) triggerOverflow();
+  }
+}
+
+function missItem(it){
+  if(it.caught||it.dead) return;
+  it.dead=true;
+  if(it.kind==='overload'){
+    game.declined++; game.score+=4; game.capacity=clamp(game.capacity-0.015,0,game.capacityMax);
+    addFloat(it.x, H-70, 'let it fall +4', '#bcd0ff'); Audio2.declineBad();
+  } else {
+    game.streak=0; game.waveMissedGood++;
+    game.score=Math.max(0,game.score-2);
+    addFloat(it.x, H-70, 'missed -2', 'rgba(255,180,180,.75)'); Audio2.declineGood();
+  }
+}
+
+function triggerOverflow(){
+  game.capacity=game.capacityMax; game.shake=16; burst(basket.x, basket.y-30, '#ff6f7d', 30);
+  Audio2.overflow();
+  if(game.score>game.best){ game.best=game.score; saveBest(game.best); }
+  setState('gameover');
+}
+
+// ---- Particles / floats ----
+function burst(x,y,color,n){
+  for(let i=0;i<n;i++){
+    const a=randHash(game.spawnSeq*3.1+i*1.7)*TAU, sp=40+randHash(i*5.3+x)*180;
+    game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:0.6+randHash(i)*0.4,age:0,color,r:2+randHash(i*2)*3});
+  }
+}
+function addFloat(x,y,text,color){ game.floats.push({x,y,text,color,age:0,life:1.1}); }
+
+// ---- State control ----
+function setState(s){ game.state=s; }
+
+function reset(seed){
+  game.seed=(seed!=null)?(seed>>>0):game.seed;
+  game.rng=makeRng(game.seed); game.spawnSeq=0;
+  game.items.length=0; game.particles.length=0; game.floats.length=0;
+  game.score=0; game.kept=0; game.declined=0; game.capacity=0;
+  game.wave=1; game.waveTimer=0; game.waveLen=waveLenFor(1); game.spawnTimer=0; game.shake=0; game.time=0;
+  game.tip=WAVE_TIPS[0]; basket.x=W/2; basket.vx=0;
+  game.streak=0; game.waveMissedGood=0; game.waveCaughtOverload=0; game.perfectDay=false;
+  game.best=Math.max(game.best,loadBest());
+  setState('playing');
+}
+
+function nextWave(){
+  game.perfectDay=(game.waveMissedGood===0 && game.waveCaughtOverload===0);
+  game.wave++; game.waveTimer=0; game.waveLen=waveLenFor(game.wave); game.tip=WAVE_TIPS[(game.wave-1)%WAVE_TIPS.length];
+  game.waveMissedGood=0; game.waveCaughtOverload=0;
+  game.capacity=clamp(game.capacity-0.10,0,game.capacityMax); Audio2.wave(); setState('waveComplete');
+}
+
+// ---- UPDATE ----
+function update(dt){
+  game.time+=dt;
+  if(game.shake>0) game.shake=Math.max(0,game.shake-dt*40);
+  for(const p of game.particles){ p.age+=dt; p.vy+=260*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+  game.particles=game.particles.filter(p=>p.age<p.life);
+  for(const f of game.floats){ f.age+=dt; f.y-=22*dt; }
+  game.floats=game.floats.filter(f=>f.age<f.life);
+
+  if(game.state==='title'){ if(input.actionPressed){ input.actionPressed=false; Audio2.init(); reset(game.seed); } return; }
+  if(game.state==='gameover'){ if(input.actionPressed){ input.actionPressed=false; reset(game.seed); } return; }
+  if(game.state==='waveComplete'){ if(input.actionPressed){ input.actionPressed=false; setState('playing'); } return; }
+  if(game.state==='paused'){ if(input.pausePressed){ input.pausePressed=false; setState('playing'); } return; }
+  if(input.pausePressed){ input.pausePressed=false; setState('paused'); return; }
+
+  let dir=(input.left?-1:0)+(input.right?1:0);
+  if(dir===0 && input.dragX!=null){
+    const diff=input.dragX-basket.x;
+    if(Math.abs(diff)>4) dir = diff>0?1:-1; else dir=0;
+    basket.x=clamp(input.dragX, basket.w/2+6, W-basket.w/2-6);
+    basket.vx=0;
+  } else {
+    basket.vx=dir*basket.speed;
+    basket.x=clamp(basket.x+basket.vx*dt, basket.w/2+6, W-basket.w/2-6);
+  }
+
+  if(game.capacity>0.85){
+    game._heartTimer=(game._heartTimer||0)-dt;
+    if(game._heartTimer<=0){ Audio2.tone(90,.09,'sine',.10); game._heartTimer=Math.max(0.25, 0.6-(game.capacity-0.85)*2); }
+  }
+
+  game.waveTimer+=dt;
+  if(game.waveTimer>=game.waveLen){ nextWave(); return; }
+
+  const p=waveParams(game.wave);
+  game.spawnTimer-=dt;
+  if(game.spawnTimer<=0){ spawnItem(); game.spawnTimer=p.spawnInterval; }
+
+  for(const it of game.items){
+    if(it.dead) continue;
+    it.y+=it.vy*dt; it.x+=it.vx*dt; it.rot+=it.spin*dt;
+    if(it.x<60){ it.x=60; it.vx=Math.abs(it.vx); }
+    if(it.x>W-60){ it.x=W-60; it.vx=-Math.abs(it.vx); }
+    if(it.flash>0) it.flash-=dt*3;
+    if(!it.caught && it.y>basket.y-basket.h*0.5-6 && itemInBasket(it)){ catchItem(it); }
+    else if(it.y>H+40){ missItem(it); }
+  }
+  game.items=game.items.filter(it=>!it.dead && it.y<H+60);
+}
+
+// ---- RENDER helpers ----
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rgrad(x,y,r,stops){const g=ctx.createRadialGradient(x,y,0,x,y,r);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rrPath(x,y,w,h,r){r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function roundRect(x,y,w,h,r,fill){rrPath(x,y,w,h,r);if(fill)ctx.fill();else ctx.stroke();}
+function shadowBlob(x,y,rx,ry,a){ctx.save();ctx.fillStyle='rgba(6,8,16,'+(a==null?.22:a)+')';ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,TAU);ctx.fill();ctx.restore();}
+
+// ---- DRAW ----
+function drawBackground(){
+  ctx.fillStyle=lgrad(0,0,0,H,[[0,'#16284b'],[0.5,'#11203c'],[1,'#0a1124']]); ctx.fillRect(0,0,W,H);
+  const gx=760, gy=110;
+  ctx.fillStyle=rgrad(gx,gy,180,[[0,'rgba(150,200,255,0.35)'],[1,'rgba(150,200,255,0)']]); ctx.fillRect(gx-200,gy-200,400,400);
+  ctx.fillStyle=rgrad(gx,gy,40,[[0,'#eef6ff'],[1,'#b9d2ff']]); ctx.beginPath(); ctx.arc(gx,gy,40,0,TAU); ctx.fill();
+  for(let i=0;i<46;i++){
+    const sx=randHash(i*1.7)*W, baseY=randHash(i*2.3)*H*0.7, drift=Math.sin(game.time*0.4+i)*6, sy=baseY+drift;
+    const tw=0.3+0.5*(0.5+0.5*Math.sin(game.time*1.3+i*0.7));
+    ctx.fillStyle='rgba(180,210,255,'+tw.toFixed(3)+')'; ctx.beginPath(); ctx.arc(sx,sy,1.1+randHash(i*3.1)*1.3,0,TAU); ctx.fill();
+  }
+  ctx.fillStyle='rgba(20,34,62,0.6)';
+  for(let i=0;i<14;i++){ const bw=46+randHash(i*4.1)*40, bx=(i*78+Math.sin(i)*10)%(W+80)-40, bh=70+randHash(i*5.7)*120; ctx.fillRect(bx,H-150,bw,bh+200); }
+  ctx.fillStyle='rgba(28,46,80,0.7)';
+  for(let i=0;i<10;i++){ const bw=64+randHash(i*2.9)*60, bx=(i*108+30)%(W+120)-60, bh=120+randHash(i*7.3)*90; ctx.fillRect(bx,H-110,bw,bh); }
+  ctx.fillStyle=lgrad(0,H-70,0,H,[[0,'#13233f'],[1,'#0a1322']]); ctx.fillRect(0,H-70,W,70);
+  ctx.strokeStyle='rgba(127,224,200,0.25)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,H-70); ctx.lineTo(W,H-70); ctx.stroke();
+}
+
+function drawItem(it){
+  ctx.save(); ctx.translate(it.x,it.y);
+  const good=it.kind==='good', r=it.r;
+  ctx.fillStyle=rgrad(0,0,r*1.8,[[0,good?'rgba(127,224,200,0.30)':'rgba(255,111,125,0.30)'],[1,'rgba(0,0,0,0)']]);
+  ctx.beginPath(); ctx.arc(0,0,r*1.8,0,TAU); ctx.fill();
+  const bodyTop=good?'#2f7d68':'#7d2f3a', bodyBot=good?'#1d5446':'#561f29';
+  ctx.fillStyle=lgrad(0,-r,0,r,[[0,good?'#9ff0d8':'#ffb3bb'],[0.18,bodyTop],[1,bodyBot]]);
+  ctx.strokeStyle=good?'#bdf6e6':'#ffc6cd'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.20)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(0,0,r-7,0,TAU); ctx.stroke();
+  if(it.golden){
+    ctx.strokeStyle='#ffd86b'; ctx.lineWidth=3.5; ctx.beginPath(); ctx.arc(0,0,r+3,0,TAU); ctx.stroke();
+  }
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.font='bold 22px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(good?'✓':'!',0,-1);
+  ctx.restore();
+  const label=it.text;
+  ctx.font='bold 13px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const tw=ctx.measureText(label).width, pad=8, lw=tw+pad*2, lh=20, ly=it.y+r+14;
+  ctx.fillStyle='rgba(8,14,26,0.78)'; roundRect(it.x-lw/2,ly-lh/2,lw,lh,7,true);
+  ctx.strokeStyle=good?'rgba(127,224,200,0.5)':'rgba(255,111,125,0.5)'; ctx.lineWidth=1.5; roundRect(it.x-lw/2,ly-lh/2,lw,lh,7,false);
+  ctx.fillStyle=good?'#cdf6ea':'#ffd2d7'; ctx.fillText(label,it.x,ly);
+}
+
+function drawBasket(){
+  const bx=basket.x, by=basket.y, bw=basket.w, bh=basket.h;
+  shadowBlob(bx,H-58,bw*0.55,12,0.32);
+  ctx.save(); ctx.translate(bx,by);
+  ctx.fillStyle=lgrad(0,-bh/2,0,bh/2,[[0,'#c79b63'],[1,'#7c5530']]);
+  ctx.beginPath(); ctx.moveTo(-bw/2,-bh/2); ctx.lineTo(bw/2,-bh/2); ctx.lineTo(bw/2-12,bh/2); ctx.lineTo(-bw/2+12,bh/2); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(60,38,18,0.5)'; ctx.lineWidth=2;
+  for(let i=1;i<5;i++){ const yy=-bh/2+(bh*i/5); ctx.beginPath(); ctx.moveTo(-bw/2+i*2,yy); ctx.lineTo(bw/2-i*2,yy); ctx.stroke(); }
+  for(let i=-2;i<=2;i++){ const xx=i*(bw/6); ctx.beginPath(); ctx.moveTo(xx,-bh/2); ctx.lineTo(xx*0.8,bh/2); ctx.stroke(); }
+  ctx.fillStyle=lgrad(0,-bh/2-7,0,-bh/2+5,[[0,'#e9c489'],[1,'#b07f44']]);
+  roundRect(-bw/2-4,-bh/2-7,bw+8,12,6,true);
+  ctx.strokeStyle='rgba(255,240,210,0.5)'; ctx.lineWidth=1.5; roundRect(-bw/2-4,-bh/2-7,bw+8,12,6,false);
+  ctx.restore();
+}
+
+function drawCapacityBar(){
+  const x=28, y=24, w=W-56, h=22;
+  ctx.fillStyle='rgba(8,14,26,0.7)'; roundRect(x-3,y-3,w+6,h+6,8,true);
+  ctx.fillStyle='rgba(255,255,255,0.08)'; roundRect(x,y,w,h,7,true);
+  const cap=clamp(game.capacity,0,1), fw=Math.max(0,w*cap);
+  let c0,c1;
+  if(cap<0.6){ c0='#5fd6b6'; c1='#2f9c80'; } else if(cap<0.85){ c0='#ffd36b'; c1='#e09a2c'; } else { c0='#ff8a96'; c1='#d23b4d'; }
+  if(fw>2){
+    ctx.fillStyle=lgrad(x,y,x+w,y,[[0,c0],[1,c1]]); roundRect(x,y,fw,h,7,true);
+    if(cap>0.85){ ctx.fillStyle='rgba(255,255,255,'+(0.12+0.12*Math.sin(game.time*9)).toFixed(3)+')'; roundRect(x,y,fw,h,7,true); }
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1;
+  for(let i=1;i<10;i++){ const tx=x+w*i/10; ctx.beginPath(); ctx.moveTo(tx,y+3); ctx.lineTo(tx,y+h-3); ctx.stroke(); }
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.5; roundRect(x,y,w,h,7,false);
+  ctx.fillStyle='#eaf1ff'; ctx.font='bold 13px Arial'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('CAPACITY  '+Math.round(cap*100)+'%', x+8, y+h/2);
+}
+
+function drawHUD(){
+  drawCapacityBar();
+  ctx.font='bold 18px Arial'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#cdf6ea'; ctx.fillText('Boundaries kept: '+game.kept,28,74);
+  ctx.fillStyle='#bcd0ff'; ctx.fillText('Let fall (good calls): '+game.declined,28,96);
+  if(game.streak>1){ ctx.fillStyle='#ffd86b'; ctx.fillText('Streak x'+game.streak,28,118); }
+  ctx.textAlign='right';
+  ctx.fillStyle='#ffd86b'; ctx.fillText('Score '+game.score,W-28,74);
+  ctx.fillStyle='#eaf1ff'; ctx.fillText('Day '+game.wave,W-28,96);
+  const tx=W-220, ty=104, tw=192, th=8;
+  ctx.fillStyle='rgba(255,255,255,0.10)'; roundRect(tx,ty,tw,th,4,true);
+  const pr=clamp(game.waveTimer/game.waveLen,0,1);
+  ctx.fillStyle='#7fd0ff'; roundRect(tx,ty,tw*pr,th,4,true);
+  ctx.textAlign='left';
+}
+
+function drawFloats(){
+  for(const f of game.floats){
+    const a=clamp(1-f.age/f.life,0,1); ctx.globalAlpha=a;
+    ctx.font='bold 16px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=f.color; ctx.fillText(f.text,f.x,f.y); ctx.globalAlpha=1;
+  }
+}
+function drawParticles(){
+  for(const p of game.particles){ const a=clamp(1-p.age/p.life,0,1); ctx.globalAlpha=a; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill(); }
+  ctx.globalAlpha=1;
+}
+function drawVignette(){ ctx.fillStyle=rgrad(W/2,H/2,W*0.62,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,0.5)']]); ctx.fillRect(0,0,W,H); }
+function panel(x,y,w,h){ ctx.fillStyle='rgba(8,14,26,0.88)'; roundRect(x,y,w,h,16,true); ctx.strokeStyle='rgba(127,224,200,0.35)'; ctx.lineWidth=2; roundRect(x,y,w,h,16,false); }
+
+function drawTitle(){
+  ctx.textAlign='center';
+  panel(W/2-330,120,660,300);
+  ctx.fillStyle='#7fe0c8'; ctx.font='bold 52px Arial'; ctx.textBaseline='alphabetic'; ctx.fillText('Boundary Catch',W/2,188);
+  ctx.fillStyle='#cdd9ff'; ctx.font='17px Arial'; ctx.fillText('Keep what is healthy. Let overload fall past.',W/2,222);
+  ctx.fillStyle='#9fb4d8'; ctx.font='15px Arial';
+  ctx.fillText('Catch  rest, a walk, time with a friend  -  KEEP them.',W/2,256);
+  ctx.fillText('Let  guilt-trip favors, unpaid shifts  -  fall past you.',W/2,280);
+  ctx.fillStyle='#ff9aa5'; ctx.font='15px Arial'; ctx.fillText('Catching overload fills your capacity bar. Full = burnout.',W/2,308);
+  ctx.fillStyle='#7fe0c8'; ctx.font='bold 16px Arial'; ctx.fillText('No is a complete sentence. Capacity is real.',W/2,344);
+  if(game.best>0){ ctx.fillStyle='#bcd0ff'; ctx.font='15px Arial'; ctx.fillText('Best: '+game.best,W/2,368); }
+  const pulse=0.6+0.4*Math.sin(game.time*4); ctx.globalAlpha=pulse;
+  ctx.fillStyle='#ffd86b'; ctx.font='bold 20px Arial'; ctx.fillText('Press  Enter / Space  to begin',W/2,392); ctx.globalAlpha=1;
+  ctx.fillStyle='#7e8cab'; ctx.font='13px Arial'; ctx.fillText('Move: arrows or A / D or drag/touch   -   Pause: P   -   [Autonomy] [Mental health]',W/2,444);
+  ctx.textAlign='left';
+}
+
+function drawWaveComplete(){
+  panel(W/2-280,150,560,240); ctx.textAlign='center';
+  ctx.fillStyle='#7fe0c8'; ctx.font='bold 34px Arial'; ctx.textBaseline='alphabetic'; ctx.fillText('Day '+(game.wave-1)+' survived',W/2,210);
+  ctx.fillStyle='#eaf1ff'; ctx.font='18px Arial'; ctx.fillText('Boundaries kept: '+game.kept+'   -   Score: '+game.score,W/2,248);
+  if(game.perfectDay){ ctx.fillStyle='#ffd86b'; ctx.font='bold 16px Arial'; ctx.fillText('★ Perfect day - nothing missed, nothing overloaded ★',W/2,272); }
+  ctx.fillStyle='#bcd0ff'; ctx.font='italic 17px Arial'; ctx.fillText(game.tip,W/2,290);
+  ctx.fillStyle='#9fb4d8'; ctx.font='15px Arial'; ctx.fillText('Capacity eased a little. Day '+game.wave+' brings more pressure.',W/2,322);
+  const pulse=0.6+0.4*Math.sin(game.time*4); ctx.globalAlpha=pulse;
+  ctx.fillStyle='#ffd86b'; ctx.font='bold 18px Arial'; ctx.fillText('Press  Enter / Space  to continue',W/2,362); ctx.globalAlpha=1; ctx.textAlign='left';
+}
+
+function drawPaused(){
+  ctx.fillStyle='rgba(4,8,16,0.55)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-180,200,360,140); ctx.textAlign='center';
+  ctx.fillStyle='#7fe0c8'; ctx.font='bold 34px Arial'; ctx.textBaseline='alphabetic'; ctx.fillText('Paused',W/2,258);
+  ctx.fillStyle='#cdd9ff'; ctx.font='16px Arial'; ctx.fillText('Press  P  to resume',W/2,300); ctx.textAlign='left';
+}
+
+function drawGameOver(){
+  ctx.fillStyle='rgba(40,6,12,0.5)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-300,130,600,290); ctx.textAlign='center';
+  ctx.fillStyle='#ff8a96'; ctx.font='bold 44px Arial'; ctx.textBaseline='alphabetic'; ctx.fillText('Capacity Overflow',W/2,196);
+  ctx.fillStyle='#eaf1ff'; ctx.font='18px Arial'; ctx.fillText('Burnout happens when too much is accepted.',W/2,232);
+  ctx.fillStyle='#cdf6ea'; ctx.font='bold 22px Arial'; ctx.fillText('Boundaries kept: '+game.kept,W/2,274);
+  ctx.fillStyle='#ffd86b'; ctx.font='bold 22px Arial'; ctx.fillText('Score: '+game.score+'    -    Reached Day '+game.wave,W/2,306);
+  ctx.fillStyle='#bcd0ff'; ctx.font='italic 16px Arial'; ctx.fillText('Best score: '+Math.max(game.best,game.score),W/2,338);
+  ctx.fillStyle='#9fb4d8'; ctx.font='15px Arial'; ctx.fillText('Saying no protects your yes. Capacity is real.',W/2,368);
+  const pulse=0.6+0.4*Math.sin(game.time*4); ctx.globalAlpha=pulse;
+  ctx.fillStyle='#ffd86b'; ctx.font='bold 18px Arial'; ctx.fillText('Press  Enter / Space  to try another week',W/2,400); ctx.globalAlpha=1; ctx.textAlign='left';
+}
+
+function draw(){
+  ctx.save();
+  if(game.shake>0){ ctx.translate((randHash(game.time*99)-0.5)*game.shake,(randHash(game.time*61)-0.5)*game.shake); }
+  drawBackground();
+  if(game.state==='playing'||game.state==='paused'||game.state==='waveComplete'){
+    const sorted=game.items.slice().sort((a,b)=>a.y-b.y);
+    for(const it of sorted){ if(!it.dead) drawItem(it); }
+    drawBasket(); drawParticles(); drawFloats(); drawHUD();
+  }
+  if(game.state==='title'){ drawParticles(); drawTitle(); }
+  if(game.state==='waveComplete') drawWaveComplete();
+  if(game.state==='paused') drawPaused();
+  if(game.state==='gameover'){ drawBasket(); drawParticles(); drawHUD(); drawGameOver(); }
+  drawVignette();
+  ctx.restore();
+}
+
+// ---- Main loop ----
+let last=0;
+function frame(t){
+  const now=t/1000; let dt=last?(now-last):0; last=now; dt=Math.min(dt,0.05);
+  update(dt); draw(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---- Test hook (harmless in production) ----
+window.__game = {
+  get game(){return game;}, get basket(){return basket;}, get input(){return input;},
+  update, draw, reset, spawnItem, catchItem, missItem, setState,
+  classifyText, waveParams, makeRng, GOOD_ITEMS, OVERLOAD_ITEMS
+};
+</script>
+</body>
+</html>

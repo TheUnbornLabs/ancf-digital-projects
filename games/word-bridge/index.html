@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Word Bridge</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(160,128,255,.4);background:rgba(6,4,14,.85);color:#eaf2f6;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(120,80,220,.5);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnPause" aria-label="Pause" title="Pause (P)">&#10074;&#10074;</button>
+  <button id="btnMute" aria-label="Mute" title="Mute (M)">&#128266;</button>
+</div>
+<div id="hint">Click the word that links LEFT and RIGHT &middot; tap to skip reveal</div>
+<script>
+'use strict';
+// Word Bridge (#71)
+// Two words shown. Pick the bridging word that pairs with BOTH.
+// 4 choices per round. 15 rounds (endless after). Time-per-round ramps down.
+// Theme: finding your own connections between ideas.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+
+// ---- persistence helpers (private-browsing safe) ----
+function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
+function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
+
+const TIME_MAX=8000,TIME_MIN=5000; // difficulty ramp bounds (ms)
+function timeForRound(r){
+  const t=TIME_MAX-(TIME_MAX-TIME_MIN)*clamp(r/(TOTAL-1),0,1);
+  return clamp(Math.round(t),TIME_MIN,TIME_MAX);
+}
+const REVEAL_MS=900; // answer-reveal delay (skippable via tap)
+
+const PUZZLES=[
+  {left:'FREE',right:'SPIRIT',answer:'WILD',wrong:['CAGE','RULE','BIND'],why:'A "wild spirit" pairs naturally with freedom, not confinement.'},
+  {left:'OPEN',right:'MINDED',answer:'BROAD',wrong:['NARROW','SHUT','CLOSED'],why:'"Broad-minded" and "open-minded" both describe welcoming new ideas.'},
+  {left:'SELF',right:'SUFFICIENT',answer:'FULLY',wrong:['NEVER','BARELY','OVER'],why:'"Fully self-sufficient" emphasizes complete independence.'},
+  {left:'CHOSEN',right:'LIFE',answer:'INTENTIONAL',wrong:['RANDOM','FORCED','DEFAULT'],why:'A chosen life is an intentional one, lived on purpose.'},
+  {left:'QUIET',right:'STRENGTH',answer:'INNER',wrong:['OUTER','LOUD','WEAK'],why:'"Inner strength" is quiet, not loud or external.'},
+  {left:'BOUNDARY',right:'SET',answer:'FIRMLY',wrong:['MAYBE','LOOSELY','NEVER'],why:'Healthy boundaries are set firmly, not left uncertain.'},
+  {left:'SOLO',right:'TRAVEL',answer:'ADVENTURE',wrong:['DANGER','BORING','RUSHED'],why:'Solo travel is often framed as personal adventure.'},
+  {left:'PERSONAL',right:'DECISION',answer:'AUTONOMOUS',wrong:['OTHERS','RANDOM','RUSHED'],why:'A personal decision is an autonomous one — yours to make.'},
+  {left:'CLEAR',right:'PATH',answer:'FORWARD',wrong:['BACKWARD','TANGLED','LOST'],why:'A clear path leads forward, not backward or nowhere.'},
+  {left:'RADICAL',right:'ACCEPTANCE',answer:'SELF',wrong:['OTHER','FORCED','TOTAL'],why:'Radical self-acceptance starts with how you see yourself.'},
+  {left:'CHOSEN',right:'FAMILY',answer:'FOUND',wrong:['BLOOD','REQUIRED','IMPOSED'],why:'"Found family" is chosen, not defined by obligation.'},
+  {left:'SPACE',right:'ALONE',answer:'PEACE',wrong:['EMPTY','LONELY','FEAR'],why:'Space alone can bring peace rather than loneliness.'},
+  {left:'DEEP',right:'REST',answer:'EARNED',wrong:['LAZY','WASTED','STOLEN'],why:'Deep rest is framed as earned, not a guilty indulgence.'},
+  {left:'OWN',right:'TERMS',answer:'YOUR',wrong:['THEIR','ANYONE','NO'],why:'Living on "your own terms" centers your own choices.'},
+  {left:'TRUE',right:'NORTH',answer:'PERSONAL',wrong:['MAGNETIC','SHARED','OTHERS'],why:'Your "true north" is a personal compass, not a shared one.'},
+];
+const TOTAL=15;
+const game={state:'title',time:0,round:0,score:0,best:0,shakeT:0,phaseT:0,chosen:-1,correct:false,
+  streak:0,bestStreak:0,correctCount:0,answered:0,muted:false,paused:false,order:[],popups:[],lowTick:0};
+let options=[],rng;
+
+// ---- load persisted state ----
+game.best=parseInt(lsGet('wordbridge_best','0'),10)||0;
+game.muted=lsGet('wordbridge_muted','0')==='1';
+
+function fisherYates(arr,rnd){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function buildOrder(seed){
+  const idxRng=seeded(seed*9176+3);
+  const idxs=fisherYates(PUZZLES.map((_,i)=>i),idxRng);
+  return idxs;
+}
+
+function puzzleForRound(r){
+  const idx=game.order[r%game.order.length];
+  return PUZZLES[idx];
+}
+
+function buildRound(r){
+  rng=seeded(r*6007+21);
+  const p=puzzleForRound(r);
+  options=[p.answer,...p.wrong].sort(()=>rng()-.5);
+  game.chosen=-1;game.correct=false;game.phaseT=0;game.state='playing';game.lowTick=0;
+}
+
+function resetGame(){
+  game.round=0;game.score=0;game.shakeT=0;game.streak=0;game.bestStreak=0;
+  game.correctCount=0;game.answered=0;game.popups=[];
+  game.order=buildOrder(Date.now()^Math.floor(Math.random()*1e9));
+  buildRound(0);
+}
+
+function advanceRound(){
+  game.round++;
+  if(game.round>=TOTAL){
+    sndWin();game.state='won';
+  }else{
+    buildRound(game.round);
+  }
+}
+
+function addPopup(text,color){
+  game.popups.push({text,color,t:0,life:700});
+}
+
+function choose(i){
+  if(game.chosen>=0)return;
+  if(game.paused)return;
+  game.chosen=i;
+  const p=puzzleForRound(game.round);
+  game.correct=options[i]===p.answer;
+  game.answered++;
+  if(game.correct){
+    game.streak++;
+    if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+    game.correctCount++;
+    const mult=1+Math.min(4,Math.floor(game.streak/3))*0.5; // small streak multiplier, caps at 3x
+    const timePer=timeForRound(game.round);
+    const reactionFrac=clamp(1-game.phaseT/timePer,0,1);
+    const reactionBonus=reactionFrac>0.6?1:0; // fast answer bonus
+    const gained=Math.round((1*mult)+reactionBonus);
+    game.score+=gained;
+    sndGood();
+    addPopup('+'+gained+(game.streak>=3?'  x'+mult.toFixed(1)+' streak':'')+(reactionBonus?'  +fast':''),'rgba(120,240,160,.95)');
+  }else{
+    game.streak=0;
+    game.shakeT=280;
+    sndBad();
+    addPopup('MISS','rgba(240,120,120,.95)');
+  }
+  if(game.score>game.best){game.best=game.score;lsSet('wordbridge_best',String(game.best));}
+  setTimeout(advanceRound,REVEAL_MS);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  if(game.paused)return;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(let i=game.popups.length-1;i>=0;i--){
+    const pu=game.popups[i];pu.t+=dt;if(pu.t>=pu.life)game.popups.splice(i,1);
+  }
+  if(game.state!=='playing')return;
+  if(game.chosen<0){
+    game.phaseT+=dt;
+    const timePer=timeForRound(game.round);
+    // low-time warning tick (soft cue) in last ~2s
+    if(timePer-game.phaseT<=2000){
+      game.lowTick+=dt;
+      if(game.lowTick>=280){game.lowTick=0;sndTick();}
+    }
+    if(game.phaseT>=timePer){
+      // time out — auto wrong, distinct timeout marker
+      game.chosen=-2;
+      game.streak=0;
+      game.shakeT=280;
+      game.answered++;
+      sndBad();
+      addPopup("TIME'S UP",'rgba(255,150,80,.95)');
+      setTimeout(advanceRound,REVEAL_MS);
+    }
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndGood=()=>tone(660,0.15,'sine',0.06);
+const sndBad=()=>tone(200,0.2,'sawtooth',0.05);
+const sndTick=()=>tone(900,0.05,'square',0.03);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04030a'],[1,'#020208']]);ctx.fillRect(0,0,W,H);}
+
+function drawPuzzle(){
+  if(game.round>=game.order.length)return;
+  const p=puzzleForRound(game.round);
+  const timePer=timeForRound(game.round);
+  // left word
+  ctx.fillStyle='rgba(100,160,255,.8)';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(p.left,200,H/2-40);
+  // right word
+  ctx.fillStyle='rgba(100,200,160,.8)';ctx.fillText(p.right,W-200,H/2-40);
+  // bridge arrows
+  ctx.strokeStyle='rgba(200,180,255,.2)';ctx.lineWidth=2;ctx.setLineDash([6,6]);
+  ctx.beginPath();ctx.moveTo(280,H/2-40);ctx.lineTo(W/2-80,H/2-40);ctx.moveTo(W/2+80,H/2-40);ctx.lineTo(W-280,H/2-40);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(200,180,255,.3)';ctx.font='14px Arial';ctx.fillText('?',W/2,H/2-40);
+  // timer bar
+  const pct=clamp(1-game.phaseT/timePer,0,1);
+  const lowTime=(timePer-game.phaseT)<=2000 && game.chosen<0;
+  ctx.fillStyle='rgba(100,100,200,.2)';ctx.fillRect(60,H/2-10,W-120,6);
+  let barColor;
+  if(game.chosen===-2){
+    barColor='rgba(255,90,60,.9)'; // timeout flash
+  }else if(lowTime){
+    const pulse=0.5+0.5*Math.sin(game.time/70);
+    barColor=`rgba(255,${Math.round(60+80*pulse)},60,.9)`;
+  }else{
+    barColor=`rgba(${Math.round(100+155*(1-pct))},${Math.round(100+100*pct)},200,.7)`;
+  }
+  ctx.fillStyle=barColor;
+  ctx.fillRect(60,H/2-10,(W-120)*(game.chosen===-2?1:pct),6);
+  // streak indicator
+  if(game.streak>=2){
+    ctx.fillStyle='rgba(255,213,128,.85)';ctx.font='bold 13px Arial';ctx.textAlign='center';
+    ctx.fillText('Streak x'+game.streak,W/2,H/2-70);
+  }
+}
+
+function drawOptions(){
+  const p=puzzleForRound(game.round);
+  const BW=170,BH=52,GAP=18;const totalW=4*(BW+GAP)-GAP;const sx=(W-totalW)/2;
+  for(let i=0;i<4;i++){
+    const bx=sx+i*(BW+GAP),by=H/2+30;
+    let col='rgba(40,30,70,.8)';let textCol='rgba(200,180,255,.8)';let glyph=null;
+    if(game.chosen>=0||game.chosen===-2){
+      if(options[i]===p.answer){
+        col='rgba(30,100,60,.8)';textCol='rgba(120,240,160,.9)';glyph='✓';
+      }else if(i===game.chosen){
+        col='rgba(100,30,30,.8)';textCol='rgba(240,120,120,.9)';glyph='✗';
+      }
+    }
+    ctx.fillStyle=col;rr(bx,by,BW,BH,10);ctx.fill();
+    ctx.strokeStyle='rgba(120,100,200,.3)';ctx.lineWidth=1.5;rr(bx,by,BW,BH,10);ctx.stroke();
+    ctx.fillStyle=textCol;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(options[i],bx+BW/2,by+BH/2);
+    if(glyph){
+      ctx.font='bold 16px Arial';
+      ctx.fillText(glyph,bx+BW-16,by+14);
+    }
+  }
+  // reveal / why + tap-to-continue affordance
+  if(game.chosen>=0||game.chosen===-2){
+    ctx.fillStyle='rgba(234,242,246,.55)';ctx.font='12px Arial';ctx.textAlign='center';
+    ctx.fillText(p.why,W/2,H/2+30+BH+26);
+    ctx.fillStyle='rgba(234,242,246,.35)';ctx.font='11px Arial';
+    ctx.fillText('tap to continue',W/2,H/2+30+BH+46);
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#a080ff';ctx.font='bold 13px Arial';ctx.fillText('Word Bridge',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Round '+(game.round+1)+' / '+TOTAL,18,28);
+  ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,16);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Best: '+game.best,W-18,8);
+  ctx.fillText('Streak: '+game.streak,W-18,22);
+  ctx.restore();
+}
+
+function drawPopups(){
+  for(const pu of game.popups){
+    const f=1-pu.t/pu.life;
+    ctx.save();
+    ctx.globalAlpha=clamp(f,0,1);
+    ctx.fillStyle=pu.color;
+    ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(pu.text,W/2,H/2-110-(1-f)*20);
+    ctx.restore();
+  }
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(140,80,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#a080ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.6)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#eaf2f6';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Paused',W/2,H/2);
+  ctx.font='13px Arial';ctx.fillStyle='rgba(234,242,246,.6)';
+  ctx.fillText('Tap pause button or press P to resume',W/2,H/2+34);
+  ctx.restore();
+}
+
+function drawMuteIcon(){
+  // small canvas-drawn indicator in-canvas as backup (HTML button is primary control)
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    let ox=0,oy=0;
+    if(game.shakeT>0){
+      const s=game.shakeT/280;
+      ox=(Math.random()-0.5)*8*s;
+      oy=(Math.random()-0.5)*8*s;
+      ctx.translate(ox,oy);
+    }
+    drawBg();
+    if(game.state!=='title'){drawPuzzle();drawOptions();drawPopups();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title'){
+      panelDraw('Word Bridge',['Two words are shown. Pick the word','that bridges both of them.','Timer gets tighter as rounds go on.','','Every connection you make is your own.','','Click / tap to begin.']);
+    }else if(game.state==='won'){
+      const acc=game.answered>0?Math.round(100*game.correctCount/game.answered):0;
+      panelDraw('Bridges Built! ✓',['Score: '+game.score+'   Best: '+game.best,'Accuracy: '+acc+'%   Best Streak: '+game.bestStreak,'','You found every connection.','','Click / tap to play again.']);
+    }
+    ctx.restore();
+    if(game.paused&&game.state==='playing')drawPauseOverlay();
+  }catch(e){}
+}
+
+function optionAt(px,py){
+  const BW=170,BH=52,GAP=18;const totalW=4*(BW+GAP)-GAP;const sx=(W-totalW)/2;
+  for(let i=0;i<4;i++){
+    const bx=sx+i*(BW+GAP),by=H/2+30;
+    if(px>=bx&&px<=bx+BW&&py>=by&&py<=by+BH)return i;
+  }
+  return -1;
+}
+
+function skipReveal(){
+  // allow tap-to-continue during the reveal window
+  advanceRound();
+}
+
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+}
+
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('wordbridge_muted',game.muted?'1':'0');
+  updateMuteBtn();
+}
+
+function updateMuteBtn(){
+  const b=document.getElementById('btnMute');
+  if(b)b.innerHTML=game.muted?'&#128263;':'&#128266;';
+}
+function updatePauseBtn(){
+  const b=document.getElementById('btnPause');
+  if(b)b.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.paused)return;
+  if(game.state!=='playing')return;
+  if(game.chosen>=0||game.chosen===-2){
+    // reveal window is showing — tap anywhere to skip ahead
+    skipReveal();
+    return;
+  }
+  const i=optionAt(px,py);
+  if(i>=0)choose(i);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+document.getElementById('btnPause').addEventListener('click',(e)=>{e.preventDefault();togglePause();updatePauseBtn();});
+document.getElementById('btnMute').addEventListener('click',(e)=>{e.preventDefault();toggleMute();});
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='p'||e.key==='P'){togglePause();updatePauseBtn();}
+  else if(e.key==='m'||e.key==='M'){toggleMute();}
+});
+
+updateMuteBtn();updatePauseBtn();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.order=buildOrder(1); // deterministic initial order until first resetGame()
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get options(){return options;},
+  resetGame,buildRound,choose,update,draw,advanceRound,
+  togglePause,toggleMute,skipReveal,
+  PUZZLES,TOTAL,timeForRound
+};
+</script>
+</body>
+</html>

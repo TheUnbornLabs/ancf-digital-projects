@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Seed Garden</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#030a04;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{display:block;background:#030a04;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#controls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#controls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(160,224,96,.4);background:rgba(4,12,4,.85);color:#a0e060;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#controls button:active{background:rgba(160,224,96,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="controls">
+<button id="btnMute" title="Mute (M)" aria-label="Toggle mute">&#128266;</button>
+<button id="btnPause" title="Pause (P)" aria-label="Toggle pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Click a plot to plant &middot; water growing plants &middot; weed out obligation sprouts &middot; harvest 12 joy-plants &middot; P pause &middot; M mute</div>
+<script>
+'use strict';
+// Seed Garden (#84)
+// 4x3 garden plots. Click to plant a joy-seed. Plants grow through 3 stages.
+// Click a plant to water it (speeds growth). Obligation weeds randomly appear—click to pull them.
+// Harvest 12 joy-plants to win. 5 rounds.
+// Theme: tending what brings you joy while pulling what doesn't.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const COLS=5,ROWS=3;
+const GX=80,GY=100,CW=156,CH=130,GAP=8;
+const JOY_LABELS=['Calm','Rest','Create','Joy','Flow','Freedom','Play','Wonder','Peace','Explore'];
+const WEED_LABELS=['obey','conform','sacrifice','oblige','hustle','impress','rush'];
+const GROW_TIMES=[4000,5000,4000];// ms per stage: seed->sprout->bloom->harvest
+const HARVEST_TARGET=12;
+const TOTAL=5;
+const WEED_LIFETIME=9000;// ms before an ignored weed spreads
+const MAX_CHOKED=6;// too many choked plots = gameover
+const RARE_UNLOCK_TOTAL=24;// total harvests across rounds to unlock rare joy-plant variant
+
+// ---- persistence ----
+let storedBest=0,storedTotalHarvest=0,storedRareUnlocked=false;
+try{storedBest=parseInt(localStorage.getItem('seedGarden_best')||'0',10)||0;}catch(e){}
+try{storedTotalHarvest=parseInt(localStorage.getItem('seedGarden_totalHarvest')||'0',10)||0;}catch(e){}
+try{storedRareUnlocked=localStorage.getItem('seedGarden_rareUnlocked')==='1';}catch(e){}
+function saveBest(v){try{localStorage.setItem('seedGarden_best',String(v));}catch(e){}}
+function saveTotalHarvest(v){try{localStorage.setItem('seedGarden_totalHarvest',String(v));}catch(e){}}
+function saveRareUnlocked(v){try{localStorage.setItem('seedGarden_rareUnlocked',v?'1':'0');}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,best:storedBest,harvested:0,
+  totalHarvest:storedTotalHarvest,rareUnlocked:storedRareUnlocked,
+  streak:0,maxStreak:0,paused:false,muted:false,
+  weedsPulled:0,weedsSpread:0,choked:0,roundStats:[],lastHarvestTime:0,
+  perfectRound:true};
+let plots=[],weedTimer=0,rng,particles=[],popups=[];
+
+function newPlot(){return{state:'empty',label:'',growT:0,stage:0,weedT:0,weedLabel:'',water:0,choked:false,rare:false};}
+function isDroughtRound(r){return r===2;}// round 3 (index2): water decays faster
+function isBumperRound(r){return r===3;}// round 4 (index3): 2x weed density, bonus points
+function buildRound(r){rng=seeded(r*6007+13);plots=Array.from({length:COLS*ROWS},newPlot);weedTimer=0;game.harvested=0;game.state='playing';game.choked=0;game.streak=0;game.perfectRound=true;particles=[];popups=[];}
+function resetGame(){game.round=0;game.score=0;game.totalHarvest=storedTotalHarvest;game.streak=0;game.maxStreak=0;game.weedsPulled=0;game.weedsSpread=0;game.roundStats=[];buildRound(0);}
+function plotAt(px,py){for(let i=0;i<plots.length;i++){const col=i%COLS,row=Math.floor(i/COLS);const x=GX+col*(CW+GAP),y=GY+row*(CH+GAP);if(px>=x&&px<=x+CW&&py>=y&&py<=y+CH)return i;}return -1;}
+
+function spawnParticles(cx,cy,color,n){for(let i=0;i<(n||10);i++){const a=Math.random()*Math.PI*2,sp=0.5+Math.random()*2;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:0,maxLife:400+Math.random()*300,color:color,size:2+Math.random()*3});}}
+function spawnPopup(cx,cy,text,color){popups.push({x:cx,y:cy,text:text,life:0,maxLife:700,color:color||'#a0e060'});}
+
+function clickPlot(i){
+  if(game.state!=='playing')return;
+  const p=plots[i];
+  if(p.state==='empty'){// plant
+    p.state='growing';p.label=JOY_LABELS[Math.floor(rng()*JOY_LABELS.length)];p.stage=0;p.growT=0;p.water=0;p.choked=false;
+    p.rare=game.rareUnlocked&&rng()<0.15;
+    sndPlant();
+  }else if(p.state==='weed'){// pull weed
+    p.state='empty';p.weedT=0;p.choked=false;game.weedsPulled++;
+    const col=i%COLS,row=Math.floor(i/COLS);const x=GX+col*(CW+GAP)+CW/2,y=GY+row*(CH+GAP)+CH/2;
+    spawnParticles(x,y,'160,120,70',8);
+    sndPull();
+  }else if(p.state==='growing'){// water
+    p.water=Math.min(p.water+0.3,1);sndWater();
+  }else if(p.state==='ripe'){// harvest
+    p.state='empty';game.harvested++;
+    const now=game.time;
+    if(now-game.lastHarvestTime<3500){game.streak++;}else{game.streak=1;}
+    game.lastHarvestTime=now;
+    if(game.streak>game.maxStreak)game.maxStreak=game.streak;
+    const mult=1+Math.min(4,Math.floor(game.streak/2))*0.5;
+    const bumper=isBumperRound(game.round)?2:1;
+    const rareBonus=p.rare?2:1;
+    const pts=Math.round(1*mult*bumper*rareBonus);
+    game.score+=pts;
+    game.totalHarvest++;
+    if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+    saveTotalHarvest(game.totalHarvest);
+    if(!game.rareUnlocked&&game.totalHarvest>=RARE_UNLOCK_TOTAL){game.rareUnlocked=true;saveRareUnlocked(true);}
+    const col=i%COLS,row=Math.floor(i/COLS);const x=GX+col*(CW+GAP)+CW/2,y=GY+row*(CH+GAP)+CH/2;
+    spawnParticles(x,y,p.rare?'255,210,90':'200,255,120',14);
+    spawnPopup(x,y-20,'+'+pts+(game.streak>=2?' x'+mult.toFixed(1):''),p.rare?'#ffd25a':'#c8ff78');
+    sndHarvest();
+    if(game.harvested>=HARVEST_TARGET){
+      sndWin2();
+      game.state='transition';// guard against double-advance during timeout window
+      setTimeout(()=>{
+        game.roundStats.push({round:game.round+1,weedsPulled:game.weedsPulled,weedsSpread:game.weedsSpread,perfect:game.perfectRound,maxStreak:game.maxStreak});
+        game.round++;
+        if(game.round>=TOTAL){sndWin();game.state='won';}
+        else{buildRound(game.round);}
+      },500);
+    }
+  }
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  // particle/popup updates run even when paused-visuals? keep simple: only update when playing/transition
+  if(game.state==='playing'||game.state==='transition'){
+    if(!game.paused){
+      // grow plants
+      const drought=isDroughtRound(game.round);
+      for(const p of plots){
+        if(p.state==='growing'){
+          const rate=(p.choked?0.4:1)+p.water*1.5;
+          p.growT+=dt*rate;
+          const decay=(drought?0.0009:0.0003)*dt;
+          p.water=Math.max(0,p.water-decay);
+          const stageTime=Math.max(500,GROW_TIMES[p.stage]||5000);
+          if(p.growT>=stageTime){if(p.stage<2){p.stage++;p.growT=0;}else{p.state='ripe';}}
+        }else if(p.state==='weed'){
+          p.weedT+=dt;
+          const lifetime=Math.max(2000,WEED_LIFETIME-game.round*600);
+          if(p.weedT>=lifetime){
+            // ignored weed spreads: choke an adjacent plot or block growth
+            p.weedT=0;
+            game.weedsSpread++;
+            game.perfectRound=false;
+            const idx=plots.indexOf(p);
+            const neighbors=[idx-1,idx+1,idx-COLS,idx+COLS].filter(n=>n>=0&&n<plots.length);
+            for(const n of neighbors){
+              const np=plots[n];
+              if(np&&(np.state==='growing')&&!np.choked){np.choked=true;game.choked++;break;}
+              if(np&&np.state==='empty'){np.state='weed';np.weedLabel=WEED_LABELS[Math.floor(rng()*WEED_LABELS.length)];np.weedT=0;break;}
+            }
+          }
+        }
+      }
+      // spawn weeds — also threaten growing plots, not just empty ones
+      weedTimer+=dt;
+      const weedInterval=Math.max(4000,8000-game.round*400);
+      if(weedTimer>=weedInterval){
+        weedTimer=0;
+        const targets=plots.map((p,i)=>(p.state==='empty'||(p.state==='growing'&&!p.choked))?i:-1).filter(i=>i>=0);
+        const pairSpawn=game.round>=3||isBumperRound(game.round);// rounds 4-5 (and bumper round) spawn weed pairs
+        const spawnCount=pairSpawn?2:1;
+        for(let s=0;s<spawnCount&&targets.length>0;s++){
+          const pick=Math.floor(rng()*targets.length);
+          const i=targets.splice(pick,1)[0];
+          const p=plots[i];
+          if(p.state==='growing'){p.choked=true;game.choked++;}
+          else{p.state='weed';p.weedLabel=WEED_LABELS[Math.floor(rng()*WEED_LABELS.length)];p.weedT=0;}
+        }
+      }
+      // fail condition: too many choked plots chokes the garden
+      if(game.choked>=MAX_CHOKED){
+        game.state='gameover';
+      }
+    }
+  }
+  // particles/popups always tick for smooth fade, independent of pause for visual clarity when paused they freeze
+  if(!game.paused){
+    for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.life+=dt;pt.x+=pt.vx*(dt/16);pt.y+=pt.vy*(dt/16);pt.vy+=0.02*(dt/16);if(pt.life>=pt.maxLife)particles.splice(i,1);}
+    for(let i=popups.length-1;i>=0;i--){const pu=popups[i];pu.life+=dt;pu.y-=0.04*dt;if(pu.life>=pu.maxLife)popups.splice(i,1);}
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndPlant=()=>tone(330,0.08,'sine',0.04);
+const sndWater=()=>tone(480,0.06,'sine',0.03);
+const sndPull=()=>tone(220,0.1,'sawtooth',0.04);
+const sndHarvest=()=>{[440,550,660].forEach((f,i)=>setTimeout(()=>tone(f,0.1,'sine',0.05),i*40));};
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndLose=()=>{[300,240,180].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sawtooth',0.05),i*90));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#030a04'],[1,'#02060302']]);ctx.fillRect(0,0,W,H);}
+
+function drawPlot(i,p){
+  const col=i%COLS,row=Math.floor(i/COLS);const x=GX+col*(CW+GAP),y=GY+row*(CH+GAP);
+  ctx.fillStyle='rgba(60,40,20,.7)';rr(x,y,CW,CH,8);ctx.fill();ctx.strokeStyle='rgba(80,60,30,.4)';ctx.lineWidth=1.5;rr(x,y,CW,CH,8);ctx.stroke();
+  const cx=x+CW/2,cy=y+CH/2;
+  if(p.state==='empty'){
+    ctx.fillStyle='rgba(100,80,50,.3)';ctx.font='11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('click to plant',cx,cy);
+  }else if(p.state==='weed'){
+    ctx.fillStyle='rgba(150,60,20,.7)';
+    const lifetime=Math.max(2000,WEED_LIFETIME-game.round*600);
+    const urgency=clamp(p.weedT/lifetime,0,1);
+    const wt=Math.min(1,urgency+0.5);
+    ctx.font=`bold ${Math.round(10+wt*4)}px Arial`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('⚠ '+p.weedLabel,cx,y+CH-14);
+    ctx.strokeStyle='rgba(180,80,20,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy+20);ctx.lineTo(cx,cy-10);ctx.moveTo(cx-12,cy+5);ctx.bezierCurveTo(cx-8,cy-8,cx+2,cy-8,cx+4,cy-18);ctx.moveTo(cx+12,cy+5);ctx.bezierCurveTo(cx+8,cy-8,cx-2,cy-8,cx-4,cy-18);ctx.stroke();
+    // urgency warning ring as weed nears lifetime spread
+    if(urgency>0.7){
+      const flash=0.4+0.4*Math.sin(game.time/120);
+      ctx.strokeStyle=`rgba(255,80,40,${flash})`;ctx.lineWidth=2.5;rr(x+2,y+2,CW-4,CH-4,8);ctx.stroke();
+    }
+  }else if(p.state==='growing'){
+    const stage=p.stage;const stageTime=Math.max(500,GROW_TIMES[stage]||5000);const prog=p.growT/stageTime;
+    const pbw=CW-24,pbh=6;ctx.fillStyle='rgba(40,120,40,.3)';rr(x+12,y+CH-14,pbw,pbh,3);ctx.fill();
+    ctx.fillStyle=p.choked?'rgba(180,90,40,.7)':'rgba(80,200,80,.7)';rr(x+12,y+CH-14,pbw*clamp(prog,0,1),pbh,3);ctx.fill();
+    ctx.strokeStyle=p.rare?'rgba(255,200,80,.9)':'rgba(80,160,40,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,y+CH-22);
+    if(stage===0){
+      ctx.lineTo(cx,cy+10);ctx.stroke();ctx.fillStyle=p.rare?'rgba(255,210,100,.8)':'rgba(160,200,80,.7)';ctx.beginPath();ctx.arc(cx,cy+5,8,0,Math.PI*2);ctx.fill();
+    }else if(stage===1){
+      ctx.lineTo(cx,cy-5);ctx.stroke();ctx.strokeStyle=p.rare?'rgba(255,200,80,.9)':'rgba(80,180,40,.8)';ctx.beginPath();ctx.moveTo(cx,cy-5);ctx.bezierCurveTo(cx-20,cy-20,cx-24,cy-36,cx-10,cy-40);ctx.moveTo(cx,cy-5);ctx.bezierCurveTo(cx+20,cy-20,cx+24,cy-36,cx+10,cy-40);ctx.stroke();
+    }else{
+      ctx.lineTo(cx,cy-15);ctx.stroke();const petals=6;for(let pi=0;pi<petals;pi++){const a=pi/petals*Math.PI*2;const px2=cx+Math.cos(a)*18,py2=cy-15+Math.sin(a)*18;ctx.fillStyle=p.rare?'rgba(255,215,120,.8)':'rgba(200,240,120,.7)';ctx.beginPath();ctx.arc(px2,py2,9,0,Math.PI*2);ctx.fill();}ctx.fillStyle=p.rare?'rgba(255,160,60,.95)':'rgba(240,200,60,.9)';ctx.beginPath();ctx.arc(cx,cy-15,9,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='rgba(200,240,160,.8)';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText((p.rare?'✦ ':'')+p.label,cx,y+6);
+    if(p.choked){ctx.fillStyle='rgba(255,140,60,.85)';ctx.font='bold 8px Arial';ctx.textBaseline='bottom';ctx.fillText('choked',cx,y+CH-18);}
+  }else if(p.state==='ripe'){
+    const pulse=0.7+0.3*Math.sin(game.time/400);
+    ctx.shadowColor=p.rare?'rgba(255,190,60,.5)':'rgba(200,255,80,.4)';ctx.shadowBlur=10;
+    ctx.fillStyle=p.rare?`rgba(255,190,60,${pulse})`:`rgba(200,255,80,${pulse})`;ctx.beginPath();ctx.arc(cx,cy-10,22,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(10,30,5,.9)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('HARVEST',cx,cy-10);
+    ctx.fillStyle=p.rare?'rgba(255,220,120,.9)':'rgba(200,255,80,.8)';ctx.font='bold 8px Arial';ctx.fillText((p.rare?'✦ ':'')+p.label,cx,cy+12);
+  }
+}
+
+function drawParticles(){
+  for(const pt of particles){const a=1-pt.life/pt.maxLife;ctx.fillStyle=`rgba(${pt.color},${clamp(a,0,1)})`;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2);ctx.fill();}
+}
+function drawPopups(){
+  for(const pu of popups){const a=1-pu.life/pu.maxLife;ctx.save();ctx.globalAlpha=clamp(a,0,1);ctx.fillStyle=pu.color;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pu.text,pu.x,pu.y);ctx.restore();}
+}
+
+function drawHUD(){
+  ctx.save();ctx.fillStyle='rgba(1,3,1,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#a0e060';ctx.font='bold 13px Arial';
+  let roundLabel='Round '+(game.round+1)+' / '+TOTAL;
+  if(isDroughtRound(game.round))roundLabel+=' — Drought';
+  if(isBumperRound(game.round))roundLabel+=' — Bumper (2x weeds, 2x pts)';
+  ctx.fillText('Seed Garden — '+roundLabel,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Harvested: '+game.harvested+' / '+HARVEST_TARGET+'  Streak: '+game.streak+'  Choked: '+game.choked+'/'+MAX_CHOKED,18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  ctx.restore();
+  // urgency warning flash when close to gameover
+  if(game.choked>=MAX_CHOKED-1){
+    const flash=0.15+0.15*Math.sin(game.time/150);
+    ctx.save();ctx.strokeStyle=`rgba(255,60,40,${flash+0.2})`;ctx.lineWidth=8;ctx.strokeRect(4,4,W-8,H-8);ctx.restore();
+  }
+  if(game.paused){
+    ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#a0e060';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Paused',W/2,H/2);ctx.font='13px Arial';ctx.fillStyle='rgba(234,242,246,.7)';ctx.fillText('Tap the pause button or press P to resume',W/2,H/2+34);ctx.restore();
+  }
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(1,3,1,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=360,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,12,4,.97)'],[1,'rgba(3,8,3,.97)']]);rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,200,60,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#a0e060';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+94;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();drawBg();
+    if(game.state!=='title'){for(let i=0;i<plots.length;i++)drawPlot(i,plots[i]);drawParticles();drawPopups();}
+    vignette();
+    if(game.state==='playing'||game.state==='transition')drawHUD();
+    if(game.state==='title'){
+      panelDraw('Seed Garden',['Click an empty plot to plant a joy-seed.','Click a growing plant to water it.','Click a weed sprout to pull it out before it spreads.','Click a glowing plant to harvest it.','Harvest '+HARVEST_TARGET+' plants per round across 5 rounds.','Chain harvests quickly for a streak bonus.','','Tend what brings you joy.','','Click / tap to begin.']);
+    }else if(game.state==='won'){
+      const perfectRounds=game.roundStats.filter(r=>r.perfect).length;
+      const bestStreakRound=game.roundStats.reduce((m,r)=>Math.max(m,r.maxStreak),0);
+      panelDraw('Garden Thriving! ✓',[
+        'Score: '+game.score+'   Best: '+game.best,
+        'Weeds pulled: '+game.weedsPulled+'   Weeds that spread: '+game.weedsSpread,
+        'Perfect rounds (no spread): '+perfectRounds+' / '+TOTAL,
+        'Best streak: '+bestStreakRound,
+        game.rareUnlocked?'Rare joy-plants unlocked ✦':'Harvest '+RARE_UNLOCK_TOTAL+' lifetime to unlock rare joy-plants',
+        '','Every joy-plant chosen and tended.','','Click / tap to play again.']);
+    }else if(game.state==='gameover'){
+      panelDraw('Garden Overrun',[
+        'Too many plots were choked by neglected obligation weeds.',
+        'Score: '+game.score+'   Best: '+game.best,
+        'Weeds pulled: '+game.weedsPulled+'   Weeds that spread: '+game.weedsSpread,
+        '','Pull weeds promptly — they spread if ignored too long.','','Click / tap to try again.']);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+function togglePause(){if(game.state==='playing'||game.state==='paused'){game.paused=!game.paused;}}
+function toggleMute(){game.muted=!game.muted;updateControlLabels();}
+function updateControlLabels(){
+  const bm=document.getElementById('btnMute'),bp=document.getElementById('btnPause');
+  if(bm)bm.textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+  if(bp)bp.textContent=game.paused?'▶':'❚❚';
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.paused)return;
+  if(game.state==='playing'){const i=plotAt(px,py);if(i>=0)clickPlot(i);}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+const btnPause=document.getElementById('btnPause'),btnMute=document.getElementById('btnMute');
+if(btnPause)btnPause.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();updateControlLabels();});
+if(btnMute)btnMute.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+if(btnPause)btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();updateControlLabels();},{passive:false});
+if(btnMute)btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'){togglePause();updateControlLabels();}
+  else if(e.key==='m'||e.key==='M'){toggleMute();}
+});
+
+// letterbox canvas to preserve 16:9 aspect ratio instead of stretching to 100vw/100vh
+function fitCanvas(){
+  const ww=window.innerWidth,wh=window.innerHeight;
+  const aspect=W/H;
+  let cw=ww,ch=ww/aspect;
+  if(ch>wh){ch=wh;cw=wh*aspect;}
+  canvas.style.width=Math.floor(cw)+'px';
+  canvas.style.height=Math.floor(ch)+'px';
+}
+window.addEventListener('resize',fitCanvas);
+fitCanvas();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={get game(){return game;},get plots(){return plots;},get particles(){return particles;},get popups(){return popups;},
+  resetGame,buildRound,clickPlot,plotAt,update,draw,togglePause,toggleMute,fitCanvas,
+  COLS,ROWS,HARVEST_TARGET,TOTAL,MAX_CHOKED,RARE_UNLOCK_TOTAL};
+</script>
+</body>
+</html>

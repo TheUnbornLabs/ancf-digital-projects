@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Budget Time</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04050e;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#04050e;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:42px;height:42px;border-radius:10px;border:1px solid rgba(120,150,255,.35);background:rgba(6,8,20,.75);color:#eaf2f6;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(60,80,160,.5);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute">&#128266;</button>
+  <button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Drag time blocks to the week grid &middot; fill YOUR hours before obligations consume them all &middot; Tab+Arrows+Enter also works</div>
+<script>
+'use strict';
+// Budget Time (#66)
+// Drag "your time" blocks onto a 7-day week grid.
+// Obligation blocks auto-fill from the right; you race to claim YOUR hours.
+// Theme: time is finite — guard your own hours intentionally.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const DAYS=7,HOURS=10;// grid: 7 days, 10 hours each
+const GX=60,GY=100,CW=100,CH=36;// cell width/height
+const POOL_Y=H-100;
+const MY_BLOCKS=[
+  {label:'Rest',col:'#6080ff'},{label:'Create',col:'#80d060'},{label:'Move',col:'#ff8040'},
+  {label:'Read',col:'#e060e0'},{label:'Friends',col:'#40d0c0'},{label:'Play',col:'#ffd060'},
+];
+const OBL_COL='rgba(120,60,60,.5)';
+const TARGET_MINE=28;// need to claim 28 cells as "yours" to win
+const OBL_MS_START=1800,OBL_MS_MIN=600,OBL_RAMP_RATE=0.05;// ms interval lerp per game.time
+
+// ---- persistence ----
+const LS_KEY='cfq_budgettime_best';
+function loadBest(){try{const v=parseInt(localStorage.getItem(LS_KEY),10);return isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+
+const game={state:'title',time:0,score:0,best:loadBest(),shakeT:0,muted:false,paused:false,combo:0,comboMax:0,dayStreak:0,cats:{}};
+let grid=[],pool=[],dragging=null,dragOffX=0,dragOffY=0,oblTimer=0;
+let particles=[];// {x,y,vx,vy,life,text,col}
+let cellPulse=[];// per-cell pulse timers, keyed 'd_h'
+let kbSelIdx=0,kbTargetC=0,kbTargetR=0,kbMode='pool';// 'pool' select block, 'grid' choose cell
+
+function oblInterval(){return clamp(OBL_MS_START-game.time*OBL_RAMP_RATE,OBL_MS_MIN,OBL_MS_START);}
+
+function resetGame(){
+  grid=Array.from({length:DAYS},()=>new Array(HOURS).fill(null));
+  pool=MY_BLOCKS.map((b,i)=>({...b,x:GX+i*(CW+8),y:POOL_Y,w:CW-4,h:CH-4,placed:false}));
+  oblTimer=0;game.time=0;game.score=0;game.shakeT=0;game.combo=0;game.comboMax=0;game.dayStreak=0;
+  game.cats={};for(const b of MY_BLOCKS)game.cats[b.label]=0;
+  game.paused=false;
+  particles=[];cellPulse=[];
+  kbSelIdx=0;kbTargetC=0;kbTargetR=0;kbMode='pool';
+  game.state='playing';
+}
+function countMine(){let c=0;for(const day of grid)for(const cell of day)if(cell&&cell!=='obl')c++;return c;}
+function countEmpty(){let c=0;for(const day of grid)for(const cell of day)if(!cell)c++;return c;}
+function poolRemaining(){return countEmpty();}// slots still claimable
+
+function addObligation(){// fill random empty cell from right
+  for(let d=DAYS-1;d>=0;d--){for(let h=HOURS-1;h>=0;h--){
+    if(!grid[d][h]){
+      grid[d][h]='obl';
+      game.shakeT=Math.max(game.shakeT,8);
+      sndObl();
+      pulseCell(d,h,'obl');
+      game.combo=0;// obligation landing breaks the "clean sweep" streak too
+      return;
+    }
+  }}
+}
+function forceObligationTick(){oblTimer=1e9;}// test hook: force next update() to fire an obligation
+
+function pulseCell(d,h,kind){cellPulse.push({d,h,t:0,dur:320,kind});}
+
+function checkDayStreak(){
+  // award a day-streak bonus first time a day becomes fully filled with the player's own blocks
+  for(let d=0;d<DAYS;d++){
+    let full=true;
+    for(let h=0;h<HOURS;h++){if(!grid[d][h]||grid[d][h]==='obl'){full=false;break;}}
+    if(full&&!game._dayAwarded){game._dayAwarded={};}
+    if(full){
+      game._dayAwarded=game._dayAwarded||{};
+      if(!game._dayAwarded[d]){game._dayAwarded[d]=true;game.dayStreak++;spawnPopup(GX+d*CW+CW/2,GY-14,'DAY FULL!','#ffd580');sndWin();}
+    }
+  }
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt*0.05);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt/16;p.y+=p.vy*dt/16;p.vy+=0.02*dt;if(p.life<=0)particles.splice(i,1);}
+  for(let i=cellPulse.length-1;i>=0;i--){cellPulse[i].t+=dt;if(cellPulse[i].t>=cellPulse[i].dur)cellPulse.splice(i,1);}
+  if(game.state!=='playing'||game.paused)return;
+  oblTimer+=dt;
+  const iv=oblInterval();
+  if(oblTimer>iv){oblTimer=0;addObligation();}
+  // check win
+  const mine=countMine();game.score=mine;
+  checkDayStreak();
+  if(mine>=TARGET_MINE){
+    if(mine>game.best){game.best=mine;saveBest(game.best);}
+    sndWin();game.state='won';return;
+  }
+  // check lose: no empty cells
+  let empty=countEmpty();
+  if(empty===0&&mine<TARGET_MINE){
+    if(mine>game.best){game.best=mine;saveBest(game.best);}
+    game.state='gameover';
+  }
+}
+function cellAt(px,py){const c=Math.floor((px-GX)/CW),r=Math.floor((py-GY)/CH);if(c>=0&&c<DAYS&&r>=0&&r<HOURS)return{c,r};return null;}
+function dropBlock(block,px,py){
+  const cell=cellAt(px,py);if(!cell)return false;const{c,r}=cell;
+  if(grid[c][r]===null){
+    grid[c][r]={label:block.label,col:block.col};
+    game.cats[block.label]=(game.cats[block.label]||0)+1;
+    game.combo++;if(game.combo>game.comboMax)game.comboMax=game.combo;
+    pulseCell(c,r,'place');
+    spawnBurst(GX+c*CW+CW/2,GY+r*CH+CH/2,block.col);
+    spawnPopup(GX+c*CW+CW/2,GY+r*CH+CH/2-6,'+1'+(game.combo>=3?' x'+Math.min(game.combo,9):''),'#eaf2f6');
+    return true;
+  }
+  return false;
+}
+function placeAtCell(c,r){
+  // used by keyboard-driven placement; picks the currently selected pool block
+  if(!pool[kbSelIdx])return false;
+  const b=pool[kbSelIdx];
+  const ok=dropBlock(b,GX+c*CW+CW/2,GY+r*CH+CH/2);
+  if(ok)sndPlace();else sndFail();
+  return ok;
+}
+function spawnBurst(x,y,col){
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2,sp=0.6+Math.random()*1.6;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,life:380+Math.random()*160,r:2+Math.random()*2,col,text:null});
+  }
+}
+function spawnPopup(x,y,text,col){particles.push({x,y,vx:0,vy:-0.9,life:620,r:0,col,text});}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndPlace=()=>tone(440,0.08,'sine',0.04);
+const sndFail=()=>tone(200,0.1,'sawtooth',0.04);
+const sndObl=()=>tone(120,0.16,'square',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04050e'],[1,'#02030a']]);ctx.fillRect(0,0,W,H);}
+
+function drawGrid(){
+  const DAY_NAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  for(let d=0;d<DAYS;d++){
+    const x=GX+d*CW;
+    ctx.fillStyle='rgba(200,200,220,.4)';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(DAY_NAMES[d],x+CW/2,GY-4);
+    for(let h=0;h<HOURS;h++){
+      const y=GY+h*CH;const cell=grid[d][h];
+      let col='rgba(20,25,50,.5)';
+      if(cell==='obl')col=OBL_COL;else if(cell)col=cell.col+'99';
+      // pulse scale
+      let pulse=cellPulse.find(p=>p.d===d&&p.h===h);
+      let scale=1;
+      if(pulse){const t=pulse.t/pulse.dur;scale=1+ (pulse.kind==='place'?0.18:0.12)*Math.sin(t*Math.PI)*(1-t);}
+      const cx=x+CW/2,cy=y+CH/2,cw=(CW-4)*scale,ch=(CH-4)*scale;
+      ctx.fillStyle=col;rr(cx-cw/2,cy-ch/2,cw,ch,4);ctx.fill();
+      // keyboard target highlight
+      if(game.state==='playing'&&kbMode==='grid'&&d===kbTargetC&&h===kbTargetR){
+        ctx.strokeStyle='rgba(255,213,128,.9)';ctx.lineWidth=2;rr(x+1,y+1,CW-2,CH-2,5);ctx.stroke();
+      }
+      ctx.strokeStyle='rgba(60,80,160,.2)';ctx.lineWidth=0.5;rr(x+2,y+2,CW-4,CH-4,4);ctx.stroke();
+      if(cell&&cell!=='obl'){
+        ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(cell.label,x+CW/2,y+CH/2);
+      }else if(cell==='obl'){
+        ctx.fillStyle='rgba(230,180,180,.8)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u{1F512}',x+CW/2,y+CH/2-6);// lock glyph — non-color cue
+        ctx.font='7px Arial';ctx.fillText('taken',x+CW/2,y+CH/2+6);
+      }
+    }
+  }
+  for(let h=0;h<HOURS;h++){ctx.fillStyle='rgba(200,200,220,.3)';ctx.font='9px Arial';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText((h+8)+':00',GX-4,GY+h*CH+CH/2);}
+}
+
+function drawPool(){
+  ctx.fillStyle='rgba(200,200,220,.25)';ctx.font='bold 10px Arial';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText('YOUR TIME BLOCKS (unlimited supply — '+poolRemaining()+' open slots left):',GX,POOL_Y-4);
+  for(let i=0;i<pool.length;i++){
+    const b=pool[i];if(b===dragging)continue;
+    ctx.fillStyle=b.col+'cc';rr(b.x,b.y,b.w,b.h,6);ctx.fill();
+    if(game.state==='playing'&&kbMode==='pool'&&i===kbSelIdx){ctx.strokeStyle='rgba(255,213,128,.9)';ctx.lineWidth=2;rr(b.x-1,b.y-1,b.w+2,b.h+2,7);ctx.stroke();}
+    ctx.fillStyle='rgba(234,242,246,.9)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2);
+  }
+  if(dragging){
+    ctx.globalAlpha=0.8;ctx.fillStyle=dragging.col+'cc';rr(dragging.x,dragging.y,dragging.w,dragging.h,6);ctx.fill();
+    ctx.fillStyle='rgba(234,242,246,.9)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dragging.label,dragging.x+dragging.w/2,dragging.y+dragging.h/2);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(p.life/620,0,1);
+    if(p.text){
+      ctx.globalAlpha=a;ctx.fillStyle=p.col;ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.text,p.x,p.y);ctx.globalAlpha=1;
+    }else{
+      ctx.globalAlpha=a;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,3,7,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80a0ff';ctx.font='bold 13px Arial';ctx.fillText('Budget Time',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Drag (or Tab+Arrows+Enter) your time blocks onto the week',18,28);
+  ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score+' / '+TARGET_MINE,W/2,16);
+  if(game.combo>=2){ctx.fillStyle='#80ffb0';ctx.font='bold 11px Arial';ctx.fillText('combo x'+game.combo,W/2,38);}
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Best: '+game.best,W-18,8);
+  ctx.fillStyle='rgba(234,242,246,.4)';ctx.font='10px Arial';ctx.fillText('Days full: '+game.dayStreak+'/'+DAYS,W-18,24);
+  ctx.restore();
+  // low-empty warning: escalating red vignette pulse + icon, not color alone
+  const empty=countEmpty();
+  if(empty<5){
+    const pulse=0.35+0.25*Math.sin(game.time/140);
+    ctx.save();
+    const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.9);
+    g.addColorStop(0,'rgba(200,40,40,0)');g.addColorStop(1,'rgba(200,40,40,'+(pulse*0.5)+')');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center';ctx.fillStyle='rgba(255,210,210,'+(0.6+0.3*Math.sin(game.time/140))+')';ctx.font='bold 13px Arial';
+    ctx.fillText('⚠ '+empty+' open slot'+(empty===1?'':'s')+' left!',W/2,58);
+    ctx.restore();
+  }
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(2,3,7,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,8,18,.97)'],[1,'rgba(4,5,14,.97)']]);rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(100,130,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80a0ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+56);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+90;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}
+  ctx.restore();
+}
+
+function panelBreakdown(){
+  // post-win breakdown: time-per-category
+  ctx.save();
+  ctx.fillStyle='rgba(2,3,7,.82)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=380,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,8,18,.97)'],[1,'rgba(4,5,14,.97)']]);rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(100,130,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.fillStyle='#80a0ff';ctx.font='bold 26px Arial';ctx.fillText('Time Claimed ✓',W/2,py+46);
+  ctx.fillStyle='rgba(234,242,246,.85)';ctx.font='13px Arial';
+  ctx.fillText('Your hours: '+game.score+'   Best combo: x'+game.comboMax+'   Days full: '+game.dayStreak,W/2,py+72);
+  // bars
+  let by=py+100;const maxV=Math.max(1,...MY_BLOCKS.map(b=>game.cats[b.label]||0));
+  for(const b of MY_BLOCKS){
+    const v=game.cats[b.label]||0;const bw=(pw-160)*(v/maxV);
+    ctx.textAlign='left';ctx.fillStyle='rgba(234,242,246,.8)';ctx.font='12px Arial';ctx.fillText(b.label,px+40,by+10);
+    ctx.fillStyle='rgba(255,255,255,.08)';rr(px+140,by,pw-180,16,6);ctx.fill();
+    ctx.fillStyle=b.col;rr(px+140,by,Math.max(4,bw),16,6);ctx.fill();
+    ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='11px Arial';ctx.fillText(String(v),px+pw-44,by+12);
+    by+=34;
+  }
+  ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='13px Arial';ctx.fillText('Click / tap to play again.',W/2,py+ph-24);
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+    ctx.save();
+    // screen shake
+    if(game.shakeT>0){
+      const m=game.shakeT;
+      ctx.translate((Math.random()*2-1)*m,(Math.random()*2-1)*m);
+    }
+    drawBg();
+    if(game.state!=='title'){drawGrid();drawPool();drawParticles();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='playing'&&game.paused){
+      panelDraw('Paused',['Click / tap pause button to resume.']);
+    }
+    if(game.state==='title')panelDraw('Budget Time',['Drag YOUR time blocks onto the week grid.','Obligations fill automatically — act fast.','Claim '+TARGET_MINE+' hours of your own to win.','','Your time is the one resource nobody can give back.','','Click / tap to begin.']);
+    else if(game.state==='won')panelBreakdown();
+    else if(game.state==='gameover')panelDraw('Time Taken',['Your hours: '+game.score+' / '+TARGET_MINE,'Best: '+game.best,'','Obligations filled the week before you could.','','Click / tap to try again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---- letterboxed resize (preserve 960x540 aspect) ----
+function resize(){
+  const vw=window.innerWidth||document.documentElement.clientWidth||960;
+  const vh=window.innerHeight||document.documentElement.clientHeight||540;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.round(W*scale),ch=Math.round(H*scale);
+  canvas.style.width=cw+'px';canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+function getP(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;// rect now matches internal aspect thanks to letterbox resize
+  if(e.touches&&e.touches.length)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};
+}
+function poolBlockAt(px,py){for(const b of pool){if(px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h)return b;}return null;}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state!=='playing'||game.paused)return;
+  const p=getP(e);const b=poolBlockAt(p.x,p.y);
+  if(b){dragging=b;dragOffX=p.x-b.x;dragOffY=p.y-b.y;}
+}
+function onMove(e){
+  e.preventDefault();
+  if(!dragging)return;
+  const p=getP(e);dragging.x=p.x-dragOffX;dragging.y=p.y-dragOffY;
+}
+function onUp(e){
+  e.preventDefault();
+  if(!dragging)return;
+  const p=getP(e);
+  const placed=dropBlock(dragging,p.x,p.y);
+  const origIdx=MY_BLOCKS.findIndex(b=>b.label===dragging.label);
+  dragging.x=GX+origIdx*(CW+8);dragging.y=POOL_Y;
+  if(placed)sndPlace();else{sndFail();game.combo=0;}
+  dragging=null;
+}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp,{passive:false});
+
+// ---- keyboard fallback: Tab/Arrows select pool block, arrows move grid cursor, Enter places ----
+window.addEventListener('keydown',function(e){
+  if(game.state!=='playing'){
+    if(e.key==='Enter'||e.key===' ')resetGame();
+    return;
+  }
+  if(e.key==='p'||e.key==='P'){togglePause();return;}
+  if(e.key==='m'||e.key==='M'){toggleMute();return;}
+  if(game.paused)return;
+  if(e.key==='Tab'){
+    e.preventDefault();
+    kbMode=(kbMode==='pool')?'grid':'pool';
+    return;
+  }
+  if(kbMode==='pool'){
+    if(e.key==='ArrowRight'){kbSelIdx=(kbSelIdx+1)%pool.length;e.preventDefault();}
+    else if(e.key==='ArrowLeft'){kbSelIdx=(kbSelIdx-1+pool.length)%pool.length;e.preventDefault();}
+    else if(e.key==='Enter'||e.key===' '){kbMode='grid';e.preventDefault();}
+  }else{
+    if(e.key==='ArrowRight'){kbTargetC=clamp(kbTargetC+1,0,DAYS-1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'){kbTargetC=clamp(kbTargetC-1,0,DAYS-1);e.preventDefault();}
+    else if(e.key==='ArrowDown'){kbTargetR=clamp(kbTargetR+1,0,HOURS-1);e.preventDefault();}
+    else if(e.key==='ArrowUp'){kbTargetR=clamp(kbTargetR-1,0,HOURS-1);e.preventDefault();}
+    else if(e.key==='Enter'||e.key===' '){placeAtCell(kbTargetC,kbTargetR);e.preventDefault();}
+  }
+});
+
+// ---- on-screen pause / mute controls ----
+function togglePause(){if(game.state==='playing')game.paused=!game.paused;btnPause.textContent=game.paused?'▶':'❘❘';}
+function toggleMute(){game.muted=!game.muted;btnMute.textContent=game.muted?'\u{1F507}':'\u{1F50A}';}
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',function(e){e.stopPropagation();togglePause();});
+btnMute.addEventListener('click',function(e){e.stopPropagation();toggleMute();});
+btnPause.addEventListener('touchstart',function(e){e.stopPropagation();e.preventDefault();togglePause();},{passive:false});
+btnMute.addEventListener('touchstart',function(e){e.stopPropagation();e.preventDefault();toggleMute();},{passive:false});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get grid(){return grid;},
+  get pool(){return pool;},
+  get oblTimer(){return oblTimer;},
+  get oblInterval(){return oblInterval();},
+  resetGame,countMine,countEmpty,addObligation,forceObligationTick,dropBlock,placeAtCell,cellAt,update,draw,
+  togglePause,toggleMute,
+  MY_BLOCKS,DAYS,HOURS,TARGET_MINE
+};
+</script>
+</body>
+</html>

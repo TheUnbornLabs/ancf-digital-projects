@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>River Raft</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#01050a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{display:block;background:#01050a;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#hud-btns{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#hud-btns button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(96,208,255,.35);background:rgba(0,8,16,.7);color:#bfe8ff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}
+#hud-btns button:active{background:rgba(20,60,90,.8);}
+#steer-zones{position:fixed;inset:0;display:flex;pointer-events:none;z-index:3;}
+.szone{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:60px;opacity:0;transition:opacity .15s;}
+.szone.active{opacity:1;}
+.szone .arrow{width:0;height:0;border-style:solid;}
+.szl .arrow{border-width:14px 20px 14px 0;border-color:transparent rgba(96,208,255,.35) transparent transparent;}
+.szr .arrow{border-width:14px 0 14px 20px;border-color:transparent transparent transparent rgba(96,208,255,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="steer-zones"><div class="szone szl" id="zoneL"><div class="arrow"></div></div><div class="szone szr" id="zoneR"><div class="arrow"></div></div></div>
+<div id="hud-btns"><button id="btnPause" title="Pause">&#10074;&#10074;</button><button id="btnMute" title="Mute">&#128266;</button></div>
+<div id="hint">Left / Right arrow or A/D to steer &middot; dodge rocks and obligation logs &middot; collect calm lilies &middot; 10 rivers</div>
+<script>
+'use strict';
+// River Raft (#96)
+// Top-down river. Raft scrolls down as river flows. Steer left/right.
+// Obstacles: rocks and obligation-logs drift down at varying speeds.
+// Collectibles: calm lily pads give bonus points.
+// 10 stages — river gets narrower and faster.
+// Theme: navigating your own current — steering through what you didn't choose.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const OBS_LABELS=['ought to','must','should','oblige','conform','deadline','owe it'];
+const LILY_LABELS=['Peace','Calm','Flow','Rest','Joy'];
+const TOTAL=10;
+const RAFT_W=32,RAFT_H=20;
+const DIST_PER_STAGE=3000;
+const INVULN_MS=1200;
+
+// ---- localStorage best score persistence ----
+const LS_KEY='cfq_river_raft_best';
+function loadBest(){try{const v=localStorage.getItem(LS_KEY);const n=parseInt(v,10);return Number.isFinite(n)&&n>0?n:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),lives:3,dist:0,paused:false,muted:false,
+  streak:0,bestStreak:0,liliesCollected:0,hitsTaken:0,closeCalls:0,sessionId:0};
+let raft,obstacles=[],spawnTimer=0,riverW=680,speed=200,rng;
+let particles=[],popups=[];
+let invulnTimer=0;
+
+function buildStage(r){rng=seeded(r*6007+53);riverW=Math.max(300,680-r*30);speed=200+r*25;obstacles=[];spawnTimer=0;game.dist=0;raft={x:W/2,y:H-100,vx:0};game.state='playing';invulnTimer=INVULN_MS*0.5;}
+function resetGame(){game.sessionId++;game.round=0;game.score=0;game.lives=3;game.streak=0;game.bestStreak=0;game.liliesCollected=0;game.hitsTaken=0;game.closeCalls=0;game.paused=false;particles=[];popups=[];buildStage(0);}
+const riverLeft=()=>(W-riverW)/2;
+const riverRight=()=>riverLeft()+riverW;
+
+// min legal gap: raft half-width + a margin must fit somewhere across the river
+function minPlayableGap(){return RAFT_W+18;}
+
+function lastObsY(){let y=Infinity;for(const o of obstacles){if(o.y<y)y=o.y;}return y===Infinity?-9999:y;}
+
+function spawnObs(){
+  const isLily=rng()<0.3;
+  const rBase=isLily?12:10+rng()*12;
+  // clamp radius so a legal gap always remains across the river width
+  const maxAllowedR=Math.max(6,(riverW-minPlayableGap())/2-6);
+  const r=Math.min(rBase,maxAllowedR);
+  const margin=r+8;
+  let x=riverLeft()+margin+rng()*Math.max(1,(riverW-margin*2));
+  // lane-slot spawning: avoid overlapping the most recent obstacle if it's still near top of river
+  const recentY=lastObsY();
+  let y=-r*2;
+  if(recentY>-200){
+    // ensure vertical spacing so obstacles don't stack at nearly the same y
+    y=Math.min(y,recentY-(r+18));
+  }
+  // if placing here would still overlap another close obstacle horizontally at similar y, offset x toward a free lane
+  for(const o of obstacles){
+    if(Math.abs(o.y-y)<(o.r+r+14)){
+      const leftSpace=x-riverLeft();
+      const rightSpace=riverRight()-x;
+      if(leftSpace>rightSpace)x=Math.max(riverLeft()+margin,o.x-(o.r+r+16));
+      else x=Math.min(riverRight()-margin,o.x+(o.r+r+16));
+    }
+  }
+  const vy=speed*0.3+rng()*speed*0.4;
+  obstacles.push({x,y,r,vy,lily:isLily,label:isLily?LILY_LABELS[Math.floor(rng()*LILY_LABELS.length)]:OBS_LABELS[Math.floor(rng()*OBS_LABELS.length)],hit:false,passed:false});
+}
+
+function addPopup(x,y,text,color){popups.push({x,y,text,color,t:0,life:700});}
+function addBurst(x,y,color,n){for(let i=0;i<(n||10);i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:400+Math.random()*300,color});}}
+
+function update(dt){
+  dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+  if(game.state==='playing'&&!game.paused){
+    invulnTimer=Math.max(0,invulnTimer-dt);
+    game.dist+=speed*s;
+    const steer=(input.left?-1:0)+(input.right?1:0);
+    raft.vx+=steer*600*s;raft.vx*=0.84;raft.x+=raft.vx*s;
+    const rl=riverLeft()+RAFT_W/2,rr=riverRight()-RAFT_W/2;raft.x=clamp(raft.x,rl,rr);
+    spawnTimer+=dt;const si=Math.max(400,1200-game.round*80);
+    if(spawnTimer>=si){spawnTimer=0;spawnObs();}
+    const sid=game.sessionId;
+    for(const o of obstacles){
+      o.y+=o.vy*s;
+      if(!o.hit){
+        const dist=Math.hypot(o.x-raft.x,o.y-raft.y);
+        const hitR=o.r+(o.lily?12:14);
+        if(dist<hitR){
+          if(o.lily){
+            o.hit=true;game.score+=10;game.liliesCollected++;
+            game.streak++;if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+            const mult=1+Math.floor(game.streak/3)*0.5;
+            const bonus=Math.round(10*(mult-1));
+            if(bonus>0){game.score+=bonus;addPopup(o.x,o.y,'+'+(10+bonus)+(game.streak>=3?' x'+mult.toFixed(1):''),'#9fffb0');}
+            else addPopup(o.x,o.y,'+10','#9fffb0');
+            addBurst(o.x,o.y,'150,255,170',10);
+            sndCollect();
+          }else if(invulnTimer<=0){
+            o.hit=true;game.lives--;game.hitsTaken++;game.streak=0;sndHit();
+            addPopup(o.x,o.y,'HIT','#ff9a6a');addBurst(o.x,o.y,'255,140,90',14);
+            invulnTimer=INVULN_MS;
+            if(game.lives<=0){
+              game.lives=0;if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndLose();
+              const mySession=sid;
+              setTimeout(()=>{if(game.sessionId===mySession&&game.state==='playing')game.state='gameover';},400);
+            }
+          }
+        }else if(!o.lily&&!o.passed&&o.y>raft.y+8){
+          o.passed=true;
+          const closeMargin=hitR+10;
+          if(dist<closeMargin){game.score+=5;game.closeCalls++;addPopup(o.x,o.y,'close call +5','#ffe08a');}
+        }
+      }
+    }
+    obstacles=obstacles.filter(o=>o.y<H+60&&!o.hit);
+    if(game.dist>=DIST_PER_STAGE){
+      game.score+=50;sndWin2();game.round++;
+      if(game.round>=TOTAL){if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndWin();game.state='won';}
+      else{buildStage(game.round);}
+    }
+  }
+  // particles/popups animate regardless of pause? keep tied to playing for consistency, but simple decay always fine
+  for(const p of particles){p.t+=dt;p.x+=p.vx*s;p.y+=p.vy*s;p.vx*=0.94;p.vy*=0.94;}
+  particles=particles.filter(p=>p.t<p.life);
+  for(const p of popups){p.t+=dt;p.y-=dt*0.03;}
+  popups=popups.filter(p=>p.t<p.life);
+}
+
+const input={left:false,right:false};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')input.left=true;
+  if(e.key==='ArrowRight'||e.key==='d')input.right=true;
+  if(e.key==='p'||e.key==='P'||e.key==='Escape')togglePause();
+  if(e.key==='m'||e.key==='M')toggleMute();
+});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')input.left=false;if(e.key==='ArrowRight'||e.key==='d')input.right=false;});
+
+// ---- aspect-ratio letterboxing + canvas-space coordinate mapping ----
+function fitCanvas(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.round(W*scale),ch=Math.round(H*scale);
+  canvas.style.width=cw+'px';canvas.style.height=ch+'px';
+  canvas._scale=scale;canvas._offX=(vw-cw)/2;canvas._offY=(vh-ch)/2;
+}
+window.addEventListener('resize',fitCanvas);
+fitCanvas();
+function clientToCanvasX(clientX){
+  const rect=canvas.getBoundingClientRect();
+  const scale=rect.width/W;
+  return (clientX-rect.left)/scale;
+}
+
+let tx0=0,tx0canvas=0;
+canvas.addEventListener('touchstart',e=>{e.preventDefault();tx0=e.touches[0].clientX;tx0canvas=clientToCanvasX(tx0);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const cx=clientToCanvasX(e.touches[0].clientX);const dx=cx-tx0canvas;input.left=dx<-10;input.right=dx>10;},{passive:false});
+canvas.addEventListener('touchend',()=>{input.left=false;input.right=false;},{passive:true});
+
+// on-screen steer zones (visible tap targets, absolute — press-and-hold to steer)
+const zoneL=document.getElementById('zoneL'),zoneR=document.getElementById('zoneR');
+function bindZone(el,dir){
+  const on=e=>{e.preventDefault();input[dir]=true;el.classList.add('active');};
+  const off=e=>{if(e)e.preventDefault();input[dir]=false;el.classList.remove('active');};
+  el.style.pointerEvents='auto';
+  el.addEventListener('touchstart',on,{passive:false});
+  el.addEventListener('touchend',off,{passive:false});
+  el.addEventListener('touchcancel',off,{passive:false});
+  el.addEventListener('mousedown',on);
+  el.addEventListener('mouseup',off);
+  el.addEventListener('mouseleave',off);
+}
+bindZone(zoneL,'left');bindZone(zoneR,'right');
+
+// ---- pause / mute HUD buttons ----
+function togglePause(){if(game.state!=='playing'&&!game.paused)return;game.paused=!game.paused;document.getElementById('btnPause').textContent=game.paused?'▶':'❙❙';}
+function toggleMute(){game.muted=!game.muted;document.getElementById('btnMute').textContent=game.muted?'🔇':'🔊';}
+document.getElementById('btnPause').addEventListener('click',e=>{e.stopPropagation();togglePause();});
+document.getElementById('btnMute').addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+document.getElementById('btnPause').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();togglePause();},{passive:false});
+document.getElementById('btnMute').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();toggleMute();},{passive:false});
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndCollect=()=>tone(600,0.07,'sine',0.04);
+const sndHit=()=>tone(200,0.2,'sawtooth',0.05);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='#01050a';ctx.fillRect(0,0,W,H);const rl=riverLeft();// banks
+ctx.fillStyle='rgba(30,40,20,.8)';ctx.fillRect(0,0,rl,H);ctx.fillRect(riverRight(),0,W-riverRight(),H);// river
+const rg=lgrad(rl,0,riverRight(),0,[[0,'rgba(10,60,120,.5)'],[.5,'rgba(20,100,180,.6)'],[1,'rgba(10,60,120,.5)']]);ctx.fillStyle=rg;ctx.fillRect(rl,0,riverW,H);// flow ripples
+const oy=game.dist%60;ctx.strokeStyle='rgba(100,200,255,.08)';ctx.lineWidth=1;for(let y=-60+oy;y<H+60;y+=60){ctx.beginPath();ctx.moveTo(rl,y);ctx.bezierCurveTo(rl+riverW*0.3,y+15,rl+riverW*0.7,y-15,riverRight(),y);ctx.stroke();}// bank edges
+ctx.strokeStyle='rgba(60,120,40,.5)';ctx.lineWidth=2;ctx.strokeRect(rl,0,riverW,H);}
+function drawLilyShape(x,y,r){
+  // petal shape: 5 overlapping petal ellipses around center — colorblind-safe distinct from rock
+  ctx.save();ctx.translate(x,y);
+  for(let i=0;i<5;i++){
+    ctx.save();ctx.rotate((Math.PI*2/5)*i);
+    ctx.beginPath();ctx.ellipse(0,-r*0.5,r*0.42,r*0.62,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(0,0,r*0.4,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.restore();
+}
+function drawRockShape(x,y,r){
+  // spiky outline polygon — distinct silhouette from lily petals
+  const spikes=8;
+  ctx.beginPath();
+  for(let i=0;i<spikes;i++){
+    const a=(Math.PI*2/spikes)*i;
+    const rad=r*(i%2===0?1:0.72);
+    const px=x+Math.cos(a)*rad,py=y+Math.sin(a)*rad;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.closePath();ctx.fill();ctx.stroke();
+}
+function drawObstacles(){
+  for(const o of obstacles){
+    if(o.hit)continue;
+    if(o.lily){
+      ctx.fillStyle='rgba(60,160,80,.7)';ctx.strokeStyle='rgba(100,220,120,.5)';ctx.lineWidth=2;
+      drawLilyShape(o.x,o.y,o.r);
+      ctx.fillStyle='rgba(180,255,180,.8)';ctx.font='bold 7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.label,o.x,o.y+o.r+9);
+    }else{
+      const pulse=0.7+0.3*Math.sin(game.time/600+o.x);
+      ctx.fillStyle=`rgba(100,70,40,${pulse})`;ctx.strokeStyle='rgba(160,120,80,.5)';ctx.lineWidth=1.5;
+      drawRockShape(o.x,o.y,o.r);
+      ctx.fillStyle='rgba(240,180,100,.6)';ctx.font='bold 6px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.label,o.x,o.y);
+    }
+  }
+}
+function drawRaft(){
+  ctx.save();ctx.translate(raft.x,raft.y);
+  const flashing=invulnTimer>0&&Math.floor(game.time/90)%2===0;
+  ctx.globalAlpha=flashing?0.4:1;
+  ctx.fillStyle='rgba(160,100,40,.8)';const pw=RAFT_W,ph=RAFT_H;ctx.fillRect(-pw/2,-ph/2,pw,ph);
+  for(let i=0;i<3;i++){ctx.strokeStyle='rgba(100,60,20,.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-pw/2,(i-1)*ph/3);ctx.lineTo(pw/2,(i-1)*ph/3);ctx.stroke();}
+  ctx.fillStyle='rgba(180,230,255,.8)';ctx.beginPath();ctx.arc(0,-ph/2-7,6,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(1-p.t/p.life,0,1);
+    ctx.fillStyle=`rgba(${p.color},${a})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,3*a+1,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawPopups(){
+  ctx.textAlign='center';ctx.font='bold 12px Arial';
+  for(const p of popups){
+    const a=clamp(1-p.t/p.life,0,1);
+    ctx.fillStyle=p.color.replace(')',`,${a})`).replace('rgb','rgba');
+    // p.color may already be hex; handle both
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.fillText(p.text,p.x,p.y);
+    ctx.globalAlpha=1;
+  }
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(0,2,4,.88)';rr(0,0,W,46,0);ctx.fill();
+  const prog=Math.floor(clamp(game.dist/DIST_PER_STAGE,0,1)*100);
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#60d0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('River Raft — River '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const streakTxt=game.streak>=2?'  Streak x'+game.streak:'';
+  ctx.fillText('Progress: '+prog+'%  Lives: '+('♥').repeat(game.lives)+('♡').repeat(Math.max(0,3-game.lives))+'  Width: '+Math.floor(riverW)+streakTxt,18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  if(game.paused){
+    ctx.textAlign='center';ctx.fillStyle='#60d0ff';ctx.font='bold 12px Arial';
+    ctx.fillText('PAUSED',W/2,8);
+  }
+  ctx.restore();
+}
+function lowLifeVignette(){
+  if(game.lives!==1||game.state!=='playing')return;
+  const pulse=0.25+0.2*Math.sin(game.time/220);
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(120,0,0,0)');g.addColorStop(1,`rgba(180,10,10,${pulse})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(0,2,4,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=360,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(2,6,14,.97)'],[1,'rgba(1,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(60,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#60d0ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+56);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+92;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}ctx.restore();}
+function statsLines(){
+  return ['Lilies collected: '+game.liliesCollected+'   Hits taken: '+game.hitsTaken,
+          'Longest streak: '+game.bestStreak+'   Close calls: '+game.closeCalls];
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    drawBg();
+    if(game.state!=='title'){drawObstacles();drawRaft();drawParticles();drawPopups();}
+    lowLifeVignette();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title')panelDraw('River Raft',['Steer with Left/Right arrow keys or A/D, swipe, or tap the side zones.','Dodge rocks and obligation logs.','Collect green lily pads for bonus points and build a streak.','3 lives — 10 rivers of increasing challenge.','','Navigate your own current.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('Downriver! ✓',['Score: '+game.score+'  Best: '+game.best,...statsLines(),'','Ten rivers. Every one navigated.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Capsized',['Score: '+game.score+'  Best: '+game.best,...statsLines(),'','The current wins this time.','','Click / tap to retry.']);
+    ctx.restore();
+  }catch(e){}
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(game.state==='title'||game.state==='won'||game.state==='gameover')resetGame();
+  else{tx0=e.touches[0].clientX;tx0canvas=clientToCanvasX(tx0);}
+},{passive:false});
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get raft(){return raft;},get obstacles(){return obstacles;},resetGame,buildStage,update,draw,TOTAL,DIST_PER_STAGE,riverLeft,riverRight,input,togglePause,toggleMute};
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Garden Grow</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#040a06;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;left:0;right:0;display:flex;justify-content:space-between;padding:0 8px;pointer-events:none;z-index:5;}
+#ctrls button{pointer-events:auto;width:38px;height:38px;border-radius:8px;border:1px solid rgba(138,255,210,.35);background:rgba(2,10,4,.72);color:#8affd2;font-size:16px;line-height:1;cursor:pointer;}
+#ctrls button:active{background:rgba(138,255,210,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnPause" aria-label="Pause">&#10073;&#10073;</button>
+  <button id="btnMute" aria-label="Mute">&#128266;</button>
+</div>
+<div id="hint">Click a plot to water it &middot; weed out noise when it appears</div>
+<script>
+'use strict';
+// Garden Grow (#40)
+// Tend a 4×3 garden. Click plots to water flowers (they grow
+// through 3 stages). Weeds (labelled with pressures) appear and
+// must be clicked to remove before they choke the flower.
+// Grow all 12 flowers to full bloom to win.
+// Theme: nurturing your inner garden, weeding out noise.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const GCOLS=4,GROWS2=3,PW=160,PH=120,PGAP=16;
+const GX=(W-GCOLS*(PW+PGAP)-PGAP)/2,GY=(H-GROWS2*(PH+PGAP)-PGAP)/2+30;
+const FLOWERS=['rest','joy','peace','agency','clarity','focus','growth','play','art','music','nature','movement'];
+const WEEDS=['guilt','fomo','rush','noise','compare','should','nag','conform','pressure','obligation'];
+// weed kinds: normal / fast (halved kill timer) / spreading (can jump to adjacent empty plot)
+const WEED_KINDS=['normal','normal','normal','fast','spreading'];
+const WATER_MS=4000;
+const WEED_INTERVAL_BASE=8000,WEED_INTERVAL_MIN=4200;
+const WEED_KILL_MS_BASE=5000,WEED_KILL_MS_MIN=2600;
+
+// ---- persistence ----
+const LS_KEY='gardenGrow.best';
+function loadBest(){try{const v=localStorage.getItem(LS_KEY);return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+
+const game={state:'title',time:0,score:0,best:0,shakeT:0,muted:false,combo:0,round:1};
+let plots,weedT,rng,popups,particles;
+
+function currentWeedInterval(){const bloomed=plots?plots.filter(p=>p.bloomed).length:0;const roundBonus=(game.round-1)*1200;const v=WEED_INTERVAL_BASE-bloomed*280-roundBonus;return Math.max(WEED_INTERVAL_MIN,v);}
+function currentWeedKillMs(){const bloomed=plots?plots.filter(p=>p.bloomed).length:0;const roundBonus=(game.round-1)*500;const v=WEED_KILL_MS_BASE-bloomed*150-roundBonus;return Math.max(WEED_KILL_MS_MIN,v);}
+
+function resetGame(){rng=seeded(Date.now()%99991);plots=Array.from({length:GCOLS*GROWS2},(_,i)=>({flower:FLOWERS[i%FLOWERS.length],stage:0,waterT:0,weed:null,weedKind:null,weedT:0,bloomed:false}));weedT=0;game.score=0;game.shakeT=0;game.combo=0;game.round=1;game.best=loadBest();popups=[];particles=[];game.state='playing';}
+
+function addPopup(x,y,text,color){popups.push({x,y,text,color:color||'#ffd580',t:0,life:900});}
+function addBurst(x,y,color){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:500+Math.random()*300,color:color||'#ffd580',r:2+Math.random()*2.5});}}
+
+function plotCenter(i){const c=i%GCOLS,r=Math.floor(i/GCOLS);const x=GX+c*(PW+PGAP)+PGAP,y=GY+r*(PH+PGAP)+PGAP;return{x:x+PW/2,y:y+PH/2,x0:x,y0:y};}
+
+function clickPlot(i){const p=plots[i];const pos=plotCenter(i);
+if(p.weed){// remove weed — reaction-speed bonus + combo streak
+const killMs=currentWeedKillMs();const frac=clamp(p.weedT/killMs,0,1);const speedBonus=Math.round((1-frac)*10); // up to +10 for a fast removal
+game.combo++;const comboBonus=Math.min(game.combo-1,10)*1; // small streak bonus, clamped
+const gain=5+speedBonus+comboBonus;
+p.weed=null;p.weedKind=null;p.weedT=0;game.score+=gain;
+addPopup(pos.x,pos.y-10,'+'+gain,'#8affd2');
+sndWeed(game.combo);
+return;}
+if(p.bloomed)return;
+if(p.stage<3){p.waterT=Math.min(p.waterT+WATER_MS*0.5,WATER_MS);sndWater();}
+}
+
+function update(dt){dt=clamp(dt,0,48);game.time+=dt;if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+for(let i=popups.length-1;i>=0;i--){const pu=popups[i];pu.t+=dt;pu.y-=dt*0.03;if(pu.t>=pu.life)popups.splice(i,1);}
+for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.t+=dt;const s=dt/1000;pt.x+=pt.vx*s;pt.y+=pt.vy*s;pt.vx*=0.94;pt.vy*=0.94;if(pt.t>=pt.life)particles.splice(i,1);}
+if(game.state!=='playing')return;
+// grow plots — watering is the primary driver; a very small trickle keeps things from
+// feeling totally frozen but is far too slow to win on alone (clamped, never negative)
+const AUTO_DRIP=Math.max(0,0.015);
+for(const p of plots){if(p.bloomed||p.weed)continue;p.waterT+=dt*AUTO_DRIP;
+if(p.waterT>=WATER_MS&&p.stage<3){p.waterT=0;p.stage++;if(p.stage>=3){p.bloomed=true;game.score+=30;sndBloom();const c=plotCenter(plots.indexOf(p));addPopup(c.x,c.y-16,'+30','#ffd580');addBurst(c.x,c.y,'#ffd560');}}}
+// spawn weeds — interval ramps down (gets harder) as bloomed count / round rises, clamped to a floor
+const WEED_INTERVAL=currentWeedInterval();
+weedT+=dt;if(weedT>=WEED_INTERVAL){weedT=0;const candidates=plots.filter(p=>!p.bloomed&&!p.weed);if(candidates.length){const p=candidates[Math.floor(rng()*candidates.length)];p.weed=WEEDS[Math.floor(rng()*WEEDS.length)];p.weedKind=WEED_KINDS[Math.floor(rng()*WEED_KINDS.length)];p.weedT=0;}}
+const WEED_KILL_MS=currentWeedKillMs();
+for(const p of plots){if(p.weed)p.weedT+=dt;}
+// spreading weeds can jump to an adjacent empty plot partway through their life
+for(let i=0;i<plots.length;i++){const p=plots[i];if(p.weed&&p.weedKind==='spreading'&&p.weedT>WEED_KILL_MS*0.5&&!p._spread){p._spread=true;const c=i%GCOLS,r=Math.floor(i/GCOLS);const neighbors=[i-1,i+1,i-GCOLS,i+GCOLS].filter(j=>j>=0&&j<plots.length&&!(c===0&&j===i-1)&&!(c===GCOLS-1&&j===i+1));const targets=neighbors.filter(j=>plots[j]&&!plots[j].bloomed&&!plots[j].weed);if(targets.length){const tj=targets[Math.floor(rng()*targets.length)];plots[tj].weed=p.weed;plots[tj].weedKind='normal';plots[tj].weedT=0;}}}
+// weed kills flower if not removed
+for(const p of plots){const kMs=p.weedKind==='fast'?WEED_KILL_MS*0.5:WEED_KILL_MS;if(p.weed&&p.weedT>=kMs){p.stage=Math.max(0,p.stage-1);p.weed=null;p.weedKind=null;p.weedT=0;p.waterT=0;p._spread=false;game.shakeT=300;game.combo=0;
+const penalty=Math.min(15,10);game.score=Math.max(0,game.score-penalty);
+const idx=plots.indexOf(p);const c=plotCenter(idx);addPopup(c.x,c.y-10,'-'+penalty,'#ff8080');
+sndBad();}}
+for(const p of plots){if(!p.weed)p._spread=false;}
+if(plots.every(p=>p.bloomed)){if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndWin();game.state='won';}}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndWater=()=>tone(480,0.1,'sine',0.05);
+const sndWeed=(combo)=>{const step=Math.min(combo||1,8);tone(600+step*24,0.1,'sine',0.06);if(step>=4)setTimeout(()=>tone(600+step*24+220,0.08,'sine',0.05),50);};
+const sndBloom=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*60));};
+const sndBad=()=>tone(200,0.25,'sawtooth',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function plotAt(mx,my){for(let i=0;i<plots.length;i++){const c=i%GCOLS,r=Math.floor(i/GCOLS);const x=GX+c*(PW+PGAP)+PGAP,y=GY+r*(PH+PGAP)+PGAP;if(mx>=x&&mx<=x+PW&&my>=y&&my<=y+PH)return i;}return-1;}
+
+function drawFlower(x,y,p,idx){const cx=x+PW/2,cy=y+PH/2;if(p.bloomed||p.stage>0){// stem
+ctx.strokeStyle='#4a8040';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,y+PH-10);ctx.quadraticCurveTo(cx+10,cy,cx,cy);ctx.stroke();
+// petals
+const numP=p.bloomed?8:p.stage*3,pr=p.bloomed?28:8+p.stage*6;const petCol=p.bloomed?'#ffd560':'#a0d880';for(let i=0;i<numP;i++){const a=i/numP*Math.PI*2;ctx.fillStyle=petCol;ctx.beginPath();ctx.ellipse(cx+Math.cos(a)*pr,cy+Math.sin(a)*pr,8,5,a,0,Math.PI*2);ctx.fill();}
+// center
+ctx.fillStyle=p.bloomed?'#ff8040':'#c0d040';ctx.beginPath();ctx.arc(cx,cy,12,0,Math.PI*2);ctx.fill();}
+if(p.weed){const killMs=p.weedKind==='fast'?currentWeedKillMs()*0.5:currentWeedKillMs();
+const weedProgress=clamp(p.weedT/killMs,0,1);const urgent=weedProgress>0.8;
+const pulse=urgent?(0.5+0.5*Math.sin(game.time*0.02)):0;
+const baseR=14+weedProgress*8;
+ctx.fillStyle=`rgba(180,80,80,${0.4+weedProgress*0.4+pulse*0.2})`;ctx.beginPath();ctx.arc(cx,cy+20,baseR,0,Math.PI*2);ctx.fill();
+if(urgent){ctx.strokeStyle=`rgba(255,${Math.round(120-pulse*80)},${Math.round(120-pulse*80)},${0.7+pulse*0.3})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,cy+20,baseR+3,0,Math.PI*2);ctx.stroke();}
+// thorn/spike shape grows with urgency, independent of color, for accessibility
+const spikeN=3+Math.round(weedProgress*5);
+ctx.fillStyle=urgent?`rgba(255,255,255,${0.6+pulse*0.4})`:'rgba(255,255,255,.35)';
+for(let s=0;s<spikeN;s++){const sa=s/spikeN*Math.PI*2+game.time*0.0006;const ir=baseR,orr=baseR+5+weedProgress*6;ctx.beginPath();ctx.moveTo(cx+Math.cos(sa)*ir,cy+20+Math.sin(sa)*ir);ctx.lineTo(cx+Math.cos(sa+0.09)*orr,cy+20+Math.sin(sa+0.09)*orr);ctx.lineTo(cx+Math.cos(sa+0.18)*ir,cy+20+Math.sin(sa+0.18)*ir);ctx.closePath();ctx.fill();}
+// kind icon: fast = lightning, spreading = arrows, normal = leaf dot
+ctx.save();ctx.translate(cx,cy+20);ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(255,255,255,.8)';
+if(p.weedKind==='fast')ctx.fillText('⚡',0,-baseR-10);else if(p.weedKind==='spreading')ctx.fillText('⤳',0,-baseR-10);
+ctx.restore();
+ctx.fillStyle='rgba(255,200,200,.85)';const fz=p.weed.length>6?8:10;ctx.font=`bold ${fz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.weed,cx,cy+20);// progress bar above
+const bw=PW-20;ctx.fillStyle='rgba(200,80,80,.3)';rr(x+10,y+6,bw,6,3);ctx.fill();ctx.fillStyle=urgent?`rgba(255,${Math.round(80-pulse*40)},${Math.round(80-pulse*40)},.9)`:'rgba(220,80,80,.8)';rr(x+10,y+6,bw*weedProgress,6,3);ctx.fill();}
+// water bar
+if(!p.bloomed&&!p.weed){const barW=PW-20,prog=p.waterT/WATER_MS;ctx.fillStyle='rgba(60,120,180,.2)';rr(x+10,y+PH-14,barW,6,3);ctx.fill();ctx.fillStyle='rgba(80,160,220,.7)';rr(x+10,y+PH-14,barW*prog,6,3);ctx.fill();}
+// name
+ctx.fillStyle=p.bloomed?'rgba(255,220,100,.85)':'rgba(180,220,180,.55)';ctx.font=`bold ${p.flower.length>7?8:10}px Arial`;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(p.flower,cx,y+5);}
+
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#040a06'],[1,'#020604']]);ctx.fillRect(0,0,W,H);}
+function drawPlots(){for(let i=0;i<plots.length;i++){const c=i%GCOLS,r=Math.floor(i/GCOLS);const x=GX+c*(PW+PGAP)+PGAP,y=GY+r*(PH+PGAP)+PGAP;const p=plots[i];const soil=p.bloomed?'rgba(50,80,30,.9)':'rgba(40,60,28,.8)';ctx.fillStyle=soil;rr(x,y,PW,PH,10);ctx.fill();ctx.strokeStyle=p.bloomed?'rgba(120,200,80,.5)':'rgba(60,100,40,.3)';ctx.lineWidth=1.5;rr(x,y,PW,PH,10);ctx.stroke();drawFlower(x,y,p,i);}}
+function drawFX(){for(const pt of particles){const a=1-pt.t/pt.life;ctx.fillStyle=pt.color;ctx.globalAlpha=Math.max(0,a);ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+for(const pu of popups){const a=1-pu.t/pu.life;ctx.globalAlpha=Math.max(0,a);ctx.fillStyle=pu.color;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pu.text,pu.x,pu.y);ctx.globalAlpha=1;}}
+function drawHUD(){const bloomed=plots.filter(p=>p.bloomed).length;ctx.save();ctx.fillStyle='rgba(2,5,2,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#8affd2';ctx.font='bold 13px Arial';ctx.fillText('Garden Grow'+(game.round>1?'  (round '+game.round+')':''),18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Click to water · click weed to remove'+(game.combo>1?' · streak x'+game.combo:''),18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Bloomed '+bloomed+' / '+plots.length,W/2,8);ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('BEST '+game.best,W-18,8);ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(2,5,2,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(8,18,8,.97)'],[1,'rgba(4,10,4,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,220,80,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#8affd2';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);let dx=0,dy=0;if(game.shakeT>0){const m=game.shakeT/300*5;dx=Math.sin(game.time*.06)*m;dy=Math.cos(game.time*.08)*m;}ctx.save();ctx.translate(dx,dy);drawBg();if(game.state!=='title')drawPlots();if(game.state!=='title')drawFX();vignette();if(game.state==='playing')drawHUD();
+if(game.state==='title')panelDraw('Garden Grow',['Click plots to water your flowers.','Weeds appear — click them quickly to remove.','Grow all 12 flowers to full bloom.','','Nurture your inner garden; weed out the noise.','','Click / tap to begin.']);
+else if(game.state==='paused'){drawHUD();panelDraw('Paused',['Take a breath — the garden will wait.','','Press P or tap the pause icon to resume.']);}
+else if(game.state==='won')panelDraw('Garden in Full Bloom! ✓',['Score: '+game.score+'  Best: '+game.best,'All 12 flowers bloomed in round '+game.round+'.','','You tended what matters — it shows.','','Click / tap for a harder second season.']);
+ctx.restore();}catch(e){}}
+
+function startNextRound(){game.round++;plots=Array.from({length:GCOLS*GROWS2},(_,i)=>({flower:FLOWERS[i%FLOWERS.length],stage:0,waterT:0,weed:null,weedKind:null,weedT:0,bloomed:false}));weedT=0;game.combo=0;game.state='playing';}
+
+function pointerDown(e){const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;let px,py;if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}e.preventDefault();
+if(game.state==='title'){resetGame();return;}
+if(game.state==='won'){startNextRound();return;}
+if(game.state!=='playing')return;const i=plotAt(px,py);if(i>=0)clickPlot(i);}
+
+function togglePause(){if(game.state==='playing')game.state='paused';else if(game.state==='paused')game.state='playing';}
+function toggleMute(){game.muted=!game.muted;const b=document.getElementById('btnMute');if(b)b.textContent=game.muted?'\u{1F507}':'\u{1F50A}';}
+
+canvas.addEventListener('mousedown',e=>{e.preventDefault();pointerDown(e);});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pointerDown(e);},{passive:false});
+window.addEventListener('keydown',e=>{if(e.code==='KeyP'){e.preventDefault();togglePause();}else if(e.code==='KeyM'){e.preventDefault();toggleMute();}});
+const btnPauseEl=document.getElementById('btnPause');
+const btnMuteEl=document.getElementById('btnMute');
+if(btnPauseEl)btnPauseEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();});
+if(btnMuteEl)btnMuteEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.best=loadBest();
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get plots(){return plots;},resetGame,clickPlot,update,draw,FLOWERS,WEEDS,GCOLS,GROWS2,PW,PH,plotAt,togglePause,toggleMute};
+</script>
+</body>
+</html>

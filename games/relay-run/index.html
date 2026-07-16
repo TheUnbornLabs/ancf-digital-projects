@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Relay Run</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03040a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(120,180,255,.35);background:rgba(4,6,14,.8);color:#bcd8ff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(80,140,255,.3);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnMute" aria-label="Mute">🔊</button>
+<button id="btnPause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Tap / click to jump over obstacle hurdles &middot; hit value gates for bonus &middot; 10 rounds</div>
+<script>
+'use strict';
+// Relay Run (#93)
+// Endless runner. Click / tap to jump over hurdles labelled with obligations.
+// Value gates float occasionally — run through them for bonus points.
+// 10 rounds (increase speed). 3 lives.
+// Theme: leaping over obligation hurdles on your own race.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const GROUND_Y=H-80;
+const PLAYER_X=120;
+const GRAVITY=1800;
+const JUMP_V=-600;
+const HURDLE_LABELS=['obey','conform','oblige','rush','impress','sacrifice','routine','deadline'];
+const GATE_LABELS=['Freedom','Joy','Calm','Rest','Flow','Truth'];
+const TOTAL=10;
+const DIST_PER_ROUND=2000;
+
+// ---- persistence ----
+function loadBest(){try{const v=localStorage.getItem('relayRunBest');return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem('relayRunBest',String(v));}catch(e){}}
+function loadSplits(){try{const v=localStorage.getItem('relayRunSplits');return v?JSON.parse(v):[];}catch(e){return [];}}
+function saveSplits(arr){try{localStorage.setItem('relayRunSplits',JSON.stringify(arr));}catch(e){}}
+function loadMuted(){try{return localStorage.getItem('relayRunMuted')==='1';}catch(e){return false;}}
+function saveMuted(v){try{localStorage.setItem('relayRunMuted',v?'1':'0');}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),lives:3,dist:0,
+  streak:0,streakMult:1,gatesHit:0,hurdlesHit:0,hurdlesSeen:0,roundHurdleHits:0,
+  muted:loadMuted(),paused:false,inputLock:0,roundStartTime:0,bestSplits:loadSplits(),
+  splits:[],dashCharge:0,dashReady:false,shakeT:0,shakeMag:0,flashT:0};
+let player,obstacles=[],particles=[],popups=[],spawnTimer=0,spawnInterval=1800,speed=200,speedBase=200,rng;
+
+function minGapPx(){ // safety floor: ensure horizontal gap covers obstacle width + reaction distance
+  const reactionPx=140;const obW=44;return obW+reactionPx;
+}
+function buildRound(r){
+  rng=seeded(r*6007+43);obstacles=[];particles=[];popups=[];spawnTimer=0;
+  spawnInterval=Math.max(800,1800-r*90);
+  speedBase=200+r*25;speed=speedBase;
+  game.dist=0;game.roundHurdleHits=0;game.roundStartTime=game.time;
+  player={x:PLAYER_X,y:GROUND_Y,vy:0,onGround:true};
+  game.state='playing';game.paused=false;game.inputLock=300;
+}
+function resetGame(){
+  game.round=0;game.score=0;game.lives=3;game.streak=0;game.streakMult=1;
+  game.gatesHit=0;game.hurdlesHit=0;game.hurdlesSeen=0;game.splits=[];
+  game.dashCharge=0;game.dashReady=false;game.shakeT=0;game.flashT=0;
+  buildRound(0);
+}
+function jump(){
+  if(game.state!=='playing'||game.paused)return;
+  if(player.onGround){player.vy=JUMP_V;player.onGround=false;player.jumpT=game.time;sndJump();}
+  else if(game.dashReady){ // double-jump / dash power-up
+    player.vy=JUMP_V*0.85;game.dashReady=false;game.dashCharge=0;sndDash();
+  }
+}
+function spawnObstacle(){
+  const isGate=rng()<0.25;
+  const h=isGate?70:55+rng()*30;
+  const w=isGate?40:32;
+  const x=W+w;
+  const y=isGate?GROUND_Y-h/2-30:GROUND_Y-h;
+  obstacles.push({x,y,w,h,gate:isGate,label:isGate?GATE_LABELS[Math.floor(rng()*GATE_LABELS.length)]:HURDLE_LABELS[Math.floor(rng()*HURDLE_LABELS.length)],hit:false,passT:0});
+  if(!isGate)game.hurdlesSeen++;
+}
+function addParticles(x,y,color,n){
+  for(let i=0;i<n;i++){
+    particles.push({x,y,vx:(Math.random()-.5)*220,vy:-Math.random()*180-40,life:0,maxLife:400+Math.random()*200,color});
+  }
+}
+function addPopup(x,y,text,color){popups.push({x,y,text,color,life:0,maxLife:700});}
+function triggerShake(mag){game.shakeT=250;game.shakeMag=mag;}
+function triggerFlash(){game.flashT=260;}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.inputLock>0)game.inputLock=Math.max(0,game.inputLock-dt);
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.flashT>0)game.flashT=Math.max(0,game.flashT-dt);
+  // particles/popups always update for feedback even if paused briefly
+  for(const p of particles){p.life+=dt;p.x+=p.vx*s;p.y+=p.vy*s;p.vy+=900*s;}
+  particles=particles.filter(p=>p.life<p.maxLife);
+  for(const p of popups){p.life+=dt;p.y-=40*s;}
+  popups=popups.filter(p=>p.life<p.maxLife);
+  if(game.state!=='playing'||game.paused)return;
+  // mild within-round speed creep for pacing feel, clamped
+  speed=clamp(speedBase+ (game.dist/DIST_PER_ROUND)*speedBase*0.15,speedBase,speedBase*1.3);
+  game.dist+=speed*s;
+  // player physics
+  player.vy+=GRAVITY*s;player.y+=player.vy*s;
+  if(player.y>=GROUND_Y){player.y=GROUND_Y;player.vy=0;player.onGround=true;}
+  // spawn — clamp spawnInterval with a minimum-gap safety floor tied to speed
+  const gapTimeMs=clamp((minGapPx()/Math.max(speed,1))*1000,400,5000);
+  const effInterval=Math.max(spawnInterval,gapTimeMs);
+  spawnTimer+=dt;
+  if(spawnTimer>=effInterval){spawnTimer=0;spawnObstacle();}
+  // move obstacles
+  for(const o of obstacles){
+    o.x-=speed*s;
+    if(!o.hit){
+      const pw=22,ph=36;const px=PLAYER_X,py=player.y-ph;
+      if(o.gate){
+        if(px+pw>o.x&&px<o.x+o.w&&py+ph>o.y&&py<o.y+o.h){
+          o.hit=true;o.passT=0;
+          game.streak++;
+          game.streakMult=1+Math.min(game.streak-1,6)*0.2; // +15,+18,+21...
+          const gain=Math.round(15*game.streakMult);
+          game.score+=gain;
+          game.gatesHit++;
+          // skill bonus: jumped close to hurdle timing not relevant for gates; reaction bonus applies to hurdles
+          addPopup(o.x+o.w/2,o.y,'+'+gain+(game.streak>1?' x'+game.streak:''),'rgba(160,255,180,.95)');
+          addParticles(o.x+o.w/2,o.y+o.h/2,'120,255,160',10);
+          // dash charge: every 5 gates earns a double-jump
+          game.dashCharge++;
+          if(game.dashCharge>=5){game.dashReady=true;}
+          sndGate();
+        }
+      }else{
+        if(px+pw>o.x&&px<o.x+o.w&&py+ph>o.y&&py<o.y+o.h){
+          o.hit=true;o.passT=0;
+          game.lives--;
+          game.streak=0;game.streakMult=1;
+          game.hurdlesHit++;game.roundHurdleHits++;
+          addParticles(o.x+o.w/2,o.y+o.h/2,'220,90,90',14);
+          triggerShake(10);triggerFlash();
+          sndHit();
+          if(game.lives<=0){
+            game.lives=0;
+            if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+            sndLose();
+            setTimeout(()=>{game.state='gameover';game.inputLock=300;},400);
+          }
+        }else if(!o.hit&&player.onGround===false){
+          // reaction-timing skill bonus: successful clearance close to hurdle
+          const dx=(o.x+o.w/2)-PLAYER_X;
+          if(dx>-20&&dx<20&&!o._scored){
+            o._scored=true;
+            game.score+=5;
+            addPopup(PLAYER_X,player.y-50,'+5 nice!','rgba(255,220,140,.9)');
+          }
+        }
+      }
+    }
+  }
+  // cull
+  obstacles=obstacles.filter(o=>o.x>-100);
+  // round win
+  if(game.dist>=DIST_PER_ROUND){
+    game.score+=50;
+    const roundTime=game.time-game.roundStartTime;
+    game.splits[game.round]=roundTime;
+    const cleanBonus=game.roundHurdleHits===0;
+    if(cleanBonus){game.score+=25;addPopup(PLAYER_X,player.y-70,'+25 clean round!','rgba(160,255,180,.95)');}
+    sndWin2();
+    setTimeout(()=>{
+      game.round++;
+      if(game.round>=TOTAL){
+        if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+        // save best splits
+        const bs=game.bestSplits.slice();
+        for(let i=0;i<game.splits.length;i++){
+          if(bs[i]==null||game.splits[i]<bs[i])bs[i]=game.splits[i];
+        }
+        game.bestSplits=bs;saveSplits(bs);
+        sndWin();
+        game.state='won';game.inputLock=300;
+      }else{
+        buildRound(game.round);
+      }
+    },400);
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndJump=()=>tone(380,0.08,'sine',0.04);
+const sndDash=()=>tone(500,0.1,'triangle',0.05);
+const sndHit=()=>tone(200,0.2,'sawtooth',0.05);
+const sndGate=()=>{[528,660].forEach((f,i)=>setTimeout(()=>tone(f,0.1,'sine',0.05),i*40));};
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#03040a'],[1,'#020308']]);ctx.fillRect(0,0,W,H);// track
+ctx.fillStyle='rgba(40,50,80,.4)';ctx.fillRect(0,GROUND_Y+4,W,H-GROUND_Y-4);ctx.strokeStyle='rgba(80,100,160,.2)';ctx.lineWidth=1;for(let x=-(game.dist%80);x<W;x+=80){ctx.beginPath();ctx.moveTo(x,GROUND_Y+4);ctx.lineTo(x,H);ctx.stroke();}// progress bar
+const prog=clamp(game.dist/DIST_PER_ROUND,0,1);ctx.fillStyle='rgba(40,120,60,.3)';ctx.fillRect(0,H-14,W*prog,6);}
+function drawGateGlyph(cx,cy,r){ // arch/circle icon for colorblind accessibility
+  ctx.strokeStyle='rgba(200,255,210,.95)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-r,cy);ctx.lineTo(cx-r,cy+r*0.6);ctx.moveTo(cx+r,cy);ctx.lineTo(cx+r,cy+r*0.6);ctx.stroke();
+}
+function drawHurdleGlyph(cx,cy,r){ // X glyph for colorblind accessibility
+  ctx.strokeStyle='rgba(255,220,220,.95)';ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(cx-r,cy-r);ctx.lineTo(cx+r,cy+r);ctx.moveTo(cx+r,cy-r);ctx.lineTo(cx-r,cy+r);ctx.stroke();
+}
+function drawObstacles(){for(const o of obstacles){if(o.gate){const a=o.hit?0.3:0.8;ctx.save();ctx.globalAlpha=a;ctx.strokeStyle='rgba(120,255,160,.8)';ctx.lineWidth=4;// gate posts
+ctx.beginPath();ctx.moveTo(o.x,o.y+o.h);ctx.lineTo(o.x,o.y);ctx.moveTo(o.x+o.w,o.y+o.h);ctx.lineTo(o.x+o.w,o.y);ctx.stroke();// banner
+ctx.fillStyle='rgba(60,200,100,.3)';ctx.fillRect(o.x,o.y,o.w,14);ctx.fillStyle='rgba(160,255,180,.8)';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.label,o.x+o.w/2,o.y+7);
+drawGateGlyph(o.x+o.w/2,o.y+o.h+2,7);
+ctx.restore();}else{const shake=o.hit?(Math.random()-.5)*4:0;ctx.save();ctx.translate(shake,0);ctx.fillStyle='rgba(180,60,60,.7)';ctx.fillRect(o.x,o.y,o.w,o.h);ctx.strokeStyle='rgba(220,100,100,.5)';ctx.lineWidth=1;ctx.strokeRect(o.x,o.y,o.w,o.h);ctx.fillStyle='rgba(240,180,180,.7)';ctx.font='bold 7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.label,o.x+o.w/2,o.y+o.h/2);
+drawHurdleGlyph(o.x+o.w/2,o.y-8,6);
+ctx.restore();}}}
+function drawParticles(){for(const p of particles){const a=1-p.life/p.maxLife;ctx.fillStyle='rgba('+p.color+','+clamp(a,0,1)+')';ctx.fillRect(p.x-2,p.y-2,4,4);}}
+function drawPopups(){ctx.textAlign='center';ctx.textBaseline='middle';for(const p of popups){const a=1-p.life/p.maxLife;ctx.fillStyle=p.color.replace(/[\d.]+\)$/,clamp(a,0,1)+')');ctx.font='bold 13px Arial';ctx.fillText(p.text,p.x,p.y);}}
+function drawPlayer(){const ph=36;const py=player.y-ph;const bob=player.onGround?Math.sin(game.time/200)*2:0;// body
+ctx.fillStyle='rgba(120,200,255,.8)';ctx.fillRect(PLAYER_X-11,py+bob,22,ph);// dash ready glow
+if(game.dashReady){ctx.save();ctx.strokeStyle='rgba(255,220,120,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(PLAYER_X,py+ph/2,26,0,Math.PI*2);ctx.stroke();ctx.restore();}
+// head
+ctx.fillStyle='rgba(180,230,255,.9)';ctx.beginPath();ctx.arc(PLAYER_X,py-8+bob,10,0,Math.PI*2);ctx.fill();// legs run cycle
+const lc=player.onGround?Math.sin(game.time/120)*0.5:0;ctx.strokeStyle='rgba(120,200,255,.8)';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(PLAYER_X-4,py+ph+bob);ctx.lineTo(PLAYER_X-10+lc*10,py+ph+12+bob);ctx.moveTo(PLAYER_X+4,py+ph+bob);ctx.lineTo(PLAYER_X+10-lc*10,py+ph+12+bob);ctx.stroke();}
+function drawHUD(){
+  const dist=Math.floor(game.dist);
+  ctx.save();ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Relay Run — Round '+(game.round+1)+' / '+TOTAL,18,8);
+  // lives with low-life pulse warning
+  ctx.font='11px Arial';
+  const pulse=game.lives===1?(0.5+0.5*Math.sin(game.time/120)):1;
+  ctx.fillStyle=game.lives===1?'rgba(255,90,90,'+pulse+')':'rgba(234,242,246,.5)';
+  ctx.fillText('Dist: '+dist+'/'+DIST_PER_ROUND+'  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives)+'  Speed: '+Math.floor(speed),18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best+(game.streak>1?'  Streak x'+game.streak:''),W-18,8);
+  const acc=game.hurdlesSeen>0?Math.round(100*(1-game.hurdlesHit/Math.max(game.hurdlesSeen,1))):100;
+  ctx.fillText('Accuracy '+acc+'%'+(game.dashReady?'  DASH READY':''),W-18,26);
+  ctx.restore();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(game.flashT>0){const a=(game.flashT/260)*0.35;ctx.fillStyle='rgba(220,40,40,'+a+')';ctx.fillRect(0,0,W,H);}
+}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=380,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 30px Arial';ctx.fillText(title,W/2,py+56);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+92;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}ctx.restore();}
+function pausePanel(){panelDraw('Paused',['Tap the pause button or press P to resume.','','Score '+game.score+'  Lives '+game.lives]);}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    let sx=0,sy=0;
+    if(game.shakeT>0){const m=game.shakeMag*(game.shakeT/250);sx=(Math.random()-.5)*m;sy=(Math.random()-.5)*m;}
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title'){drawObstacles();drawParticles();drawPlayer();drawPopups();}
+    vignette();
+    if(game.state==='playing'&&!game.paused)drawHUD();
+    if(game.state==='playing'&&game.paused){drawHUD();pausePanel();}
+    if(game.state==='title'){
+      const bestSplitTxt=game.bestSplits.length?('Best splits recorded for '+game.bestSplits.filter(x=>x!=null).length+' rounds.'):'No splits recorded yet.';
+      panelDraw('Relay Run',['Click / tap to jump over obligation hurdles.','Green arch gates give streak bonus points — run through them.','Red X hurdles cost a life — 3 lives, 10 rounds.','Chain gates for a streak multiplier; every 5 gates earns a dash jump.',bestSplitTxt,'','Your race, your pace, your finish line.','','Click / tap to begin.']);
+    }
+    else if(game.state==='won'){
+      const acc=game.hurdlesSeen>0?Math.round(100*(1-game.hurdlesHit/Math.max(game.hurdlesSeen,1))):100;
+      const splitLines=game.splits.map((t,i)=>{
+        const best=game.bestSplits[i];
+        const bestTxt=best!=null?(' (best '+(best/1000).toFixed(1)+'s)'):'';
+        return 'Round '+(i+1)+': '+(t/1000).toFixed(1)+'s'+bestTxt;
+      });
+      panelDraw('Race Complete! ✓',['Score: '+game.score+'  Best: '+game.best,'Accuracy: '+acc+'%   Gates: '+game.gatesHit,'',...splitLines.slice(0,4),splitLines.length>4?'...':'','Click / tap to play again.']);
+    }
+    else if(game.state==='gameover'){
+      const acc=game.hurdlesSeen>0?Math.round(100*(1-game.hurdlesHit/Math.max(game.hurdlesSeen,1))):100;
+      panelDraw('Hurdle Hit',['Score: '+game.score+'  Best: '+game.best,'Accuracy: '+acc+'%   Longest streak reached','','Back to the starting line.','','Click / tap to retry.']);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.inputLock>0)return; // brief input-lock after state transitions to avoid accidental skip
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='playing'){
+    if(game.paused)return; // require explicit unpause via button/key
+    jump();
+  }
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// ---- on-screen controls ----
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+function updateCtrlLabels(){
+  btnMute.textContent=game.muted?'🔇':'🔊';
+  btnMute.setAttribute('aria-label',game.muted?'Unmute':'Mute');
+  btnPause.textContent=game.paused?'▶':'⏸';
+  btnPause.setAttribute('aria-label',game.paused?'Resume':'Pause');
+}
+function toggleMute(e){if(e){e.preventDefault();e.stopPropagation();}game.muted=!game.muted;saveMuted(game.muted);updateCtrlLabels();}
+function togglePause(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  updateCtrlLabels();
+}
+btnMute.addEventListener('click',toggleMute);
+btnMute.addEventListener('touchstart',toggleMute,{passive:false});
+btnPause.addEventListener('click',togglePause);
+btnPause.addEventListener('touchstart',togglePause,{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyM'){toggleMute();}
+  else if(e.code==='KeyP'){togglePause();}
+  else if(e.code==='Space'){onDown({preventDefault:()=>{}});}
+});
+updateCtrlLabels();
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get player(){return player;},get obstacles(){return obstacles;},resetGame,buildRound,jump,update,draw,togglePause,toggleMute,GROUND_Y,GRAVITY,JUMP_V,TOTAL,DIST_PER_ROUND};
+</script>
+</body>
+</html>

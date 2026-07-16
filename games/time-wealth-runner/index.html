@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Time Wealth Runner</title>
+<style>
+  :root{--bg:#0c1019;--panel:rgba(8,11,19,.86);--line:rgba(255,255,255,.16);--text:#f6f3e9;--accent:#ffd166;--mint:#7ee0c0;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#05070d;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 18%,#16203a,#05070d 72%);}
+  canvas{display:block;background:#0b1120;image-rendering:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:20px;right:20px;display:flex;gap:12px;pointer-events:auto;align-items:flex-end;}
+  .btn{width:78px;height:78px;border-radius:20px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.40);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.28);cursor:pointer;}
+  .btn:active{transform:translateY(2px);background:rgba(255,209,102,.28);}
+  @media (min-width:900px){.btn{opacity:.34}.btn:hover{opacity:.95}}
+  .cornerPad{position:absolute;top:14px;right:14px;display:flex;gap:10px;pointer-events:auto;}
+  .iconBtn{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);color:#fff;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.28);cursor:pointer;opacity:.85;}
+  .iconBtn:active{transform:translateY(1px);background:rgba(255,209,102,.30);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="touchControls">
+  <div class="cornerPad">
+    <button type="button" class="iconBtn" id="btnMute" data-act="mute" aria-label="Mute">&#128266;</button>
+    <button type="button" class="iconBtn" id="btnPause" data-act="pause" aria-label="Pause">&#10074;&#10074;</button>
+  </div>
+  <div class="pad">
+    <div class="btn" data-act="jump">JUMP</div>
+  </div>
+</div>
+<script>
+'use strict';
+// =========================================================
+// Time Wealth Runner  (ANCF "100 HTML Games" #2)
+// Endless auto-runner. Reclaim finite hours; leap time-sink pressures.
+// Single self-contained file: HTML + CSS + canvas + Web Audio.
+// Theme: time is finite & non-renewable; opportunity cost of life-script
+// pressures. Hazards are PRESSURES, not people.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const GROUND_Y = 430;          // top of the running ground
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const rects = (a,b)=>a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+
+// ---- letterboxed responsive canvas sizing (preserve 960x540 aspect ratio) ----
+function resizeCanvas(){
+  try{
+    const vw = window.innerWidth || document.documentElement.clientWidth || W;
+    const vh = window.innerHeight || document.documentElement.clientHeight || H;
+    const scale = Math.min(vw / W, vh / H);
+    const cw = Math.max(1, Math.floor(W * scale));
+    const ch = Math.max(1, Math.floor(H * scale));
+    canvas.style.width = cw + 'px';
+    canvas.style.height = ch + 'px';
+  }catch(e){}
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ---- seeded RNG (deterministic spawns) ----
+function makeRng(seed){ let s = (seed>>>0) || 1; return ()=>{ s = (s*1664525 + 1013904223) >>> 0; return s/4294967296; }; }
+
+// ---- input ----
+const input = { jump:false, jumpPressed:false, pausePressed:false, startPressed:false, mutePressed:false };
+function pressJump(){ if(!input.jump){ input.jumpPressed = true; } input.jump = true; input.startPressed = true; }
+function releaseJump(){ input.jump = false; }
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){ input.pausePressed = true; return; }
+  if(e.code==='KeyM'){ input.mutePressed = true; return; }
+  if(e.code==='Space' || e.code==='ArrowUp' || e.code==='KeyW' || e.code==='Enter'){
+    e.preventDefault(); pressJump();
+  }
+});
+window.addEventListener('keyup', e=>{
+  if(e.code==='Space' || e.code==='ArrowUp' || e.code==='KeyW' || e.code==='Enter'){ releaseJump(); }
+});
+(function(){
+  const tc = document.getElementById('touchControls');
+  if(!tc) return;
+  tc.querySelectorAll('.btn[data-act="jump"]').forEach(b=>{
+    b.addEventListener('touchstart', e=>{ e.preventDefault(); pressJump(); }, {passive:false});
+    b.addEventListener('touchend',   e=>{ e.preventDefault(); releaseJump(); }, {passive:false});
+    b.addEventListener('mousedown',  e=>{ e.preventDefault(); pressJump(); });
+    b.addEventListener('mouseup',    e=>{ e.preventDefault(); releaseJump(); });
+  });
+  canvas.addEventListener('touchstart', e=>{ e.preventDefault(); pressJump(); }, {passive:false});
+  canvas.addEventListener('mousedown', e=>{ e.preventDefault(); pressJump(); });
+  canvas.addEventListener('mouseup',   e=>{ e.preventDefault(); releaseJump(); });
+
+  const btnPause = document.getElementById('btnPause');
+  const btnMute = document.getElementById('btnMute');
+  if(btnPause){
+    const fire = e=>{ e.preventDefault(); e.stopPropagation(); input.pausePressed = true; };
+    btnPause.addEventListener('touchstart', fire, {passive:false});
+    btnPause.addEventListener('click', fire);
+  }
+  if(btnMute){
+    const fire = e=>{ e.preventDefault(); e.stopPropagation(); input.mutePressed = true; };
+    btnMute.addEventListener('touchstart', fire, {passive:false});
+    btnMute.addEventListener('click', fire);
+  }
+})();
+
+// ---- Web Audio (guarded) ----
+let actx = null;
+let muted = false;
+try{ muted = localStorage.getItem('twr_muted') === '1'; }catch(e){ muted = false; }
+function setMuted(v){
+  muted = !!v;
+  try{ localStorage.setItem('twr_muted', muted ? '1' : '0'); }catch(e){}
+  syncMuteButton();
+}
+function syncMuteButton(){
+  try{
+    const b = document.getElementById('btnMute');
+    if(b) b.innerHTML = muted ? '&#128263;' : '&#128266;';
+  }catch(e){}
+}
+function syncPauseButton(){
+  try{
+    const b = document.getElementById('btnPause');
+    if(b) b.innerHTML = (typeof game !== 'undefined' && game.state === 'paused') ? '&#9654;' : '&#10074;&#10074;';
+  }catch(e){}
+}
+function audio(){
+  if(actx) return actx;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    actx = new AC();
+  }catch(e){ actx = null; }
+  return actx;
+}
+function blip(freq, dur, type, vol){
+  try{
+    if(muted) return;
+    const a = audio(); if(!a) return;
+    if(a.state === 'suspended'){ try{ a.resume(); }catch(e){} }
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type||'sine'; o.frequency.value = freq;
+    g.gain.value = 0.0001;
+    o.connect(g); g.connect(a.destination);
+    const t = a.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol||0.16, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+(dur||0.18));
+    o.start(t); o.stop(t+(dur||0.18)+0.02);
+  }catch(e){}
+}
+function sndJump(){ blip(360, 0.16, 'square', 0.10); }
+function sndDouble(){ blip(520, 0.14, 'triangle', 0.10); }
+function sndCollect(combo){ blip(620 + Math.min(combo,12)*46, 0.14, 'sine', 0.13); }
+function sndHit(){ blip(150, 0.30, 'sawtooth', 0.16); blip(96, 0.34, 'square', 0.10); }
+function sndOver(){ blip(220,0.5,'sawtooth',0.12); blip(140,0.6,'square',0.10); }
+function sndHeartbeat(){ blip(90, 0.10, 'sine', 0.07); }
+function sndCheckpoint(){ blip(500,0.12,'triangle',0.11); blip(760,0.16,'sine',0.12); }
+
+// ---- game state ----
+const STATES = { TITLE:'title', PLAYING:'playing', PAUSED:'paused', GAMEOVER:'gameover' };
+
+const player = {
+  x: 180, y: GROUND_Y - 48, w: 30, h: 48,
+  vy: 0, onGround: true, jumps: 0, maxJumps: 2,
+  squash: 0, hurt: 0,
+  coyote: 0,        // seconds since leaving ground (coyote-time window)
+  jumpBuffer: 0      // seconds since jump was requested (input buffer)
+};
+
+// ---- best-score persistence ----
+function loadBest(){
+  try{
+    const v = parseInt(localStorage.getItem('twr_best'), 10);
+    return isFinite(v) && v > 0 ? v : 0;
+  }catch(e){ return 0; }
+}
+function saveBest(v){
+  try{ localStorage.setItem('twr_best', String(v|0)); }catch(e){}
+}
+
+const game = {
+  state: STATES.TITLE,
+  time: 0,                 // seconds, drives animation
+  distance: 0,             // metres run
+  speed: 240,              // px/s world scroll
+  baseSpeed: 240,
+  seed: 12345,
+  rng: makeRng(12345),
+  hours: 0,                // hours banked (score)
+  combo: 1,                // multiplier
+  comboCount: 0,           // consecutive collects since last hit
+  strikes: 3,
+  maxStrikes: 3,
+  best: loadBest(),
+  hazards: [],             // {x,y,w,h,type,label,passed}
+  coins: [],               // {x,y,w,h,taken,bob}
+  particles: [],
+  floats: [],              // floating score text
+  nextSpawnX: 0,           // world-x of next chunk to spawn
+  worldX: 0,               // total world distance scrolled (px)
+  camera: { x: 0 },        // for parallax helper compatibility
+  shake: 0,
+  invuln: 0,
+  flash: 0,
+  heartbeatT: 0,           // timer for low-strike heartbeat cue
+  cleanStreak: 0,          // chunks/checkpoints cleared since last hit (for clean-streak bonus)
+  nextCheckpointM: 500,    // next checkpoint distance (metres)
+  shield: false,           // temporary grace strike from checkpoint bonus
+  checkpointFlash: 0       // visual/text cue timer for checkpoint hit
+};
+
+const GRAVITY = 2300;
+const JUMP_V = -760;
+const DOUBLE_V = -640;
+
+// ---- content pools ----
+const HAZARDS = [
+  { type:'scroll',  label:'Doomscroll' },
+  { type:'overtime',label:'Unpaid overtime' },
+  { type:'errand',  label:'Errand spiral' },
+  { type:'notif',   label:'Notification pile' }
+];
+
+// ---- spawning (deterministic via game.rng) ----
+// A "chunk" advances nextSpawnX and pushes 0-2 hazards + a run of coins.
+const MIN_LEAD_GAP = 160;    // px floor for the leading gap before content
+const MIN_HAZARD_GAP = 130;  // px floor between hazards within a cluster
+
+function spawnChunk(){
+  const r = game.rng;
+  const diff = clamp(game.distance / 600, 0, 1);   // 0..1 ramp
+  let x = game.nextSpawnX;
+  // leading gap before content scales down (tighter) as difficulty rises,
+  // but never below MIN_LEAD_GAP even at max diff / worst RNG roll
+  x += Math.max(MIN_LEAD_GAP, 220 + r()*220 - diff*70);
+
+  // hazard cluster: 0,1, sometimes 2 when harder
+  const roll = r();
+  let count = 0;
+  if(roll > 0.18) count = 1;
+  if(roll > 0.82 && diff > 0.35) count = 2;
+
+  for(let i=0;i<count;i++){
+    const h = HAZARDS[(r()*HAZARDS.length)|0];
+    const hw = 40 + (r()*20|0);
+    const hh = 44 + (r()*26|0);
+    game.hazards.push({
+      x: x, y: GROUND_Y - hh, w: hw, h: hh,
+      type: h.type, label: h.label, passed:false, seed: r()*6.28
+    });
+    // never let back-to-back hazards land closer than MIN_HAZARD_GAP —
+    // prevents an unfair, unreachable cluster at high difficulty
+    x += hw + Math.max(MIN_HAZARD_GAP, 150 + r()*150 - diff*60);
+  }
+
+  // coin arc: reclaimed hours floating above the path
+  if(r() > 0.18){
+    const n = 3 + (r()*4|0);
+    const arc = r() > 0.5;          // arched run that you jump through
+    const cy0 = GROUND_Y - 70 - r()*60;
+    for(let i=0;i<n;i++){
+      const t = n>1 ? i/(n-1) : 0;
+      const cy = arc ? cy0 - Math.sin(t*Math.PI)*70 : cy0;
+      game.coins.push({ x: x + i*52, y: cy, w: 22, h: 22, taken:false, bob: (x+i)*0.7 });
+    }
+    x += n*52 + 60;
+  }
+
+  game.nextSpawnX = x;
+}
+
+// keep enough chunks ahead of the camera
+function ensureSpawn(){
+  let guard = 0;
+  while(game.nextSpawnX < game.worldX + W + 400 && guard < 40){ spawnChunk(); guard++; }
+}
+
+// ---- mechanics ----
+const COYOTE_TIME = 0.08;   // seconds of forgiveness after leaving ground
+const JUMP_BUFFER = 0.10;   // seconds a jump input stays "queued"
+
+function doJump(){
+  // coyote-time: allow a ground jump shortly after actually leaving the ground
+  const groundish = player.onGround || (player.jumps === 0 && player.coyote < COYOTE_TIME);
+  if(groundish && player.jumps === 0){
+    player.vy = JUMP_V;
+    player.jumps = 1;
+    player.onGround = false;
+    player.coyote = COYOTE_TIME; // consumed
+    player.squash = 0.5;
+    sndJump();
+    return true;
+  }
+  if(player.jumps < player.maxJumps){
+    player.vy = DOUBLE_V;
+    player.jumps++;
+    player.onGround = false;
+    player.squash = 0.35;
+    sndDouble();
+    return true;
+  }
+  return false;
+}
+
+function collectHour(coin){
+  if(coin.taken) return;
+  coin.taken = true;
+  game.cleanStreak++;
+  game.comboCount++;
+  // combo grows: every 4 collects bumps the multiplier (cap 8x)
+  game.combo = Math.min(8, 1 + Math.floor(game.comboCount / 4));
+  const gain = 1 * game.combo;
+  game.hours += gain;
+  game.floats.push({ x: coin.x, y: coin.y - 6, text:'+'+gain+'h', life:0.9, vy:-26 });
+  for(let i=0;i<8;i++){
+    game.particles.push({ x:coin.x+coin.w/2, y:coin.y+coin.h/2,
+      vx:(game.rng()-0.5)*120, vy:-60-game.rng()*120, life:0.5+game.rng()*0.3, c:'#ffd166', r:2+game.rng()*2 });
+  }
+  sndCollect(game.combo);
+}
+
+function takeHit(hz){
+  if(game.invuln > 0) return;
+  game.cleanStreak = 0;
+  // checkpoint shield absorbs one hit instead of costing a strike
+  if(game.shield){
+    game.shield = false;
+    game.invuln = 1.1;
+    game.shake = 8;
+    game.flash = 0.25;
+    if(hz){
+      hz.passed = true;
+      game.floats.push({ x: hz.x, y: hz.y - 10, text:'SHIELD BLOCKED', life:1.0, vy:-22 });
+    }
+    sndDouble();
+    return;
+  }
+  game.strikes--;
+  game.combo = 1;
+  game.comboCount = 0;
+  game.invuln = 1.1;
+  game.shake = 14;
+  game.flash = 0.5;
+  player.hurt = 0.6;
+  if(hz){
+    game.floats.push({ x: hz.x, y: hz.y - 10, text:'STRIKE', life:1.0, vy:-22, bad:true });
+    for(let i=0;i<14;i++){
+      game.particles.push({ x:hz.x+hz.w/2, y:hz.y+hz.h/2,
+        vx:(game.rng()-0.5)*220, vy:-40-game.rng()*160, life:0.5+game.rng()*0.4, c:'#ff7a6b', r:2+game.rng()*2.4 });
+    }
+  }
+  sndHit();
+  if(game.strikes <= 0){ setState(STATES.GAMEOVER); }
+}
+
+// coins that scroll off-screen unclaimed get a subtle "missed" fade cue
+function missCoin(c){
+  c.taken = true; // treat as resolved so it doesn't get drawn/collected later
+  game.floats.push({ x: c.x, y: c.y - 4, text:'missed', life:0.5, vy:-14, missed:true });
+}
+
+// checkpoint milestones every N metres: grants either a shield or bonus hours
+function checkCheckpoint(){
+  while(game.distance >= game.nextCheckpointM){
+    const cleanRun = game.cleanStreak >= 1; // no hit since last checkpoint/start
+    if(!game.shield && (cleanRun || game.strikes < game.maxStrikes)){
+      game.shield = true;
+      game.floats.push({ x: player.x + game.worldX, y: player.y - 20, text:'CHECKPOINT: SHIELD', life:1.3, vy:-18 });
+    } else {
+      const bonus = 5 + game.combo*2;
+      game.hours += bonus;
+      game.floats.push({ x: player.x + game.worldX, y: player.y - 20, text:'CHECKPOINT +'+bonus+'h', life:1.3, vy:-18 });
+    }
+    game.checkpointFlash = 0.6;
+    sndCheckpoint();
+    game.nextCheckpointM += 500;
+  }
+}
+
+function setState(s){
+  game.state = s;
+  if(s === STATES.GAMEOVER){
+    game.best = Math.max(game.best, game.hours);
+    saveBest(game.best);
+    sndOver();
+  }
+}
+
+function reset(seed){
+  game.seed = (seed==null ? ((Math.random()*1e9)|0) : seed) >>> 0;
+  if(game.seed === 0) game.seed = 1;
+  game.rng = makeRng(game.seed);
+  game.time = 0;
+  game.distance = 0;
+  game.baseSpeed = 240;
+  game.speed = game.baseSpeed;
+  game.hours = 0;
+  game.combo = 1;
+  game.comboCount = 0;
+  game.strikes = game.maxStrikes;
+  game.hazards.length = 0;
+  game.coins.length = 0;
+  game.particles.length = 0;
+  game.floats.length = 0;
+  game.worldX = 0;
+  game.nextSpawnX = 520;
+  game.camera.x = 0;
+  game.shake = 0;
+  game.invuln = 0;
+  game.flash = 0;
+  game.heartbeatT = 0;
+  game.cleanStreak = 0;
+  game.nextCheckpointM = 500;
+  game.shield = false;
+  game.checkpointFlash = 0;
+  player.x = 180;
+  player.y = GROUND_Y - player.h;
+  player.vy = 0;
+  player.onGround = true;
+  player.jumps = 0;
+  player.squash = 0;
+  player.hurt = 0;
+  player.coyote = 0;
+  player.jumpBuffer = 0;
+  game.state = STATES.PLAYING;
+  ensureSpawn();
+}
+
+// ---- update ----
+function update(dt){
+  // clamp dt for stability
+  dt = Math.min(dt, 0.05);
+  game.time += dt;
+
+  // pause toggle works in playing/paused
+  if(input.pausePressed){
+    input.pausePressed = false;
+    if(game.state === STATES.PLAYING) game.state = STATES.PAUSED;
+    else if(game.state === STATES.PAUSED) game.state = STATES.PLAYING;
+    syncPauseButton();
+  }
+  // mute toggle works in any state
+  if(input.mutePressed){
+    input.mutePressed = false;
+    setMuted(!muted);
+  }
+
+  if(game.state === STATES.TITLE){
+    if(input.jumpPressed || input.startPressed){ input.jumpPressed=false; input.startPressed=false; reset(); }
+    input.jumpPressed = false; input.startPressed = false;
+    return;
+  }
+  if(game.state === STATES.GAMEOVER){
+    if(input.jumpPressed){ input.jumpPressed=false; reset(); }
+    input.jumpPressed=false; input.startPressed=false;
+    return;
+  }
+  if(game.state === STATES.PAUSED){
+    input.jumpPressed = false; input.startPressed = false;
+    return;
+  }
+
+  // ---- PLAYING ----
+  // jump input buffering: queue the press briefly so a jump a few ms before
+  // landing still registers (forgiving timing standard for the runner genre)
+  if(input.jumpPressed){ input.jumpPressed = false; player.jumpBuffer = JUMP_BUFFER; }
+  input.startPressed = false;
+  if(player.jumpBuffer > 0){
+    if(doJump()) player.jumpBuffer = 0;
+    else player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
+  }
+
+  // speed ramps with distance
+  game.speed = game.baseSpeed + Math.min(220, game.distance * 0.16);
+  const advance = game.speed * dt;
+  game.worldX += advance;
+  game.distance += advance / 32;   // ~32px per metre
+  game.camera.x = game.worldX;
+
+  // physics
+  player.vy += GRAVITY * dt;
+  player.y += player.vy * dt;
+  if(player.y >= GROUND_Y - player.h){
+    player.y = GROUND_Y - player.h;
+    player.vy = 0;
+    player.onGround = true;
+    player.jumps = 0;
+    player.coyote = 0;
+  } else {
+    if(player.onGround){ player.coyote = 0; } // just left the ground this frame
+    player.onGround = false;
+    player.coyote = Math.min(COYOTE_TIME + 0.001, player.coyote + dt); // coyote-time window
+  }
+  if(player.squash > 0) player.squash = Math.max(0, player.squash - dt*2.2);
+  if(player.hurt > 0) player.hurt = Math.max(0, player.hurt - dt);
+  if(game.invuln > 0) game.invuln = Math.max(0, game.invuln - dt);
+  if(game.shake > 0) game.shake = Math.max(0, game.shake - dt*40);
+  if(game.flash > 0) game.flash = Math.max(0, game.flash - dt*1.6);
+  if(game.checkpointFlash > 0) game.checkpointFlash = Math.max(0, game.checkpointFlash - dt);
+
+  // low-strike tension cue: subtle heartbeat pulse/sound at exactly 1 strike left
+  if(game.strikes === 1){
+    game.heartbeatT -= dt;
+    if(game.heartbeatT <= 0){ game.heartbeatT = 0.7; sndHeartbeat(); }
+  } else {
+    game.heartbeatT = 0;
+  }
+
+  checkCheckpoint();
+  ensureSpawn();
+
+  // player world rect (player.x is screen space; convert to world)
+  const pworld = { x: player.x + game.worldX, y: player.y, w: player.w, h: player.h };
+
+  // hazards
+  for(const hz of game.hazards){
+    if(!hz.passed && rects(pworld, hz)){
+      hz.passed = true;          // only triggers once
+      takeHit(hz);
+    }
+  }
+
+  // coins
+  for(const c of game.coins){
+    if(!c.taken){
+      const cr = { x:c.x, y:c.y, w:c.w, h:c.h };
+      if(rects(pworld, cr)) collectHour(c);
+      else if(c.x + c.w < game.worldX - 4){ missCoin(c); } // scrolled off unclaimed: fade cue
+    }
+  }
+
+  // cull off-screen behind camera (single correct pass)
+  const cull = game.worldX - 120;
+  game.hazards = game.hazards.filter(h => h.x + h.w > cull);
+  game.coins   = game.coins.filter(c => c.x + c.w > cull);
+
+  // particles
+  for(const p of game.particles){
+    p.vy += 420*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt;
+  }
+  game.particles = game.particles.filter(p => p.life > 0);
+  for(const f of game.floats){ f.y += f.vy*dt; f.life -= dt; }
+  game.floats = game.floats.filter(f => f.life > 0);
+}
+
+// =========================================================
+// RENDERING
+// =========================================================
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rgrad(x,y,r,stops){const g=ctx.createRadialGradient(x,y,0,x,y,r);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rrPath(x,y,w,h,r){r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function roundRect(x,y,w,h,r){rrPath(x,y,w,h,r);ctx.fill();}
+function shadowBlob(x,y,rx,ry,a){ctx.save();ctx.fillStyle='rgba(6,5,11,'+(a==null?.22:a)+')';ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);ctx.fill();ctx.restore();}
+function tint(hex,f){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;r=Math.max(0,Math.min(255,r*f))|0;g=Math.max(0,Math.min(255,g*f))|0;b=Math.max(0,Math.min(255,b*f))|0;return 'rgb('+r+','+g+','+b+')';}
+
+// deterministic background variation per layer index (Math.sin, not random)
+function drawParallax(){
+  // far sky band already on canvas bg; draw mountains, dunes, foreground.
+  const cx = game.worldX;
+  // sky gradient
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#142142'],[0.5,'#1c2c4f'],[1,'#0c1426']]);
+  ctx.fillRect(0,0,W,H);
+  // sun/clock glow
+  ctx.save();
+  ctx.fillStyle = rgrad(760,120,180,[[0,'rgba(255,224,150,.55)'],[1,'rgba(255,224,150,0)']]);
+  ctx.beginPath(); ctx.arc(760,120,180,0,7); ctx.fill();
+  ctx.restore();
+  // big faint clock face in sky (theme: time)
+  ctx.save();
+  ctx.translate(760,120);
+  ctx.strokeStyle='rgba(255,230,170,.20)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(0,0,54,0,7); ctx.stroke();
+  for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; ctx.beginPath(); ctx.moveTo(Math.cos(a)*46,Math.sin(a)*46); ctx.lineTo(Math.cos(a)*52,Math.sin(a)*52); ctx.stroke(); }
+  const hh = game.time*0.5, mh = game.time*1.7;
+  ctx.lineWidth=4; ctx.strokeStyle='rgba(255,230,170,.32)';
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(hh-Math.PI/2)*26,Math.sin(hh-Math.PI/2)*26); ctx.stroke();
+  ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(mh-Math.PI/2)*40,Math.sin(mh-Math.PI/2)*40); ctx.stroke();
+  ctx.restore();
+
+  // Layer 1: far mountains (factor .14)
+  const f1 = (cx*0.14) % 300;
+  ctx.fillStyle = '#243456';
+  for(let i=-1;i<5;i++){
+    const bx = i*300 - f1;
+    const hgt = 150 + Math.sin(i*1.3)*40;
+    ctx.beginPath(); ctx.moveTo(bx, GROUND_Y); ctx.lineTo(bx+150, GROUND_Y-hgt); ctx.lineTo(bx+300, GROUND_Y); ctx.closePath(); ctx.fill();
+  }
+  // Layer 2: mid hills (factor .30)
+  const f2 = (cx*0.30) % 260;
+  for(let i=-1;i<6;i++){
+    const bx = i*260 - f2;
+    const hgt = 90 + Math.sin(i*2.1+1)*34;
+    ctx.fillStyle = lgrad(bx, GROUND_Y-hgt, bx, GROUND_Y, [[0,'#2c4068'],[1,'#1d2c4a']]);
+    ctx.beginPath();
+    ctx.moveTo(bx, GROUND_Y);
+    ctx.quadraticCurveTo(bx+130, GROUND_Y-hgt, bx+260, GROUND_Y);
+    ctx.closePath(); ctx.fill();
+  }
+  // Layer 3: near silhouette buildings / pillars (factor .55) — "deadline towers"
+  const f3 = (cx*0.55) % 200;
+  for(let i=-1;i<7;i++){
+    const bx = i*200 - f3;
+    const w = 60 + (Math.sin(i*3.7)*0.5+0.5)*50;
+    const hgt = 120 + (Math.sin(i*1.9+2)*0.5+0.5)*120;
+    ctx.fillStyle = lgrad(bx, GROUND_Y-hgt, bx, GROUND_Y, [[0,'#1a2742'],[1,'#0f1830']]);
+    roundRect(bx+40, GROUND_Y-hgt, w, hgt, 6);
+    // lit windows
+    ctx.fillStyle='rgba(255,214,120,.18)';
+    for(let wy=GROUND_Y-hgt+14; wy<GROUND_Y-16; wy+=22){
+      for(let wx=bx+50; wx<bx+40+w-10; wx+=18){
+        if((Math.sin(i*7+wx*0.5)*0.5+0.5) > 0.45) ctx.fillRect(wx, wy, 8, 10);
+      }
+    }
+  }
+}
+
+function drawGround(){
+  // ground slab with gradient + top highlight
+  ctx.fillStyle = lgrad(0,GROUND_Y,0,H,[[0,'#33425f'],[1,'#161e30']]);
+  ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+  ctx.fillStyle = 'rgba(126,224,192,.5)';
+  ctx.fillRect(0,GROUND_Y,W,3);
+  // scrolling track dashes (move with worldX)
+  ctx.fillStyle='rgba(255,255,255,.10)';
+  const off = game.worldX % 60;
+  for(let x=-off; x<W; x+=60){ ctx.fillRect(x, GROUND_Y+22, 34, 5); }
+  // subtle ground texture rows
+  ctx.fillStyle='rgba(0,0,0,.10)';
+  const off2 = (game.worldX*0.6) % 40;
+  for(let x=-off2; x<W; x+=40){ ctx.fillRect(x, GROUND_Y+60, 20, 3); }
+}
+
+// hazard silhouettes — distinct per type. Drawn at screen position.
+function drawHazard(hz){
+  const sx = hz.x - game.worldX;
+  if(sx + hz.w < -40 || sx > W+40) return;
+  const cx = sx + hz.w/2, baseY = hz.y + hz.h;
+  shadowBlob(cx, baseY, hz.w*0.55, 7, .26);
+  ctx.save();
+  ctx.translate(sx, hz.y);
+  const wob = Math.sin(game.time*4 + hz.seed)*2;
+
+  if(hz.type==='scroll'){
+    // Doomscroll: a phone-ish slab spewing an endless feed ribbon
+    ctx.fillStyle = lgrad(0,0,0,hz.h,[[0,'#3a3550'],[1,'#221f33']]);
+    roundRect(hz.w*0.18, 0, hz.w*0.64, hz.h, 6);
+    ctx.fillStyle='#8b7bd0';
+    for(let i=0;i<3;i++){ ctx.fillRect(hz.w*0.26, 8+i*12+ (wob), hz.w*0.48, 6); }
+    // glow swirl
+    ctx.strokeStyle='rgba(160,120,255,.6)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(hz.w/2, -6+wob, 8, 0, 6); ctx.stroke();
+  } else if(hz.type==='overtime'){
+    // Unpaid overtime: a heavy clock weight / hourglass-chain ball
+    ctx.fillStyle = lgrad(0,0,0,hz.h,[[0,'#5a4a3a'],[1,'#33271c']]);
+    ctx.beginPath(); ctx.arc(hz.w/2, hz.h*0.62, hz.w*0.42, 0, 7); ctx.fill();
+    ctx.fillStyle='#caa15a';
+    ctx.beginPath(); ctx.arc(hz.w/2, hz.h*0.62, hz.w*0.42, 0, 7); ctx.strokeStyle='#caa15a'; ctx.lineWidth=3; ctx.stroke();
+    // clock hands
+    ctx.strokeStyle='#3a2c1c'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(hz.w/2,hz.h*0.62); ctx.lineTo(hz.w/2,hz.h*0.42); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hz.w/2,hz.h*0.62); ctx.lineTo(hz.w*0.66,hz.h*0.66); ctx.stroke();
+    // chain to top
+    ctx.strokeStyle='#7a6a55'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(hz.w/2,0); ctx.lineTo(hz.w/2,hz.h*0.22); ctx.stroke();
+  } else if(hz.type==='errand'){
+    // Errand spiral: stacked tangled boxes/loops
+    ctx.fillStyle = lgrad(0,0,0,hz.h,[[0,'#3a5a52'],[1,'#1f342f']]);
+    roundRect(2, hz.h*0.4, hz.w-4, hz.h*0.6, 4);
+    roundRect(hz.w*0.2, hz.h*0.1+wob, hz.w*0.6, hz.h*0.4, 4);
+    ctx.strokeStyle='rgba(126,224,192,.7)'; ctx.lineWidth=2.4;
+    ctx.beginPath();
+    for(let a=0;a<6.2;a+=0.4){ const rr=4+a*2; const px=hz.w/2+Math.cos(a)*rr, py=hz.h*0.45+Math.sin(a)*rr*0.7; if(a===0)ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+    ctx.stroke();
+  } else { // notif
+    // Notification pile: stacked badges with a red count dot
+    for(let i=0;i<3;i++){
+      ctx.fillStyle = lgrad(0,0,0,hz.h,[[0,tint('#4a3d6a',1.15)],[1,'#2a2240']]);
+      roundRect(4+i*3, hz.h - (i+1)*(hz.h/3) , hz.w-8-i*4, hz.h/3-3, 5);
+    }
+    ctx.fillStyle='#ff5a5a';
+    ctx.beginPath(); ctx.arc(hz.w-8, 6+wob*0.5, 7, 0, 7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 9px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('9+', hz.w-8, 6+wob*0.5);
+  }
+  ctx.restore();
+
+  // label tag above hazard
+  ctx.save();
+  ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const tw = ctx.measureText(hz.label).width + 14;
+  const ly = hz.y - 14;
+  ctx.fillStyle='rgba(20,12,18,.78)';
+  rrPath(cx - tw/2, ly-9, tw, 18, 8); ctx.fill();
+  ctx.fillStyle='#ffb3a8';
+  ctx.fillText(hz.label, cx, ly);
+  ctx.restore();
+}
+
+function drawCoin(c){
+  const sx = c.x - game.worldX;
+  if(sx + c.w < -30 || sx > W+30) return;
+  const cx = sx + c.w/2;
+  const bob = Math.sin(game.time*3 + c.bob)*3;
+  const cy = c.y + c.h/2 + bob;
+  // spin via scaleX
+  const sc = Math.abs(Math.cos(game.time*4 + c.bob));
+  ctx.save();
+  ctx.translate(cx, cy);
+  // glow
+  ctx.fillStyle = rgrad(0,0,18,[[0,'rgba(255,209,102,.5)'],[1,'rgba(255,209,102,0)']]);
+  ctx.beginPath(); ctx.arc(0,0,18,0,7); ctx.fill();
+  ctx.scale(Math.max(0.18,sc), 1);
+  ctx.fillStyle = rgrad(-3,-3,c.w*0.7,[[0,'#fff0c2'],[0.6,'#ffd166'],[1,'#e3a52c']]);
+  ctx.beginPath(); ctx.arc(0,0,c.w/2,0,7); ctx.fill();
+  ctx.strokeStyle='#b9821f'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(0,0,c.w/2,0,7); ctx.stroke();
+  // tiny clock mark inside
+  ctx.strokeStyle='#8a5c12'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-c.h*0.26); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(c.w*0.20,c.h*0.04); ctx.stroke();
+  ctx.restore();
+  // "1h" floating hint occasionally
+  if(((c.bob|0) % 3)===0){
+    ctx.save();
+    ctx.font='bold 9px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,240,200,.8)';
+    ctx.fillText('1h reclaimed', cx, cy - 18 + bob);
+    ctx.restore();
+  }
+}
+
+function drawRunner(){
+  const cx = player.x + player.w/2;
+  const topY = player.y;
+  const air = !player.onGround;
+  shadowBlob(cx, GROUND_Y - 2, 22 - (player.y < GROUND_Y-player.h-2 ? 6:0), 6, .28);
+  ctx.save();
+  ctx.translate(cx, topY);
+  // hurt flash tint
+  const hurt = player.hurt > 0 && (Math.sin(game.time*40)>0);
+  const jacket = hurt ? '#ff7a6b' : '#7ee0c0';
+  // squash & stretch
+  const sq = player.squash;
+  ctx.scale(1 + sq*0.25, 1 - sq*0.18);
+
+  const moving = !air;
+  const sw  = moving ? Math.sin(game.time*13)*9 : 0;
+  const sw2 = moving ? Math.sin(game.time*13+Math.PI)*9 : 0;
+  const bob = moving ? Math.abs(Math.sin(game.time*13))*1.4 : 0;
+
+  ctx.lineCap='round';
+  // legs
+  ctx.strokeStyle = tint('#1d6f5b',1.0); ctx.lineWidth=6;
+  function leg(dx, lift){
+    ctx.beginPath(); ctx.moveTo(15, 30); ctx.lineTo(15+dx*0.5, 38-lift); ctx.lineTo(15+dx, 46-lift*1.4); ctx.stroke();
+    ctx.fillStyle='#ffd166'; ctx.beginPath(); ctx.ellipse(15+dx, 46-lift*1.4, 5, 3, 0, 0, 7); ctx.fill();
+  }
+  if(air){ leg(-7, 6); leg(9, 2); }
+  else { leg(sw*0.7, 0); leg(sw2*0.7, 0); }
+
+  // torso
+  ctx.save(); ctx.translate(0, -bob);
+  ctx.fillStyle = lgrad(2,10,28,34,[[0,tint(jacket,1.2)],[1,jacket]]);
+  rrPath(4, 12, 22, 22, 7); ctx.fill();
+  // chest stripe (a little clock pip)
+  ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(8, 18, 14, 3);
+
+  // back arm
+  ctx.strokeStyle = tint(jacket,0.85); ctx.lineWidth=5;
+  ctx.beginPath(); ctx.moveTo(14,16); ctx.lineTo(14 - 8 - sw*0.4, air?14:24); ctx.stroke();
+  // front arm
+  ctx.strokeStyle = tint(jacket,1.1); ctx.lineWidth=5;
+  ctx.beginPath(); ctx.moveTo(16,16); ctx.lineTo(16 + 8 + sw*0.5, air?12:24); ctx.stroke();
+  ctx.fillStyle='#f0c69a'; ctx.beginPath(); ctx.arc(16 + 8 + sw*0.5, air?12:24, 3, 0, 7); ctx.fill();
+
+  // head
+  ctx.fillStyle='#f0c69a'; ctx.beginPath(); ctx.arc(16, 5, 8, 0, 7); ctx.fill();
+  // hair
+  ctx.fillStyle='#33424f'; ctx.beginPath(); ctx.arc(16, 3, 8.4, Math.PI*1.02, Math.PI*2.04); ctx.fill();
+  // eye
+  ctx.fillStyle='#17171f'; ctx.beginPath(); ctx.arc(20, 5, 1.6, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+
+// HUD
+function drawHUD(){
+  ctx.save();
+  ctx.textBaseline='middle';
+  // hours banked panel
+  ctx.fillStyle='rgba(8,11,19,.72)'; rrPath(14,14,220,52,12); ctx.fill();
+  ctx.fillStyle='#ffd166'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+  ctx.fillText('HOURS BANKED', 28, 30);
+  ctx.fillStyle='#fff'; ctx.font='bold 26px Arial';
+  ctx.fillText(game.hours + 'h', 28, 52);
+
+  // combo
+  ctx.fillStyle='rgba(8,11,19,.72)'; rrPath(248,14,150,52,12); ctx.fill();
+  ctx.fillStyle='#7ee0c0'; ctx.font='bold 13px Arial';
+  ctx.fillText('COMBO', 262, 30);
+  const pulse = 1 + Math.sin(game.time*8)*0.05*(game.combo>1?1:0);
+  ctx.save(); ctx.translate(262, 50); ctx.scale(pulse,pulse);
+  ctx.fillStyle = game.combo>1 ? '#ffd166' : '#fff'; ctx.font='bold 22px Arial';
+  ctx.fillText('x'+game.combo, 0, 0);
+  ctx.restore();
+
+  // distance (right)
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(8,11,19,.72)'; rrPath(W-184,14,170,52,12); ctx.fill();
+  ctx.fillStyle='#9fb6d8'; ctx.font='bold 13px Arial';
+  ctx.fillText('DISTANCE', W-28, 30);
+  ctx.fillStyle='#fff'; ctx.font='bold 22px Arial';
+  ctx.fillText((game.distance|0)+' m', W-28, 52);
+
+  // strikes (hearts/clocks) center-top
+  // accessibility: alive = filled solid clock disc; dead = hollow outline-only
+  // clock (distinct shape, not just color/opacity) so colorblind players can
+  // tell strikes apart without relying on red vs faded.
+  ctx.textAlign='center';
+  for(let i=0;i<game.maxStrikes;i++){
+    const x = W/2 - (game.maxStrikes-1)*14 + i*28;
+    const alive = i < game.strikes;
+    ctx.save();
+    ctx.translate(x, 30);
+    if(alive){
+      ctx.fillStyle = '#ff7a6b';
+      ctx.beginPath(); ctx.arc(0,0,9,0,7); ctx.fill();
+      ctx.strokeStyle = '#ffd0c8'; ctx.lineWidth=2;
+    } else {
+      // hollow outline clock: unmistakably different silhouette from filled
+      ctx.strokeStyle = 'rgba(255,255,255,.30)'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.arc(0,0,9,0,7); ctx.stroke();
+      ctx.lineWidth=1.4;
+    }
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(4,1); ctx.stroke();
+    ctx.restore();
+  }
+  // shield indicator (checkpoint grace strike)
+  if(game.shield){
+    ctx.save();
+    ctx.translate(W/2, 50);
+    ctx.strokeStyle='#7ee0c0'; ctx.lineWidth=2; ctx.fillStyle='rgba(126,224,192,.18)';
+    rrPath(-34,-9,68,18,9); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#7ee0c0'; ctx.font='bold 11px Arial';
+    ctx.fillText('SHIELD', 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawFloats(){
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const f of game.floats){
+    const sx = f.x - game.worldX;
+    const a = clamp(f.life, 0, 1);
+    ctx.globalAlpha = f.missed ? a*0.6 : a;
+    ctx.font = f.bad ? 'bold 18px Arial' : (f.missed ? 'italic 12px Arial' : 'bold 15px Arial');
+    ctx.fillStyle = f.bad ? '#ff7a6b' : (f.missed ? 'rgba(200,210,230,.8)' : '#ffd166');
+    ctx.fillText(f.text, sx, f.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawParticles(){
+  for(const p of game.particles){
+    const sx = p.x - game.worldX;
+    ctx.globalAlpha = clamp(p.life*1.6,0,1);
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(sx, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function panel(x,y,w,h){
+  ctx.fillStyle='rgba(8,11,19,.86)'; rrPath(x,y,w,h,16); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1.5; rrPath(x,y,w,h,16); ctx.stroke();
+}
+
+function drawTitle(){
+  panel(W/2-300, 86, 600, 366);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ffd166'; ctx.font='bold 42px Arial';
+  ctx.fillText('Time Wealth Runner', W/2, 144);
+  ctx.fillStyle='#7ee0c0'; ctx.font='bold 15px Arial';
+  ctx.fillText('Reclaim the hours that pressure tries to spend for you', W/2, 180);
+  if(game.best > 0){
+    ctx.fillStyle='#ffd166'; ctx.font='bold 14px Arial';
+    ctx.fillText('BEST: ' + game.best + 'h banked', W/2, 204);
+  }
+  ctx.fillStyle='#e7e3d6'; ctx.font='14px Arial';
+  ctx.fillText('Your time is finite and non-renewable.', W/2, 234);
+  ctx.fillText('Collect reclaimed hours. Leap the time-sink pressures.', W/2, 256);
+  ctx.fillText('Each collect without a hit grows your combo multiplier.', W/2, 278);
+  ctx.fillStyle='#9fb6d8'; ctx.font='13px Arial';
+  ctx.fillText('A hit resets your combo and costs a strike. 3 strikes and you wipe out.', W/2, 306);
+  ctx.fillText('Every 500m banks a checkpoint bonus — a shield or bonus hours.', W/2, 326);
+  ctx.fillStyle='#e7e3d6'; ctx.font='bold 13px Arial';
+  ctx.fillText('SPACE / UP / TAP-TO-JUMP  (tap again to double-jump)', W/2, 350);
+  ctx.fillText('P or the pause icon = pause   M or the speaker icon = mute', W/2, 368);
+  // start button
+  const bx=W/2-140, by=392, bw=280, bh=44;
+  ctx.fillStyle = lgrad(bx,by,bx,by+bh,[[0,'#ffe08a'],[1,'#ffce5a']]);
+  rrPath(bx,by,bw,bh,12); ctx.fill();
+  ctx.fillStyle='#1a1206'; ctx.font='bold 16px Arial';
+  ctx.fillText('PRESS SPACE OR TAP TO RUN', W/2, by+bh/2+1);
+}
+
+function drawPaused(){
+  ctx.fillStyle='rgba(5,7,13,.55)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-180, 180, 360, 180);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ffd166'; ctx.font='bold 32px Arial';
+  ctx.fillText('Paused', W/2, 238);
+  ctx.fillStyle='#e7e3d6'; ctx.font='15px Arial';
+  ctx.fillText('Press P or the pause icon to resume', W/2, 282);
+  ctx.fillStyle='#9fb6d8';
+  ctx.fillText('Even a pause is a choice about your time.', W/2, 312);
+}
+
+function drawGameOver(){
+  ctx.fillStyle='rgba(5,7,13,.6)'; ctx.fillRect(0,0,W,H);
+  panel(W/2-260, 120, 520, 300);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ff7a6b'; ctx.font='bold 40px Arial';
+  ctx.fillText('Wiped Out', W/2, 178);
+  ctx.fillStyle='#fff'; ctx.font='bold 28px Arial';
+  ctx.fillText('You banked ' + game.hours + ' hours', W/2, 228);
+  ctx.fillStyle='#7ee0c0'; ctx.font='16px Arial';
+  ctx.fillText('Distance: ' + (game.distance|0) + ' m    Best: ' + Math.max(game.best,game.hours) + 'h', W/2, 262);
+  ctx.fillStyle='#e7e3d6'; ctx.font='15px Arial';
+  ctx.fillText('Hours spent on pressure are gone for good —', W/2, 304);
+  ctx.fillText('the ones you reclaim are yours to keep.', W/2, 326);
+  const bx=W/2-140, by=356, bw=280, bh=44;
+  ctx.fillStyle = lgrad(bx,by,bx,by+bh,[[0,'#ffe08a'],[1,'#ffce5a']]);
+  rrPath(bx,by,bw,bh,12); ctx.fill();
+  ctx.fillStyle='#1a1206'; ctx.font='bold 16px Arial';
+  ctx.fillText('PRESS SPACE OR TAP TO RUN AGAIN', W/2, by+bh/2+1);
+}
+
+function vignette(){
+  ctx.save();
+  ctx.fillStyle = rgrad(W/2,H/2,W*0.62,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,0.42)']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+  // low-life warning: pulsing red vignette when exactly 1 strike remains
+  if(game.state === STATES.PLAYING && game.strikes === 1){
+    const pulse = (Math.sin(game.time*6)*0.5+0.5);
+    ctx.save();
+    ctx.fillStyle = rgrad(W/2,H/2,W*0.7,[[0,'rgba(255,40,40,0)'],[0.7,'rgba(255,40,40,0)'],[1,'rgba(255,40,40,'+(0.10+pulse*0.16)+')']]);
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+  if(game.flash > 0){
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,80,70,'+ (game.flash*0.4) +')';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+  if(game.checkpointFlash > 0){
+    ctx.save();
+    ctx.fillStyle = 'rgba(126,224,192,'+ (game.checkpointFlash*0.28) +')';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+}
+
+function draw(){
+  ctx.save();
+  // screen shake
+  if(game.shake > 0){
+    ctx.translate((Math.random()-0.5)*game.shake, (Math.random()-0.5)*game.shake);
+  }
+  drawParallax();
+  drawGround();
+
+  // world objects (only meaningful in playing/paused/gameover, but safe always)
+  for(const c of game.coins) if(!c.taken) drawCoin(c);
+  for(const hz of game.hazards) drawHazard(hz);
+  drawParticles();
+
+  if(game.state !== STATES.TITLE) drawRunner();
+
+  drawFloats();
+  ctx.restore();
+
+  // HUD + overlays (no shake)
+  if(game.state === STATES.PLAYING || game.state === STATES.PAUSED) drawHUD();
+  vignette();
+
+  if(game.state === STATES.TITLE) drawTitle();
+  else if(game.state === STATES.PAUSED) drawPaused();
+  else if(game.state === STATES.GAMEOVER){ drawHUD(); drawGameOver(); }
+}
+
+// ---- main loop ----
+let last = 0;
+function frame(ts){
+  if(!last) last = ts;
+  let dt = (ts - last)/1000; last = ts;
+  if(!isFinite(dt) || dt < 0) dt = 0;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+// resume audio on first interaction
+window.addEventListener('pointerdown', ()=>{ const a=audio(); if(a && a.state==='suspended'){ try{a.resume();}catch(e){} } }, {once:false});
+syncMuteButton();
+syncPauseButton();
+requestAnimationFrame(frame);
+
+// ---- test hook (harmless in production) ----
+window.__game = {
+  get game(){ return game; },
+  get player(){ return player; },
+  get input(){ return input; },
+  get muted(){ return muted; },
+  STATES,
+  update, draw, reset, resetGame: reset,
+  spawnChunk, ensureSpawn, collectHour, takeHit, setState, doJump,
+  makeRng, setMuted, checkCheckpoint, missCoin, resizeCanvas
+};
+</script>
+</body>
+</html>

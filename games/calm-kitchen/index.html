@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Calm Kitchen</title>
+<style>
+  :root{--bg:#1a120b;--panel:rgba(28,18,10,.88);--line:rgba(255,255,255,.16);--text:#fbf3e4;--accent:#ffce6b;--warm:#ff9d5c;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0c0805;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 16%,#3a2515,#0c0805 72%);}
+  canvas{display:block;background:#1b120a;image-rendering:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:18px;left:0;right:0;display:flex;gap:12px;justify-content:center;pointer-events:none;}
+  .btn{width:74px;height:74px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.40);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.3);pointer-events:auto;}
+  .btn:active{transform:translateY(2px);background:rgba(255,206,107,.28);}
+  @media (min-width:900px){.btn{opacity:.34}.btn:hover{opacity:.95}}
+  .corner{position:absolute;top:12px;right:12px;display:flex;gap:8px;pointer-events:auto;}
+  .icnbtn{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.45);color:#fbf3e4;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .icnbtn:active{transform:translateY(2px);background:rgba(255,206,107,.28);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="touchControls">
+  <div class="corner">
+    <button type="button" class="icnbtn" id="btnPause" aria-label="Pause">⏸</button>
+    <button type="button" class="icnbtn" id="btnMute" aria-label="Mute">🔊</button>
+  </div>
+  <div class="pad">
+    <div class="btn" data-lane="0">Q</div>
+    <div class="btn" data-lane="1">W</div>
+    <div class="btn" data-lane="2">E</div>
+    <div class="btn" data-lane="3">R</div>
+  </div>
+</div>
+<script>
+'use strict';
+// =========================================================
+// Calm Kitchen  —  ANCF 100 HTML Games (#8)
+// Lane-based rhythm / serving arcade. Cook & plate dishes to
+// the beat to feed a chosen-family dinner. Single self-contained
+// file: canvas drawing + procedural Web Audio. No external deps.
+// Theme: care & feasting without parenthood; chosen family.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const TAU = Math.PI*2;
+
+// ---- seeded RNG (deterministic charts) ----
+function seeded(seed){let s=(seed*2246822519+3266489917)>>>0; return ()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
+
+// ---- lanes ----
+const LANES = 4;
+const LANE_KEYS = ['KeyQ','KeyW','KeyE','KeyR'];
+const LANE_LABEL = ['Q','W','E','R'];
+const LANE_INGREDIENT = ['Chop','Simmer','Plate','Garnish'];
+const LANE_COLOR = ['#ff7a59','#ffce6b','#7fd6a6','#9bb8ff'];
+
+// ---- judgement windows (seconds) ----
+const WIN_PERFECT = 0.06;
+const WIN_GOOD    = 0.13;
+const WIN_MISS    = 0.20;   // beyond this it's not registered as a hit at all
+const SCORE = {Perfect:300, Good:120, Miss:0};
+const MAX_MISS = 12;        // too many misses -> gameover
+const POP_FADE = 0.15;      // shared fade duration for post-hit note pop & culling
+const BPM_CAP = 150;        // safety cap so bpm can never run away with more guests later
+
+// ---- localStorage persistence (guarded — private browsing can throw) ----
+const LS_KEY = 'calmKitchen.best.v1';
+function loadBest(){
+  try{
+    const raw = (typeof localStorage!=='undefined') ? localStorage.getItem(LS_KEY) : null;
+    if(!raw) return {score:0, combo:0};
+    const p = JSON.parse(raw);
+    return {score:+p.score||0, combo:+p.combo||0};
+  }catch(e){ return {score:0, combo:0}; }
+}
+function saveBest(score, combo){
+  try{
+    const cur = loadBest();
+    const next = {score:Math.max(cur.score,score||0), combo:Math.max(cur.combo,combo||0)};
+    if(typeof localStorage!=='undefined') localStorage.setItem(LS_KEY, JSON.stringify(next));
+    return next;
+  }catch(e){ return loadBest(); }
+}
+let best = loadBest();
+
+// ---- courses (each course = one guest served; tempo & density rise) ----
+const GUESTS = [
+  {name:'An old friend',  note:'years of inside jokes',      face:'friend'},
+  {name:'A mentor',       note:'who believed in you early',  face:'mentor'},
+  {name:'A rescued dog',  note:'tail like a metronome',      face:'dog'},
+  {name:'A neighbor',     note:'who waters your plants',     face:'neighbor'},
+  {name:'A chosen sister',note:'family you picked yourself',  face:'sister'},
+];
+
+// theme cards shown between courses / on win
+const THEME_LINES = [
+  'A full table is a kind of family.',
+  'Care is something you cook, not something you owe.',
+  'Chosen family shows up — and stays for seconds.',
+  'A life can be rich with feasting and friends.',
+  'Nourishing others is its own quiet legacy.'
+];
+
+const input = { lanePressed:[false,false,false,false], anyPressed:false, pausePressed:false, confirmPressed:false };
+
+// =========================================================
+// GAME STATE
+// =========================================================
+let game = null;
+
+function freshGame(){
+  return {
+    state:'title',         // title | playing | paused | gameover | win
+    time:0,                // seconds elapsed in the whole session (for animation)
+    songTime:0,            // seconds into the current course's chart
+    courseIndex:0,
+    chart:[],              // array of {t, lane, hit, judged, result}
+    nextNote:0,            // index of next un-judged note (for scan optimization)
+    bpm:88,
+    tempo:88,
+    approach:1.9,          // seconds a marker takes to travel from spawn to hit bar
+    score:0,
+    combo:0,
+    bestCombo:0,
+    misses:0,
+    hits:{Perfect:0,Good:0,Miss:0},
+    totalNotes:0,
+    judgedNotes:0,
+    served:0,              // guests served
+    flash:[0,0,0,0],       // per-lane hit flash timer
+    flashResult:['','','',''],
+    popups:[],             // floating judgement text
+    shake:0,
+    themeLine:THEME_LINES[0],
+    audioOn:true,
+    endless:false,          // After Party endless remix mode (unlocked after win)
+    endlessUnlocked:false,
+    endlessSeed:0
+  };
+}
+
+// =========================================================
+// CHART GENERATION  (data-driven, seeded, reproducible)
+// =========================================================
+// Returns an array of beat markers for a given course.
+// Density & tempo scale with course; deterministic for a seed.
+function genChart(course, seedOverride){
+  const seed = (seedOverride===undefined) ? (1000 + course*37) : seedOverride;
+  const rng = seeded(seed);
+  const bpm = clamp(84 + course*10, 60, BPM_CAP);   // beats per minute rises per course, capped
+  const beat = 60/bpm;
+  const beatsTotal = Math.max(8, Math.min(20 + course*6, 80)); // longer charts later, bounded
+  const density = clamp(0.45 + course*0.12, 0.45, 0.95); // chance of a note per beat slot
+  const chart = [];
+  let lastLane = -1;
+  // course 2 ("critic guest") introduces double-lane chord notes for a boss-like beat
+  const chordCourse = (course===2);
+  // intro lead-in so the first note isn't instant
+  const lead = beat*4;
+  for(let b=0;b<beatsTotal;b++){
+    const t = lead + b*beat;
+    // every beat slot may host a note; later courses add off-beat 8ths
+    if(rng() < density){
+      let lane = Math.floor(rng()*LANES);
+      if(lane===lastLane && rng()<0.6) lane = (lane+1+Math.floor(rng()*(LANES-1)))%LANES;
+      lastLane = lane;
+      chart.push({t, lane, judged:false, result:''});
+      // critic-guest course: occasional second simultaneous lane (chord) for a boss-wave feel
+      if(chordCourse && rng()<0.3){
+        let lane2 = (lane+1+Math.floor(rng()*(LANES-1)))%LANES;
+        chart.push({t, lane:lane2, judged:false, result:''});
+      }
+    }
+    // off-beat eighths appear from course 2 onward
+    if(course>=1 && rng() < density*0.4){
+      const lane = Math.floor(rng()*LANES);
+      chart.push({t: t+beat*0.5, lane, judged:false, result:''});
+    }
+  }
+  chart.sort((a,b)=>a.t-b.t);
+  return chart;
+}
+
+function loadCourse(course, seedOverride){
+  game.courseIndex = course;
+  game.chart = genChart(course, seedOverride);
+  game.totalNotes = game.chart.length;
+  game.judgedNotes = 0;
+  game.nextNote = 0;
+  game.songTime = -2.0;          // count-in before notes start
+  game.bpm = clamp(84 + course*10, 60, BPM_CAP);
+  game.tempo = game.bpm;
+  game.approach = clamp(2.0 - course*0.12, 1.2, 2.0);
+  game.themeLine = THEME_LINES[course % THEME_LINES.length];
+}
+
+function reset(){
+  const prevEndlessUnlocked = game ? game.endlessUnlocked : false;
+  game = freshGame();
+  game.endlessUnlocked = prevEndlessUnlocked;
+  game.state = 'playing';
+  loadCourse(0);
+  audio.ensure();
+  return game;
+}
+
+// After Party: endless remix mode, unlocked once the 5-course story is won.
+// Loops charts with rng-varied seeds so replay isn't the same 5 charts forever.
+function startEndless(){
+  const prevEndlessUnlocked = game ? game.endlessUnlocked : true;
+  game = freshGame();
+  game.endlessUnlocked = prevEndlessUnlocked;
+  game.endless = true;
+  game.state = 'playing';
+  game.endlessSeed = Math.floor(Math.random()*1e9);
+  loadCourse(game.courseIndex, game.endlessSeed);
+  audio.ensure();
+  return game;
+}
+
+function setState(s){ game.state = s; }
+
+// =========================================================
+// HIT JUDGEMENT  (pure, testable — no audio dependency)
+// =========================================================
+// Find the nearest un-judged note in a lane and judge the tap.
+// Returns {result, note, delta} where result in Perfect|Good|Miss.
+function judgeHit(lane, atTime){
+  if(atTime===undefined) atTime = game.songTime;
+  let best=null, bestAbs=Infinity, bestIdx=-1;
+  for(let i=0;i<game.chart.length;i++){
+    const n = game.chart[i];
+    if(n.judged || n.lane!==lane) continue;
+    // clamp candidates on the future side too — a premature tap must not consume
+    // a note that hasn't scrolled into the hit window yet
+    if(n.t - atTime > WIN_MISS) continue;
+    const d = Math.abs(n.t - atTime);
+    if(d < bestAbs){ bestAbs=d; best=n; bestIdx=i; }
+  }
+  // No note anywhere near -> count as a Miss (a wasted tap)
+  if(!best || bestAbs > WIN_MISS){
+    registerJudgement('Miss', lane, null);
+    return {result:'Miss', note:null, delta:bestAbs};
+  }
+  let result;
+  if(bestAbs <= WIN_PERFECT) result='Perfect';
+  else if(bestAbs <= WIN_GOOD) result='Good';
+  else result='Miss';
+  best.judged = true;
+  best.result = result;
+  game.judgedNotes++;
+  registerJudgement(result, lane, best);
+  return {result, note:best, delta:best.t-atTime};
+}
+
+const COMBO_MILESTONES = [10,25,50];
+function registerJudgement(result, lane, note){
+  game.hits[result]++;
+  game.flash[lane] = 0.22;
+  game.flashResult[lane] = result;
+  if(result==='Miss'){
+    game.combo = 0;
+    game.misses++;
+    game.shake = Math.min(game.shake+6, 14);
+    audio.miss();
+  } else {
+    game.score += SCORE[result];
+    game.combo++;
+    if(game.combo>game.bestCombo) game.bestCombo=game.combo;
+    // combo bonus
+    if(game.combo>0 && game.combo%10===0) game.score += 200;
+    // streak-based intensity ramp — brighter glow / extra harmony tone at milestones
+    if(COMBO_MILESTONES.includes(game.combo)){
+      game.shake = Math.min(game.shake+2, 14); // tiny celebratory pulse, not a penalty
+      audio.milestone(game.combo);
+      game.popups.push({lane, text:'Flow x'+game.combo, life:1.1, vy:-42, result:'Perfect'});
+    }
+    audio.hit(result);
+  }
+  game.popups.push({lane, text:result, life:0.9, vy:-34, result});
+  if(game.misses >= MAX_MISS){
+    game.state = 'gameover';
+    best = saveBest(game.score, game.bestCombo);
+  }
+}
+
+// A note that scrolled completely past the hit bar without being tapped = a Miss.
+function expireNote(note){
+  if(note.judged) return;
+  note.judged = true;
+  note.result = 'Miss';
+  game.judgedNotes++;
+  game.hits.Miss++;
+  game.combo = 0;
+  game.misses++;
+  game.shake = Math.min(game.shake+5, 14);
+  game.popups.push({lane:note.lane, text:'Miss', life:0.9, vy:-34, result:'Miss'});
+  audio.miss();
+  if(game.misses >= MAX_MISS){ game.state='gameover'; best = saveBest(game.score, game.bestCombo); }
+}
+
+// =========================================================
+// WEB AUDIO  (procedural; guarded against missing AudioContext)
+// =========================================================
+const audio = (function(){
+  let ac=null, master=null, ready=false, failed=false;
+  let metroTimer=0;
+  function ensure(){
+    if(ready||failed) return;
+    const AC = (typeof window!=='undefined') && (window.AudioContext||window.webkitAudioContext);
+    if(!AC){ failed=true; return; }
+    try{
+      ac = new AC();
+      master = ac.createGain();
+      master.gain.value = 0.34;
+      master.connect(ac.destination);
+      ready=true;
+    }catch(e){ failed=true; }
+  }
+  function tone(freq, dur, type, gain, when){
+    if(!ready) return;
+    try{
+      const t = when===undefined ? ac.currentTime : when;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = type||'sine';
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain||0.3, t+0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t+dur+0.02);
+    }catch(e){}
+  }
+  return {
+    ensure,
+    get ready(){return ready;},
+    // metronome click on the beat (called from update at beat boundaries)
+    click(strong){ if(!ready||!game||!game.audioOn) return; tone(strong?660:440, 0.05, 'square', strong?0.18:0.10); },
+    hit(result){
+      if(!ready||!game||!game.audioOn) return;
+      if(result==='Perfect'){ tone(880,0.10,'triangle',0.28); tone(1320,0.09,'sine',0.16); }
+      else { tone(620,0.10,'triangle',0.22); }
+    },
+    miss(){ if(!ready||!game||!game.audioOn) return; tone(150,0.18,'sawtooth',0.18); },
+    chord(){ // soft warm chord on win / course clear
+      if(!ready) return;
+      [392,494,587,784].forEach((f,i)=>tone(f,0.9,'sine',0.12, ac.currentTime+i*0.05));
+    },
+    milestone(combo){ // extra harmony tone at combo flow milestones (10/25/50)
+      if(!ready||!game||!game.audioOn) return;
+      const base = 660 + Math.min(combo,50)*2;
+      tone(base,0.16,'sine',0.16);
+      tone(base*1.5,0.14,'sine',0.10);
+    },
+    heartbeat(){ // low-life warning thump
+      if(!ready||!game||!game.audioOn) return;
+      tone(90,0.12,'sine',0.22);
+    },
+    duck(){ // fade the master bus down briefly on pause, for polish
+      if(!ready) return;
+      try{
+        const t = ac.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0.06, t+0.15);
+      }catch(e){}
+    },
+    unduck(){
+      if(!ready) return;
+      try{
+        const t = ac.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(master.gain.value, t);
+        master.gain.linearRampToValueAtTime(0.34, t+0.15);
+      }catch(e){}
+    },
+    resume(){ if(ready && ac.state==='suspended'){ try{ac.resume();}catch(e){} } }
+  };
+})();
+
+// =========================================================
+// UPDATE
+// =========================================================
+let _lastBeatIndex = -1;
+function update(dt){
+  if(!game) return;
+  game.time += dt;
+  // decay visual timers regardless of state
+  for(let i=0;i<LANES;i++){ if(game.flash[i]>0) game.flash[i]=Math.max(0,game.flash[i]-dt); }
+  if(game.shake>0) game.shake=Math.max(0,game.shake-dt*30);
+  for(let i=game.popups.length-1;i>=0;i--){
+    const p=game.popups[i]; p.life-=dt; p.vy*=0.92; if(p.life<=0) game.popups.splice(i,1);
+  }
+  game.vignettePulse = (game.vignettePulse||0) + dt;
+
+  if(game.state!=='playing') return;
+
+  // near-fail warning: heartbeat thump once misses cross ~70% of MAX_MISS
+  if(game.misses >= MAX_MISS*0.7){
+    if(!game._lowLifeBeatAt) game._lowLifeBeatAt = 0;
+    if(game.time - game._lowLifeBeatAt > 0.6){
+      game._lowLifeBeatAt = game.time;
+      audio.heartbeat();
+    }
+  }
+
+  const prev = game.songTime;
+  game.songTime += dt;
+
+  // metronome ticks (audio + could drive feel)
+  if(game.songTime>=0){
+    const beat = 60/game.bpm;
+    const bi = Math.floor(game.songTime/beat);
+    if(bi!==_lastBeatIndex && bi>=0){
+      _lastBeatIndex = bi;
+      audio.click(bi%4===0);
+    }
+  }
+
+  // expire notes that scrolled past the hit window
+  for(let i=0;i<game.chart.length;i++){
+    const n=game.chart[i];
+    if(!n.judged && game.songTime - n.t > WIN_MISS){
+      expireNote(n);
+    }
+  }
+
+  // course complete? all notes judged AND we're past the last note time
+  if(game.totalNotes>0 && game.judgedNotes>=game.totalNotes && game.state==='playing'){
+    // small tail so the last note's feedback shows
+    const lastT = game.chart.length?game.chart[game.chart.length-1].t:0;
+    if(game.songTime > lastT + 0.6){
+      finishCourse();
+    }
+  }
+}
+
+function finishCourse(){
+  game.served++;
+  audio.chord();
+  if(game.endless){
+    // After Party: loop forever with a fresh rng-varied seed each course, capped-difficulty chart
+    game.endlessSeed = (game.endlessSeed*2654435761 + 1) >>> 0;
+    const course = Math.min(game.courseIndex+1, GUESTS.length-1);
+    loadCourse(course, game.endlessSeed);
+    _lastBeatIndex=-1;
+    return;
+  }
+  if(game.served >= GUESTS.length){
+    game.state = 'win';
+    game.endlessUnlocked = true;
+    game.themeLine = THEME_LINES[(GUESTS.length-1)%THEME_LINES.length];
+    best = saveBest(game.score, game.bestCombo);
+  } else {
+    loadCourse(game.courseIndex+1);
+    _lastBeatIndex=-1;
+  }
+}
+
+// end-of-run rank derived from accuracy + best combo — extra scoring depth
+function computeRank(){
+  const acc = accuracy();
+  const comboBonus = Math.min(10, Math.floor(game.bestCombo/10));
+  const score = acc + comboBonus;
+  if(score>=108) return 'S';
+  if(score>=95) return 'A';
+  if(score>=80) return 'B';
+  return 'C';
+}
+
+// =========================================================
+// INPUT WIRING
+// =========================================================
+function pressLane(lane){
+  if(!game) return;
+  audio.ensure(); audio.resume();
+  if(game.state==='title'){ reset(); return; }
+  if(game.state==='gameover'||game.state==='win'){ reset(); return; }
+  if(game.state==='paused'){ return; }
+  if(game.state==='playing'){ judgeHit(lane); }
+}
+
+function updateControlButtons(){
+  if(typeof document==='undefined') return;
+  const pb=document.getElementById('btnPause'), mb=document.getElementById('btnMute');
+  if(pb) pb.textContent = (game && game.state==='paused') ? '▶' : '⏸';
+  if(mb) mb.textContent = (game && !game.audioOn) ? '🔇' : '🔊';
+}
+
+if(typeof window!=='undefined'){
+  window.addEventListener('keydown', e=>{
+    if(e.repeat) return;
+    if(e.code==='KeyP'){ togglePause(); e.preventDefault(); return; }
+    if(e.code==='KeyM'){ if(game){ game.audioOn=!game.audioOn; updateControlButtons(); } e.preventDefault(); return; }
+    if(e.code==='KeyF'){
+      if(game && game.state==='win' && game.endlessUnlocked){ startEndless(); e.preventDefault(); return; }
+    }
+    if(e.code==='Enter'||e.code==='Space'){
+      if(game && (game.state==='title'||game.state==='gameover'||game.state==='win')){ reset(); e.preventDefault(); return; }
+    }
+    const li = LANE_KEYS.indexOf(e.code);
+    if(li>=0){ input.lanePressed[li]=true; pressLane(li); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e=>{
+    const li = LANE_KEYS.indexOf(e.code);
+    if(li>=0) input.lanePressed[li]=false;
+  });
+  // touch buttons
+  document.querySelectorAll('.btn[data-lane]').forEach(b=>{
+    const lane=+b.dataset.lane;
+    const go=e=>{ e.preventDefault(); pressLane(lane); };
+    b.addEventListener('touchstart',go,{passive:false});
+    b.addEventListener('mousedown',go);
+  });
+  // on-screen pause / mute buttons (mobile-visible, min 44x44 tap target)
+  const pauseBtn = document.getElementById('btnPause');
+  const muteBtn = document.getElementById('btnMute');
+  if(pauseBtn){
+    const go=e=>{ e.preventDefault(); togglePause(); };
+    pauseBtn.addEventListener('touchstart',go,{passive:false});
+    pauseBtn.addEventListener('mousedown',go);
+  }
+  if(muteBtn){
+    const go=e=>{ e.preventDefault(); if(game){ game.audioOn=!game.audioOn; updateControlButtons(); } };
+    muteBtn.addEventListener('touchstart',go,{passive:false});
+    muteBtn.addEventListener('mousedown',go);
+  }
+  canvas.addEventListener('mousedown', ()=>{
+    audio.ensure(); audio.resume();
+    if(game && game.state==='title'){ reset(); return; }
+    if(game && (game.state==='gameover'||game.state==='win')){ reset(); return; }
+  });
+
+  // letterbox the canvas via CSS scaling instead of stretching to fill (preserves 16:9 art)
+  function resizeCanvas(){
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const scale = Math.min(vw/W, vh/H);
+    const dw = Math.round(W*scale), dh = Math.round(H*scale);
+    canvas.style.width = dw+'px';
+    canvas.style.height = dh+'px';
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+}
+
+function togglePause(){
+  if(!game) return;
+  if(game.state==='playing'){ game.state='paused'; audio.duck(); }
+  else if(game.state==='paused'){ game.state='playing'; audio.unduck(); }
+  updateControlButtons();
+}
+
+// =========================================================
+// RENDER HELPERS
+// =========================================================
+function lgrad(x0,y0,x1,y1,stops){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  for(const s of stops) g.addColorStop(s[0],s[1]);
+  return g;
+}
+function rgrad(x,y,r,stops){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  for(const s of stops) g.addColorStop(s[0],s[1]);
+  return g;
+}
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function tint(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  if(f>=0){ r+= (255-r)*f; g+=(255-g)*f; b+=(255-b)*f; }
+  else { r*=(1+f); g*=(1+f); b*=(1+f); }
+  return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
+}
+function shadowBlob(x,y,w,a){
+  ctx.save(); ctx.globalAlpha=a||0.3;
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.ellipse(x,y,w,w*0.32,0,0,TAU); ctx.fill();
+  ctx.restore();
+}
+
+// lane geometry
+const LANE_TOP = 70;
+const HIT_Y = 430;          // y of the hit bar
+const LANE_W = 150;
+const LANE_GAP = 14;
+const LANES_X0 = (W - (LANE_W*LANES + LANE_GAP*(LANES-1)))/2;
+function laneX(i){ return LANES_X0 + i*(LANE_W+LANE_GAP); }
+
+// =========================================================
+// DRAW
+// =========================================================
+function draw(){
+  if(!ctx) return;
+  ctx.save();
+  ctx.clearRect(0,0,W,H);
+  // screen shake
+  let sx=0, sy=0;
+  if(game && game.shake>0){ sx=(Math.random()*2-1)*game.shake; sy=(Math.random()*2-1)*game.shake; }
+  ctx.translate(sx,sy);
+
+  drawKitchenBackdrop();
+
+  const st = game?game.state:'title';
+  if(st==='title'){ drawTitle(); }
+  else { drawPlayfield(); drawHUD(); }
+  if(st==='paused') drawPauseOverlay();
+  if(st==='gameover') drawGameOver();
+  if(st==='win') drawWin();
+
+  ctx.restore();
+  drawVignette();
+}
+
+function drawKitchenBackdrop(){
+  // warm wall
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#3a2516'],[0.5,'#2a1a0e'],[1,'#1b1109']]);
+  ctx.fillRect(-30,-30,W+60,H+60);
+  // soft hanging lamp glow
+  const t = game?game.time:0;
+  // combo flow ramp: lamp glow brightens at 10/25/50 combo milestones for a "flow" feel
+  const comboBoost = game ? clamp(game.combo/50, 0, 1)*0.35 : 0;
+  for(let i=0;i<3;i++){
+    const lx = 180+i*300;
+    const glow = 0.5+0.12*Math.sin(t*1.4+i) + comboBoost;
+    ctx.save(); ctx.globalAlpha=glow*0.5;
+    ctx.fillStyle = rgrad(lx,40,160,[[0,'#ffcf86'],[1,'rgba(255,207,134,0)']]);
+    ctx.fillRect(lx-160,-30,320,260); ctx.restore();
+    // lamp cord + shade
+    ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(lx,-30); ctx.lineTo(lx,18); ctx.stroke();
+    ctx.fillStyle = lgrad(lx-24,16,lx+24,40,[[0,'#caa15a'],[1,'#8a6a32']]);
+    ctx.beginPath(); ctx.moveTo(lx-26,40); ctx.lineTo(lx-14,18); ctx.lineTo(lx+14,18); ctx.lineTo(lx+26,40); ctx.closePath(); ctx.fill();
+  }
+  // tiled splashback hint
+  ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+  for(let y=80;y<H-150;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  // counter at the bottom (in front, later)
+}
+
+function drawPlayfield(){
+  const t = game.time;
+  // ---- lanes ----
+  for(let i=0;i<LANES;i++){
+    const x=laneX(i);
+    // lane channel
+    ctx.fillStyle = lgrad(x,LANE_TOP,x,HIT_Y+30,[[0,'rgba(0,0,0,.30)'],[1,'rgba(0,0,0,.05)']]);
+    rr(x,LANE_TOP,LANE_W,HIT_Y+34-LANE_TOP,16); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=1; ctx.stroke();
+    // lane header (ingredient label)
+    ctx.fillStyle = LANE_COLOR[i];
+    ctx.globalAlpha=0.85;
+    rr(x+12,LANE_TOP+8,LANE_W-24,24,10); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle='#241405'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    ctx.fillText(LANE_INGREDIENT[i], x+LANE_W/2, LANE_TOP+25);
+  }
+
+  // ---- hit bar ----
+  for(let i=0;i<LANES;i++){
+    const x=laneX(i), cx=x+LANE_W/2;
+    const fl = game.flash[i];
+    // target ring
+    ctx.save();
+    const pulse = 1+0.04*Math.sin(t*6 + i);
+    ctx.translate(cx, HIT_Y);
+    ctx.scale(pulse,pulse);
+    ctx.lineWidth=5;
+    ctx.strokeStyle = fl>0 ? (game.flashResult[i]==='Miss'?'#ff5b5b':tint(LANE_COLOR[i],0.5)) : 'rgba(255,255,255,.55)';
+    ctx.beginPath(); ctx.arc(0,0,30,0,TAU); ctx.stroke();
+    if(fl>0){
+      ctx.globalAlpha=fl/0.22;
+      ctx.fillStyle = game.flashResult[i]==='Miss'?'rgba(255,91,91,.4)':rgrad(0,0,40,[[0,tint(LANE_COLOR[i],0.4)],[1,'rgba(0,0,0,0)']]);
+      ctx.beginPath(); ctx.arc(0,0,40,0,TAU); ctx.fill();
+      // colorblind-safe glyph backup (star/check/X) alongside the color flash
+      const g = RESULT_GLYPH[game.flashResult[i]];
+      if(g){
+        ctx.fillStyle = game.flashResult[i]==='Miss' ? '#ffdede' : '#fff';
+        ctx.font='bold 20px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(g, 0, 1);
+        ctx.textBaseline='alphabetic';
+      }
+    }
+    ctx.restore();
+    // key prompt under bar
+    ctx.fillStyle = input.lanePressed[i]?tint(LANE_COLOR[i],0.4):'rgba(255,255,255,.7)';
+    ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.fillText(LANE_LABEL[i], cx, HIT_Y+58);
+  }
+  // hit bar line
+  ctx.strokeStyle='rgba(255,255,255,.20)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(LANES_X0-10,HIT_Y); ctx.lineTo(laneX(LANES-1)+LANE_W+10,HIT_Y); ctx.stroke();
+
+  // ---- beat markers ----
+  if(game.state==='playing' || game.state==='paused'){
+    const appr = game.approach;
+    for(let k=0;k<game.chart.length;k++){
+      const n=game.chart[k];
+      if(n.judged && (game.songTime - n.t) > POP_FADE) continue; // gone
+      const rel = n.t - game.songTime;       // seconds until it should be hit
+      if(rel > appr) continue;               // not spawned yet
+      const x=laneX(n.lane), cx=x+LANE_W/2;
+      // progress 0 (spawn at top) .. 1 (at hit bar)
+      const prog = 1 - (rel/appr);
+      const y = LANE_TOP+50 + prog*(HIT_Y-(LANE_TOP+50));
+      if(n.judged){
+        // brief pop after hit
+        ctx.globalAlpha=clamp(1-(game.songTime-n.t)/POP_FADE,0,1);
+      }
+      drawDish(cx,y,n.lane,n.result);
+      ctx.globalAlpha=1;
+    }
+  }
+
+  drawChef();
+  drawCounterAndGuests();
+}
+
+function drawDish(cx,cy,lane,result){
+  const col = LANE_COLOR[lane];
+  shadowBlob(cx,cy+18,22,0.22);
+  // plate
+  ctx.fillStyle = lgrad(cx-22,cy-8,cx+22,cy+12,[[0,'#fff'],[1,'#d8cdbb']]);
+  ctx.beginPath(); ctx.ellipse(cx,cy+4,24,10,0,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=1; ctx.stroke();
+  // food mound colored per lane
+  ctx.fillStyle = lgrad(cx-16,cy-14,cx+16,cy+6,[[0,tint(col,0.35)],[1,col]]);
+  ctx.beginPath(); ctx.ellipse(cx,cy-2,16,12,0,0,TAU); ctx.fill();
+  // garnish dots
+  ctx.fillStyle = tint(col,0.55);
+  ctx.beginPath(); ctx.arc(cx-6,cy-6,2.4,0,TAU); ctx.arc(cx+5,cy-4,2,0,TAU); ctx.fill();
+  // steam
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=2;
+  const t=game?game.time:0;
+  for(let s=-1;s<=1;s++){
+    ctx.beginPath();
+    for(let yy=0;yy<14;yy++){
+      const px=cx+s*7+Math.sin(t*4+yy*0.6+s)*3;
+      const py=cy-14-yy*2;
+      if(yy===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawChef(){
+  // chef stands left of the counter, gently bobbing to the beat
+  const t = game.time;
+  const beatPhase = game.state==='playing' ? Math.sin(game.songTime*Math.PI*2*(game.bpm/60)) : Math.sin(t*2);
+  const x=80, y=H-150 + beatPhase*3;
+  ctx.save();
+  shadowBlob(x, H-58, 46, 0.3);
+  // body / apron
+  ctx.fillStyle = lgrad(x-30,y,x+30,y+90,[[0,'#f4ede0'],[1,'#d9cfbd']]);
+  rr(x-30,y,60,96,16); ctx.fill();
+  // apron tie
+  ctx.fillStyle='#c98a4a'; ctx.fillRect(x-30,y+44,60,5);
+  // arms (stir motion)
+  ctx.strokeStyle='#e7ddc9'; ctx.lineWidth=12; ctx.lineCap='round';
+  const stir = Math.sin(t*5)*10;
+  ctx.beginPath(); ctx.moveTo(x-18,y+20); ctx.lineTo(x-34+stir*0.3,y+44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+18,y+20); ctx.lineTo(x+36-stir*0.3,y+40+stir*0.4); ctx.stroke();
+  // head
+  ctx.fillStyle = '#f0c79a';
+  ctx.beginPath(); ctx.arc(x,y-12,22,0,TAU); ctx.fill();
+  // warm smile
+  ctx.strokeStyle='#9a5a32'; ctx.lineWidth=2.4;
+  ctx.beginPath(); ctx.arc(x,y-8,8,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+  ctx.fillStyle='#5a3a22';
+  ctx.beginPath(); ctx.arc(x-8,y-16,2.4,0,TAU); ctx.arc(x+8,y-16,2.4,0,TAU); ctx.fill();
+  // chef hat
+  ctx.fillStyle='#fff';
+  rr(x-20,y-44,40,18,8); ctx.fill();
+  ctx.beginPath(); ctx.arc(x-12,y-44,11,0,TAU); ctx.arc(x,y-50,13,0,TAU); ctx.arc(x+12,y-44,11,0,TAU); ctx.fill();
+  ctx.restore();
+}
+
+function drawCounterAndGuests(){
+  // wooden counter strip across the very bottom
+  ctx.fillStyle = lgrad(0,H-46,0,H,[[0,'#7a4f28'],[1,'#5a3a1c']]);
+  ctx.fillRect(-30,H-46,W+60,76);
+  ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(-30,H-46,W+60,4);
+
+  // order queue: guest cards along the top-right
+  const startX = W-220, startY = 78;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.30)'; rr(startX-12,startY-12,210,150,14); ctx.fill();
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+  ctx.fillText('TONIGHT’S TABLE', startX, startY+2);
+  for(let i=0;i<GUESTS.length;i++){
+    const gy = startY+16+i*24;
+    const done = i<game.served;
+    const cur = i===game.courseIndex;
+    ctx.globalAlpha = done?0.5:1;
+    // seat dot / portrait chip
+    drawGuestChip(startX+8, gy+6, GUESTS[i].face, 8);
+    ctx.fillStyle = done?'#7fd6a6':(cur?'#ffce6b':'#fbf3e4');
+    ctx.font = cur?'bold 12px Arial':'12px Arial';
+    ctx.fillText((done?'✓ ':(cur?'▸ ':'  '))+GUESTS[i].name, startX+22, gy+10);
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+
+// little circular guest portrait
+function drawGuestChip(cx,cy,face,r){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU); ctx.clip();
+  ctx.fillStyle = face==='dog'?'#caa06a':'#f0c79a';
+  ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.fillStyle='#5a3a22';
+  if(face==='dog'){
+    ctx.fillRect(cx-r,cy-r,r*0.7,r*0.9); ctx.fillRect(cx+r*0.3,cy-r,r*0.7,r*0.9); // ears
+    ctx.beginPath(); ctx.arc(cx,cy+r*0.3,1.6,0,TAU); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc(cx-r*0.35,cy-r*0.1,1.4,0,TAU); ctx.arc(cx+r*0.35,cy-r*0.1,1.4,0,TAU); ctx.fill();
+    ctx.strokeStyle='#5a3a22'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy+r*0.1,r*0.4,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+    if(face==='mentor'){ ctx.fillStyle='#bbb'; ctx.fillRect(cx-r,cy-r,r*2,r*0.4); } // grey hair band
+  }
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,TAU); ctx.stroke();
+}
+
+// colorblind-safe glyph per judgement, used in popups and hit-ring flash
+const RESULT_GLYPH = {Perfect:'★', Good:'✓', Miss:'✕'}; // star / check / X
+
+// floating judgement popups
+function drawPopups(){
+  for(const p of game.popups){
+    const x=laneX(p.lane)+LANE_W/2;
+    const y=HIT_Y-50 - (0.9-p.life)*40;
+    ctx.globalAlpha=clamp(p.life/0.6,0,1);
+    ctx.font='bold 22px Arial'; ctx.textAlign='center';
+    ctx.fillStyle = p.result==='Perfect'?'#ffce6b':(p.result==='Good'?'#7fd6a6':'#ff7a7a');
+    const glyph = RESULT_GLYPH[p.result] ? RESULT_GLYPH[p.result]+' ' : '';
+    ctx.fillText(glyph+p.text, x, y);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawHUD(){
+  drawPopups();
+  // top-left score / combo / accuracy
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.30)'; rr(14,12,236,86,12); ctx.fill();
+  ctx.textAlign='left';
+  ctx.fillStyle='#fbf3e4'; ctx.font='bold 26px Arial';
+  ctx.fillText(String(game.score).padStart(6,'0'), 26, 44);
+  ctx.font='12px Arial'; ctx.fillStyle='#cbbfa6';
+  ctx.fillText('SCORE', 26, 58);
+  // combo
+  ctx.fillStyle = game.combo>=10?'#ffce6b':'#fbf3e4';
+  ctx.font='bold 20px Arial';
+  ctx.fillText((game.combo>0?game.combo+'x':'–'), 130, 44);
+  ctx.font='12px Arial'; ctx.fillStyle='#cbbfa6'; ctx.fillText('COMBO', 130, 58);
+  // accuracy
+  const acc = accuracy();
+  ctx.fillStyle='#7fd6a6'; ctx.font='bold 20px Arial';
+  ctx.fillText(acc+'%', 196, 44);
+  ctx.font='12px Arial'; ctx.fillStyle='#cbbfa6'; ctx.fillText('ACCURACY', 184, 58);
+  // misses bar
+  ctx.fillStyle='#cbbfa6'; ctx.font='12px Arial';
+  ctx.fillText('Misses '+game.misses+'/'+MAX_MISS, 26, 82);
+  ctx.fillStyle='rgba(255,255,255,.12)'; rr(112,72,124,10,5); ctx.fill();
+  ctx.fillStyle = game.misses>MAX_MISS*0.7?'#ff7a7a':'#ff9d5c';
+  rr(112,72,124*clamp(game.misses/MAX_MISS,0,1),10,5); ctx.fill();
+  ctx.restore();
+
+  // course banner top-center
+  ctx.save();
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,.30)'; rr(W/2-150,12,300,40,12); ctx.fill();
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 16px Arial';
+  ctx.fillText('Course '+(game.courseIndex+1)+' of '+GUESTS.length+'  —  '+GUESTS[game.courseIndex].name, W/2, 32);
+  ctx.fillStyle='#cbbfa6'; ctx.font='12px Arial';
+  ctx.fillText(GUESTS[game.courseIndex].note, W/2, 47);
+  ctx.restore();
+
+  // count-in
+  if(game.state==='playing' && game.songTime<0){
+    const n = Math.ceil(-game.songTime);
+    ctx.save(); ctx.textAlign='center';
+    ctx.globalAlpha=0.85; ctx.fillStyle='#ffce6b'; ctx.font='bold 90px Arial';
+    ctx.fillText(n>0?n:'', W/2, H/2);
+    ctx.font='18px Arial'; ctx.fillStyle='#fbf3e4';
+    ctx.fillText('Get ready to cook…', W/2, H/2+50);
+    ctx.restore();
+  }
+}
+
+function accuracy(){
+  const j = game.hits.Perfect+game.hits.Good+game.hits.Miss;
+  if(j===0) return 100;
+  return Math.round((game.hits.Perfect + game.hits.Good*0.5)/j*100);
+}
+
+function drawTitle(){
+  const t = game?game.time:0;
+  // title plate
+  ctx.save(); ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,.34)'; rr(W/2-300,90,600,360,22); ctx.fill();
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 56px Arial';
+  ctx.fillText('Calm Kitchen', W/2, 170);
+  ctx.font='20px Arial'; ctx.fillStyle='#fbf3e4';
+  ctx.fillText('Cook to the beat. Plate a feast for your chosen family.', W/2, 206);
+
+  // lane key legend
+  for(let i=0;i<LANES;i++){
+    const bx = W/2-300 + 60 + i*145;
+    ctx.fillStyle=LANE_COLOR[i]; rr(bx,240,120,54,12); ctx.fill();
+    ctx.fillStyle='#241405'; ctx.font='bold 22px Arial';
+    ctx.fillText(LANE_LABEL[i], bx+60, 270);
+    ctx.font='bold 12px Arial';
+    ctx.fillText(LANE_INGREDIENT[i], bx+60, 286);
+  }
+  ctx.fillStyle='#cbbfa6'; ctx.font='15px Arial';
+  ctx.fillText('Tap the lane key the instant its dish reaches the ring.', W/2, 330);
+  ctx.fillText('Perfect & Good build combo. Too many misses and dinner’s burnt.', W/2, 354);
+  ctx.fillStyle='#7fd6a6'; ctx.font='italic 15px Arial';
+  ctx.fillText('Care and feasting are a kind of family — no kids required.', W/2, 386);
+
+  ctx.fillStyle='#cbbfa6'; ctx.font='13px Arial';
+  ctx.fillText('Best score '+best.score+'   ·   Best combo '+best.combo+'x', W/2, 406);
+
+  const blink=0.5+0.5*Math.sin(t*4);
+  ctx.globalAlpha=0.4+0.6*blink;
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 22px Arial';
+  ctx.fillText('Press any lane key (or tap) to start', W/2, 428);
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 48px Arial';
+  ctx.fillText('Paused', W/2, H/2-10);
+  ctx.fillStyle='#fbf3e4'; ctx.font='18px Arial';
+  ctx.fillText('Press P to resume · M to toggle sound (or use the on-screen buttons)', W/2, H/2+30);
+  ctx.restore();
+}
+
+function drawGameOver(){
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.62)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ff9d5c'; ctx.font='bold 46px Arial';
+  ctx.fillText('Dinner got away from you', W/2, 180);
+  ctx.fillStyle='#fbf3e4'; ctx.font='18px Arial';
+  ctx.fillText('No shame — every cook reburns a course now and then.', W/2, 218);
+  drawResultCard();
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 22px Arial';
+  ctx.fillText('Press Enter to cook again', W/2, 470+20);
+  ctx.restore();
+}
+
+function drawWin(){
+  const t=game.time;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  // confetti-ish warm sparks
+  for(let i=0;i<40;i++){
+    const a=i*0.7+t; const x=W/2+Math.cos(a)*(120+i*4); const y=120+((i*23+t*60)%320);
+    ctx.globalAlpha=0.5; ctx.fillStyle=LANE_COLOR[i%4];
+    ctx.fillRect(x,y,4,4);
+  }
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 50px Arial';
+  ctx.fillText(game.endless ? 'After Party' : 'The table is full', W/2, 150);
+  ctx.fillStyle='#fbf3e4'; ctx.font='20px Arial';
+  ctx.fillText('Everyone you chose is fed, laughing, and staying late.', W/2, 188);
+  drawResultCard();
+  ctx.fillStyle='#7fd6a6'; ctx.font='italic 18px Arial';
+  ctx.fillText('"'+game.themeLine+'"', W/2, 464);
+  ctx.fillStyle='#ffce6b'; ctx.font='bold 20px Arial';
+  ctx.fillText('Press Enter to host another night', W/2, 500);
+  if(game.endlessUnlocked){
+    ctx.fillStyle='#7fd6a6'; ctx.font='bold 16px Arial';
+    ctx.fillText('Press F for After Party — endless remix mode', W/2, 522);
+  }
+  ctx.restore();
+}
+
+function drawResultCard(){
+  const x=W/2-190, y=248, w=380, h=190;
+  ctx.fillStyle='rgba(0,0,0,.40)'; rr(x,y,w,h,16); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.textAlign='left';
+  ctx.fillStyle='#fbf3e4'; ctx.font='16px Arial';
+  const rows=[
+    ['Rank', computeRank()],
+    ['Guests served', game.served+' / '+GUESTS.length],
+    ['Score', String(game.score)+' (best '+best.score+')'],
+    ['Best combo', game.bestCombo+'x (best '+best.combo+'x)'],
+    ['Perfect / Good / Miss', game.hits.Perfect+' / '+game.hits.Good+' / '+game.hits.Miss],
+    ['Accuracy', accuracy()+'%']
+  ];
+  rows.forEach((r,i)=>{
+    const ry=y+34+i*26;
+    ctx.fillStyle='#cbbfa6'; ctx.fillText(r[0], x+24, ry);
+    ctx.textAlign='right'; ctx.fillStyle='#ffce6b'; ctx.font='bold 16px Arial';
+    ctx.fillText(r[1], x+w-24, ry);
+    ctx.textAlign='left'; ctx.font='16px Arial';
+  });
+}
+
+function drawVignette(){
+  ctx.save();
+  ctx.fillStyle = rgrad(W/2,H/2,Math.max(W,H)*0.66,[[0,'rgba(0,0,0,0)'],[0.7,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.55)']]);
+  ctx.fillRect(0,0,W,H);
+  // low-life warning: pulsing red vignette once misses cross ~70% of MAX_MISS
+  if(game && game.state==='playing' && game.misses >= MAX_MISS*0.7){
+    const pulse = 0.35+0.35*Math.sin((game.vignettePulse||0)*6);
+    ctx.fillStyle = rgrad(W/2,H/2,Math.max(W,H)*0.62,[[0,'rgba(255,0,0,0)'],[0.72,'rgba(255,0,0,0)'],[1,'rgba(180,20,20,'+(pulse*0.5).toFixed(3)+')']]);
+    ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+}
+
+// =========================================================
+// MAIN LOOP
+// =========================================================
+let _last = 0;
+function frame(ts){
+  if(!_last) _last=ts;
+  let dt=(ts-_last)/1000; _last=ts;
+  if(dt>0.05) dt=0.05;       // clamp big gaps (tab switches)
+  update(dt);
+  draw();
+  if(typeof requestAnimationFrame!=='undefined') requestAnimationFrame(frame);
+}
+
+// boot
+game = freshGame();
+updateControlButtons();
+if(typeof requestAnimationFrame!=='undefined') requestAnimationFrame(frame);
+else { update(0); draw(); }   // headless safety
+
+// =========================================================
+// TEST HOOK (harmless in production)
+// =========================================================
+window.__game = {
+  get game(){return game;},
+  get input(){return input;},
+  get best(){return best;},
+  update, draw, reset, genChart, judgeHit, setState,
+  loadCourse, expireNote, finishCourse, accuracy, computeRank,
+  startEndless, loadBest, saveBest, togglePause,
+  WIN_PERFECT, WIN_GOOD, WIN_MISS, SCORE, MAX_MISS, GUESTS, LANES, BPM_CAP
+};
+</script>
+</body>
+</html>

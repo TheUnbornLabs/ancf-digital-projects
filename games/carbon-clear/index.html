@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Carbon Clear</title>
+<style>
+  :root{--bg:#05080f;--panel:rgba(8,14,24,.86);--line:rgba(255,255,255,.16);--text:#eaf6f0;--accent:#5fe6a8;--accent2:#7fd0ff;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#02040a;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#0a1426,#02040a 72%);}
+  #stage{position:relative;aspect-ratio:960/540;width:100vw;max-height:100vh;max-width:calc(100vh * (960/540));height:auto;margin:auto;}
+  canvas{width:100%;height:100%;display:block;background:#04070f;image-rendering:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:18px;display:flex;gap:10px;pointer-events:auto;align-items:flex-end;}
+  .pad.left{left:18px}.pad.right{right:18px}
+  .btn{width:60px;height:60px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer;}
+  .btn.tall{height:70px}.btn:active{transform:translateY(2px);background:rgba(95,230,168,.28);}
+  @media (min-width:900px){.btn{opacity:.4}.btn:hover{opacity:.95}}
+  .pad.top{top:14px;bottom:auto;}
+  .pad.top.left{left:14px}.pad.top.right{right:14px}
+  .btn.small{width:44px;height:44px;border-radius:12px;font-size:16px;}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage"><canvas id="game" width="960" height="540"></canvas></div></div>
+<div id="touchControls">
+  <div class="pad top left">
+    <button class="btn small" data-act="pause" aria-label="Pause">⏸</button>
+    <button class="btn small" data-act="mute" aria-label="Mute">🔊</button>
+  </div>
+  <div class="pad left">
+    <button class="btn" data-act="left" aria-label="Rotate left">⟲</button>
+    <button class="btn" data-act="right" aria-label="Rotate right">⟳</button>
+  </div>
+  <div class="pad right">
+    <button class="btn" data-act="scoop" aria-label="Scoop">◎</button>
+    <button class="btn tall" data-act="thrust" aria-label="Thrust">▲</button>
+  </div>
+</div>
+<script>
+'use strict';
+// =========================================================
+// Carbon Clear — ANCF 100 HTML Games (#7)
+// Asteroids-style, NON-VIOLENT recycler. Drift physics,
+// break orbital clutter into reusable parts, scoop them,
+// lower the ecological "footprint" meter to balanced.
+// Single self-contained file. Canvas + Web Audio. No deps.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const TAU = Math.PI*2;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+function seeded(n){let s=(n*2654435761)>>>0; s^=0x9e3779b9; return ()=>{s=(s*1664525+1013904223)>>>0; return s/4294967296;};}
+function wrap(v,max){ v%=max; if(v<0) v+=max; return v; }
+// shortest wrapped delta between two points on a torus dimension
+function wdelta(a,b,max){ let d=b-a; if(d>max/2) d-=max; else if(d<-max/2) d+=max; return d; }
+
+// ---------------- Input ----------------
+const input = {left:false,right:false,thrust:false,scoop:false,scoopPressed:false,startPressed:false,pausePressed:false};
+const keyMap = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'thrust',KeyW:'thrust',Space:'thrust'};
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){input.pausePressed=true; return;}
+  if(e.code==='KeyM'){toggleMute(); return;}
+  if(e.code==='Enter'){input.startPressed=true; return;}
+  if(e.code==='KeyJ'||e.code==='ShiftLeft'||e.code==='ShiftRight'){ if(!input.scoop) input.scoopPressed=true; input.scoop=true; return; }
+  const a=keyMap[e.code]; if(!a) return; e.preventDefault(); input[a]=true;
+});
+window.addEventListener('keyup', e=>{
+  if(e.code==='KeyJ'||e.code==='ShiftLeft'||e.code==='ShiftRight'){input.scoop=false; return;}
+  const a=keyMap[e.code]; if(a){e.preventDefault(); input[a]=false;}
+});
+document.querySelectorAll('.btn').forEach(btn=>{
+  const a=btn.dataset.act;
+  const down=e=>{e.preventDefault();
+    if(a==='pause'){ input.pausePressed=true; return; }
+    if(a==='mute'){ toggleMute(); return; }
+    if(a==='thrust') input.thrust=true;
+    else if(a==='scoop'){ if(!input.scoop) input.scoopPressed=true; input.scoop=true; }
+    else input[a]=true;
+    input.startPressed=true; };
+  const up=e=>{e.preventDefault();
+    if(a==='pause'||a==='mute') return;
+    if(a==='thrust') input.thrust=false;
+    else if(a==='scoop') input.scoop=false;
+    else input[a]=false; };
+  btn.addEventListener('touchstart',down,{passive:false}); btn.addEventListener('touchend',up,{passive:false}); btn.addEventListener('touchcancel',up,{passive:false});
+  btn.addEventListener('mousedown',down); btn.addEventListener('mouseup',up); btn.addEventListener('mouseleave',up);
+});
+function toggleMute(){
+  audio.on = !audio.on;
+  const btn = document.querySelector('.btn[data-act="mute"]');
+  if(btn) btn.textContent = audio.on ? '🔊' : '🔇';
+  try{ localStorage.setItem('carbonClear.muted', audio.on ? '0' : '1'); }catch(e){}
+}
+function clearPressed(){ input.scoopPressed=false; input.startPressed=false; input.pausePressed=false; }
+
+// ---------------- Persistence (guarded) ----------------
+const storage = {
+  get(key, fallback){ try{ const v=localStorage.getItem(key); return v===null?fallback:v; }catch(e){ return fallback; } },
+  set(key, val){ try{ localStorage.setItem(key, val); }catch(e){} }
+};
+const best = {
+  score: parseInt(storage.get('carbonClear.bestScore','0'),10) || 0,
+  time: parseFloat(storage.get('carbonClear.bestTime','0')) || 0
+};
+
+// ---------------- Audio (guarded) ----------------
+const audio = {
+  ctx:null, master:null, on: storage.get('carbonClear.muted','0') !== '1',
+  init(){ if(this.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ this.ctx=new AC(); this.master=this.ctx.createGain(); this.master.gain.value=0.5; this.master.connect(this.ctx.destination); }catch(e){ this.ctx=null; } },
+  blip(freq,dur,type,vol){ if(!this.on) return; this.init(); if(!this.ctx) return;
+    try{ const t=this.ctx.currentTime; const o=this.ctx.createOscillator(); const g=this.ctx.createGain();
+      o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.25,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.18));
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t+(dur||0.18)+0.02);
+    }catch(e){} },
+  thrust(){ this.blip(120+Math.random()*40,0.09,'sawtooth',0.07); },
+  split(){ this.blip(220,0.14,'square',0.16); this.blip(160,0.2,'triangle',0.12); },
+  collect(){ this.blip(680,0.1,'sine',0.2); this.blip(920,0.12,'sine',0.14); },
+  win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this.blip(f,0.28,'sine',0.2),i*120)); },
+  fail(){ this.blip(180,0.4,'sawtooth',0.18); },
+  heartbeat(){ this.blip(90,0.09,'sine',0.16); }
+};
+
+// ---------------- Fact cards (Ecology) — even-handed ----------------
+// Each card: a footprint STAT (strongest case) + a counter-NUANCE
+// (strongest objection). Educational, never advisory. Original wording.
+const factCards = [
+  { topic:'Carbon Footprints',
+    stat:'A common estimate puts the average high-income lifestyle near 10+ tonnes of CO2 per person each year — far above the ~2 tonne level often cited as a long-run global balance.',
+    nuance:'Yet "personal footprint" framing was popularised partly by industry messaging; most emissions are locked in by energy grids, transport systems and supply chains an individual cannot choose alone.' },
+  { topic:'Recycling',
+    stat:'Reusing and recycling materials can cut the energy needed versus making them from raw ore — aluminium recycling, for instance, is often cited as saving most of the original smelting energy.',
+    nuance:'But recycling rates for many plastics stay low, some streams are downcycled or exported, and "we can just recycle it" can quietly excuse making more single-use stuff in the first place.' },
+  { topic:'Consumption',
+    stat:'Material use has grown faster than population in recent decades, so rising per-person consumption — not just headcount — drives much of the pressure on land, water and minerals.',
+    nuance:'Consumption also lifts living standards, funds clean-tech, and is wildly unequal: a small share of high consumers accounts for a large share of impact, so blanket guilt misreads the spread.' },
+  { topic:'Offsets',
+    stat:'Carbon offsets let emissions be paired with paid reductions elsewhere — tree planting, methane capture — at a price per tonne, in principle balancing a footprint without changing behaviour.',
+    nuance:'Many offsets have been found to over-claim or fund what would have happened anyway, and treating them as a clean conscience can delay the harder cuts at the source.' },
+  { topic:'Local vs Global',
+    stat:'Shortening supply chains and buying local can trim transport emissions and make a footprint feel tangible and within reach of everyday choices.',
+    nuance:'For many goods, production — not shipping — dominates the footprint, so an efficiently grown distant crop can beat a local hothouse one; "food miles" alone is a poor guide.' },
+  { topic:'Diet',
+    stat:'Studies repeatedly rank animal-heavy diets among the larger dietary footprints per calorie, so shifting some meals plant-ward is one lever individuals genuinely control.',
+    nuance:'Impacts vary hugely by farm and region, some grazing land cannot grow crops, and for many households diet is shaped by cost, culture and access more than by free choice.' },
+  { topic:'Tech & Efficiency',
+    stat:'Efficiency gains — better engines, LED lighting, heat pumps — cut the energy per unit of service, a steady downward push on footprints as technology improves.',
+    nuance:'Savings can rebound: cheaper-to-run things get used more, and "a better gadget will fix it" can crowd out simply needing less, leaving total impact stubborn.' },
+  { topic:'Degrowth vs Green Growth',
+    stat:'Some argue rich economies should deliberately slow material throughput, since decades of growth have not yet decoupled prosperity from rising resource use at the needed pace.',
+    nuance:'Others note several economies have grown GDP while cutting territorial emissions, and that halting growth risks the investment and jobs that clean transitions themselves depend on.' }
+];
+
+// ---------------- Game state ----------------
+const game = {
+  state:'title', time:0, dt:0, level:1, maxLevel:8,
+  seed:1, footprint:100, footprintStart:100, target:40,
+  clutter:[], parts:[], particles:[], stars:[],
+  factCard:null, message:'', resultWin:false, scoopGlow:0, levelTime:0, timeLimit:75,
+  score:0, combo:0, comboBest:0, partsCollected:0, totalPartsCollected:0,
+  shake:0, shakeMag:0, heartbeatTimer:0,
+  levelStats:[], // {level, timeUsed, efficiency}
+  nextFromReset:false
+};
+const MAX_CLUTTER_SPEED = 62;
+
+function addShake(mag){ game.shake = Math.max(game.shake, mag); }
+
+const ship = {
+  x:W/2, y:H/2, vx:0, vy:0, angle:-Math.PI/2,
+  radius:14, thrustAnim:0, scoopRadius:46
+};
+
+const clutterKinds = [
+  {key:'packaging', color:'#c98a4a', label:'Packaging', icon:'P'},
+  {key:'panel', color:'#7f9bd0', label:'Panel scrap', icon:'S'},
+  {key:'fueltank', color:'#cf6f6f', label:'Old tank', icon:'T'},
+  {key:'gadget', color:'#9d8ad0', label:'E-waste', icon:'E'},
+  {key:'crate', color:'#b7b06a', label:'Surplus crate', icon:'C'}
+];
+
+function makePoly(rng, n, baseR){
+  const pts=[];
+  for(let i=0;i<n;i++){ const a=i/n*TAU; const r=baseR*(0.72+rng()*0.5); pts.push({x:Math.cos(a)*r,y:Math.sin(a)*r}); }
+  return pts;
+}
+
+function spawnClutter(rng, size, x, y, vx, vy){
+  const kind = clutterKinds[Math.floor(rng()*clutterKinds.length)];
+  const baseR = size===3?40 : size===2?26 : 16;
+  return {
+    x, y, vx, vy,
+    angle: rng()*TAU, spin:(rng()-0.5)*1.2,
+    size, radius:baseR, kind,
+    poly: makePoly(rng, 7+Math.floor(rng()*4), baseR),
+    glow: rng()
+  };
+}
+
+function clutterMass(c){ return c.size*c.size*1.4; }
+
+function genLevel(level){
+  game.level = level;
+  game.seed = level*1000+7;
+  const rng = seeded(game.seed);
+  game.clutter = [];
+  game.parts = [];
+  game.particles = [];
+  game.levelTime = 0;
+  game.stars = [];
+  const srng = seeded(level*97+3);
+  for(let i=0;i<150;i++){
+    const layer = i<60?0 : i<110?1 : 2;
+    game.stars.push({ x:srng()*W, y:srng()*H, layer, r:0.5+srng()*(layer===2?1.8:1.1), tw:srng()*TAU });
+  }
+  const bigCount = 3 + level;
+  for(let i=0;i<bigCount;i++){
+    let x,y, tries=0;
+    do{ x=rng()*W; y=rng()*H; tries++; }
+    while(tries<20 && Math.hypot(wdelta(x,ship.x,W), wdelta(y,ship.y,H))<140);
+    const sp = Math.min(MAX_CLUTTER_SPEED, 18 + rng()*22 + level*2);
+    const dir = rng()*TAU;
+    game.clutter.push(spawnClutter(rng, 3, x, y, Math.cos(dir)*sp, Math.sin(dir)*sp));
+  }
+  game.footprintStart = 100 + level*10;
+  game.footprint = game.footprintStart;
+  game.target = Math.max(18, 52 - level*4);
+  const footprintDelta = Math.max(1, game.footprintStart - game.target);
+  // scale time budget with the actual amount of footprint that must be cleared
+  // and with clutter density (more/bigger clutter = more time needed)
+  game.timeLimit = Math.max(45, Math.round(footprintDelta * 1.35 + bigCount * 3));
+  game.factCard = factCards[(level-1) % factCards.length];
+  game.scoopGlow = 0;
+  game.combo = 0;
+  game.partsCollected = 0;
+  game.heartbeatTimer = 0;
+}
+
+function reset(){
+  game.level = 1;
+  ship.x=W/2; ship.y=H/2; ship.vx=0; ship.vy=0; ship.angle=-Math.PI/2; ship.thrustAnim=0;
+  game.particles=[]; game.message=''; game.resultWin=false;
+  game.score=0; game.comboBest=0; game.totalPartsCollected=0; game.levelStats=[];
+  genLevel(1);
+  game.state='factCard';
+}
+
+function setState(s){ game.state=s; }
+
+// ---------------- Split & collect ----------------
+function spawnParticles(x,y,color,n){
+  for(let i=0;i<n;i++){ const a=Math.random()*TAU, sp=20+Math.random()*70;
+    game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.5+Math.random()*0.4,age:0,color}); }
+}
+
+function splitClutter(c){
+  const idx = game.clutter.indexOf(c);
+  if(idx>=0) game.clutter.splice(idx,1);
+  audio.split();
+  spawnParticles(c.x, c.y, c.kind.color, 8);
+  if(c.size>=3) addShake(6);
+  game.score += 5 * c.size;
+  const pieces=[];
+  if(c.size>1){
+    const rng = seeded(Math.floor(c.x*7+c.y*13+game.time*1000)%99991 + 1);
+    for(let i=0;i<2;i++){
+      const dir = c.angle + (i===0?0.9:-0.9) + (rng()-0.5);
+      const sp = 26+rng()*26;
+      const p = spawnClutter(rng, c.size-1, c.x, c.y, c.vx+Math.cos(dir)*sp, c.vy+Math.sin(dir)*sp);
+      game.clutter.push(p); pieces.push(p);
+    }
+  }
+  const partN = c.size;
+  const rng2 = seeded(Math.floor(c.x*3+c.y*5+game.time*777)%99991 + 2);
+  for(let i=0;i<partN;i++){
+    const a=rng2()*TAU, sp=10+rng2()*30;
+    game.parts.push({ x:c.x, y:c.y, vx:c.vx*0.4+Math.cos(a)*sp, vy:c.vy*0.4+Math.sin(a)*sp,
+      radius:7, value:1.6+c.size*0.6, color:c.kind.color, icon:c.kind.icon, age:0, spin:(rng2()-0.5)*3, angle:rng2()*TAU });
+  }
+  return pieces;
+}
+
+function collectPart(p){
+  const idx = game.parts.indexOf(p);
+  if(idx>=0) game.parts.splice(idx,1);
+  game.footprint = Math.max(0, game.footprint - p.value);
+  game.scoopGlow = 1;
+  audio.collect();
+  spawnParticles(p.x, p.y, '#9fffcf', 5);
+  game.combo += 1;
+  game.comboBest = Math.max(game.comboBest, game.combo);
+  game.partsCollected += 1;
+  game.totalPartsCollected += 1;
+  game.score += 10 + Math.min(40, game.combo*2);
+  if(game.footprint <= game.target && game.state==='playing'){
+    levelClear();
+  }
+}
+
+function levelClear(){
+  audio.win();
+  addShake(9);
+  const timeLeft = Math.max(0, game.timeLimit - game.levelTime);
+  const timeBonus = Math.round(timeLeft * 4);
+  game.score += 100 + timeBonus;
+  const footprintDelta = Math.max(1, game.footprintStart - game.target);
+  const overshoot = Math.max(0, game.target - game.footprint); // undershoot below target = efficiency
+  const efficiencyPct = clamp(1 - (game.levelTime / game.timeLimit), 0, 1);
+  let rating = 'BRONZE';
+  if(efficiencyPct > 0.66 && overshoot >= 0) rating = 'GOLD';
+  else if(efficiencyPct > 0.33) rating = 'SILVER';
+  game.levelStats.push({ level: game.level, timeUsed: game.levelTime, timeLimit: game.timeLimit, rating, score: game.score });
+  if(game.level >= game.maxLevel){
+    game.resultWin = true;
+    game.state = 'win';
+    if(game.score > best.score){ best.score = game.score; storage.set('carbonClear.bestScore', String(Math.round(best.score))); }
+    if(best.time===0 || game.time < best.time){ best.time = game.time; storage.set('carbonClear.bestTime', String(game.time)); }
+  } else {
+    game.state = 'levelComplete';
+  }
+}
+
+// ---------------- Update ----------------
+const THRUST = 220, ROT = 3.2, DRAG = 0.06, MAXSPD = 320;
+
+function updatePlaying(dt){
+  game.levelTime += dt;
+  if(input.left) ship.angle -= ROT*dt;
+  if(input.right) ship.angle += ROT*dt;
+  if(input.thrust){
+    ship.vx += Math.cos(ship.angle)*THRUST*dt;
+    ship.vy += Math.sin(ship.angle)*THRUST*dt;
+    ship.thrustAnim = Math.min(1, ship.thrustAnim+dt*6);
+    if(Math.random()<0.5) audio.thrust();
+    const ex = ship.x - Math.cos(ship.angle)*ship.radius;
+    const ey = ship.y - Math.sin(ship.angle)*ship.radius;
+    game.particles.push({x:ex,y:ey,vx:-Math.cos(ship.angle)*60+(Math.random()-0.5)*30,vy:-Math.sin(ship.angle)*60+(Math.random()-0.5)*30,life:0.3,age:0,color:'#7fd0ff'});
+  } else {
+    ship.thrustAnim = Math.max(0, ship.thrustAnim-dt*5);
+  }
+  ship.vx -= ship.vx*DRAG*dt;
+  ship.vy -= ship.vy*DRAG*dt;
+  const sp = Math.hypot(ship.vx,ship.vy);
+  if(sp>MAXSPD){ ship.vx*=MAXSPD/sp; ship.vy*=MAXSPD/sp; }
+  ship.x = wrap(ship.x + ship.vx*dt, W);
+  ship.y = wrap(ship.y + ship.vy*dt, H);
+
+  for(const c of game.clutter){
+    c.x = wrap(c.x + c.vx*dt, W);
+    c.y = wrap(c.y + c.vy*dt, H);
+    c.angle += c.spin*dt;
+  }
+  for(const p of game.parts){
+    p.x = wrap(p.x + p.vx*dt, W);
+    p.y = wrap(p.y + p.vy*dt, H);
+    p.vx -= p.vx*0.4*dt; p.vy -= p.vy*0.4*dt;
+    p.angle += p.spin*dt; p.age += dt;
+  }
+  for(let i=game.particles.length-1;i>=0;i--){
+    const pt=game.particles[i]; pt.age+=dt; if(pt.age>=pt.life){game.particles.splice(i,1);continue;}
+    pt.x+=pt.vx*dt; pt.y+=pt.vy*dt;
+  }
+  game.scoopGlow = Math.max(0, game.scoopGlow - dt*2);
+  game.shake = Math.max(0, game.shake - dt*24);
+
+  for(let i=game.clutter.length-1;i>=0;i--){
+    const c=game.clutter[i];
+    const dx=wdelta(ship.x,c.x,W), dy=wdelta(ship.y,c.y,H);
+    if(Math.hypot(dx,dy) < c.radius + ship.radius*0.6){
+      const impactSpeed = Math.hypot(ship.vx,ship.vy);
+      ship.vx += dx*0.6; ship.vy += dy*0.6;
+      // careless full-speed rams cost a small footprint penalty & break streak;
+      // controlled low-speed splits are free
+      if(impactSpeed > 160){
+        game.footprint = Math.min(game.footprintStart, game.footprint + 1.5);
+        game.combo = 0;
+      }
+      splitClutter(c);
+    }
+  }
+  const scoopR = input.scoop ? ship.scoopRadius : ship.radius+10;
+  for(let i=game.parts.length-1;i>=0;i--){
+    const p=game.parts[i];
+    const dx=wdelta(ship.x,p.x,W), dy=wdelta(ship.y,p.y,H);
+    if(Math.hypot(dx,dy) < scoopR + p.radius){
+      collectPart(p);
+    } else if(input.scoop && Math.hypot(dx,dy) < ship.scoopRadius*1.8){
+      const d=Math.hypot(dx,dy)||1;
+      p.vx -= dx/d*120*dt; p.vy -= dy/d*120*dt;
+    }
+  }
+
+  const timeLeft = Math.max(0, game.timeLimit - game.levelTime);
+  if(timeLeft < 10){
+    game.heartbeatTimer -= dt;
+    if(game.heartbeatTimer <= 0){
+      audio.heartbeat();
+      game.heartbeatTimer = Math.max(0.25, 0.35 + timeLeft*0.04);
+    }
+  }
+
+  if(game.levelTime >= game.timeLimit && game.footprint > game.target){
+    audio.fail();
+    game.resultWin = false;
+    game.levelStats.push({ level: game.level, timeUsed: game.levelTime, timeLimit: game.timeLimit, rating:'MISSED', score: game.score });
+    game.state = 'gameover';
+  }
+}
+
+function update(dt){
+  game.dt = dt; game.time += dt;
+  if(input.pausePressed){
+    input.pausePressed=false;
+    if(game.state==='playing') game.state='paused';
+    else if(game.state==='paused') game.state='playing';
+  }
+  if(game.state==='title'){
+    if(input.startPressed){ reset(); }
+    clearPressed(); return;
+  }
+  if(game.state==='factCard'){
+    if(input.startPressed || input.scoopPressed){ game.state='playing'; }
+    clearPressed(); return;
+  }
+  if(game.state==='paused'){ clearPressed(); return; }
+  if(game.state==='levelComplete'){
+    if(input.startPressed || input.scoopPressed){
+      genLevel(game.level+1);
+      ship.x=W/2; ship.y=H/2; ship.vx=0; ship.vy=0;
+      game.state='factCard';
+    }
+    clearPressed(); return;
+  }
+  if(game.state==='gameover' || game.state==='win'){
+    if(input.startPressed || input.scoopPressed){ game.state='title'; }
+    clearPressed(); return;
+  }
+  if(game.state==='playing'){ updatePlaying(dt); }
+  clearPressed();
+}
+
+// ---------------- Render helpers ----------------
+function rgrad(x,y,r0,r1,stops){ const g=ctx.createRadialGradient(x,y,r0,x,y,r1); for(const s of stops) g.addColorStop(s[0],s[1]); return g; }
+function lgrad(x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); for(const s of stops) g.addColorStop(s[0],s[1]); return g; }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function tintHex(hex,f){ const n=parseInt(hex.slice(1),16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255; r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f)); return 'rgb('+r+','+g+','+b+')'; }
+
+function drawBackground(){
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#071124'],[0.5,'#04091a'],[1,'#020611']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=0.5;
+  ctx.fillStyle = rgrad(W*0.28,H*0.34,10,300,[[0,'rgba(40,90,120,0.35)'],[1,'rgba(40,90,120,0)']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = rgrad(W*0.78,H*0.7,10,280,[[0,'rgba(70,50,110,0.3)'],[1,'rgba(70,50,110,0)']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=1;
+  for(const s of game.stars){
+    const tw = 0.55 + 0.45*Math.sin(game.time*1.4 + s.tw);
+    const off = s.layer===0?0 : (s.layer===1? Math.sin(game.time*0.05)*4 : Math.sin(game.time*0.09)*8);
+    ctx.globalAlpha = (s.layer===2?0.95:s.layer===1?0.7:0.45) * tw;
+    ctx.fillStyle = s.layer===2 ? '#dff2ff' : s.layer===1 ? '#bcd6f0' : '#7f9ec0';
+    ctx.beginPath(); ctx.arc(s.x+off, s.y, s.r, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawClutter(c){
+  ctx.save();
+  ctx.translate(c.x, c.y); ctx.rotate(c.angle);
+  const pulse = 0.5+0.5*Math.sin(game.time*2+c.glow*6);
+  ctx.globalAlpha = 0.4+0.3*pulse;
+  ctx.fillStyle = rgrad(0,0,2,c.radius*1.6,[[0,c.kind.color],[1,'rgba(0,0,0,0)']]);
+  ctx.beginPath(); ctx.arc(0,0,c.radius*1.6,0,TAU); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.beginPath();
+  const P=c.poly;
+  ctx.moveTo(P[0].x,P[0].y);
+  for(let i=1;i<P.length;i++) ctx.lineTo(P[i].x,P[i].y);
+  ctx.closePath();
+  ctx.fillStyle = lgrad(-c.radius,-c.radius,c.radius,c.radius,[[0,tintHex(c.kind.color,1.35)],[1,tintHex(c.kind.color,0.6)]]);
+  ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(P[0].x,P[0].y); ctx.moveTo(0,0); ctx.lineTo(P[Math.floor(P.length/2)].x,P[Math.floor(P.length/2)].y); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='bold '+(c.size>=2?12:10)+'px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(c.size>=2 ? '♻ '+c.kind.icon : c.kind.icon, 0, 0);
+  ctx.restore();
+}
+
+function drawPart(p){
+  ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.angle);
+  const pulse=0.6+0.4*Math.sin(game.time*4+p.x);
+  ctx.globalAlpha=0.5*pulse;
+  ctx.fillStyle=rgrad(0,0,1,p.radius*2.2,[[0,'#9fffcf'],[1,'rgba(95,230,168,0)']]);
+  ctx.beginPath(); ctx.arc(0,0,p.radius*2.2,0,TAU); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){ const a=i/6*TAU; const x=Math.cos(a)*p.radius, y=Math.sin(a)*p.radius; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.closePath();
+  ctx.fillStyle=lgrad(-p.radius,-p.radius,p.radius,p.radius,[[0,'#d9fff0'],[1,p.color]]);
+  ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.stroke();
+  if(p.icon){ ctx.fillStyle='rgba(10,20,16,0.65)'; ctx.font='bold 8px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.icon, 0, 0); }
+  ctx.restore();
+}
+
+function drawShip(){
+  ctx.save();
+  ctx.translate(ship.x, ship.y); ctx.rotate(ship.angle);
+  if(input.scoop && game.state==='playing'){
+    ctx.globalAlpha=0.18+0.1*Math.sin(game.time*6);
+    ctx.fillStyle=rgrad(0,0,ship.radius,ship.scoopRadius,[[0,'rgba(95,230,168,0.5)'],[1,'rgba(95,230,168,0)']]);
+    ctx.beginPath(); ctx.arc(0,0,ship.scoopRadius,0,TAU); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  if(ship.thrustAnim>0.02){
+    const fl=ship.thrustAnim*(0.7+0.3*Math.sin(game.time*30));
+    ctx.beginPath();
+    ctx.moveTo(-ship.radius+2,-5); ctx.lineTo(-ship.radius-14*fl,0); ctx.lineTo(-ship.radius+2,5);
+    ctx.closePath();
+    ctx.fillStyle=lgrad(-ship.radius,0,-ship.radius-16,0,[[0,'#fff1b0'],[0.5,'#ffb14d'],[1,'rgba(255,90,40,0)']]);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.moveTo(ship.radius+4,0);
+  ctx.lineTo(-ship.radius+2,-ship.radius+2);
+  ctx.quadraticCurveTo(-ship.radius-2,0,-ship.radius+2,ship.radius-2);
+  ctx.closePath();
+  ctx.fillStyle=lgrad(0,-ship.radius,0,ship.radius,[[0,'#eaf6ff'],[1,'#7f97b6']]);
+  ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#cfe7ff'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(2,0,5,0,TAU);
+  ctx.fillStyle=rgrad(2,0,0,6,[[0,'#bff0ff'],[1,'#2b6c8c']]); ctx.fill();
+  ctx.beginPath(); ctx.arc(ship.radius+2,0,4,0,TAU); ctx.fillStyle='#5fe6a8'; ctx.fill();
+  ctx.fillStyle='#5a6f8c';
+  ctx.beginPath(); ctx.moveTo(-ship.radius+2,-ship.radius+2); ctx.lineTo(-ship.radius-6,-ship.radius-3); ctx.lineTo(-ship.radius+4,-4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-ship.radius+2,ship.radius-2); ctx.lineTo(-ship.radius-6,ship.radius+3); ctx.lineTo(-ship.radius+4,4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles(){
+  for(const pt of game.particles){
+    const a=1-pt.age/pt.life;
+    ctx.globalAlpha=Math.max(0,a);
+    ctx.fillStyle=pt.color;
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,2.2*a+0.6,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+// ---------------- HUD & panels ----------------
+function drawHUD(){
+  // footprint meter (top-left): drops as you tidy toward target
+  const x=20,y=20,w=300,h=20;
+  ctx.fillStyle='rgba(8,14,24,0.7)'; roundRect(x-6,y-6,w+12,h+30,8); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.1)'; roundRect(x,y,w,h,6); ctx.fill();
+  const frac = clamp(game.footprint/game.footprintStart,0,1);
+  const col = game.footprint<=game.target ? '#5fe6a8' : (frac>0.66?'#e87f7f':'#e8c46a');
+  ctx.fillStyle=lgrad(x,y,x+w,y,[[0,tintHex('#5fe6a8',0.7)],[1,col]]);
+  roundRect(x,y,w*frac,h,6); ctx.fill();
+  // target marker
+  const tx = x + w*clamp(game.target/game.footprintStart,0,1);
+  ctx.strokeStyle='#9fffcf'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tx,y-3); ctx.lineTo(tx,y+h+3); ctx.stroke();
+  ctx.fillStyle='#eaf6f0'; ctx.font='bold 12px Arial'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('FOOTPRINT  '+Math.round(game.footprint)+'  →  target '+Math.round(game.target), x, y+h+6);
+  // level + timer (top-right)
+  ctx.textAlign='right';
+  ctx.fillText('LEVEL '+game.level+' / '+game.maxLevel, W-20, 22);
+  const left=Math.max(0, game.timeLimit-game.levelTime);
+  const critical = left<10;
+  const pulse = critical ? (0.6+0.4*Math.sin(game.time*10)) : 1;
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = critical ? '#ff6b5a' : (left<15?'#e8a07f':'#cfe7ff');
+  ctx.font = critical ? 'bold 14px Arial' : '12px Arial';
+  ctx.fillText('TIME '+Math.ceil(left)+'s', W-20, 40);
+  ctx.globalAlpha = 1; ctx.font='12px Arial';
+  // score + combo (top-right, below timer)
+  ctx.fillStyle='#eaf6f0';
+  ctx.fillText('SCORE '+Math.round(game.score), W-20, 58);
+  if(game.combo>1){ ctx.fillStyle='#9fffcf'; ctx.fillText('COMBO x'+game.combo, W-20, 76); }
+  // tip
+  ctx.fillStyle='rgba(234,246,240,0.55)'; ctx.font='12px Arial'; ctx.textAlign='center';
+  ctx.fillText('Touch clutter to break it · hold SCOOP (J) to gather parts · footprint must fall to target', W/2, H-22);
+}
+
+function drawVignette(){
+  ctx.fillStyle=rgrad(W/2,H/2,H*0.35,H*0.85,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,0.55)']]);
+  ctx.fillRect(0,0,W,H);
+  if(game.scoopGlow>0){ ctx.globalAlpha=game.scoopGlow*0.25; ctx.fillStyle=rgrad(ship.x,ship.y,10,260,[[0,'rgba(95,230,168,0.6)'],[1,'rgba(95,230,168,0)']]); ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
+}
+
+function wrapText(text, x, y, maxW, lh){
+  const words=text.split(' '); let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ ctx.fillText(line,x,y); line=w; y+=lh; } else line=t; }
+  if(line) ctx.fillText(line,x,y); return y;
+}
+
+function panel(x,y,w,h){
+  ctx.fillStyle='rgba(6,12,22,0.9)'; roundRect(x,y,w,h,14); ctx.fill();
+  ctx.lineWidth=1.5; ctx.strokeStyle='rgba(95,230,168,0.4)'; roundRect(x,y,w,h,14); ctx.stroke();
+}
+
+function drawTitle(){
+  drawBackground();
+  // floating demo clutter
+  ctx.save();
+  ctx.globalAlpha=0.5;
+  for(let i=0;i<5;i++){ const a=game.time*0.3+i*1.3; ctx.save(); ctx.translate(W*0.5+Math.cos(a)*220, H*0.5+Math.sin(a*0.8)*150); ctx.rotate(a); const k=clutterKinds[i%clutterKinds.length]; ctx.fillStyle=k.color; ctx.beginPath(); ctx.arc(0,0,16,0,TAU); ctx.fill(); ctx.restore(); }
+  ctx.restore();
+  ctx.textAlign='center';
+  ctx.fillStyle='#5fe6a8'; ctx.font='bold 60px Arial';
+  ctx.fillText('CARBON CLEAR', W/2, H*0.34);
+  ctx.fillStyle='#cfe7ff'; ctx.font='18px Arial';
+  ctx.fillText('Pilot a recycler. Break orbital clutter into reusable parts and scoop them.', W/2, H*0.34+38);
+  ctx.fillText('Lower your ecological footprint to balance — no shooting, just tidying.', W/2, H*0.34+62);
+  ctx.fillStyle='#eaf6f0'; ctx.font='15px Arial';
+  ctx.fillText('◀ ▶ / A D rotate · ▲ / W / Space thrust (drift!) · J / Shift scoop · P pause · M mute', W/2, H*0.62);
+  const pulse=0.6+0.4*Math.sin(game.time*3);
+  ctx.globalAlpha=pulse; ctx.fillStyle='#5fe6a8'; ctx.font='bold 22px Arial';
+  ctx.fillText('Press ENTER to begin', W/2, H*0.74); ctx.globalAlpha=1;
+  if(best.score>0){
+    ctx.fillStyle='#ffd089'; ctx.font='bold 14px Arial';
+    ctx.fillText('BEST SCORE '+Math.round(best.score)+(best.time>0?'   ·   FASTEST CLEAR '+Math.round(best.time)+'s':''), W/2, H*0.80);
+  }
+  ctx.fillStyle='rgba(234,246,240,0.45)'; ctx.font='12px Arial';
+  ctx.fillText('Each level pairs a footprint fact with its counter-nuance — debate shown even-handedly.', W/2, H*0.86);
+  drawVignette();
+}
+
+function drawFactCard(){
+  drawBackground();
+  for(const c of game.clutter) drawClutter(c);
+  const fc=game.factCard;
+  const pw=720, ph=320, px=(W-pw)/2, py=(H-ph)/2;
+  panel(px,py,pw,ph);
+  ctx.textAlign='center';
+  ctx.fillStyle='#5fe6a8'; ctx.font='bold 16px Arial';
+  ctx.fillText('LEVEL '+game.level+'  ·  ECOLOGY FACT CARD', W/2, py+30);
+  ctx.fillStyle='#eaf6f0'; ctx.font='bold 26px Arial';
+  ctx.fillText(fc.topic, W/2, py+62);
+  ctx.textAlign='left';
+  // strongest case
+  ctx.fillStyle='#9fffcf'; ctx.font='bold 14px Arial';
+  ctx.fillText('THE CASE', px+34, py+96);
+  ctx.fillStyle='#eaf6f0'; ctx.font='15px Arial';
+  let yy=wrapText(fc.stat, px+34, py+118, pw-68, 20);
+  // counter-nuance
+  ctx.fillStyle='#ffd089'; ctx.font='bold 14px Arial';
+  ctx.fillText('THE COUNTER-NUANCE', px+34, yy+24);
+  ctx.fillStyle='#eaf6f0'; ctx.font='15px Arial';
+  wrapText(fc.nuance, px+34, yy+46, pw-68, 20);
+  ctx.textAlign='center';
+  const pulse=0.6+0.4*Math.sin(game.time*3);
+  ctx.globalAlpha=pulse; ctx.fillStyle='#5fe6a8'; ctx.font='bold 16px Arial';
+  ctx.fillText('Press ENTER / SCOOP to start the cleanup', W/2, py+ph-18); ctx.globalAlpha=1;
+  drawVignette();
+}
+
+function drawPlaying(){
+  drawBackground();
+  for(const c of game.clutter) drawClutter(c);
+  for(const p of game.parts) drawPart(p);
+  drawParticles();
+  drawShip();
+  drawHUD();
+  drawVignette();
+}
+
+function drawModal(title, lines, color){
+  const pw=560, ph=240, px=(W-pw)/2, py=(H-ph)/2;
+  panel(px,py,pw,ph);
+  ctx.textAlign='center';
+  ctx.fillStyle=color||'#5fe6a8'; ctx.font='bold 36px Arial';
+  ctx.fillText(title, W/2, py+70);
+  ctx.fillStyle='#eaf6f0'; ctx.font='16px Arial';
+  let y=py+115; for(const l of lines){ ctx.fillText(l, W/2, y); y+=26; }
+}
+
+function draw(){
+  try{
+    ctx.save();
+    if(game.shake>0.1){
+      const m=game.shake;
+      ctx.translate((Math.random()-0.5)*m, (Math.random()-0.5)*m);
+    }
+    if(game.state==='title'){ drawTitle(); ctx.restore(); return; }
+    if(game.state==='factCard'){ drawFactCard(); ctx.restore(); return; }
+    // playing-style backdrop for the rest
+    drawPlaying();
+    if(game.state==='paused') drawModal('PAUSED', ['Press P to resume.', 'Score '+Math.round(game.score)], '#cfe7ff');
+    if(game.state==='levelComplete') drawModal('LEVEL CLEAR', ['Footprint brought to balance.', 'Score '+Math.round(game.score)+'   Best combo x'+game.comboBest, 'Press ENTER for the next level.'], '#5fe6a8');
+    if(game.state==='gameover') drawModal('TIME UP', ['The footprint stayed above target.', 'Score '+Math.round(game.score)+'   Parts collected '+game.totalPartsCollected, 'Press ENTER to try again.'], '#e8a07f');
+    if(game.state==='win') drawWinSummary();
+    ctx.restore();
+  }catch(e){ try{ctx.restore();}catch(_){} }
+}
+
+function drawWinSummary(){
+  const pw=680, ph=340, px=(W-pw)/2, py=(H-ph)/2;
+  panel(px,py,pw,ph);
+  ctx.textAlign='center';
+  ctx.fillStyle='#5fe6a8'; ctx.font='bold 30px Arial';
+  ctx.fillText('ALL CLEAR', W/2, py+48);
+  ctx.fillStyle='#eaf6f0'; ctx.font='15px Arial';
+  ctx.fillText('Every level balanced across all '+game.maxLevel+' levels. Well tidied!', W/2, py+74);
+  ctx.textAlign='left'; ctx.font='13px Arial';
+  const goldCount = game.levelStats.filter(s=>s.rating==='GOLD').length;
+  const silverCount = game.levelStats.filter(s=>s.rating==='SILVER').length;
+  let y = py+104;
+  ctx.fillStyle='#9fffcf'; ctx.fillText('Total time: '+Math.round(game.time)+'s', px+40, y); y+=20;
+  ctx.fillText('Parts collected: '+game.totalPartsCollected, px+40, y); y+=20;
+  ctx.fillText('Best combo streak: x'+game.comboBest, px+40, y); y+=20;
+  ctx.fillText('Final score: '+Math.round(game.score), px+40, y); y+=20;
+  ctx.fillStyle='#ffd089'; ctx.fillText('Efficiency ratings — Gold: '+goldCount+'   Silver: '+silverCount+'   Bronze: '+(game.levelStats.length-goldCount-silverCount), px+40, y);
+  ctx.textAlign='center'; ctx.fillStyle='#5fe6a8'; ctx.font='bold 15px Arial';
+  ctx.fillText('Press ENTER to return to title', W/2, py+ph-20);
+}
+
+// ---------------- Main loop ----------------
+let last=0;
+function loop(now){
+  const dt = clamp((now-last)/1000, 0, 0.033); last=now;
+  update(dt); draw();
+  requestAnimationFrame(loop);
+}
+genLevel(1);
+game.state='title';
+requestAnimationFrame(loop);
+
+const muteBtn = document.querySelector('.btn[data-act="mute"]');
+if(muteBtn) muteBtn.textContent = audio.on ? '🔊' : '🔇';
+
+window.__game = {
+  get game(){return game;}, get ship(){return ship;}, get input(){return input;}, get audio(){return audio;}, get best(){return best;},
+  update, draw, reset, genLevel, splitClutter, collectPart, setState, toggleMute,
+  get factCards(){return factCards;}
+};
+window.__cfq = window.__game;
+</script>
+</body>
+</html>

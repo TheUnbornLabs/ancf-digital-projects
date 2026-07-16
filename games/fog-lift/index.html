@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Fog Lift</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#030408;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#controls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:10;}
+#controls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(128,192,255,.35);background:rgba(1,2,5,.75);color:#cfe6ff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#controls button:active{background:rgba(80,140,255,.3);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="controls">
+<button id="btnMute" aria-label="Mute">🔊</button>
+<button id="btnPause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Move mouse / touch to sweep away fog and reveal the hidden message</div>
+<script>
+'use strict';
+// Fog Lift (#78)
+// A canvas covered in fog (pressure phrases as particles).
+// Swipe/mouse to clear fog, revealing a positive affirmation.
+// Clear target% to advance. 8 affirmations.
+// Theme: clearing the noise to see your own truth.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const AFFIRMATIONS=['My life is complete as it is.','I define my own fulfilment.','My choices are valid and mine.','Peace is a legitimate goal.','Freedom is its own legacy.','My time belongs to me.','Joy needs no justification.','I am enough, exactly now.'];
+const FOG_LABELS=['conform','obey','settle','regret','impress','hustle','compare','submit','shrink','tick tock'];
+const TARGET_CLEAR=0.70;
+const BRUSH_R=40;
+const TOTAL=8;
+const ROUND_TIME=9000; // ms soft timer, visual only, no fail state
+
+// localStorage persistence (private browsing can throw)
+function loadBest(){try{const v=parseInt(localStorage.getItem('fogLift.best'),10);return Number.isFinite(v)?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem('fogLift.best',String(v));}catch(e){}}
+function loadMuted(){try{return localStorage.getItem('fogLift.muted')==='1';}catch(e){return false;}}
+function saveMuted(v){try{localStorage.setItem('fogLift.muted',v?'1':'0');}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,points:0,best:loadBest(),shakeT:0,advancing:false,muted:loadMuted(),paused:false,roundElapsed:0,sweepArea:0,gallery:[]};
+
+let fogCanvas,fogCtx,fogParticles=[],rng,coverage=0,coverTimer=0,popups=[],particles=[];
+
+function targetFor(r){return Math.min(0.85,TARGET_CLEAR+r*0.02);}
+function brushFor(r){return Math.max(26,BRUSH_R-r*1.5);}
+
+function buildFog(r){
+  rng=seeded(r*6007+5);
+  fogCanvas=document.createElement('canvas');fogCanvas.width=W;fogCanvas.height=H;
+  fogCtx=fogCanvas.getContext('2d');
+  fogCtx.fillStyle='rgba(20,18,40,1)';fogCtx.fillRect(0,0,W,H);
+  for(let i=0;i<200;i++){
+    const x=rng()*W,y=rng()*H;
+    const label=FOG_LABELS[Math.floor(rng()*FOG_LABELS.length)];
+    fogCtx.fillStyle=`rgba(${Math.round(80+rng()*40)},${Math.round(40+rng()*20)},${Math.round(80+rng()*40)},${0.3+rng()*0.4})`;
+    fogCtx.font=`${8+Math.floor(rng()*6)}px Arial`;
+    fogCtx.fillText(label,x,y);
+  }
+  coverage=0;coverTimer=0;game.advancing=false;game.roundElapsed=0;game.sweepArea=0;
+  game.state='playing';
+}
+function resetGame(){game.round=0;game.score=0;game.points=0;game.shakeT=0;game.gallery=[];popups=[];particles=[];buildFog(0);}
+
+function sweep(x,y){
+  if(!fogCtx||game.state!=='playing'||game.paused)return;
+  const r=brushFor(game.round);
+  fogCtx.globalCompositeOperation='destination-out';
+  fogCtx.fillStyle='rgba(0,0,0,1)';
+  fogCtx.beginPath();fogCtx.arc(x,y,r,0,Math.PI*2);fogCtx.fill();
+  fogCtx.globalCompositeOperation='source-over';
+  game.sweepArea+=Math.PI*r*r;
+}
+function calcClear(){if(!fogCtx)return;const d=fogCtx.getImageData(0,0,W,H).data;let cleared=0;for(let i=3;i<d.length;i+=4)if(d[i]<50)cleared++;coverage=cleared/(W*H);}
+
+function spawnBurst(cx,cy){
+  for(let i=0;i<24;i++){
+    const a=Math.random()*Math.PI*2,sp=40+Math.random()*140;
+    particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:600+Math.random()*300,age:0,r:2+Math.random()*3});
+  }
+}
+function spawnPopup(text,cx,cy){popups.push({text,x:cx,y:cy,age:0,life:900});}
+
+function completeRound(){
+  if(game.advancing)return; // guard re-entry
+  game.advancing=true;
+  // efficiency: minimum sweep area to hit target vs used
+  const target=targetFor(game.round);
+  const minArea=target*W*H;
+  const efficiency=clamp(minArea/Math.max(minArea,game.sweepArea),0,1);
+  const timeBonus=Math.round(clamp(1-game.roundElapsed/ROUND_TIME,0,1)*50);
+  const overshootBonus=coverage>=0.9?25:0;
+  const roundPoints=Math.round(100*efficiency)+timeBonus+overshootBonus;
+  game.points+=roundPoints;
+  game.score++;
+  if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+  game.shakeT=260;
+  spawnBurst(W/2,H/2);
+  spawnPopup('+'+roundPoints,W/2,H/2-40);
+  game.gallery.push({text:AFFIRMATIONS[game.round%AFFIRMATIONS.length],time:Math.round(game.roundElapsed),efficiency:Math.round(efficiency*100)});
+  sndWin2();
+  setTimeout(()=>{
+    game.round++;
+    if(game.round>=TOTAL){sndWin();game.state='won';game.advancing=false;}
+    else{buildFog(game.round);}
+  },600);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){particles.splice(i,1);continue;}p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vx*=0.94;p.vy*=0.94;}
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.age+=dt;if(p.age>=p.life)popups.splice(i,1);}
+  if(game.state!=='playing'||game.paused)return;
+  game.roundElapsed=Math.min(ROUND_TIME,game.roundElapsed+dt);
+  coverTimer+=dt;
+  if(coverTimer>750){coverTimer=0;calcClear();}
+  if(coverage>=targetFor(game.round)&&!game.advancing){
+    completeRound();
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndClick=()=>tone(440,0.08,'sine',0.04);
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(10,8,22,1)';ctx.fillRect(0,0,W,H);}
+function drawAffirmation(){const aff=AFFIRMATIONS[game.round%AFFIRMATIONS.length];ctx.fillStyle='rgba(180,220,255,.85)';ctx.font='bold 32px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(aff,W/2,H/2);}
+function drawFog(){if(fogCanvas)ctx.drawImage(fogCanvas,0,0);}
+
+function drawParticles(){
+  for(const p of particles){
+    const t=1-p.age/p.life;
+    ctx.fillStyle=`rgba(150,210,255,${clamp(t,0,1)*0.8})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r*t,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawPopups(){
+  for(const p of popups){
+    const t=1-p.age/p.life;
+    ctx.save();
+    ctx.globalAlpha=clamp(t,0,1);
+    ctx.fillStyle='#9be3a8';
+    ctx.font='bold 26px Arial';
+    ctx.textAlign='center';
+    ctx.fillText(p.text,p.x,p.y-(1-t)*30);
+    ctx.restore();
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Fog Lift — Affirmation '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Sweep fog to reveal your truth  Cleared: '+Math.floor(coverage*100)+'% / '+Math.floor(targetFor(game.round)*100)+'%',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Points '+game.points+'  Best '+game.best,W-96,8);
+  // soft timer bar (visual only)
+  const barW=180,barX=W-96-barW,barY=30;
+  const frac=1-game.roundElapsed/ROUND_TIME;
+  ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(barX,barY,barW,4);
+  ctx.fillStyle='rgba(128,192,255,.6)';ctx.fillRect(barX,barY,barW*clamp(frac,0,1),4);
+  ctx.restore();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function drawCheck(cx,cy,size,color){
+  ctx.save();
+  ctx.strokeStyle=color||'#80c0ff';
+  ctx.lineWidth=size*0.18;
+  ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(cx-size*0.5,cy);
+  ctx.lineTo(cx-size*0.15,cy+size*0.4);
+  ctx.lineTo(cx+size*0.55,cy-size*0.45);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function panelDraw(title,lines,opts){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=opts&&opts.tall?380:300,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';
+  if(opts&&opts.check){
+    ctx.fillText(title,W/2,py+62);
+    drawCheck(W/2+ctx.measureText(title).width/2+28,py+52,26,'#9be3a8');
+  }else{
+    ctx.fillText(title,W/2,py+62);
+  }
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function drawGallery(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=680,ph=460,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.fillStyle='#80c0ff';ctx.font='bold 26px Arial';
+  ctx.fillText('All Revealed',W/2,py+40);
+  drawCheck(W/2+110,py+32,22,'#9be3a8');
+  ctx.font='13px Arial';ctx.textAlign='left';
+  let ly=py+72;
+  for(const g of game.gallery){
+    ctx.fillStyle='rgba(180,220,255,.9)';
+    ctx.fillText('• '+g.text,px+30,ly);
+    ctx.fillStyle='rgba(234,242,246,.5)';
+    ctx.textAlign='right';
+    ctx.fillText((g.time/1000).toFixed(1)+'s  eff '+g.efficiency+'%',px+pw-30,ly);
+    ctx.textAlign='left';
+    ly+=32;
+  }
+  ctx.fillStyle='rgba(234,242,246,.8)';ctx.font='14px Arial';ctx.textAlign='center';
+  ctx.fillText('Points: '+game.points+'   Best rounds: '+game.best,W/2,py+ph-36);
+  ctx.fillText('Click / tap to play again.',W/2,py+ph-14);
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.7)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#80c0ff';ctx.font='bold 28px Arial';ctx.textAlign='center';
+  ctx.fillText('Paused',W/2,H/2-10);
+  ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='14px Arial';
+  ctx.fillText('Tap the pause button to resume.',W/2,H/2+22);
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    let shx=0,shy=0;
+    if(game.shakeT>0){const m=game.shakeT/260;shx=(Math.random()*2-1)*4*m;shy=(Math.random()*2-1)*4*m;ctx.translate(shx,shy);}
+    drawBg();
+    if(game.state!=='title'){drawAffirmation();drawFog();}
+    drawParticles();
+    vignette();
+    if(game.state==='playing'){drawHUD();drawPopups();if(game.paused)drawPauseOverlay();}
+    if(game.state==='title')panelDraw('Fog Lift',['Fog of pressure-words covers a hidden truth.','Sweep with your mouse or finger to clear it.','Reveal the target % to advance.','Target rises each round. 8 affirmations.','','Clear the noise. Your truth is underneath.','','Click / tap to begin.']);
+    else if(game.state==='won')drawGallery();
+    ctx.restore();
+  }catch(e){}
+}
+
+let isDown=false;
+function coordsFromEvent(e,rect){
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches){return[(e.touches[0].clientX-rect.left)*sx,(e.touches[0].clientY-rect.top)*sy];}
+  return[(e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy];
+}
+function onMove(e){
+  if(!isDown)return;
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const[px,py]=coordsFromEvent(e,rect);
+  if(game.state==='playing'&&!game.paused)sweep(px,py);
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  isDown=true;
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.paused)return;
+  const rect=canvas.getBoundingClientRect();
+  const[px,py]=coordsFromEvent(e,rect);
+  if(game.state==='playing')sweep(px,py);
+}
+function onUp(e){isDown=false;}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();onMove(e);},{passive:false});
+canvas.addEventListener('touchend',e=>{onUp(e);},{passive:true});
+
+// pause / mute controls
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+function updateControlLabels(){
+  if(btnMute)btnMute.textContent=game.muted?'🔇':'🔊';
+  if(btnPause)btnPause.textContent=game.paused?'▶':'⏸';
+}
+function toggleMute(){game.muted=!game.muted;saveMuted(game.muted);updateControlLabels();if(!game.muted)sndClick();}
+function togglePause(){if(game.state!=='playing')return;game.paused=!game.paused;updateControlLabels();}
+if(btnMute)btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+if(btnPause)btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();});
+if(btnMute)btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+if(btnPause)btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyM'){toggleMute();}
+  else if(e.code==='KeyP'||e.code==='Space'){togglePause();}
+});
+updateControlLabels();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get coverage(){return coverage;},
+  get popups(){return popups;},
+  get particles(){return particles;},
+  resetGame,buildFog,sweep,calcClear,update,draw,
+  AFFIRMATIONS,FOG_LABELS,TARGET_CLEAR,TOTAL,
+  targetFor,brushFor,toggleMute,togglePause
+};
+</script>
+</body>
+</html>

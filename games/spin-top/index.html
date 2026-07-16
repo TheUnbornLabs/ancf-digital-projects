@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Spin Top</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#04030a;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(160,100,255,.35);background:rgba(10,8,20,.75);color:#eaf2f6;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation;}
+#ctrls button:active{background:rgba(160,100,255,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute" title="Mute (M)">&#128266;</button>
+  <button id="btnPause" aria-label="Pause" title="Pause (P)">&#10074;&#10074;</button>
+</div>
+<div id="hint">Click / tap rapidly to spin up the top &middot; keep it spinning as long as possible &middot; P pause &middot; M mute</div>
+<script>
+'use strict';
+// Spin Top (#95)
+// A spinning top slows due to obligation friction (labelled weights on the disc).
+// Click / tap to add spin energy. Keep the top spinning for the target duration.
+// Obstacles: friction weights appear and stick to the disc, draining spin faster.
+// Click weights to flick them off.
+// Theme: sustained momentum against friction — keep your own spin alive.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const FRICTION_LABELS=['obey','conform','routine','oblige','impress','regret','settle','rush'];
+const TIERS=[
+  {key:'30',label:'30s',duration:30000},
+  {key:'45',label:'45s Endurance',duration:45000},
+  {key:'60',label:'60s Endurance',duration:60000}
+];
+const MAX_SPIN=8;
+const MIN_SPIN=0;
+const SPIN_BOOST=1.5;
+const BASE_DECAY=0.4;
+const MAX_WEIGHTS=6;
+const GRACE_MS=650; // brief relief window after a flick before next spawn
+const HIT_R=26; // touch-friendly hit radius (canvas px)
+const game={state:'title',time:0,elapsed:0,score:0,round:0,best:{},tierIndex:0,unlocked:1,muted:false,paused:false};
+let spin=0,angle=0,weights=[],weightTimer=0,rng,survived=0;
+let combo=0,comboTimer=0,bestCombo=0,cleanSpinMs=0,flicks=0,misses=0,gustAt=0,gustDone=false;
+let particles=[],popups=[],shake=0,warnPulse=0;
+
+// ---------- persistence ----------
+const LS_BEST='cfq_spin_top_best_v1';
+const LS_UNLOCK='cfq_spin_top_unlocked_v1';
+function loadBest(){
+  try{
+    const raw=localStorage.getItem(LS_BEST);
+    if(raw){const obj=JSON.parse(raw);if(obj&&typeof obj==='object')game.best=obj;}
+  }catch(e){}
+  try{
+    const u=localStorage.getItem(LS_UNLOCK);
+    if(u){const n=parseInt(u,10);if(!isNaN(n))game.unlocked=clamp(n,1,TIERS.length);}
+  }catch(e){}
+}
+function saveBest(){
+  try{localStorage.setItem(LS_BEST,JSON.stringify(game.best));}catch(e){}
+}
+function saveUnlock(){
+  try{localStorage.setItem(LS_UNLOCK,String(game.unlocked));}catch(e){}
+}
+loadBest();
+
+function currentTier(){return TIERS[game.tierIndex];}
+function bestFor(key){return game.best[key]||0;}
+
+function resetGame(){
+  spin=4;angle=0;weights=[];weightTimer=0;game.elapsed=0;survived=0;rng=seeded(77);
+  combo=0;comboTimer=0;bestCombo=0;cleanSpinMs=0;flicks=0;misses=0;
+  particles=[];popups=[];shake=0;warnPulse=0;
+  gustAt=14000+rng()*4000;gustDone=false;
+  game.score=0;game.round=(game.round||0)+1;
+  game.state='playing';game.paused=false;
+}
+function addSpin(){spin=Math.min(MAX_SPIN,spin+SPIN_BOOST);sndSpin();}
+function addWeight(){
+  const r=60+rng()*40;const a=rng()*Math.PI*2;
+  // taper per-weight decay down as more weights stack, to prevent runaway spirals
+  const count=weights.length;
+  const taper=Math.max(0.4,1-count*0.12);
+  const decay=(0.08+rng()*0.06)*taper;
+  weights.push({r,a:a,label:FRICTION_LABELS[Math.floor(rng()*FRICTION_LABELS.length)],decay,spawnT:game.elapsed});
+}
+function spawnParticles(x,y,col){
+  for(let i=0;i<10;i++){
+    const ang=Math.random()*Math.PI*2,sp=40+Math.random()*90;
+    particles.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,life:0.5+Math.random()*0.3,age:0,col:col||'200,120,120'});
+  }
+}
+function spawnPopup(x,y,text,col){popups.push({x,y,text,age:0,life:0.8,col:col||'255,220,120'});}
+function flickWeight(px,py){
+  for(let i=weights.length-1;i>=0;i--){
+    const w=weights[i];
+    const wx=CX+Math.cos(angle+w.a)*w.r,wy=CY+Math.sin(angle+w.a)*w.r;
+    if(Math.hypot(px-wx,py-wy)<HIT_R){
+      weights.splice(i,1);
+      sndFlick();
+      spawnParticles(wx,wy,'255,150,150');
+      flicks++;
+      comboTimer=1200; // ms window to keep combo alive
+      combo++;
+      if(combo>bestCombo)bestCombo=combo;
+      const bonus=Math.min(5,combo)*0.15;
+      if(bonus>0){spin=Math.min(MAX_SPIN,spin+bonus);}
+      spawnPopup(wx,wy,(combo>1?'x'+combo+' combo!':'flicked!'),'255,200,120');
+      weightTimer=-GRACE_MS; // grace period before next weight can spawn
+      return true;
+    }
+  }
+  return false;
+}
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.state!=='playing'||game.paused)return;
+  game.elapsed+=dt;
+  const tier=currentTier();
+
+  // combo timer decay
+  if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0){combo=0;comboTimer=0;}}
+
+  // clean-spin streak (no weights on disc)
+  if(weights.length===0){cleanSpinMs+=dt;}else{cleanSpinMs=0;}
+  if(cleanSpinMs>0&&Math.floor(cleanSpinMs/4000)>Math.floor((cleanSpinMs-dt)/4000)){
+    spin=Math.min(MAX_SPIN,spin+0.5);
+    spawnPopup(CX,CY-120,'clean spin bonus!','140,220,255');
+  }
+
+  // spin decay
+  const totalDecay=BASE_DECAY+weights.reduce((sum,w)=>sum+w.decay,0);
+  spin=Math.max(MIN_SPIN,spin-totalDecay*s);
+  angle+=spin*s;
+
+  // gust event: burst of weights near mid-run as a mini boss-wave
+  if(!gustDone&&game.elapsed>=gustAt){
+    gustDone=true;
+    const n=2+Math.floor(rng()*2);
+    for(let i=0;i<n&&weights.length<MAX_WEIGHTS;i++)addWeight();
+    spawnPopup(CX,CY-150,'gust of obligation!','255,140,140');
+    shake=Math.max(shake,10);
+  }
+
+  // spawn weights (clamped interval, grace period after a flick)
+  weightTimer+=dt;
+  const wi=Math.max(4000,8000-game.elapsed/1000*200);
+  if(weightTimer>=wi&&weights.length<MAX_WEIGHTS){weightTimer=0;addWeight();}
+
+  // particles / popups / shake decay
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=s;p.x+=p.vx*s;p.y+=p.vy*s;p.vy+=200*s;if(p.age>=p.life)particles.splice(i,1);}
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.age+=s;p.y-=30*s;if(p.age>=p.life)popups.splice(i,1);}
+  if(shake>0)shake=Math.max(0,shake-shake*s*4-1*s);
+  warnPulse+=dt;
+
+  // lose if spin stops
+  if(spin<=0){
+    sndLose();game.state='gameover';
+    if(game.elapsed>bestFor(tier.key)){game.best[tier.key]=game.elapsed;saveBest();}
+    return;
+  }
+  if(game.elapsed>=tier.duration){
+    sndWin();game.state='won';survived=game.elapsed;
+    if(game.elapsed>bestFor(tier.key)){game.best[tier.key]=game.elapsed;saveBest();}
+    if(game.tierIndex===game.unlocked-1&&game.unlocked<TIERS.length){game.unlocked++;saveUnlock();}
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndSpin=()=>tone(400+spin*30,0.06,'sine',0.04);
+const sndFlick=()=>tone(300,0.08,'sawtooth',0.04);
+const sndMiss=()=>tone(120,0.05,'square',0.02);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04030a'],[1,'#030208']]);ctx.fillRect(0,0,W,H);}
+function drawTop(){const tr=100;// shadow
+ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(CX,CY+tr+4,tr*0.8,12,0,0,Math.PI*2);ctx.fill();// spinning disc
+ctx.save();ctx.translate(CX,CY);ctx.rotate(angle);// colour segments
+const seg=6;for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2;const h=(i/seg*360+game.time*0.02)%360;ctx.fillStyle=`hsla(${Math.floor(h)},60%,45%,0.7)`;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,tr,a,a+Math.PI*2/seg);ctx.closePath();ctx.fill();}// rim
+ctx.strokeStyle='rgba(200,200,255,.4)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,tr,0,Math.PI*2);ctx.stroke();// centre dot
+ctx.fillStyle='rgba(220,240,255,.8)';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.restore();// tip
+ctx.fillStyle='rgba(180,180,220,.6)';ctx.beginPath();ctx.moveTo(CX-4,CY+tr);ctx.lineTo(CX+4,CY+tr);ctx.lineTo(CX,CY+tr+24);ctx.closePath();ctx.fill();}
+function drawWeights(){
+  for(const w of weights){
+    const wx=CX+Math.cos(angle+w.a)*w.r,wy=CY+Math.sin(angle+w.a)*w.r;
+    const age=game.elapsed-w.spawnT;
+    const pulse=age<400?1+Math.sin(age*0.03)*0.15:1;
+    ctx.save();
+    ctx.translate(wx,wy);ctx.scale(pulse,pulse);
+    ctx.fillStyle='rgba(160,60,60,.7)';ctx.strokeStyle='rgba(220,80,80,.5)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();ctx.stroke();
+    // accessibility shape marker (not relying on colour alone)
+    ctx.strokeStyle='rgba(255,220,220,.9)';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(-5,-5);ctx.lineTo(5,5);ctx.moveTo(5,-5);ctx.lineTo(-5,5);ctx.stroke();
+    ctx.fillStyle='rgba(255,180,180,.8)';ctx.font='bold 7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(w.label,0,16);
+    ctx.restore();
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    const t=1-p.age/p.life;
+    ctx.fillStyle=`rgba(${p.col},${Math.max(0,t)})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,2.5*t+0.5,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawPopups(){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const p of popups){
+    const t=1-p.age/p.life;
+    ctx.fillStyle=`rgba(${p.col},${Math.max(0,t)})`;
+    ctx.font='bold 13px Arial';
+    ctx.fillText(p.text,p.x,p.y-p.age*20);
+  }
+}
+function drawSpinMeter(){
+  const bx=W-180,by=H-60,bw=160,bh=20;const prog=spin/MAX_SPIN;
+  const low=spin<=2;
+  const pulse=low?0.55+0.45*Math.sin(warnPulse*0.012):1;
+  const col=!low?`rgba(80,200,120,0.8)`:`rgba(220,80,80,${pulse})`;
+  ctx.fillStyle='rgba(20,20,40,.6)';rr(bx,by,bw,bh,10);ctx.fill();
+  ctx.fillStyle=col;rr(bx,by,Math.max(4,bw*prog),bh,10);ctx.fill();
+  if(low){ctx.strokeStyle=`rgba(255,120,120,${pulse})`;ctx.lineWidth=2;rr(bx-2,by-2,bw+4,bh+4,12);ctx.stroke();}
+  ctx.strokeStyle='rgba(80,120,200,.4)';ctx.lineWidth=1;rr(bx,by,bw,bh,10);ctx.stroke();
+  ctx.fillStyle='rgba(234,242,246,.6)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(low?'Spin ⚠':'Spin',bx+bw/2,by+bh/2);
+}
+function drawHUD(){
+  const tier=currentTier();
+  const sec=Math.max(0,Math.ceil((tier.duration-game.elapsed)/1000));
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#c0a0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Spin Top · '+tier.label,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const acc=flicks+misses>0?Math.round(flicks/(flicks+misses)*100):100;
+  ctx.fillText('Time: '+sec+'s  Weights: '+weights.length+'  Combo: '+combo+'  Acc: '+acc+'%',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Best: '+Math.floor(bestFor(tier.key)/100)/10+'s',W-18,8);
+  ctx.fillText('Best combo: '+bestCombo,W-18,24);
+  ctx.restore();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=360,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(160,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#c0a0ff';ctx.font='bold 30px Arial';ctx.fillText(title,W/2,py+56);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+94;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}ctx.restore();}
+function drawPauseOverlay(){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.7)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#c0a0ff';ctx.font='bold 30px Arial';
+  ctx.fillText('Paused',W/2,H/2-10);
+  ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='14px Arial';
+  ctx.fillText('Press P or tap the pause button to resume',W/2,H/2+26);
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    if(shake>0){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);}
+    drawBg();
+    if(game.state!=='title'){drawTop();drawWeights();drawParticles();drawPopups();drawSpinMeter();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='playing'&&game.paused)drawPauseOverlay();
+    if(game.state==='title'){
+      const tier=currentTier();
+      panelDraw('Spin Top',[
+        'Click / tap rapidly to keep the top spinning.',
+        'Obligation weights appear — click them to flick off.',
+        'Chain flicks for a combo bonus; keep the disc clean for a streak bonus.',
+        'Survive '+tier.label+' without the spin stopping.',
+        '',
+        'Momentum is intentional. Keep your own spin.',
+        '',
+        'Click / tap to begin  ·  ← → to change mode ('+game.unlocked+'/'+TIERS.length+' unlocked)'
+      ]);
+    }
+    else if(game.state==='won'){
+      const tier=currentTier();
+      const acc=flicks+misses>0?Math.round(flicks/(flicks+misses)*100):100;
+      panelDraw('Still Spinning! ✓',[
+        tier.label+' of sustained momentum!',
+        'Best: '+Math.floor(bestFor(tier.key)/100)/10+'s   Best combo: '+bestCombo+'   Accuracy: '+acc+'%',
+        '',
+        'Friction resisted. Motion maintained.',
+        '',
+        'Click / tap to play again  ·  ← → to change mode'
+      ]);
+    }
+    else if(game.state==='gameover'){
+      const tier=currentTier();
+      const acc=flicks+misses>0?Math.round(flicks/(flicks+misses)*100):100;
+      panelDraw('Top Stopped',[
+        'Survived: '+Math.floor(game.elapsed/100)/10+'s of '+tier.label,
+        'Best: '+Math.floor(bestFor(tier.key)/100)/10+'s   Best combo: '+bestCombo+'   Accuracy: '+acc+'%',
+        '',
+        'Friction won — click faster next time.',
+        '',
+        'Click / tap to retry  ·  ← → to change mode'
+      ]);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+function fitCanvas(){
+  // letterbox to preserve aspect ratio instead of stretching, so hit-circles stay circular
+  const vw=window.innerWidth||960,vh=window.innerHeight||540;
+  const scale=Math.min(vw/W,vh/H);
+  canvas.style.width=Math.round(W*scale)+'px';
+  canvas.style.height=Math.round(H*scale)+'px';
+}
+window.addEventListener('resize',fitCanvas);
+fitCanvas();
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='playing'){
+    if(game.paused)return;
+    if(!flickWeight(px,py)){addSpin();misses++;sndMiss();}
+  }
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  btnPause.textContent=game.paused?'▶':'❙❙';
+  btnPause.setAttribute('aria-label',game.paused?'Resume':'Pause');
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  btnMute.textContent=game.muted?'🔇':'🔊';
+  btnMute.setAttribute('aria-label',game.muted?'Unmute':'Mute');
+}
+function changeTier(delta){
+  if(game.state==='playing'&&!game.paused)return;
+  let idx=game.tierIndex+delta;
+  idx=clamp(idx,0,Math.min(TIERS.length,game.unlocked)-1);
+  game.tierIndex=idx;
+}
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',e=>{e.preventDefault();togglePause();});
+btnMute.addEventListener('click',e=>{e.preventDefault();toggleMute();});
+[btnPause,btnMute].forEach(b=>b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();b.click();},{passive:false}));
+
+const keys={};
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key==='p'||e.key==='P')togglePause();
+  else if(e.key==='m'||e.key==='M')toggleMute();
+  else if(e.key==='ArrowRight')changeTier(1);
+  else if(e.key==='ArrowLeft')changeTier(-1);
+});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&game.state==='playing')game.paused=true;
+});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={
+  get game(){return game;},
+  get spin(){return spin;},
+  get angle(){return angle;},
+  get weights(){return weights;},
+  get combo(){return combo;},
+  get bestCombo(){return bestCombo;},
+  get keys(){return keys;},
+  resetGame,addSpin,addWeight,flickWeight,update,draw,togglePause,toggleMute,changeTier,
+  MAX_SPIN,BASE_DECAY,TIERS,MAX_WEIGHTS,GRACE_MS
+};
+</script>
+</body>
+</html>

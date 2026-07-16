@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Timeline Sort</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#060a08;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#060a08;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{touch-action:manipulation;width:40px;height:40px;border-radius:10px;border:1.5px solid rgba(80,220,140,.35);background:rgba(3,10,6,.75);color:#8affd2;font-size:16px;line-height:1;cursor:pointer;}
+#ctrls button:active{background:rgba(80,220,140,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" title="Mute">&#128266;</button>
+  <button id="btnPause" title="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Drag or tap cards, tap a slot to place &middot; P pause &middot; M mute &middot; R retry round</div>
+<script>
+'use strict';
+// Timeline Sort (#45)
+// Drag labelled life-event cards onto an ordered timeline.
+// 5 cards per round, placed at the right chronological position.
+// 6 rounds.
+// Theme: your life timeline belongs to you — no script needed.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+// Each set: ordered events (order = correct left-to-right sequence)
+const SETS=[
+  {title:'Learning Path',events:['curious child','first question','deep study','own insight','teaching others']},
+  {title:'Boundary Journey',events:['people pleasing','discomfort felt','boundary spoken','pushback handled','inner peace']},
+  {title:'Creative Flow',events:['blank canvas','first stroke','messy middle','refining','creation complete']},
+  {title:'Self Discovery',events:['following others','confusion starts','questioning norms','own values found','living aligned']},
+  {title:'Transition',events:['old life stable','seeds of doubt','leap of faith','rebuilding self','thriving anew']},
+  {title:'Quiet Revolution',events:['social pressure','inner resistance','gentle "no"','community found','abundant joy']},
+];
+const CARD_W=140,CARD_H=60;
+const TIMELINE_Y=H/2+40,TIMELINE_X1=80,TIMELINE_X2=W-80;
+const SLOTS=5;
+const MAX_ROUNDS=SETS.length;
+const MISS_LIMIT=8; // total wrong placements allowed across the run before game-over
+const LS_KEY='timelineSort_v1';
+function loadLS(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return{best:0,muted:false};const o=JSON.parse(raw);return{best:Math.max(0,o.best|0),muted:!!o.muted};}catch(e){return{best:0,muted:false};}}
+function saveLS(){try{localStorage.setItem(LS_KEY,JSON.stringify({best:game.best,muted:game.muted}));}catch(e){}}
+const saved=loadLS();
+const game={state:'title',time:0,round:0,score:0,best:saved.best,moves:0,shakeT:0,muted:saved.muted,misses:0,streak:0,bestStreak:0,roundResults:[],selected:null,popups:[],particles:[]};
+let cards,slots,dragging=null,dragOx=0,dragOy=0,rng;
+// slot width divisor uses (SLOTS-0.5) so the last dot sits inboard of TIMELINE_X2 with a small
+// margin at default SLOTS=5; if SLOTS changes, clamp so the final slot never exceeds TIMELINE_X2.
+function slotW(){const raw=(TIMELINE_X2-TIMELINE_X1)/Math.max(1,SLOTS-0.5);const maxW=SLOTS>1?(TIMELINE_X2-TIMELINE_X1)/(SLOTS-1):raw;return Math.min(raw,maxW);}
+function buildRound(rnd){rng=seeded(rnd*5003+7);const s=SETS[(rnd-1)%SETS.length];// shuffle cards
+const order=s.events.map((e,i)=>({label:e,correct:i}));const shuffled=[...order].sort(()=>rng()-.5);const sw=slotW();slots=Array.from({length:SLOTS},(_, i)=>({x:TIMELINE_X1+i*sw,y:TIMELINE_Y,card:null,correct:i}));// scatter cards above timeline
+cards=shuffled.map((c,i)=>({...c,x:80+i*(CARD_W+18),y:100,placed:false,slotIdx:-1,justChecked:false}));game.moves=0;game.selected=null;if(game.state!=='paused')game.state='playing';}
+function resetGame(){game.round=1;game.score=0;game.shakeT=0;game.misses=0;game.streak=0;game.roundResults=[];game.popups=[];game.particles=[];buildRound(1);}
+// strictly-nearest slot pick, radius tied to half slot width so adjacent dots never overlap-catch
+function nearestSlot(cx,cy){const sw=slotW();// difficulty curve: catch radius tightens slightly in later rounds (min 70% of base)
+const diffMul=Math.max(0.7,1-((game.round||1)-1)*0.06);const radius=Math.min(sw/2,CARD_W/2)*diffMul;let best=null,bestD=Infinity;for(let i=0;i<slots.length;i++){const s=slots[i];const d=Math.hypot(cx-s.x,cy-TIMELINE_Y);if(d<bestD){bestD=d;best=i;}}return bestD<radius?best:null;}
+function spawnPopup(x,y,text,color){game.popups.push({x,y,text,color,t:0,life:900});}
+function spawnParticles(x,y,color,n){for(let i=0;i<(n||10);i++){const a=rng?rng()*Math.PI*2:Math.random()*Math.PI*2;const sp=40+((rng?rng():Math.random())*80);game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:500,color});}}
+function snapToSlot(card,si){if(slots[si].card===card)return;// no-op same-slot drop
+if(slots[si].card&&slots[si].card!==card){const old=slots[si].card;old.placed=false;old.slotIdx=-1;old.x=card.x;old.y=card.y;}if(card.slotIdx>=0)slots[card.slotIdx].card=null;slots[si].card=card;card.placed=true;card.slotIdx=si;card.x=slots[si].x-CARD_W/2;card.y=TIMELINE_Y-CARD_H-10;game.moves++;const cx=slots[si].x,cy=TIMELINE_Y-CARD_H/2-10;if(card.slotIdx===card.correct){sndSnap();spawnPopup(cx,cy,'+10','#8affd2');spawnParticles(cx,cy,'128,220,170',10);}else{sndWrong();game.misses++;game.shakeT=180;spawnPopup(cx,cy,'wrong slot','#ff8a8a');}checkDone();}
+function checkDone(){if(!cards.every(c=>c.placed))return;// check order
+let correct=0;for(const c of cards){if(c.slotIdx===c.correct)correct++;}const perfect=correct===cards.length;game.score+=correct*10;if(perfect){game.streak++;if(game.streak>1)game.score+=(game.streak-1)*15;// streak bonus
+if(game.streak>game.bestStreak)game.bestStreak=game.streak;}else{game.streak=0;}if(game.score>game.best){game.best=game.score;saveLS();}game.roundResults.push({round:game.round,correct,total:cards.length});if(perfect)sndWin();else sndPartial();if(game.misses>=MISS_LIMIT){game.state='gameover';return;}if(game.round>=MAX_ROUNDS){game.state='won';}else{game.round++;setTimeout(()=>{if(game.state==='playing')buildRound(game.round);},900);}}
+function retryRound(){if(game.state!=='playing')return;game.roundResults.pop();buildRound(game.round);}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndSnap=()=>tone(500,0.08,'sine',0.05);
+const sndWrong=()=>tone(180,0.16,'sawtooth',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndPartial=()=>{[440,392].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'triangle',0.06),i*90));};
+function setMuted(m){game.muted=m;saveLS();}
+function togglePause(){if(game.state==='playing')game.state='paused';else if(game.state==='paused')game.state='playing';}
+function update(dt){dt=clamp(dt,0,48);if(game.state==='paused')return;game.time+=dt;if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);for(let i=game.popups.length-1;i>=0;i--){const p=game.popups[i];p.t+=dt;p.y-=dt*0.03;if(p.t>=p.life)game.popups.splice(i,1);}for(let i=game.particles.length-1;i>=0;i--){const p=game.particles[i];p.t+=dt;const k=dt/1000;p.x+=p.vx*k;p.y+=p.vy*k;p.vy+=k*260;if(p.t>=p.life)game.particles.splice(i,1);}}
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#060a08'],[1,'#030604']]);ctx.fillRect(0,0,W,H);}
+function drawTimeline(){// line
+ctx.strokeStyle='rgba(80,200,140,.5)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(TIMELINE_X1,TIMELINE_Y);ctx.lineTo(TIMELINE_X2,TIMELINE_Y);ctx.stroke();// arrow
+ctx.fillStyle='rgba(80,200,140,.6)';ctx.beginPath();ctx.moveTo(TIMELINE_X2,TIMELINE_Y);ctx.lineTo(TIMELINE_X2-16,TIMELINE_Y-8);ctx.lineTo(TIMELINE_X2-16,TIMELINE_Y+8);ctx.closePath();ctx.fill();// slots
+for(const s of slots){const sel=game.selected&&!game.selected.placed&&s.card===null;ctx.fillStyle=sel?'rgba(80,200,140,.28)':'rgba(60,120,80,.2)';rr(s.x-CARD_W/2,s.y-CARD_H-14,CARD_W,CARD_H,8);ctx.fill();ctx.strokeStyle=sel?'rgba(140,255,200,.7)':'rgba(80,180,120,.25)';ctx.lineWidth=sel?2:1.5;rr(s.x-CARD_W/2,s.y-CARD_H-14,CARD_W,CARD_H,8);ctx.stroke();// dot on timeline
+ctx.fillStyle='rgba(100,220,160,.6)';ctx.beginPath();ctx.arc(s.x,s.y,6,0,Math.PI*2);ctx.fill();}}
+function drawGlyph(cx,cy,ok){ctx.save();ctx.strokeStyle=ok?'#8affd2':'#ff8a8a';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();if(ok){ctx.moveTo(cx-6,cy);ctx.lineTo(cx-1.5,cy+5);ctx.lineTo(cx+7,cy-6);}else{ctx.moveTo(cx-6,cy-6);ctx.lineTo(cx+6,cy+6);ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx-6,cy+6);}ctx.stroke();ctx.restore();}
+function drawCard(c){const lit=c===dragging;const sel=c===game.selected;ctx.globalAlpha=lit?0.88:1;ctx.shadowColor=sel?'rgba(140,255,200,.7)':'rgba(80,200,140,.4)';ctx.shadowBlur=lit?18:(sel?14:6);const placed=c.placed;const isCorrect=placed&&c.slotIdx===c.correct;const bg=isCorrect?'rgba(40,100,60,.9)':placed?'rgba(90,35,35,.85)':'rgba(18,30,22,.88)';ctx.fillStyle=bg;rr(c.x,c.y,CARD_W,CARD_H,8);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=isCorrect?'rgba(80,220,140,.6)':placed?'rgba(220,100,100,.55)':sel?'rgba(140,255,200,.8)':'rgba(60,120,80,.4)';ctx.lineWidth=sel?2.5:1.5;rr(c.x,c.y,CARD_W,CARD_H,8);ctx.stroke();ctx.fillStyle=isCorrect?'rgba(200,255,220,.9)':placed?'rgba(255,210,210,.9)':'rgba(180,220,200,.8)';const fz=c.label.length>14?9:11;ctx.font=`bold ${fz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.label,c.x+CARD_W/2,c.y+CARD_H/2);if(placed)drawGlyph(c.x+CARD_W-14,c.y+14,isCorrect);ctx.globalAlpha=1;}
+function drawFx(){for(const p of game.particles){const a=1-p.t/p.life;ctx.fillStyle=`rgba(${p.color},${Math.max(0,a)})`;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();}for(const p of game.popups){const a=1-p.t/p.life;ctx.save();ctx.globalAlpha=Math.max(0,a);ctx.fillStyle=p.color;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y);ctx.restore();}}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(3,5,4,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#8affd2';ctx.font='bold 13px Arial';ctx.fillText('Round '+game.round+' / '+MAX_ROUNDS+': '+(SETS[(game.round-1)%SETS.length].title),18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Drag or tap a card, then tap a slot to place it',18,28);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best+'  Streak '+game.streak,W-18,8);ctx.fillStyle=game.misses>0?'rgba(255,150,150,.7)':'rgba(234,242,246,.4)';ctx.font='11px Arial';ctx.fillText('Misses '+game.misses+' / '+MISS_LIMIT,W-18,28);ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(3,5,4,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(8,16,10,.97)'],[1,'rgba(4,10,6,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,220,140,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#8affd2';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function accuracySummaryLines(){const lines=[];let tot=0,cor=0;for(const r of game.roundResults){lines.push('Round '+r.round+': '+r.correct+'/'+r.total);tot+=r.total;cor+=r.correct;}const pct=tot?Math.round(cor/tot*100):0;lines.push('');lines.push('Overall accuracy: '+pct+'%');return lines;}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();let shakeX=0,shakeY=0;if(game.shakeT>0){const m=Math.min(1,game.shakeT/180);shakeX=(Math.random()*2-1)*6*m;shakeY=(Math.random()*2-1)*6*m;ctx.translate(shakeX,shakeY);}drawBg();if(game.state!=='title'){drawTimeline();const sorted=[...cards].sort((a,b)=>(a===dragging?1:0)-(b===dragging?1:0));sorted.forEach(drawCard);drawFx();}vignette();if(game.state==='playing'||game.state==='paused')drawHUD();if(game.state==='title')panelDraw('Timeline Sort',['Drag or tap life-event cards onto the timeline.','Place them in the correct chronological order.','6 themed rounds.','','Your timeline, your terms.','','Click / tap to begin.']);else if(game.state==='paused')panelDraw('Paused',['Breathe.','','Tap the pause button or press P to resume.']);else if(game.state==='won'){panelDraw('Timeline Complete!',['Score: '+game.score+'  Best: '+game.best,'Best streak: '+game.bestStreak,...accuracySummaryLines(),'','No script could have written it better.','','Click / tap to play again.']);}else if(game.state==='gameover'){panelDraw('Too Many Mismatches',['Score: '+game.score+'  Best: '+game.best,'Misses: '+game.misses+' / '+MISS_LIMIT,...accuracySummaryLines(),'','Every timeline gets to be rewritten.','','Click / tap to try again.']);}ctx.restore();}catch(e){}}
+function getPointer2(e){const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};}
+function hitCard(x,y){for(let i=cards.length-1;i>=0;i--){const c=cards[i];if(x>=c.x&&x<=c.x+CARD_W&&y>=c.y&&y<=c.y+CARD_H)return c;}return null;}
+function hitSlot(x,y){for(let i=0;i<slots.length;i++){const s=slots[i];const sx0=s.x-CARD_W/2,sy0=s.y-CARD_H-14;if(x>=sx0&&x<=sx0+CARD_W&&y>=sy0&&y<=sy0+CARD_H)return i;}return null;}
+// spread returned off-timeline cards instead of stacking them all at the same spot
+function findRestY(x,exclude){let y=100;for(let tries=0;tries<20;tries++){let clash=false;for(const c of cards){if(c===exclude||c.placed)continue;if(Math.abs(c.x-x)<CARD_W*0.6&&Math.abs(c.y-y)<CARD_H*0.6){clash=true;break;}}if(!clash)return y;y+=CARD_H+10;}return y;}
+function onDown2(e){e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}if(game.state!=='playing')return;const{x,y}=getPointer2(e);const c=hitCard(x,y);if(c){game.selected=c===game.selected?null:c;dragging=c;dragOx=x-c.x;dragOy=y-c.y;// lift to top
+cards.splice(cards.indexOf(c),1);cards.push(c);return;}// tap-to-place fallback: tap an empty slot while a card is selected
+const si=hitSlot(x,y);if(si!==null&&game.selected&&!game.selected.placed){snapToSlot(game.selected,si);game.selected=null;}}
+function onMove2(e){e.preventDefault();if(!dragging||game.state!=='playing')return;const{x,y}=getPointer2(e);dragging.x=clamp(x-dragOx,0,W-CARD_W);dragging.y=clamp(y-dragOy,0,H-CARD_H);}
+function onUp2(e){e.preventDefault();if(!dragging)return;const cx=dragging.x+CARD_W/2,cy=dragging.y+CARD_H/2;const si=nearestSlot(cx,cy);const moved=Math.hypot(cx-(dragOx+dragging.x),cy-(dragOy+dragging.y))>4;if(si!==null){snapToSlot(dragging,si);game.selected=null;}else if(moved){dragging.placed=false;if(dragging.slotIdx>=0){slots[dragging.slotIdx].card=null;dragging.slotIdx=-1;}dragging.y=findRestY(dragging.x,dragging);}dragging=null;}
+canvas.addEventListener('mousedown',onDown2);canvas.addEventListener('mousemove',onMove2);canvas.addEventListener('mouseup',onUp2);
+canvas.addEventListener('touchstart',onDown2,{passive:false});canvas.addEventListener('touchmove',onMove2,{passive:false});canvas.addEventListener('touchend',onUp2,{passive:false});
+window.addEventListener('keydown',e=>{if(e.code==='KeyP'){e.preventDefault();togglePause();}else if(e.code==='KeyM'){e.preventDefault();setMuted(!game.muted);updateCtrlBtns();}else if(e.code==='KeyR'){e.preventDefault();retryRound();}});
+const btnPause=document.getElementById('btnPause'),btnMute=document.getElementById('btnMute');
+function updateCtrlBtns(){btnMute.innerHTML=game.muted?'&#128263;':'&#128266;';btnPause.innerHTML=game.state==='paused'?'&#9654;':'&#10074;&#10074;';}
+btnPause.addEventListener('click',e=>{e.preventDefault();togglePause();updateCtrlBtns();});
+btnMute.addEventListener('click',e=>{e.preventDefault();setMuted(!game.muted);updateCtrlBtns();});
+['touchstart'].forEach(evt=>{btnPause.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation();togglePause();updateCtrlBtns();},{passive:false});btnMute.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation();setMuted(!game.muted);updateCtrlBtns();},{passive:false});});
+function fitCanvas(){const wrap=document.getElementById('wrap');const vw=window.innerWidth,vh=window.innerHeight;const ar=W/H;let cw=vw,ch=vw/ar;if(ch>vh){ch=vh;cw=vh*ar;}canvas.style.width=cw+'px';canvas.style.height=ch+'px';}
+window.addEventListener('resize',fitCanvas);fitCanvas();
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';updateCtrlBtns();draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get cards(){return cards;},get slots(){return slots;},resetGame,buildRound,checkDone,nearestSlot,snapToSlot,retryRound,togglePause,setMuted,update,draw,SETS,SLOTS,MAX_ROUNDS,MISS_LIMIT};
+</script>
+</body>
+</html>

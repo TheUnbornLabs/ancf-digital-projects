@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Comeback Typer</title>
+<style>
+  *{box-sizing:border-box;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0a0c10;font-family:Arial,Helvetica,sans-serif;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{display:block;background:#0a0c10;}
+  #ti{position:fixed;opacity:0;pointer-events:none;top:-9999px;}
+  #ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+  #ctrls button{
+    width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(120,160,255,.4);
+    background:rgba(10,14,20,.75);color:#eaf2f6;font-size:18px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #ctrls button:active{background:rgba(80,144,255,.35);}
+  #tapHint{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    color:rgba(234,242,246,.55);font-size:12px;letter-spacing:.03em;
+    pointer-events:none;z-index:5;text-align:center;
+  }
+  @media (min-width:700px){ #tapHint{display:none;} }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnPause" aria-label="Pause">⏸</button>
+  <button id="btnMute" aria-label="Mute">🔊</button>
+</div>
+<div id="tapHint">Tap the game, then type on your keyboard to answer</div>
+<input id="ti" type="text" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="64"/>
+<script>
+'use strict';
+
+// =========================================================
+// Comeback Typer (#17)
+// Typing-speed game. A guilt-trip prompt appears at the top;
+// type the matching calm response below before the pressure
+// bar runs out. Each correct response earns points and eases
+// the pressure meter. Miss three and the pressure overflows.
+// Theme: practising calm, clear responses to intrusive
+//        questions — words as boundaries.
+// =========================================================
+
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ti=document.getElementById('ti');
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+
+// ---- localStorage helpers (private-browsing safe) ----
+function lsGet(k,fallback){
+  try{ const v=localStorage.getItem(k); return v===null?fallback:v; }catch(e){ return fallback; }
+}
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+// ---- Prompt → Response pairs ----
+const PROMPTS=[
+  {q:'"When are you having kids?"',    r:'That\'s not something I\'m planning.'},
+  {q:'"You\'ll regret it someday."',   r:'I trust my own judgment here.'},
+  {q:'"Who will look after you?"',     r:'My community and support network.'},
+  {q:'"It\'s selfish not to."',        r:'Self-determination isn\'t selfish.'},
+  {q:'"You\'ll change your mind."',    r:'I know my own values.'},
+  {q:'"Life feels empty without…"',    r:'My life is rich and full.'},
+  {q:'"It\'s unnatural."',             r:'Human paths are wonderfully varied.'},
+  {q:'"Think about your parents."',    r:'I respect them and I choose my path.'},
+  {q:'"Just try it once."',            r:'That\'s not how choices work.'},
+  {q:'"Everyone does eventually."',    r:'Not everyone — and that\'s fine.'},
+  {q:'"You\'re missing out."',         r:'I\'m living the life I want.'},
+  {q:'"It\'s different when it\'s yours."',r:'I\'ll take your word for it.'},
+];
+
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+
+const TIME_PER_BASE=9000;  // ms to type each response, round 1
+const TIME_PER_MIN=4000;   // never go below this
+const LIVES=3;
+const TOTAL=10;       // prompts per round
+
+const game={
+  state:'title',time:0,score:0,best:0,lives:LIVES,idx:0,total:0,shakeT:0,
+  round:1,streak:0,bestStreak:0,muted:false,correctCount:0,keystrokes:0,keystrokeErrors:0,
+};
+game.best=parseInt(lsGet('cfq_best','0'),10)||0;
+game.muted=lsGet('cfq_muted','0')==='1';
+
+let current=null,typed='',barT=0,rng,queue=[],correctAnim=0,failAnim=0;
+let timePer=TIME_PER_BASE;
+let popups=[]; // floating score text {x,y,t,text,color}
+let particles=[]; // {x,y,vx,vy,t,color}
+let heartBreak=null; // {idx,t}
+let preStateBeforePause=null;
+let lastReactionMs=0;
+let roundStartScore=0,roundKeystrokes=0,roundErrors=0,roundStartTime=0;
+
+function spawnPopup(x,y,text,color){ popups.push({x,y,t:900,text,color}); }
+function spawnBurst(x,y,color){
+  for(let i=0;i<14;i++){
+    const a=Math.random()*Math.PI*2, sp=40+Math.random()*90;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:500+Math.random()*300,color});
+  }
+}
+
+function shuffle(arr,rng){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+
+function startRound(){
+  rng=seeded(game.score+7+game.round*101);
+  queue=[...PROMPTS]; shuffle(queue,rng);
+  queue=queue.slice(0,TOTAL);
+  game.lives=LIVES; game.idx=0; game.total=0; game.state='playing'; game.shakeT=0;
+  game.streak=0;
+  timePer=Math.max(TIME_PER_MIN, TIME_PER_BASE - (game.round-1)*700);
+  typed=''; ti.value='';
+  roundStartScore=game.score; roundKeystrokes=0; roundErrors=0; roundStartTime=game.time;
+  nextPrompt();
+}
+function resetGame(){game.time=0;game.score=0;game.round=1;game.streak=0;game.bestStreak=0;startRound();}
+
+function nextPrompt(){
+  if(game.idx>=queue.length){ onRoundOver(); return; }
+  current=queue[game.idx]; game.idx++;
+  typed=''; ti.value=''; barT=0;
+  correctAnim=0; failAnim=0;
+  lastReactionMs=0;
+}
+
+function onRoundOver(){
+  sndWin();
+  game.state='roundover';
+  if(game.score>game.best){ game.best=game.score; lsSet('cfq_best',String(game.best)); }
+}
+function onGameOver(){
+  game.state='gameover'; game.shakeT=500;
+  if(game.score>game.best){ game.best=game.score; lsSet('cfq_best',String(game.best)); }
+}
+
+function checkTyped(){
+  if(!current) return;
+  const target=current.r.toLowerCase().replace(/[^a-z0-9 ']/g,'');
+  const t=typed.toLowerCase().replace(/[^a-z0-9 ']/g,'');
+  if(t===target){
+    game.correctCount++;
+    game.streak++; if(game.streak>game.bestStreak) game.bestStreak=game.streak;
+    const comboMult=1+Math.floor(game.streak/3)*0.5; // +50% per 3-streak tier
+    const reactFrac=clamp(1-barT/timePer,0,1);
+    const speedBonus = reactFrac>0.6 ? 1 : 0; // fast answer bonus point
+    const gained=Math.round(1*comboMult)+speedBonus;
+    game.score+=gained; if(game.score>game.best) game.best=game.score;
+    correctAnim=800; sndCorrect();
+    const cx=W/2, cy=H/2+20;
+    spawnPopup(cx,cy-10,`+${gained}${game.streak>=3?'  streak x'+comboMult.toFixed(1):''}`,'#8affd2');
+    spawnBurst(cx,cy,'#8affd2');
+    setTimeout(()=>nextPrompt(),350);
+  }
+}
+
+function onTimeout(){
+  const brokenIdx=Math.max(0,LIVES-game.lives); // heart index about to break
+  game.lives=Math.max(0,game.lives-1);
+  game.streak=0;
+  failAnim=600; game.shakeT=350; sndFail();
+  heartBreak={idx:brokenIdx,t:600};
+  if(game.lives<=0){ setTimeout(onGameOver,600); return; }
+  setTimeout(()=>nextPrompt(),600);
+}
+
+// ---- Audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted) return;
+  const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}
+}
+const sndKey    =()=>tone(400,0.06,'sine',0.04);
+const sndCorrect=()=>{tone(528,0.15,'sine',0.07);setTimeout(()=>tone(660,0.2,'sine',0.07),70);};
+const sndFail   =()=>tone(180,0.35,'sawtooth',0.06);
+const sndWin    =()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+// ---- Update ----
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0) game.shakeT=Math.max(0,game.shakeT-dt);
+  if(correctAnim>0) correctAnim=Math.max(0,correctAnim-dt);
+  if(failAnim>0) failAnim=Math.max(0,failAnim-dt);
+  if(heartBreak){ heartBreak.t=Math.max(0,heartBreak.t-dt); if(heartBreak.t<=0) heartBreak=null; }
+  for(let i=popups.length-1;i>=0;i--){ popups[i].t-=dt; popups[i].y-=dt*0.03; if(popups[i].t<=0) popups.splice(i,1); }
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.t-=dt; p.x+=p.vx*dt/1000; p.y+=p.vy*dt/1000; p.vy+=dt*0.25;
+    if(p.t<=0) particles.splice(i,1);
+  }
+  if(game.state!=='playing') return;
+  barT=Math.min(timePer, barT+dt);
+  if(barT>=timePer){ barT=0; onTimeout(); }
+}
+
+// ---- Draw ----
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#0a0c10'],[1,'#060708']]);ctx.fillRect(0,0,W,H);}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(5,7,10,.85)'; rr(0,0,W,50,0); ctx.fill();
+  ctx.textBaseline='top';
+  ctx.textAlign='left';
+  // hearts with low-life pulse + heartbreak anim
+  const pulse = game.lives===1 ? (0.5+0.5*Math.sin(game.time*0.008)) : 1;
+  ctx.font='bold 14px Arial';
+  let hx=18;
+  for(let i=0;i<LIVES;i++){
+    const filled=i<game.lives;
+    let ch=filled?'♥':'♡';
+    let alpha=1;
+    if(!filled) alpha=0.5;
+    if(filled && game.lives===1) alpha=0.6+0.4*pulse;
+    ctx.fillStyle=`rgba(255,128,128,${alpha})`;
+    if(heartBreak && heartBreak.idx===i){
+      const k=heartBreak.t/600;
+      ctx.save();
+      ctx.translate(hx+7,18);
+      ctx.rotate((1-k)*0.6*(i%2===0?1:-1));
+      ctx.scale(1+ (1-k)*0.6,1+(1-k)*0.6);
+      ctx.globalAlpha=k;
+      ctx.fillStyle='#ff6060';
+      ctx.textAlign='center';
+      ctx.fillText('💔',0,-7);
+      ctx.restore();
+      ctx.textAlign='left';
+    }
+    ctx.fillText(ch,hx,10);
+    hx+=16;
+  }
+  ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText(`${game.idx} / ${TOTAL}  ·  round ${game.round}`,18,30);
+  ctx.textAlign='center'; ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText('SCORE',W/2,8);
+  ctx.fillStyle='#ffd580'; ctx.font='bold 22px Arial';
+  ctx.fillText(game.score,W/2,22);
+  if(game.streak>=2){
+    ctx.fillStyle='#ff9f40'; ctx.font='bold 11px Arial';
+    ctx.fillText('streak '+game.streak,W/2,42);
+  }
+  ctx.textAlign='right'; ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText('BEST  '+game.best,W-18,8);
+  ctx.restore();
+}
+
+function drawPrompt(){
+  if(!current) return;
+  // time bar
+  const barW=W-80,barH=10,barX=40,barY=68;
+  const t=clamp(1-barT/timePer,0,1);
+  ctx.fillStyle='rgba(255,255,255,.1)'; rr(barX,barY,barW,barH,5); ctx.fill();
+  const barColor=t>0.5?'#6090ff':t>0.25?'#ffd560':'#ff6060';
+  ctx.fillStyle=barColor; rr(barX,barY,barW*t,barH,5); ctx.fill();
+
+  // guilt-trip card
+  const cx=W/2,cy=170;
+  ctx.fillStyle='rgba(40,20,50,.9)';
+  rr(cx-340,cy-55,680,110,16); ctx.fill();
+  ctx.strokeStyle='rgba(200,100,200,.35)'; ctx.lineWidth=1.5;
+  rr(cx-340,cy-55,680,110,16); ctx.stroke();
+  ctx.fillStyle='rgba(200,100,200,.6)'; ctx.font='11px Arial'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('UNSOLICITED OPINION',cx,cy-48);
+  ctx.fillStyle='#f0c0f8'; ctx.font='bold 22px Arial'; ctx.textBaseline='middle';
+  ctx.fillText(current.q,cx,cy+10);
+
+  // target response (greyed out)
+  const ty2=H/2+20;
+  ctx.fillStyle='rgba(234,242,246,.18)'; ctx.font='18px Arial';
+  ctx.fillText(current.r,cx,ty2);
+
+  // typed so far
+  const target=current.r;
+
+  // draw typed text character by character (with shape cues for a11y)
+  ctx.font='bold 22px Arial'; ctx.textBaseline='middle';
+  const maxLen=Math.max(target.length,typed.length);
+  let drawX=cx - ctx.measureText(target).width/2;
+  for(let i=0;i<maxLen;i++){
+    const ch=i<target.length?target[i]:typed[i]; // overflow chars still rendered
+    if(i<typed.length){
+      const tch=typed[i];
+      const ok=i<target.length && ch.toLowerCase()===tch.toLowerCase();
+      const glyph=i<target.length?ch:tch;
+      const w=ctx.measureText(glyph).width;
+      ctx.fillStyle=ok?'#8affd2':'#ff6060';
+      ctx.fillText(glyph,drawX,ty2+38);
+      // shape cue: underline correct, wavy strike for incorrect/overflow
+      if(ok){
+        ctx.strokeStyle='#8affd2'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(drawX-1,ty2+50); ctx.lineTo(drawX+w+1,ty2+50); ctx.stroke();
+      } else {
+        ctx.strokeStyle='#ff6060'; ctx.lineWidth=2;
+        ctx.beginPath();
+        const midY=ty2, amp=3, steps=6;
+        for(let s=0;s<=steps;s++){
+          const xx=drawX + (w*s/steps);
+          const yy=midY + (s%2===0?-amp:amp);
+          if(s===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        }
+        ctx.stroke();
+      }
+      drawX+=w;
+    } else if(i===typed.length){
+      // cursor
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.fillRect(drawX,ty2+28,2,22);
+      ctx.fillStyle='rgba(234,242,246,.4)';
+      ctx.fillText(ch,drawX,ty2+38);
+      drawX+=ctx.measureText(ch).width;
+    } else {
+      ctx.fillStyle='rgba(234,242,246,.3)';
+      ctx.fillText(ch,drawX,ty2+38);
+      drawX+=ctx.measureText(ch).width;
+    }
+  }
+
+  // "Type the response:" label
+  ctx.fillStyle='rgba(234,242,246,.35)'; ctx.font='12px Arial'; ctx.textBaseline='top';
+  ctx.fillText('Type the calm response:',cx,ty2+6);
+  if(typed.length>target.length){
+    ctx.fillStyle='rgba(255,96,96,.7)'; ctx.font='11px Arial';
+    ctx.fillText(`${typed.length-target.length} extra character(s) — backspace to fix`,cx,ty2+60);
+  }
+
+  // correct anim flash
+  if(correctAnim>0){
+    ctx.fillStyle=`rgba(80,220,140,${(correctAnim/800*0.4).toFixed(2)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  // fail anim flash
+  if(failAnim>0){
+    ctx.fillStyle=`rgba(220,80,80,${(failAnim/600*0.3).toFixed(2)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+  // low-life red vignette pulse
+  if(game.lives===1){
+    const k=0.15+0.15*(0.5+0.5*Math.sin(game.time*0.008));
+    const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+    g.addColorStop(0,'rgba(220,40,40,0)'); g.addColorStop(1,`rgba(180,20,20,${k})`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+
+  // popups
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  for(const p of popups){
+    const a=clamp(p.t/900,0,1);
+    ctx.fillStyle=p.color.replace(')',`,${a})`).replace('#','').length? p.color:p.color;
+    ctx.globalAlpha=a;
+    ctx.font='bold 16px Arial';
+    ctx.fillStyle=p.color;
+    ctx.fillText(p.text,p.x,p.y);
+    ctx.globalAlpha=1;
+  }
+  // particles
+  for(const p of particles){
+    const a=clamp(p.t/500,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.4)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(4,6,8,.75)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(12,16,24,.97)'],[1,'rgba(7,10,16,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,144,255,.25)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';
+  ctx.fillText(title,W/2,py+64);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+102;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){const m=game.shakeT/500*5;dx=Math.sin(game.time*.07)*m;dy=Math.cos(game.time*.09)*m;}
+    ctx.save();ctx.translate(dx,dy);
+    drawBg();
+    if(game.state==='playing'||game.state==='paused'){drawHUD();drawPrompt();}
+    vignette();
+    if(game.state==='title'){
+      panelDraw('Comeback Typer',[
+        'A pressure-question appears. Type the calm response.',
+        'Each character must match — practise clarity.',
+        'Finish before the bar runs out. Three lives.',
+        'Chain correct answers for a streak bonus.',
+        '','Words are boundaries too.','','Click / tap then start typing to begin.']);
+    } else if(game.state==='paused'){
+      panelDraw('Paused',['Breathe.','','Press P or tap ▶ to resume.']);
+    } else if(game.state==='roundover'){
+      const elapsed=Math.max(1,game.time-roundStartTime);
+      const wpm=Math.round((roundKeystrokes/5)/(elapsed/60000));
+      const acc=roundKeystrokes>0?Math.round(100*(roundKeystrokes-roundErrors)/roundKeystrokes):100;
+      panelDraw('All Responded!',[
+        `You handled ${game.score-roundStartScore} points this round (round ${game.round}).`,
+        `Best streak: ${game.bestStreak}   ·   ~${isFinite(wpm)?wpm:0} WPM   ·   ${acc}% accuracy`,
+        '','Practising responses builds real confidence.','',
+        'Click / tap to start the next round.']);
+    } else if(game.state==='gameover'){
+      panelDraw('Overwhelmed',[`Score: ${game.score}  ·  Best: ${game.best}`,'','Calm responses get easier with repetition.','','Click / tap to try again.']);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---- Input ----
+function activate(){
+  const a2=AC();if(a2&&a2.state==='suspended'){try{a2.resume();}catch(ex){}}
+  if(game.state==='title'){resetGame();ti.focus();return;}
+  if(game.state==='roundover'){game.round++;startRound();ti.focus();return;}
+  if(game.state==='gameover'){resetGame();ti.focus();return;}
+  ti.focus();
+}
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';btnPause.textContent='▶';}
+  else if(game.state==='paused'){game.state='playing';btnPause.textContent='⏸';ti.focus();}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('cfq_muted',game.muted?'1':'0');
+  btnMute.textContent=game.muted?'🔇':'🔊';
+}
+btnMute.textContent=game.muted?'🔇':'🔊';
+
+canvas.addEventListener('mousedown',e=>{e.preventDefault();activate();});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();activate();},{passive:false});
+btnPause.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();});
+btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();},{passive:false});
+btnMute.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){e.preventDefault();togglePause();return;}
+  if(e.code==='KeyM'){e.preventDefault();toggleMute();return;}
+});
+ti.addEventListener('input',e=>{
+  if(game.state!=='playing') return;
+  const prevLen=typed.length;
+  const newVal=ti.value;
+  if(newVal.length>prevLen){
+    game.keystrokes++; roundKeystrokes++;
+    // count as error keystroke if the newly typed char doesn't match target position
+    const idx=newVal.length-1;
+    const targetCh=current && idx<current.r.length ? current.r[idx] : undefined;
+    const typedCh=newVal[idx];
+    if(targetCh===undefined || targetCh.toLowerCase()!==typedCh.toLowerCase()){
+      game.keystrokeErrors++; roundErrors++;
+    }
+  }
+  typed=newVal;
+  sndKey();
+  checkTyped();
+});
+ti.addEventListener('keydown',e=>{
+  if(e.code==='Backspace'||e.code==='Delete') return; // allow
+  if(game.state==='title'||game.state==='gameover'||game.state==='roundover'){activate();}
+});
+
+// ---- Responsive letterboxed canvas sizing ----
+function resize(){
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const scale=Math.min(vw/W, vh/H);
+  const cw=Math.floor(W*scale), ch=Math.floor(H*scale);
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},get typed(){return typed;},get current(){return current;},
+  resetGame,startRound,nextPrompt,checkTyped,onTimeout,update,draw,togglePause,toggleMute,
+  PROMPTS,TIME_PER_BASE,LIVES,TOTAL,
+};
+</script>
+</body>
+</html>

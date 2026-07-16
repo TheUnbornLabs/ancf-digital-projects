@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Assumption Flip</title>
+<style>
+  :root{--text:#eaf2f6;--accent:#ffd580;--panel:rgba(12,18,32,.88);--line:rgba(255,255,255,.14);}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#08101c;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{display:block;image-rendering:auto;background:#08101c;max-width:100vw;max-height:100vh;aspect-ratio:960/540;width:100vw;height:auto;}
+  @media (min-aspect-ratio:960/540){ canvas{width:auto;height:100vh;} }
+  #hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.45);pointer-events:none;z-index:5;text-align:center;}
+  #hud-btns{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+  #hud-btns button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(8,14,28,.78);color:#eaf2f6;font-size:17px;line-height:1;cursor:pointer;touch-action:manipulation;}
+  #hud-btns button:active{background:rgba(255,213,128,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="hud-btns">
+  <button id="btnHint" title="Hint">💡</button>
+  <button id="btnMute" title="Mute">🔊</button>
+  <button id="btnPause" title="Pause">⏸</button>
+</div>
+<div id="hint">Click / tap a card to flip it &middot; P pause &middot; M mute &middot; H hint</div>
+<script>
+'use strict';
+
+// =========================================================
+// Assumption Flip (#11)
+// Memory-match card game. Each "assumption" card matches
+// its "reality" rebuttal. Flip two at a time; pairs stay
+// face-up. Clear all pairs to advance. Three rounds of
+// rising grid size (4×3, 4×4, 5×4).
+// Theme: social-script myths come apart under examination.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+
+function seeded(s){
+  let n=s>>>0||1;
+  return()=>{ n=(n*1664525+1013904223)>>>0; return n/4294967296; };
+}
+
+// ---- Pairs: assumption → reality (10 unique pairs) ----
+const PAIRS = [
+  {a:'You\'ll regret it.', b:'Regret belongs\nto each person alone.'},
+  {a:'Who\'ll care for\nyou when old?', b:'Community, friends,\nprofessional care.'},
+  {a:'You\'re selfish.', b:'Self-authorship\nis not selfishness.'},
+  {a:'It\'s different\nwhen it\'s yours.', b:'That\'s your choice\nto explore or not.'},
+  {a:'You\'ll change\nyour mind.', b:'I know my values.'},
+  {a:'Your life is\nincomplete.', b:'Completeness is\nnot one template.'},
+  {a:'It\'s unnatural.', b:'Human choices vary\nenormously — always have.'},
+  {a:'Think of\nfamily pressure.', b:'My life path is\nmy responsibility.'},
+  {a:'Society needs\nbirth rates.', b:'Policy debates\ndon\'t override consent.'},
+  {a:'You just\nhaven\'t met the right…', b:'This isn\'t about\nfinding the right person.'},
+];
+
+// ---- Round definitions ----
+// Round 3 reuses the 5x4/10-pair grid but adds real pressure: a shorter
+// preview peek and a soft move cap (moveLimit) instead of being a plain
+// reshuffle of round 2.
+const ROUNDS = [
+  {cols:4, rows:3, pairs:6,  peekMs:2200, moveLimit:0},   // round 1: 4×3 = 12 cards, 6 pairs
+  {cols:5, rows:4, pairs:10, peekMs:1600, moveLimit:0},   // round 2: 5×4 = 20 cards, 10 pairs (all)
+  {cols:5, rows:4, pairs:10, peekMs:900,  moveLimit:22},  // round 3: shorter peek + soft move cap
+];
+
+// ---- localStorage persistence (try/catch — private browsing can throw) ----
+const LS_KEY='assumptionFlip_v1';
+function loadSaved(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    const d=JSON.parse(raw);
+    if(d && Array.isArray(d.bestMoves)) return d;
+  }catch(e){}
+  return null;
+}
+function saveProgress(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      bestMoves: game.bestMoves,
+      muted: game.muted,
+    }));
+  }catch(e){}
+}
+const saved = loadSaved();
+
+const game = {
+  state:'title',   // title | playing | paused | won | gameover
+  time: 0,
+  round: 0,
+  moves: 0,
+  wrongMoves: 0,
+  bestMoves: (saved && saved.bestMoves) ? saved.bestMoves.slice(0,3) : [Infinity,Infinity,Infinity],
+  roundMoves: [null,null,null],
+  score: 0,
+  totalMoves: 0,
+  totalWrong: 0,
+  shakeT: 0,
+  fadeIn: 0,
+  peekT: 0,
+  peekTotal: 0,
+  muted: !!(saved && saved.muted),
+  hintsLeft: 3,
+  hintT: 0,
+  hintIdx: -1,
+  failFlashT: 0,
+};
+while(game.bestMoves.length<3) game.bestMoves.push(Infinity);
+
+let cards = [];
+let flipped = [];   // indices of currently face-up unmatched cards (max 2)
+let lockT = 0;      // countdown ms before clearing failed flip
+let particles = []; // match-burst particles
+
+function lgrad(x0,y0,x1,y1,stops){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  for(const s of stops) g.addColorStop(s[0],s[1]);
+  return g;
+}
+function rgrad(x,y,r0,r1,stops){
+  const g=ctx.createRadialGradient(x,y,r0,x,y,r1);
+  for(const s of stops) g.addColorStop(s[0],s[1]);
+  return g;
+}
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+
+// ---- Audio ----
+let actx=null;
+function audioCtx(){
+  if(actx) return actx;
+  try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null; actx=new AC(); }catch(e){ actx=null; }
+  return actx;
+}
+function tone(freq,dur,type,vol){
+  if(game.muted) return;
+  const a=audioCtx(); if(!a) return;
+  try{
+    if(a.state==='suspended') a.resume();
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol||0.07,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(dur||0.2));
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+(dur||0.2)+0.02);
+  }catch(e){}
+}
+const sndFlip  = ()=>tone(440,0.12,'sine',0.06);
+const sndMatch = ()=>{ tone(528,0.18,'sine',0.07); setTimeout(()=>tone(660,0.22,'sine',0.06),80); };
+const sndFail  = ()=>tone(200,0.22,'triangle',0.05);
+const sndWin   = ()=>{ [528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sine',0.07),i*100)); };
+
+// ---- Card layout ----
+function buildCards(round){
+  const rd = ROUNDS[round];
+  const rng = seeded(round * 99991 + 7);
+  const chosen = PAIRS.slice(0, rd.pairs);
+  // build array: each pair contributes an assumption card and a reality card
+  const pool = [];
+  chosen.forEach((p,i)=>{
+    pool.push({pairId:i, side:'a', text:p.a, matched:false, flipT:0, face:false});
+    pool.push({pairId:i, side:'b', text:p.b, matched:false, flipT:0, face:false});
+  });
+  // shuffle
+  for(let i=pool.length-1;i>0;i--){
+    const j=Math.floor(rng()*( i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  // assign grid positions
+  const PAD=20, TOP=80, LEFT=60;
+  const cW=(W-LEFT*2)/rd.cols, cH=(H-TOP-40)/rd.rows;
+  pool.forEach((c,idx)=>{
+    c.col=idx%rd.cols; c.row=Math.floor(idx/rd.cols);
+    c.x=LEFT+c.col*cW+PAD/2; c.y=TOP+c.row*cH+PAD/2;
+    c.w=cW-PAD; c.h=cH-PAD;
+    // flipT starts at 1 so a fresh card doesn't "pop" mid-fade — the
+    // fadeIn overlay handles the round-start reveal, and drawCard's
+    // flip math (face=false -> flipProg = 1-flipT) needs flipT=1 to
+    // render a fully-settled card back on the very first frame.
+    c.flipT=1; c.face=false; c.matched=false; c.wrongFlashT=0;
+  });
+  return pool;
+}
+
+function startRound(r){
+  game.round=r;
+  game.moves=0;
+  game.wrongMoves=0;
+  game.state='playing';
+  game.fadeIn=1;
+  flipped=[];
+  lockT=0;
+  particles=[];
+  game.hintT=0; game.hintIdx=-1; game.hintsLeft=3;
+  cards=buildCards(r);
+  // classic memory-game peek: briefly reveal every card face-up at round start
+  const rd=ROUNDS[r];
+  game.peekTotal = Math.max(0, rd.peekMs||0);
+  game.peekT = game.peekTotal;
+  if(game.peekT>0){ for(const c of cards) c.face=true; }
+}
+
+function resetGame(){
+  game.time=0; game.totalMoves=0; game.score=0; game.totalWrong=0;
+  game.bestMoves=[Infinity,Infinity,Infinity];
+  game.roundMoves=[null,null,null];
+  startRound(0);
+}
+
+// ---- Hit test ----
+function cardAt(mx,my){
+  for(let i=cards.length-1;i>=0;i--){
+    const c=cards[i];
+    if(!c.matched && mx>=c.x&&mx<=c.x+c.w&&my>=c.y&&my<=c.y+c.h) return i;
+  }
+  return -1;
+}
+
+function spawnBurst(cx,cy,color){
+  for(let i=0;i<14;i++){
+    const ang=(i/14)*Math.PI*2 + Math.random()*0.3;
+    const spd=1.2+Math.random()*2.2;
+    particles.push({x:cx,y:cy,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1,color});
+  }
+}
+
+function tryFlip(mx,my){
+  if(game.state!=='playing') return;
+  if(game.peekT>0) return; // can't interact during preview peek
+  if(lockT>0) return;
+  const idx=cardAt(mx,my);
+  if(idx<0) return;
+  const c=cards[idx];
+  if(c.face||c.matched) return;
+  if(flipped.includes(idx)) return;
+  if(flipped.length>=2) return;
+  c.face=true; c.flipT=0;
+  flipped.push(idx);
+  sndFlip();
+  if(flipped.length===2){
+    game.moves++;
+    game.totalMoves++;
+    const [ai,bi]=flipped;
+    if(cards[ai].pairId===cards[bi].pairId){
+      // match!
+      cards[ai].matched=true; cards[bi].matched=true;
+      spawnBurst(cards[ai].x+cards[ai].w/2, cards[ai].y+cards[ai].h/2, '110,255,170');
+      spawnBurst(cards[bi].x+cards[bi].w/2, cards[bi].y+cards[bi].h/2, '110,255,170');
+      flipped=[];
+      sndMatch();
+      // speed bonus: fewer moves so far -> a little more score per pair
+      game.score += 10;
+      // check round complete
+      if(cards.every(c=>c.matched)){
+        if(game.moves<game.bestMoves[game.round]){
+          game.bestMoves[game.round]=game.moves;
+          saveProgress();
+        }
+        game.roundMoves[game.round]=game.moves;
+        setTimeout(()=>{
+          if(game.round+1<ROUNDS.length){ startRound(game.round+1); }
+          else{ game.state='won'; sndWin(); }
+        },700);
+      }
+    } else {
+      // no match — lock briefly then flip back, with a red shake/flash cue
+      lockT=900;
+      game.wrongMoves++; game.totalWrong++;
+      game.shakeT=220;
+      game.failFlashT=260;
+      cards[ai].wrongFlashT=900; cards[bi].wrongFlashT=900;
+      sndFail();
+      // soft move-limit penalty (round 3): no hard game-over, just nudges
+      // the player by trimming the current best-moves comparison window —
+      // preserves the calm memory-game feel (no fail state).
+      const rd=ROUNDS[game.round];
+      if(rd.moveLimit && game.moves>=rd.moveLimit){
+        game.score = Math.max(0, game.score-2);
+      }
+    }
+  }
+}
+
+function useHint(){
+  if(game.state!=='playing') return;
+  if(game.peekT>0||lockT>0) return;
+  if(game.hintsLeft<=0) return;
+  if(flipped.length>=2) return;
+  const avail = cards.filter(c=>!c.matched && !c.face && !flipped.includes(cards.indexOf(c)));
+  if(!avail.length) return;
+  const pick = avail[Math.floor(Math.random()*avail.length)];
+  game.hintsLeft--;
+  game.hintIdx = cards.indexOf(pick);
+  game.hintT = 700;
+}
+
+// ---- Update ----
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.fadeIn>0) game.fadeIn=Math.max(0,game.fadeIn-dt*0.003);
+  if(game.shakeT>0) game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.failFlashT>0) game.failFlashT=Math.max(0,game.failFlashT-dt);
+  if(game.hintT>0){ game.hintT=Math.max(0,game.hintT-dt); if(game.hintT===0) game.hintIdx=-1; }
+  for(const c of cards){
+    c.flipT=Math.min(c.flipT+dt*0.006,1);
+    if(c.wrongFlashT>0) c.wrongFlashT=Math.max(0,c.wrongFlashT-dt);
+  }
+  if(game.peekT>0){
+    game.peekT=Math.max(0,game.peekT-dt);
+    if(game.peekT===0){
+      for(const c of cards){ if(!c.matched){ c.face=false; c.flipT=1; } }
+    }
+  }
+  if(lockT>0){
+    lockT=Math.max(0,lockT-dt);
+    if(lockT===0&&flipped.length===2){
+      for(const i of flipped){ cards[i].face=false; cards[i].flipT=0; }
+      flipped=[];
+    }
+  }
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.06;
+    p.life=Math.max(0,p.life-dt*0.0018);
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+// ---- Draw ----
+function drawBackground(){
+  ctx.fillStyle=lgrad(0,0,0,H,[[0,'#080f1c'],[0.5,'#0d1628'],[1,'#060c18']]);
+  ctx.fillRect(0,0,W,H);
+  // subtle grid shimmer
+  ctx.strokeStyle='rgba(80,120,180,.04)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for(let y=0;y<H;y+=60){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+}
+
+function drawCard(c){
+  const flipProg = c.face ? Math.min(c.flipT,1) : 1-Math.min(c.flipT,1);
+  // flipProg: 0=back fully visible, 1=front fully visible
+  // We simulate the flip with a scaleX on the card
+  const halfT = 0.5;
+  let cx = c.x + c.w/2, cy = c.y + c.h/2;
+  if(c.wrongFlashT>0){
+    const m=(c.wrongFlashT/900)*3;
+    cx += Math.sin(game.time*0.09)*m;
+  }
+  ctx.save();
+  ctx.translate(cx, cy);
+  if(flipProg < halfT){
+    // showing back, squishing to 0
+    const s = 1 - flipProg/halfT;
+    ctx.scale(s, 1);
+    drawCardBack(c);
+  } else {
+    // showing front, expanding from 0
+    const s = (flipProg - halfT)/halfT;
+    ctx.scale(s, 1);
+    drawCardFront(c);
+  }
+  if(c.wrongFlashT>0){
+    ctx.globalAlpha = (c.wrongFlashT/900)*0.45;
+    ctx.fillStyle='rgba(255,60,60,.9)';
+    rr(-c.w/2,-c.h/2,c.w,c.h,10); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+  if(cards.indexOf(c)===game.hintIdx && game.hintT>0){
+    ctx.save();
+    ctx.globalAlpha = Math.min(1,game.hintT/700);
+    ctx.strokeStyle='rgba(255,213,128,.9)';
+    ctx.lineWidth=3;
+    rr(c.x-3,c.y-3,c.w+6,c.h+6,12); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawCardBack(c){
+  const hw=c.w/2, hh=c.h/2;
+  // shadow
+  ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=12;
+  rr(-hw,-hh,c.w,c.h,10);
+  ctx.fillStyle=lgrad(-hw,-hh,hw,hh,[[0,'#1e2d50'],[1,'#111d38']]);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  // border
+  ctx.strokeStyle='rgba(80,120,200,.45)'; ctx.lineWidth=1.5;
+  rr(-hw,-hh,c.w,c.h,10); ctx.stroke();
+  // pattern — question mark
+  ctx.fillStyle='rgba(100,150,255,.22)';
+  ctx.font=`bold ${Math.min(c.h*0.52,36)}px Arial`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('?',0,0);
+  // small shimmer lines
+  ctx.strokeStyle='rgba(80,120,255,.07)'; ctx.lineWidth=1;
+  for(let i=-3;i<=3;i++){
+    ctx.beginPath(); ctx.moveTo(-hw,i*(hh/4)); ctx.lineTo(hw,i*(hh/4)); ctx.stroke();
+  }
+}
+
+function drawCardFront(c){
+  const hw=c.w/2, hh=c.h/2;
+  const isA = c.side==='a';
+  const matched = c.matched;
+  ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=12;
+  rr(-hw,-hh,c.w,c.h,10);
+  if(matched){
+    ctx.fillStyle=lgrad(-hw,-hh,hw,hh,[[0,'#1a3830'],[1,'#0f2420']]);
+  } else if(isA){
+    ctx.fillStyle=lgrad(-hw,-hh,hw,hh,[[0,'#2d1a3a'],[1,'#1a0d28']]);
+  } else {
+    ctx.fillStyle=lgrad(-hw,-hh,hw,hh,[[0,'#1a2d3a'],[1,'#0d1a28']]);
+  }
+  ctx.fill();
+  ctx.shadowBlur=0;
+  // border
+  if(matched){
+    ctx.strokeStyle='rgba(80,220,140,.55)'; ctx.lineWidth=2;
+  } else if(isA){
+    ctx.strokeStyle='rgba(255,120,180,.4)'; ctx.lineWidth=1.5;
+  } else {
+    ctx.strokeStyle='rgba(80,180,255,.4)'; ctx.lineWidth=1.5;
+  }
+  rr(-hw,-hh,c.w,c.h,10); ctx.stroke();
+  // label chip
+  const chipLabel = isA ? 'ASSUMPTION' : 'REALITY';
+  const chipColor = isA ? 'rgba(255,100,160,.8)' : 'rgba(60,160,255,.8)';
+  if(matched) { /* skip chip when matched */ }
+  ctx.save();
+  ctx.fillStyle = matched ? 'rgba(80,220,140,.7)' : chipColor;
+  const chipW=c.w*0.55, chipH=14;
+  rr(-chipW/2,-hh+6,chipW,chipH,5); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.font=`bold ${9}px Arial`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(matched ? 'MATCHED ✓' : chipLabel, 0, -hh+13);
+  ctx.restore();
+  // text
+  const lines = c.text.split('\n');
+  const fontSize = Math.min(c.h*0.155, 14);
+  ctx.fillStyle = matched ? 'rgba(140,255,180,.95)' : '#eaf2f6';
+  ctx.font = `${fontSize}px Arial`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const totalH = lines.length * (fontSize+3);
+  lines.forEach((l,i)=>{
+    ctx.fillText(l, 0, -totalH/2 + i*(fontSize+3) + fontSize/2 + 6);
+  });
+}
+
+function drawParticles(){
+  for(const p of particles){
+    ctx.fillStyle=`rgba(${p.color},${p.life.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(p.x,p.y,3*p.life+1,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function drawHUD(){
+  const rd=ROUNDS[game.round];
+  ctx.save();
+  ctx.textBaseline='top';
+  // top bar background
+  ctx.fillStyle='rgba(8,14,28,.72)';
+  rr(0,0,W,52,0); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.06)';
+  ctx.fillRect(0,51,W,1);
+  // round indicator
+  ctx.fillStyle='#ffd580';
+  ctx.font='bold 14px Arial';
+  ctx.textAlign='left';
+  ctx.fillText(`Round ${game.round+1} / ${ROUNDS.length}`, 18, 14);
+  ctx.fillStyle='rgba(234,242,246,.55)';
+  ctx.font='12px Arial';
+  const accuracy = game.totalMoves>0 ? Math.round((game.score/10)/game.totalMoves*100) : 100;
+  ctx.fillText(`${rd.pairs} pairs · ${rd.cols}×${rd.rows} · Acc ${accuracy}%${rd.moveLimit?` · cap ${rd.moveLimit}`:''}`, 18, 34);
+  // moves
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(234,242,246,.55)';
+  ctx.font='11px Arial';
+  ctx.fillText('MOVES', W/2, 10);
+  ctx.fillStyle= (rd.moveLimit && game.moves>=rd.moveLimit) ? 'rgba(255,120,120,.95)' : '#ffd580';
+  ctx.font='bold 22px Arial';
+  ctx.fillText(game.moves, W/2, 24);
+  const best=game.bestMoves[game.round];
+  ctx.fillStyle='rgba(234,242,246,.4)';
+  ctx.font='10px Arial';
+  ctx.fillText(`best ${best===Infinity?'—':best}`, W/2, 42);
+  // matched
+  const matched=cards.filter(c=>c.matched&&c.side==='a').length;
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.55)';
+  ctx.font='11px Arial';
+  ctx.fillText('MATCHED', W-18, 10);
+  ctx.fillStyle='rgba(80,220,140,.9)';
+  ctx.font='bold 22px Arial';
+  ctx.fillText(`${matched} / ${rd.pairs}`, W-18, 24);
+  ctx.fillStyle='rgba(234,242,246,.4)';
+  ctx.font='10px Arial';
+  ctx.fillText(`hints left ${game.hintsLeft}`, W-18, 42);
+  ctx.restore();
+  if(game.peekT>0){
+    ctx.save();
+    ctx.textAlign='center';
+    ctx.fillStyle='rgba(255,213,128,.9)';
+    ctx.font='bold 16px Arial';
+    ctx.fillText('Memorize the board…', W/2, 66);
+    const frac=game.peekTotal>0?game.peekT/game.peekTotal:0;
+    ctx.fillStyle='rgba(255,213,128,.6)';
+    ctx.fillRect(W/2-80, 82, 160*frac, 4);
+    ctx.restore();
+  }
+}
+
+function vignette(){
+  ctx.fillStyle=rgrad(W/2,H/2,H*0.42,H*0.88,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.38)']]);
+  ctx.fillRect(0,0,W,H);
+}
+
+function starsFor(moves,pairs){
+  // minimum possible moves = pairs (perfect memory); scale thresholds off that
+  const perfect=pairs;
+  if(moves<=perfect*1.3) return '★★★';
+  if(moves<=perfect*1.8) return '★★☆';
+  return '★☆☆';
+}
+
+function panel(title,lines,sub){
+  ctx.save();
+  ctx.fillStyle='rgba(5,10,20,.68)';
+  ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(20,30,56,.97)'],[1,'rgba(10,16,34,.97)']]);
+  rr(px,py,pw,ph,22); ctx.fill();
+  ctx.strokeStyle='rgba(255,213,128,.25)'; ctx.lineWidth=1.5;
+  rr(px+0.5,py+0.5,pw-1,ph-1,22); ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#ffd580';
+  ctx.font='bold 38px Arial';
+  ctx.fillText(title, W/2, py+72);
+  ctx.fillStyle='rgba(234,242,246,.88)';
+  ctx.font='15px Arial';
+  let ly=py+110;
+  for(const l of lines){ ctx.fillText(l, W/2, ly); ly+=26; }
+  if(sub){
+    ctx.fillStyle='rgba(255,213,128,.7)';
+    ctx.font='bold 14px Arial';
+    ctx.fillText(sub, W/2, py+ph-32);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){ const m=game.shakeT/200*4; dx=Math.sin(game.time*0.05)*m; dy=Math.cos(game.time*0.07)*m; }
+    ctx.save(); ctx.translate(dx,dy);
+    drawBackground();
+    for(const c of cards) drawCard(c);
+    drawParticles();
+    vignette();
+    if(game.failFlashT>0){
+      ctx.save();
+      ctx.globalAlpha=(game.failFlashT/260)*0.18;
+      ctx.fillStyle='#ff3c3c';
+      ctx.fillRect(0,0,W,H);
+      ctx.restore();
+    }
+    if(game.state==='playing'||game.state==='paused') drawHUD();
+    if(game.fadeIn>0&&game.state==='playing'){
+      ctx.fillStyle=`rgba(5,10,20,${game.fadeIn.toFixed(3)})`;
+      ctx.fillRect(0,0,W,H);
+    }
+    if(game.state==='title'){
+      panel('Assumption Flip',[
+        'Every assumption card hides a reality.',
+        'Flip two cards — find the matching pair.',
+        'A quick memorize peek starts each round.',
+        'Three rounds of rising challenge.',
+        '',
+        'Myths come apart under examination.',
+        '',
+        'Click a card to begin.',
+      ]);
+    } else if(game.state==='paused'){
+      panel('Paused',['Take a breath.','','Press P or tap ▶ to continue.']);
+    } else if(game.state==='won'){
+      const lines=['Every assumption has a reality behind it.',''];
+      for(let i=0;i<ROUNDS.length;i++){
+        const rd=ROUNDS[i], mv=game.roundMoves[i], best=game.bestMoves[i];
+        const stars = mv==null?'':starsFor(mv,rd.pairs);
+        lines.push(`Round ${i+1}: ${mv==null?'—':mv} moves (best ${best===Infinity?'—':best}) ${stars}`);
+      }
+      lines.push('');
+      lines.push(`Total moves: ${game.totalMoves}  ·  Accuracy: ${game.totalMoves>0?Math.round((game.score/10)/game.totalMoves*100):100}%`);
+      lines.push('');
+      lines.push('Click / tap to play again.');
+      panel('All Myths Flipped ✓', lines);
+    }
+    ctx.restore();
+  }catch(e){ /* draw must never throw */ }
+}
+
+// ---- Input ----
+const input={pausePressed:false};
+function pointerDown(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width, sy=H/rect.height;
+  let px,py;
+  if(e.touches){ px=(e.touches[0].clientX-rect.left)*sx; py=(e.touches[0].clientY-rect.top)*sy; }
+  else { px=(e.clientX-rect.left)*sx; py=(e.clientY-rect.top)*sy; }
+  const a=audioCtx(); if(a&&a.state==='suspended'){try{a.resume();}catch(ex){}}
+  if(game.state==='title'){ resetGame(); return; }
+  if(game.state==='won'){ resetGame(); return; }
+  if(game.state==='playing') tryFlip(px,py);
+}
+canvas.addEventListener('mousedown', e=>{ e.preventDefault(); pointerDown(e); });
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); pointerDown(e); },{passive:false});
+
+function togglePause(){
+  if(game.state==='playing') game.state='paused';
+  else if(game.state==='paused') game.state='playing';
+  updateHudButtons();
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  saveProgress();
+  updateHudButtons();
+}
+function updateHudButtons(){
+  const bp=document.getElementById('btnPause'), bm=document.getElementById('btnMute');
+  if(bp) bp.textContent = game.state==='paused' ? '▶' : '⏸';
+  if(bm) bm.textContent = game.muted ? '🔇' : '🔊';
+}
+
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){ e.preventDefault(); togglePause(); }
+  if(e.code==='KeyM'){ e.preventDefault(); toggleMute(); }
+  if(e.code==='KeyH'){ e.preventDefault(); useHint(); }
+  if(e.code==='Enter'||e.code==='Space'){ e.preventDefault();
+    if(game.state==='title') resetGame();
+    else if(game.state==='won') resetGame();
+  }
+});
+
+const btnPauseEl=document.getElementById('btnPause');
+const btnMuteEl=document.getElementById('btnMute');
+const btnHintEl=document.getElementById('btnHint');
+if(btnPauseEl) btnPauseEl.addEventListener('click', e=>{ e.preventDefault(); togglePause(); });
+if(btnMuteEl) btnMuteEl.addEventListener('click', e=>{ e.preventDefault(); toggleMute(); });
+if(btnHintEl) btnHintEl.addEventListener('click', e=>{ e.preventDefault(); const a=audioCtx(); if(a&&a.state==='suspended'){try{a.resume();}catch(ex){}} useHint(); });
+updateHudButtons();
+
+// ---- Loop ----
+let last=0;
+function loop(ts){
+  if(!last) last=ts;
+  const dt=ts-last; last=ts;
+  if(game.state==='playing'||game.state==='title'||game.state==='won') update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';
+draw();
+requestAnimationFrame(loop);
+
+// ---- Test hook ----
+window.__cfq={
+  get game(){return game;},
+  get cards(){return cards;},
+  get flipped(){return flipped;},
+  get particles(){return particles;},
+  buildCards, startRound, resetGame, tryFlip, update, draw, cardAt,
+  useHint, togglePause, toggleMute, saveProgress, loadSaved,
+  PAIRS, ROUNDS,
+};
+</script>
+</body>
+</html>

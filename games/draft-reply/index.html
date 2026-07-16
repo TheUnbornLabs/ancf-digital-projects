@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Draft Reply</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03040a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(100,130,200,.35);background:rgba(4,6,14,.85);color:#a8c4ff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#ctrls button:active{background:rgba(30,50,90,.9);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" title="Mute">🔊</button>
+  <button id="btnPause" title="Pause">⏸</button>
+</div>
+<div id="hint">Read the pressure message &middot; click the BEST boundary reply &middot; 12 scenarios</div>
+<script>
+'use strict';
+// Draft Reply (#77)
+// A pressure message is shown. Pick the best boundary-asserting reply.
+// 4 options, 1 correct. 12 scenarios. Quiz format.
+// Theme: practising clear, calm boundary communication.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const SCENARIOS=[
+  {msg:'"You\'ll change your mind when you\'re older."',answer:'"I appreciate the thought, but this is my settled choice."',wrong:['"Maybe you\'re right."','"You don\'t understand me at all!"','"I\'ve thought about it a little bit."'],why:'States the decision is settled without arguing or over-explaining.'},
+  {msg:'"Don\'t you feel like something is missing?"',answer:'"No — my life feels full on its own terms."',wrong:['"Sometimes, I guess."','"That\'s a personal question!"','"Well, everyone feels that sometimes."'],why:'Directly answers "no" and affirms fulfillment instead of deflecting.'},
+  {msg:'"Who will take care of you when you\'re old?"',answer:'"I\'m building a life that works for me at every stage."',wrong:['"I haven\'t thought that far."','"I guess I\'ll figure it out."','"That\'s so depressing to think about."'],why:'Shows the question is already handled with a plan, not left open.'},
+  {msg:'"It\'s selfish not to want kids."',answer:'"Selfishness would be having kids I didn\'t want."',wrong:['"Maybe you\'re right."','"I\'m sorry you feel that way."','"I never thought of it that way."'],why:'Reframes the premise firmly instead of conceding or apologizing.'},
+  {msg:'"Your parents must be so disappointed."',answer:'"My parents and I communicate well. Thanks for your concern."',wrong:['"Please don\'t bring them into this."','"I know, it\'s hard for them."','"That\'s really hurtful to say."'],why:'Redirects to the actual relationship, calmly closing the topic.'},
+  {msg:'"Aren\'t you worried about regret?"',answer:'"I\'d regret a life I didn\'t choose far more."',wrong:['"A little, yeah."','"I try not to think about it."','"Regret is inevitable either way."'],why:'Names the real risk (an unchosen life) instead of dodging the question.'},
+  {msg:'"You\'d be such a great parent though."',answer:'"Capability isn\'t the same as desire. I appreciate the kind thought."',wrong:['"Oh, I\'m not sure about that."','"Maybe someday."','"Thanks, that means a lot."'],why:'Separates ability from desire while staying warm toward the compliment.'},
+  {msg:'"Don\'t you want to leave a legacy?"',answer:'"My work and connections are my legacy — that\'s enough."',wrong:['"Legacy isn\'t really my focus."','"I guess I never thought of that."','"Maybe through other things."'],why:'Names a concrete alternative legacy rather than shrugging it off.'},
+  {msg:'"Who will inherit your things?"',answer:'"People and causes I care about. My choice to make."',wrong:['"Wow, morbid question."','"I haven\'t really decided."','"That\'s a strange thing to ask."'],why:'Gives a real answer and asserts it is a personal decision.'},
+  {msg:'"Your biological clock is ticking."',answer:'"My timeline is my own, not a default schedule."',wrong:['"I know, I try not to think about it."','"That\'s really not helpful."','"I\'m still young enough."'],why:'Rejects the framing of a default schedule rather than negotiating the timing.'},
+  {msg:'"But what do you do with your time?"',answer:'"Many fulfilling things — same as anyone living a rich life."',wrong:['"Oh, just whatever."','"I stay busy, I guess."','"I have hobbies and stuff."'],why:'Asserts a full life confidently instead of minimizing it.'},
+  {msg:'"Don\'t you feel lonely without a family?"',answer:'"My chosen family and friendships are deeply meaningful."',wrong:['"Sometimes, a little."','"That\'s very personal."','"Everyone gets lonely sometimes."'],why:'Names the real support network rather than deflecting the question.'},
+];
+const TOTAL=12;
+const BEST_KEY='draftReply_best_v1';
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+const saved=lsGet(BEST_KEY,{best:0,bestStreak:0});
+const game={
+  state:'title',time:0,round:0,score:0,best:saved.best||0,
+  shakeT:0,chosen:-1,muted:false,paused:false,
+  streak:0,bestStreak:saved.bestStreak||0,correctCount:0,
+  timeLeft:0,timeMax:8,popups:[],missed:[]
+};
+let options=[],rng,roundTimeoutId=null;
+function correctAnsIdx(){const s=SCENARIOS[game.round%SCENARIOS.length];for(let i=0;i<options.length;i++)if(options[i]===s.answer)return i;return -1;}
+function fisherYates(arr,rnd){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+function roundTimerFloor(){return 4;} // never below 4s
+function computeTimeMax(streak){
+  // shrinks slightly each streak milestone (every 3 correct), clamped floor
+  const shrink=Math.floor(streak/3)*0.6;
+  return Math.max(roundTimerFloor(),8-shrink);
+}
+function buildRound(r){
+  if(roundTimeoutId!==null){clearTimeout(roundTimeoutId);roundTimeoutId=null;}
+  rng=seeded(r*6007+33);
+  const s=SCENARIOS[r%SCENARIOS.length];
+  options=fisherYates([s.answer,...s.wrong],rng);
+  game.chosen=-1;
+  game.state='playing';
+  game.timeMax=computeTimeMax(game.streak);
+  game.timeLeft=game.timeMax;
+  game.popups=[];
+}
+function resetGame(){
+  if(roundTimeoutId!==null){clearTimeout(roundTimeoutId);roundTimeoutId=null;}
+  game.round=0;game.score=0;game.shakeT=0;game.streak=0;game.correctCount=0;game.missed=[];game.popups=[];
+  buildRound(0);
+}
+function addPopup(text,color){game.popups.push({text,color,t:0,life:900});}
+function choose(i){
+  if(game.chosen>=0||game.state!=='playing')return;
+  game.chosen=i;
+  const s=SCENARIOS[game.round%SCENARIOS.length];
+  const ok=options[i]===s.answer;
+  if(ok){
+    game.score++;game.streak++;game.correctCount++;
+    if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+    const mult=1+Math.floor(game.streak/3)*0.5;
+    addPopup('+1  x'+mult.toFixed(1),'#7cf0a0');
+    sndGood();
+  }else{
+    game.streak=0;game.missed.push(game.round%SCENARIOS.length);
+    game.shakeT=260;
+    addPopup('MISS','#f08080');
+    sndBad();
+  }
+  if(game.score>game.best){game.best=game.score;lsSet(BEST_KEY,{best:game.best,bestStreak:game.bestStreak});}
+  if(game.bestStreak>saved.bestStreak){lsSet(BEST_KEY,{best:game.best,bestStreak:game.bestStreak});}
+  const myRound=game.round;
+  roundTimeoutId=setTimeout(()=>{
+    roundTimeoutId=null;
+    if(game.state!=='playing'||game.round!==myRound)return; // guard against stale timeout
+    game.round++;
+    if(game.round>=TOTAL){sndWin();game.state='won';}
+    else{buildRound(game.round);}
+  },1000);
+}
+function timeExpire(){
+  // treat as a miss with no selection
+  if(game.chosen>=0||game.state!=='playing')return;
+  game.chosen=-2; // -2 = timed out, no option highlighted as chosen
+  game.streak=0;game.missed.push(game.round%SCENARIOS.length);game.shakeT=260;
+  addPopup('TIME UP','#f0c080');sndBad();
+  const myRound=game.round;
+  roundTimeoutId=setTimeout(()=>{
+    roundTimeoutId=null;
+    if(game.state!=='playing'||game.round!==myRound)return;
+    game.round++;
+    if(game.round>=TOTAL){sndWin();game.state='won';}
+    else{buildRound(game.round);}
+  },900);
+}
+function update(dt){
+  dt=clamp(dt,0,48);
+  if(game.paused)return;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(const p of game.popups)p.t+=dt;
+  game.popups=game.popups.filter(p=>p.t<p.life);
+  if(game.state==='playing'&&game.chosen<0){
+    game.timeLeft=Math.max(0,game.timeLeft-dt/1000);
+    if(game.timeLeft<=0)timeExpire();
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndGood=()=>tone(660,0.15,'sine',0.06);
+const sndBad=()=>tone(200,0.2,'sawtooth',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function wrapText(txt,x,y,maxW,lh){const words=txt.split(' ');let line='';const lines=[];for(const w of words){const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line!==''){lines.push(line.trim());line=w+' ';}else{line=test;}}lines.push(line.trim());for(let i=0;i<lines.length;i++)ctx.fillText(lines[i],x,y+i*lh);return {y:y+lines.length*lh,lines:lines.length};}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#03040a'],[1,'#020308']]);ctx.fillRect(0,0,W,H);}
+function drawScenario(){const s=SCENARIOS[game.round%SCENARIOS.length];// message bubble
+const mx=60,my=70,mw=W-120,mh=100;ctx.fillStyle='rgba(80,40,40,.6)';rr(mx,my,mw,mh,12);ctx.fill();ctx.strokeStyle='rgba(180,80,80,.3)';ctx.lineWidth=1.5;rr(mx,my,mw,mh,12);ctx.stroke();ctx.fillStyle='rgba(220,160,160,.4)';ctx.font='bold 10px Arial';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('PRESSURE MESSAGE:',mx+12,my+8);ctx.fillStyle='rgba(234,242,246,.85)';ctx.font='15px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.msg,W/2,my+mh/2+8);
+// timer bar
+if(game.state==='playing'){
+  const tw=mw,tx=mx,ty=my+mh+8,th=6;
+  const frac=clamp(game.timeLeft/game.timeMax,0,1);
+  const lowTime=game.timeLeft<=2&&game.chosen<0;
+  ctx.fillStyle='rgba(255,255,255,.08)';rr(tx,ty,tw,th,3);ctx.fill();
+  let barColor=lowTime?'rgba(255,90,90,.9)':'rgba(120,180,255,.8)';
+  if(lowTime){const pulse=0.6+0.4*Math.sin(game.time/90);ctx.globalAlpha=pulse;}
+  ctx.fillStyle=barColor;rr(tx,ty,tw*frac,th,3);ctx.fill();ctx.globalAlpha=1;
+}
+}
+function drawOptions(){const BW=W-120,BH=52,GAP=10;const sy=196;const s=SCENARIOS[game.round%SCENARIOS.length];
+for(let i=0;i<4;i++){const bx=60,by=sy+i*(BH+GAP);let bg='rgba(30,40,70,.8)',tc='rgba(180,200,255,.8)';let mark=null;
+  if(game.chosen!==-1){
+    if(options[i]===s.answer){bg='rgba(30,100,60,.8)';tc='rgba(120,240,160,.9)';mark='check';}
+    else if(i===game.chosen){bg='rgba(100,30,30,.8)';tc='rgba(240,120,120,.9)';mark='x';}
+  }
+  ctx.fillStyle=bg;rr(bx,by,BW,BH,10);ctx.fill();ctx.strokeStyle='rgba(100,130,200,.3)';ctx.lineWidth=1.5;rr(bx,by,BW,BH,10);ctx.stroke();
+  // colorblind-safe glyph
+  if(mark){
+    ctx.save();ctx.strokeStyle=tc;ctx.lineWidth=2.4;ctx.lineCap='round';const gx=bx+BW-30,gy=by+BH/2;
+    if(mark==='check'){ctx.beginPath();ctx.moveTo(gx-8,gy);ctx.lineTo(gx-2,gy+7);ctx.lineTo(gx+9,gy-8);ctx.stroke();}
+    else{ctx.beginPath();ctx.moveTo(gx-7,gy-7);ctx.lineTo(gx+7,gy+7);ctx.moveTo(gx+7,gy-7);ctx.lineTo(gx-7,gy+7);ctx.stroke();}
+    ctx.restore();
+  }
+  ctx.fillStyle=tc;ctx.font='13px Arial';ctx.textAlign='left';ctx.textBaseline='middle';
+  const maxW=BW-(mark?60:24);
+  if(ctx.measureText(options[i]).width>maxW){
+    // two-line wrap instead of truncation
+    ctx.save();ctx.textBaseline='middle';
+    const words=options[i].split(' ');let line='',lines=[];
+    for(const w of words){const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line!==''){lines.push(line.trim());line=w+' ';}else line=test;}
+    lines.push(line.trim());
+    if(lines.length>2){ // collapse to 2 lines max, ellipsis on 2nd
+      const merged=lines.slice(1).join(' ');
+      lines=[lines[0],merged];
+      if(ctx.measureText(lines[1]).width>maxW){
+        while(lines[1].length&&ctx.measureText(lines[1]+'…').width>maxW)lines[1]=lines[1].slice(0,-1);
+        lines[1]+='…';
+      }
+    }
+    const lh=14;const startY=by+BH/2-((lines.length-1)*lh)/2;
+    for(let li=0;li<lines.length;li++)ctx.fillText(lines[li],bx+12,startY+li*lh);
+    ctx.restore();
+  }else{
+    ctx.fillText(options[i],bx+12,by+BH/2);
+  }
+}}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80b0ff';ctx.font='bold 13px Arial';ctx.fillText('Draft Reply',18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Round '+(game.round+1)+' / '+TOTAL+' — Choose the clearest boundary reply',18,28);
+ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+const mult=1+Math.floor(game.streak/3)*0.5;
+ctx.fillStyle=game.streak>0?'rgba(255,210,120,.85)':'rgba(234,242,246,.35)';
+ctx.fillText('Streak '+game.streak+' (x'+mult.toFixed(1)+')',W-18,24);
+ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function drawPopups(){ctx.save();ctx.textAlign='center';ctx.font='bold 16px Arial';for(const p of game.popups){const frac=p.t/p.life;const alpha=1-frac;const dy=-30*frac;ctx.globalAlpha=Math.max(0,alpha);ctx.fillStyle=p.color;ctx.fillText(p.text,W/2,410+dy);}ctx.restore();}
+function drawWhy(){
+  if(game.chosen===-1)return;
+  const s=SCENARIOS[game.round%SCENARIOS.length];
+  ctx.save();ctx.fillStyle='rgba(234,242,246,.65)';ctx.font='italic 12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Why: '+s.why,W/2,438);
+  ctx.restore();
+}
+function drawPanelBtn(px,py,pw,ph,label,by){
+  const bw=200,bh=40,bx=px+(pw-bw)/2;
+  ctx.save();ctx.fillStyle='rgba(60,110,220,.35)';rr(bx,by,bw,bh,10);ctx.fill();
+  ctx.strokeStyle='rgba(120,170,255,.6)';ctx.lineWidth=1.5;rr(bx,by,bw,bh,10);ctx.stroke();
+  ctx.fillStyle='#cfe0ff';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,bx+bw/2,by+bh/2);
+  ctx.restore();
+  return {x:bx,y:by,w:bw,h:bh};
+}
+let wonBtnRect=null;
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=360,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,14,.97)'],[1,'rgba(3,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80b0ff';ctx.font='bold 30px Arial';ctx.fillText(title,W/2,py+52);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+84;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=23;}
+if(game.state==='won'){wonBtnRect=drawPanelBtn(px,py,pw,ph,'Play Again',py+ph-64);}else{wonBtnRect=null;}
+ctx.restore();}
+function missedSummary(){
+  if(game.missed.length===0)return ['No misses — clean run!'];
+  const uniq=[...new Set(game.missed)];
+  return uniq.slice(0,5).map(idx=>'• '+SCENARIOS[idx].msg.replace(/^"|"$/g,''));
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    // screen shake applied here (previously dead variable)
+    if(game.shakeT>0){
+      const mag=Math.min(6,game.shakeT/40);
+      const ox=(Math.sin(game.time*0.09)*mag);
+      const oy=(Math.cos(game.time*0.11)*mag);
+      ctx.translate(ox,oy);
+    }
+    drawBg();
+    if(game.state!=='title'){drawScenario();drawOptions();drawPopups();drawWhy();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.paused&&game.state==='playing'){
+      ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#cfe0ff';ctx.font='bold 26px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('PAUSED',W/2,H/2);
+    }
+    if(game.state==='title')panelDraw('Draft Reply',['A pressure question appears.','Choose the clearest, calmest boundary reply.','12 real-world scenarios.','','Boundaries communicate, not attack.','','Click / tap to begin.']);
+    else if(game.state==='won'){
+      const acc=Math.round((game.correctCount/TOTAL)*100);
+      const lines=['Score: '+game.score+' / '+TOTAL,'Accuracy: '+acc+'%','Best Score: '+game.best+'   Best Streak: '+game.bestStreak,'','Missed scenarios:',...missedSummary()];
+      panelDraw('Boundaries Set!',lines);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+function optionAt(px,py){const BH=52,GAP=10,sy=196,bx=60,BW=W-120;for(let i=0;i<4;i++){const by=sy+i*(BH+GAP);if(px>=bx&&px<=bx+BW&&py>=by&&py<=by+BH)return i;}return -1;}
+function toCanvasCoords(e){
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  let cx,cy;
+  if(e.touches&&e.touches.length){cx=e.touches[0].clientX;cy=e.touches[0].clientY;}
+  else{cx=e.clientX;cy=e.clientY;}
+  return {px:(cx-rect.left)*sx,py:(cy-rect.top)*sy};
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const {px,py}=toCanvasCoords(e);
+  if(game.state==='title'){resetGame();return;}
+  if(game.state==='won'){
+    if(wonBtnRect&&px>=wonBtnRect.x&&px<=wonBtnRect.x+wonBtnRect.w&&py>=wonBtnRect.y&&py<=wonBtnRect.y+wonBtnRect.h){resetGame();return;}
+    resetGame();return; // whole-panel click still restarts too
+  }
+  if(game.state!=='playing'||game.paused||game.chosen>=0)return;
+  const i=optionAt(px,py);if(i>=0)choose(i);
+}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+// on-screen controls
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+function toggleMute(){game.muted=!game.muted;btnMute.textContent=game.muted?'🔇':'🔊';}
+function togglePause(){if(game.state!=='playing')return;game.paused=!game.paused;btnPause.textContent=game.paused?'▶':'⏸';}
+btnMute.addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+btnPause.addEventListener('click',(e)=>{e.stopPropagation();togglePause();});
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='m'||e.key==='M')toggleMute();
+  if(e.key==='p'||e.key==='P'||e.key==='Escape')togglePause();
+});
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get options(){return options;},resetGame,buildRound,choose,update,draw,SCENARIOS,TOTAL,optionAt,toggleMute,togglePause};
+</script>
+</body>
+</html>

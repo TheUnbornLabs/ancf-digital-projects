@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Star Connect</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#020308;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+.ctrlbtn{position:fixed;top:10px;width:40px;height:40px;min-width:36px;min-height:36px;border-radius:50%;
+  background:rgba(10,8,22,.72);border:1.5px solid rgba(160,120,255,.35);color:#e6e0ff;font-size:16px;
+  display:flex;align-items:center;justify-content:center;z-index:20;cursor:pointer;padding:0;}
+.ctrlbtn:active{background:rgba(160,120,255,.35);}
+#btnMute{right:10px;}
+#btnPause{right:58px;}
+#btnHint{left:10px;top:10px;font-size:11px;font-weight:bold;width:auto;padding:0 12px;border-radius:20px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="btnHint" class="ctrlbtn" aria-label="Hint">HINT</button>
+<button id="btnPause" class="ctrlbtn" aria-label="Pause">&#10074;&#10074;</button>
+<button id="btnMute" class="ctrlbtn" aria-label="Mute">&#128266;</button>
+<div id="hint">Click stars in the correct order to trace your own constellation &middot; 10 patterns &middot; Enter/Space to advance</div>
+<script>
+'use strict';
+// Star Connect (#69)
+// A pattern of numbered stars appears briefly, then numbers hide.
+// Click stars in the memorized order to trace the constellation.
+// 10 patterns with increasing complexity.
+// Theme: connecting your own dots — your story, your pattern.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const SHOW_DUR=2500;// base ms to memorize
+const STAR_R=14;
+const MIN_DIST=STAR_R*2;
+const NAMES=['Your Path','Your Story','Your Choice','Your Light','Your Journey','Your Voice','Your Peace','Your Bloom','Your Rise','Your Truth'];
+const TOTAL=10;
+const MAX_MISSES=3;// lives / mistake budget across the run
+const HINT_PENALTY=1;// score penalty per hint use (against round accuracy bonus)
+
+// ---- localStorage helpers (private browsing can throw) ----
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+const game={
+  state:'title',time:0,round:0,score:0,best:0,shakeT:0,
+  phase:'show',phaseT:0,
+  misses:0,totalMisses:0,livesUsed:0,
+  streak:0,bestStreak:0,cleanRounds:0,
+  roundMiss:0,// misses this round (for clean-round tracking)
+  hintUsed:false,hintReveal:-1,
+  particles:[],popups:[],
+  paused:false,muted:lsGet('starconnect_muted','0')==='1'
+};
+game.best=parseInt(lsGet('starconnect_best','0'),10)||0;
+game.bestStreak=parseInt(lsGet('starconnect_beststreak','0'),10)||0;
+
+let stars=[],clicked=[],rng;
+
+function showDurFor(r){return clamp(2500-r*120,1200,2500);}
+
+function buildRound(r){
+  rng=seeded(r*6007+55);
+  const N=3+Math.floor(r/2);
+  const showDur=showDurFor(r);
+  let pts=[];
+  let attempts=0;
+  while(pts.length<N&&attempts<4000){
+    attempts++;
+    const cand={x:80+rng()*(W-160),y:80+rng()*(H-160)};
+    let ok=true;
+    for(const p of pts){if(Math.hypot(cand.x-p.x,cand.y-p.y)<MIN_DIST){ok=false;break;}}
+    if(ok)pts.push(cand);
+  }
+  // fallback: if rejection loop couldn't place all (very unlikely), just fill remaining without check
+  while(pts.length<N){pts.push({x:80+rng()*(W-160),y:80+rng()*(H-160)});}
+  stars=pts.map((p,i)=>({x:p.x,y:p.y,order:i+1,hit:false}));
+  clicked=[];
+  game.phase='show';
+  game.phaseT=0;
+  game.showDur=showDur;
+  game.roundMiss=0;
+  game.hintUsed=false;
+  game.hintReveal=-1;
+  game.state='playing';
+}
+
+function resetGame(){
+  game.round=0;game.score=0;game.shakeT=0;game.misses=0;game.totalMisses=0;
+  game.streak=0;game.cleanRounds=0;game.paused=false;
+  game.particles=[];game.popups=[];
+  buildRound(0);
+}
+
+function spawnBurst(x,y,color,n){
+  n=n||10;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=1+Math.random()*2.5;
+    game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:400+Math.random()*200,maxLife:600,color});
+  }
+}
+function spawnPopup(x,y,text,color){
+  game.popups.push({x,y,text,color,life:700,maxLife:700});
+}
+
+function clickStar(px,py){
+  if(game.phase!=='input'||game.paused||game.state==='gameover')return;
+  for(const st of stars){
+    if(!st.hit&&Math.hypot(px-st.x,py-st.y)<STAR_R+8){
+      const expected=clicked.length+1;
+      if(st.order===expected){
+        st.hit=true;clicked.push(st);sndClick2();
+        spawnBurst(st.x,st.y,'rgba(220,200,255,.9)',8);
+        spawnPopup(st.x,st.y-18,'+1','#ffd580');
+        if(clicked.length===stars.length){
+          game.score++;
+          if(game.roundMiss===0){
+            game.streak++;
+            game.cleanRounds++;
+            if(game.streak>game.bestStreak){game.bestStreak=game.streak;lsSet('starconnect_beststreak',String(game.bestStreak));}
+            spawnPopup(W/2,H/2-40,'PERFECT +2','#8dffb0');
+            game.score+=2;// accuracy bonus for zero misses
+          }else{
+            game.streak=0;
+          }
+          if(game.score>game.best){game.best=game.score;lsSet('starconnect_best',String(game.best));}
+          sndWin2();
+          setTimeout(()=>{
+            game.round++;
+            if(game.round>=TOTAL){sndWin();game.state='won';}
+            else{buildRound(game.round);}
+          },600);
+        }
+        return;
+      }else{
+        // wrong order — reset, apply penalty, track mistakes
+        sndBad();
+        game.misses++;
+        game.totalMisses++;
+        game.roundMiss++;
+        game.shakeT=260;
+        spawnBurst(px,py,'rgba(255,90,90,.9)',12);
+        spawnPopup(px,py-14,'MISS','#ff6b6b');
+        clicked=[];
+        stars.forEach(s=>s.hit=false);
+        checkGameOver();
+        return;
+      }
+    }
+  }
+}
+
+function checkGameOver(){
+  if(game.totalMisses>=MAX_MISSES){
+    game.state='gameover';
+  }
+}
+
+function useHint(){
+  if(game.phase!=='input'||game.state!=='playing'||game.paused)return;
+  const next=stars.find(s=>!s.hit);
+  if(!next)return;
+  game.hintUsed=true;
+  game.hintReveal=next.order;
+  game.score=Math.max(0,game.score-HINT_PENALTY);
+  setTimeout(()=>{if(game.hintReveal===next.order)game.hintReveal=-1;},900);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(let i=game.particles.length-1;i>=0;i--){
+    const p=game.particles[i];
+    p.life-=dt;p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vx*=0.94;p.vy*=0.94;
+    if(p.life<=0)game.particles.splice(i,1);
+  }
+  for(let i=game.popups.length-1;i>=0;i--){
+    const p=game.popups[i];
+    p.life-=dt;p.y-=dt*0.03;
+    if(p.life<=0)game.popups.splice(i,1);
+  }
+  if(game.state!=='playing'||game.paused)return;
+  if(game.phase==='show'){
+    game.phaseT+=dt;
+    const dur=game.showDur||SHOW_DUR;
+    if(game.phaseT>=dur){game.phase='input';game.phaseT=0;}
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}
+}
+const sndClick2=()=>tone(440+clicked.length*30,0.08,'sine',0.05);
+const sndBad=()=>tone(200,0.2,'sawtooth',0.05);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(2,3,8,.25)';ctx.fillRect(0,0,W,H);}
+
+function drawStarShape(st,filled){
+  const r1=STAR_R,r2=STAR_R*0.4;
+  ctx.beginPath();
+  for(let i=0;i<10;i++){
+    const a=i*Math.PI/5-Math.PI/2,r=i%2===0?r1:r2;
+    i===0?ctx.moveTo(st.x+Math.cos(a)*r,st.y+Math.sin(a)*r):ctx.lineTo(st.x+Math.cos(a)*r,st.y+Math.sin(a)*r);
+  }
+  ctx.closePath();
+  if(filled)ctx.fill();else ctx.stroke();
+}
+
+function drawStars(){
+  if(clicked.length>1){
+    ctx.strokeStyle='rgba(200,180,255,.3)';ctx.lineWidth=1.5;ctx.beginPath();
+    ctx.moveTo(clicked[0].x,clicked[0].y);
+    for(let i=1;i<clicked.length;i++)ctx.lineTo(clicked[i].x,clicked[i].y);
+    ctx.stroke();
+  }
+  for(const st of stars){
+    const showNum=game.phase==='show'||game.hintReveal===st.order;
+    const glow=st.hit?'rgba(220,200,255,.6)':'rgba(160,140,220,.3)';
+    ctx.shadowColor=glow;ctx.shadowBlur=st.hit?12:6;
+    const col=st.hit?'rgba(220,200,255,.9)':'rgba(140,120,200,.7)';
+    ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=2;
+    // colorblind-friendly shape distinction: filled = hit, outline = unhit (once numbers hidden)
+    drawStarShape(st,st.hit || game.phase==='show');
+    ctx.shadowBlur=0;
+    if(showNum){
+      ctx.fillStyle='rgba(234,242,246,.9)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(st.order,st.x,st.y);
+    }
+  }
+}
+
+function drawParticles(){
+  for(const p of game.particles){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawPopups(){
+  for(const p of game.popups){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font='bold 13px Arial';ctx.textAlign='center';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Star Connect — '+NAMES[game.round%NAMES.length],18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const dur=game.showDur||SHOW_DUR;
+  const msg=game.phase==='show'?'Memorize the order ('+Math.ceil((dur-game.phaseT)/1000)+'s)...':'Click stars in order (1→'+stars.length+')';
+  ctx.fillText(msg,18,28);
+  ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,16);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Round '+(game.round+1)+' / '+TOTAL+'  Best: '+game.best,W-18,8);
+  ctx.fillText('Streak: '+game.streak+'  Clean: '+game.cleanRounds+'  Lives: '+(MAX_MISSES-game.totalMisses),W-18,26);
+  ctx.restore();
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,5,14,.97)'],[1,'rgba(3,4,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(160,120,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    // screen shake offset
+    let ox=0,oy=0;
+    if(game.shakeT>0){
+      const mag=Math.min(6,game.shakeT/40);
+      ox=(Math.random()*2-1)*mag;
+      oy=(Math.random()*2-1)*mag;
+    }
+    ctx.setTransform(1,0,0,1,ox,oy);
+    if(game.state==='playing'||game.state==='paused'){drawBg();}
+    ctx.save();
+    if(game.state!=='title')drawStars();
+    drawParticles();
+    drawPopups();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.paused&&game.state==='playing'){
+      ctx.fillStyle='rgba(2,3,8,.7)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#c0a0ff';ctx.font='bold 28px Arial';ctx.textAlign='center';
+      ctx.fillText('Paused',W/2,H/2);
+      ctx.fillStyle='rgba(234,242,246,.6)';ctx.font='13px Arial';
+      ctx.fillText('Tap pause button or press Space to resume',W/2,H/2+30);
+    }
+    if(game.state==='title'){
+      ctx.fillStyle='rgba(2,3,8,.9)';ctx.fillRect(0,0,W,H);
+      panelDraw('Star Connect',['Stars appear numbered — memorize the order.','Then click them in sequence.','Wrong order resets the pattern and costs a life.','3 misses total ends the run — use Hint sparingly.','10 constellations.','','Connect your own dots, in your own order.','','Click / tap or press Enter to begin.']);
+    }else if(game.state==='won'){
+      const flawless=game.totalMisses===0&&game.score>=TOTAL;
+      panelDraw('All Connected! ✓',['Score: '+game.score+'  Best: '+game.best,'Best Streak: '+game.bestStreak+'  Clean Rounds: '+game.cleanRounds+' / '+TOTAL,flawless?'★ FLAWLESS RUN BADGE ★':'','','You traced every pattern.','','Click / tap or press Enter to play again.']);
+    }else if(game.state==='gameover'){
+      panelDraw('Pattern Lost',['You used all '+MAX_MISSES+' misses.','Rounds completed: '+game.round+' / '+TOTAL,'Score: '+game.score+'  Best: '+game.best,'','Every path has setbacks — try again.','','Click / tap or press Enter to retry.']);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.paused)return;
+  clickStar(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// Coordinate scaling: rect is recomputed live from getBoundingClientRect() on every
+// click inside onDown, so resize/orientation-change is already handled correctly
+// with no extra listener needed (confirmed no-op per upgrade plan item 12).
+
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  const btn=document.getElementById('btnPause');
+  if(btn)btn.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('starconnect_muted',game.muted?'1':'0');
+  const btn=document.getElementById('btnMute');
+  if(btn)btn.innerHTML=game.muted?'&#128263;':'&#128266;';
+}
+
+const btnPauseEl=document.getElementById('btnPause');
+const btnMuteEl=document.getElementById('btnMute');
+const btnHintEl=document.getElementById('btnHint');
+if(btnMuteEl)btnMuteEl.innerHTML=game.muted?'&#128263;':'&#128266;';
+if(btnPauseEl)btnPauseEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();togglePause();});
+if(btnPauseEl)btnPauseEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();},{passive:false});
+if(btnMuteEl)btnMuteEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+if(btnMuteEl)btnMuteEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+if(btnHintEl)btnHintEl.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();useHint();});
+if(btnHintEl)btnHintEl.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();useHint();},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='Enter'){
+    e.preventDefault();
+    if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+    if(e.code==='Space')togglePause();
+  }else if(e.key==='m'||e.key==='M'){
+    toggleMute();
+  }else if(e.key==='p'||e.key==='P'){
+    togglePause();
+  }else if(e.key==='h'||e.key==='H'){
+    useHint();
+  }
+});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get stars(){return stars;},
+  get clicked(){return clicked;},
+  resetGame,buildRound,clickStar,update,draw,
+  togglePause,toggleMute,useHint,
+  NAMES,TOTAL,STAR_R,SHOW_DUR,MAX_MISSES
+};
+</script>
+</body>
+</html>

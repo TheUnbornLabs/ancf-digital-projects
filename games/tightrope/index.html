@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Tightrope</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{display:block;background:#04030a;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(120,160,220,.4);background:rgba(6,4,14,.8);color:#cfe0ff;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#ctrls button:active{background:rgba(60,90,150,.6);}
+#vign{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 0 0 rgba(220,40,40,0);transition:box-shadow .1s;}
+#vign.low{animation:pulse 0.9s ease-in-out infinite;}
+@keyframes pulse{0%{box-shadow:inset 0 0 60px 10px rgba(220,30,30,.15);}50%{box-shadow:inset 0 0 110px 30px rgba(220,30,30,.5);}100%{box-shadow:inset 0 0 60px 10px rgba(220,30,30,.15);}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="vign"></div>
+<div id="ctrls">
+<button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+<button id="btnMute" aria-label="Mute">&#128266;</button>
+</div>
+<div id="hint">Left/Right arrow or tilt the balance pole &middot; reach the end without falling</div>
+<script>
+'use strict';
+// Tightrope (#89)
+// A figure walks a tightrope. Pressure gusts blow from sides.
+// Press LEFT/RIGHT (or tap left/right side) to lean against the wind.
+// Balance bar shows tilt. Fall = life lost. Cross 10 ropes.
+// Theme: keeping your balance despite external pressures.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const ROPE_Y=H/2+40;
+const GUST_LABELS=['conform','pressure','urgency','oblige','demand','hurry','conform','expectation'];
+const TOTAL=10;
+
+// ---- persistence ----
+function loadBest(){try{const v=parseInt(localStorage.getItem('tightrope_best'),10);return isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem('tightrope_best',String(v));}catch(e){}}
+function loadMuted(){try{return localStorage.getItem('tightrope_muted')==='1';}catch(e){return false;}}
+function saveMuted(v){try{localStorage.setItem('tightrope_muted',v?'1':'0');}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),lives:3,streak:0,muted:loadMuted()};
+let player,tilt=0,tiltV=0,progress=0,gusts=[],gustTimer=0,rng,input={left:false,right:false};
+let tiltAccum=0,tiltSamples=0,crossingMaxAbsTilt=0;
+let popups=[]; // score popups {x,y,text,life,maxLife}
+let shakeTime=0,shakeMag=0; // screen shake
+let graceTimer=0; // post-fall invulnerability window (ms)
+let prevStateBeforePause='title';
+
+function buildRound(r){rng=seeded(r*6007+31);tilt=0;tiltV=0;progress=0;gusts=[];gustTimer=0;
+ let spd=60+r*5;spd=Math.min(spd,110); // clamp player speed
+ player={x:80,y:ROPE_Y-20,speed:spd};
+ tiltAccum=0;tiltSamples=0;crossingMaxAbsTilt=0;
+ game.state='playing';}
+function resetGame(){game.round=0;game.score=0;game.lives=3;game.streak=0;input.left=false;input.right=false;buildRound(0);}
+
+function addPopup(x,y,text,color){popups.push({x,y,text,life:900,maxLife:900,color:color||'rgba(160,220,255,.95)'});}
+function triggerShake(mag){shakeTime=Math.max(shakeTime,320);shakeMag=Math.max(shakeMag,mag);}
+
+function update(dt){dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+ if(shakeTime>0){shakeTime=Math.max(0,shakeTime-dt);}
+ if(graceTimer>0){graceTimer=Math.max(0,graceTimer-dt);}
+ for(let i=popups.length-1;i>=0;i--){popups[i].life-=dt;popups[i].y-=dt*0.02;if(popups[i].life<=0)popups.splice(i,1);}
+ if(game.state!=='playing')return;
+ // gusts
+ gustTimer+=dt;const gi=Math.max(1500,3000-game.round*150);
+ // milestone boss-gust rope every 5th crossing (round index divisible by 5, and round>0)
+ const isBoss=(game.round>0)&&(game.round%5===0);
+ if(gustTimer>=gi){gustTimer=0;const dir=rng()<0.5?-1:1;
+  const mult=Math.min(1+game.round*0.1,2.5); // clamp max strength multiplier
+  const str=(0.4+rng()*0.6)*mult;
+  gusts.push({dir,str,life:1200,maxLife:1200,label:GUST_LABELS[Math.floor(rng()*GUST_LABELS.length)]});
+  if(isBoss){ // telegraphed multi-gust combo: two extra follow-up gusts, same direction, slightly delayed via longer life stagger
+   gusts.push({dir,str:str*0.8,life:1700,maxLife:1700,label:'combo',delay:250});
+   gusts.push({dir,str:str*0.6,life:2200,maxLife:2200,label:'combo',delay:500});
+  }
+ }
+ // apply gusts to tilt
+ let gustForce=0;
+ for(const g of gusts){g.life-=dt;
+  if(g.delay!==undefined){g.delay-=dt;if(g.delay>0)continue;}
+  gustForce+=g.dir*g.str*(g.life/g.maxLife);
+ }
+ if(graceTimer>0)gustForce=0; // post-fall grace: zero gust force briefly
+ // player lean
+ const lean=input.left?-2.5:(input.right?2.5:0);
+ tiltV+=(gustForce*1.8+lean-tilt*0.5)*s*6;tiltV*=0.88;tilt+=tiltV*s*30;
+ tilt=clamp(tilt,-Math.PI/2.2,Math.PI/2.2);
+ tiltAccum+=Math.abs(tilt);tiltSamples++;
+ if(Math.abs(tilt)>crossingMaxAbsTilt)crossingMaxAbsTilt=Math.abs(tilt);
+ // fall if over
+ if(Math.abs(tilt)>=Math.PI/2.2){
+  game.lives--;tilt=0;tiltV=0;game.streak=0;sndFall();
+  triggerShake(10);
+  graceTimer=500; // grace window
+  if(game.lives<=0){game.lives=0;if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndLose();setTimeout(()=>game.state='gameover',400);}
+  else{buildRound(game.round);}
+  return;
+ }
+ // advance player
+ player.x+=player.speed*s*(1-Math.abs(tilt)/(Math.PI/2.2)*0.4);
+ progress=clamp((player.x-80)/(W-160),0,1);
+ if(progress>=1){
+  game.streak++;
+  const avgTilt=tiltSamples>0?tiltAccum/tiltSamples:0;
+  const steadyThresh=Math.PI/2.2*0.18;
+  const perfectThresh=Math.PI/2.2*0.12;
+  let gain=1;
+  // streak multiplier
+  const streakMult=1+Math.min(game.streak-1,10)*0.1;
+  gain=1*streakMult;
+  // clean crossing bonus (no falls this life so far -> lives unchanged from start of round means no fall happened this crossing, always true here since fall returns early)
+  gain+=0.5; // clean crossing bonus for completing without falling this rope
+  // steady walk bonus (low average tilt)
+  if(avgTilt<=steadyThresh){gain+=1;addPopup(player.x,ROPE_Y-50,'Steady! +1','rgba(140,220,180,.95)');}
+  // perfect rope bonus (max tilt never exceeded inner safety threshold)
+  if(crossingMaxAbsTilt<=perfectThresh){gain+=2;addPopup(player.x,ROPE_Y-70,'Perfect! +2','rgba(255,220,120,.95)');}
+  const scoreGain=Math.round(gain);
+  game.score+=scoreGain;
+  if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+  addPopup(player.x,ROPE_Y-30,'+'+scoreGain,'rgba(160,220,255,.95)');
+  sndWin2();
+  setTimeout(()=>{game.round++;if(game.round>=TOTAL){sndWin();game.state='won';}else{buildRound(game.round);}},400);
+ }
+ // cull gusts
+ gusts=gusts.filter(g=>g.life>0);
+}
+
+// ---- input ----
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowLeft'||e.key==='a')input.left=true;
+ if(e.key==='ArrowRight'||e.key==='d')input.right=true;
+ if(e.key==='p'||e.key==='P'||e.key==='Escape')togglePause();
+ if(e.key==='m'||e.key==='M')toggleMute();
+});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')input.left=false;if(e.key==='ArrowRight'||e.key==='d')input.right=false;});
+
+function togglePause(){
+ if(game.state==='playing'){prevStateBeforePause='playing';game.state='paused';}
+ else if(game.state==='paused'){game.state=prevStateBeforePause;}
+}
+function toggleMute(){game.muted=!game.muted;saveMuted(game.muted);btnMute.textContent=game.muted?'\u{1F507}':'\u{1F50A}';}
+
+// single consolidated touch handler for the canvas
+canvas.addEventListener('touchstart',e=>{
+ e.preventDefault();
+ const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+ if(game.state==='title'||game.state==='won'||game.state==='gameover'){
+  resetGame();
+  return; // do not also set lean input on the restart tap
+ }
+ if(game.state==='paused')return;
+ if(game.state!=='playing')return;
+ const rect=canvas.getBoundingClientRect();
+ const px=(e.touches[0].clientX-rect.left)*W/rect.width;
+ if(px<W/2)input.left=true;else input.right=true;
+},{passive:false});
+canvas.addEventListener('touchend',e=>{input.left=false;input.right=false;},{passive:true});
+canvas.addEventListener('touchcancel',e=>{input.left=false;input.right=false;},{passive:true});
+
+function onDown(e){e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+ if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}}
+canvas.addEventListener('mousedown',onDown);
+
+// on-screen HUD controls
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();btnPause.textContent=game.state==='paused'?'▶':'❙❙';});
+btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();btnPause.textContent=game.state==='paused'?'▶':'❙❙';},{passive:false});
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();},{passive:false});
+btnMute.textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndFall=()=>tone(200,0.3,'sawtooth',0.05);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04030a'],[1,'#030208']]);ctx.fillRect(0,0,W,H);}
+function drawRope(){// posts
+for(const px of[60,W-60]){ctx.fillStyle='rgba(120,100,60,.8)';ctx.fillRect(px-8,ROPE_Y-100,16,130);}// rope
+ctx.strokeStyle='rgba(200,180,140,.6)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(60,ROPE_Y);ctx.lineTo(W-60,ROPE_Y);ctx.stroke();// progress
+ctx.strokeStyle='rgba(120,200,120,.3)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(60,ROPE_Y);ctx.lineTo(60+progress*(W-120),ROPE_Y);ctx.stroke();}
+function drawGusts(){for(const g of gusts){if(g.delay!==undefined&&g.delay>0)continue;const a=g.life/g.maxLife;const arrowX=g.dir<0?W-100:100;const arrowY=ROPE_Y-60;ctx.save();ctx.globalAlpha=a*0.7;ctx.fillStyle=g.dir<0?'rgba(220,80,80,.8)':'rgba(220,80,80,.8)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillText((g.dir<0?'◀ ':'▶ ')+g.label,arrowX,arrowY);ctx.restore();}}
+function drawFigure(){if(!player)return;const px=player.x,py=ROPE_Y-22;ctx.save();ctx.translate(px,py);ctx.rotate(tilt*0.6);// balance pole
+ctx.strokeStyle='rgba(200,200,220,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-40,8);ctx.lineTo(40,8);ctx.stroke();// body
+ctx.fillStyle='rgba(160,200,255,.8)';ctx.beginPath();ctx.arc(0,-14,8,0,Math.PI*2);ctx.fill();ctx.fillRect(-4,-10,8,20);// legs
+ctx.strokeStyle='rgba(160,200,255,.8)';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,10);ctx.lineTo(-6,24);ctx.moveTo(0,10);ctx.lineTo(6,24);ctx.stroke();ctx.restore();}
+function drawBalanceMeter(){const bx=W/2-80,by=H-60,bw=160,bh=20;// background
+ctx.fillStyle='rgba(20,20,40,.6)';rr(bx,by,bw,bh,10);ctx.fill();// tilt indicator
+const nrmTilt=(tilt/(Math.PI/2.2)*0.5+0.5);const ix=bx+nrmTilt*(bw-16);const danger=Math.abs(tilt)>Math.PI/3.5;ctx.fillStyle=danger?'rgba(220,80,80,.8)':'rgba(120,200,120,.8)';rr(ix,by+2,16,bh-4,8);ctx.fill();
+if(danger){ // hazard stripes + warning glyph for colorblind accessibility
+ ctx.save();rr(ix,by+2,16,bh-4,8);ctx.clip();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;
+ for(let sx=-bh;sx<16+bh;sx+=6){ctx.beginPath();ctx.moveTo(ix+sx,by+2);ctx.lineTo(ix+sx-bh,by+2+bh);ctx.stroke();}
+ ctx.restore();
+ ctx.fillStyle='rgba(255,255,255,.95)';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',ix+8,by+bh/2);
+}
+ctx.strokeStyle='rgba(80,120,200,.4)';ctx.lineWidth=1;rr(bx,by,bw,bh,10);ctx.stroke();ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Balance',W/2,by+bh/2);}
+function drawPopups(){for(const p of popups){const a=Math.max(0,p.life/p.maxLife);ctx.save();ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font='bold 15px Arial';ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y);ctx.restore();}}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';ctx.fillText('Tightrope — Rope '+(game.round+1)+' / '+TOTAL,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Hold Left/Right to lean  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives)+'  Progress: '+Math.floor(progress*100)+'%  Streak: '+game.streak,18,28);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=340,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+100;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+
+function draw(){try{
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+ // screen shake offset
+ if(shakeTime>0){const amt=shakeMag*(shakeTime/320);ctx.translate((Math.random()*2-1)*amt,(Math.random()*2-1)*amt);}
+ drawBg();
+ if(game.state!=='title'){drawRope();drawGusts();drawFigure();drawBalanceMeter();drawPopups();}
+ vignette();
+ if(game.state==='playing'||game.state==='paused')drawHUD();
+ if(game.state==='title')panelDraw('Tightrope',['A figure walks a tightrope.','Pressure gusts blow from the sides.','Hold Left / Right (or tap sides) to counter-lean.','Reach the end. 3 lives. 10 ropes.','','Balance is not rigidity — it\'s constant adjustment.','','Click / tap or press any key to begin.']);
+ else if(game.state==='won')panelDraw('All Ropes Crossed! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Balance held through every pressure.','','Click / tap to play again.']);
+ else if(game.state==='gameover')panelDraw('Fell Off',['Score: '+game.score+'  Best: '+game.best,'','Every tightrope walker falls sometimes.','','Click / tap to retry.']);
+ else if(game.state==='paused')panelDraw('Paused',['Score: '+game.score+'  Round '+(game.round+1)+' / '+TOTAL,'','Press P or tap the pause button to resume.']);
+ ctx.restore();
+}catch(e){}}
+
+// low-life vignette pulse (item 7)
+function updateLowLifeCue(){
+ const vg=document.getElementById('vign');
+ if(game.state==='playing'&&game.lives===1)vg.classList.add('low');
+ else vg.classList.remove('low');
+}
+
+// ---- resize / letterbox (item 1) ----
+function resize(){
+ const vw=window.innerWidth,vh=window.innerHeight;
+ const targetRatio=16/9;
+ let cw=vw,ch=vw/targetRatio;
+ if(ch>vh){ch=vh;cw=vh*targetRatio;}
+ canvas.style.width=cw+'px';
+ canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();updateLowLifeCue();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get tilt(){return tilt;},get progress(){return progress;},get gusts(){return gusts;},get player(){return player;},get input(){return input;},resetGame,buildLevel:buildRound,update,draw,TOTAL,ROPE_Y,GUST_LABELS,togglePause,toggleMute};
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Gravity Flip</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#08060e;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrl{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrl button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(120,140,255,.35);background:rgba(10,8,20,.72);color:#dfe8ff;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#ctrl button:active{background:rgba(60,60,110,.8);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrl">
+<button id="muteBtn" title="Mute/Unmute" aria-label="Mute">🔊</button>
+<button id="pauseBtn" title="Pause/Resume" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Tap / click / Space or ArrowUp to flip gravity &middot; reach the portal &middot; Esc for title</div>
+<script>
+'use strict';
+// Gravity Flip (#28)
+// One-button runner: tap to flip gravity. Dodge expectation spikes,
+// reach the exit portal.  20 procedural levels.
+// Theme: rewriting gravity when life's script tries to pull you down.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const PLAYER_W=22,PLAYER_H=22;
+const SPEED_BASE=220; // px/s
+const SPEED_MAX=340;
+const GRAV=1100;
+const MAX_DEATHS_PER_LEVEL=3;
+// --- localStorage best-run persistence ---
+const LS_KEY='gravityflip_best_v1';
+function lsLoad(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return null;const o=JSON.parse(raw);return o&&typeof o==='object'?o:null;}catch(e){return null;}}
+function lsSave(o){try{localStorage.setItem(LS_KEY,JSON.stringify(o));}catch(e){}}
+let best=lsLoad()||{bestDeaths:null,bestTime:null,cleanStreakBest:0};
+const game={state:'title',time:0,level:1,deaths:0,shakeT:0,levelDeaths:0,totalTime:0,levelStartTime:0,cleanStreak:0,paused:false,muted:false,closeFlashT:0};
+let player,obstacles,portal,rng,camX,levelLen,gravDir,speed,particles=[]; // gravDir: 1=down, -1=up
+function levelSpeed(lv){return clamp(SPEED_BASE+(lv-1)*6,SPEED_BASE,SPEED_MAX);}
+function buildLevel(lv){rng=seeded(lv*6971+3);gravDir=1;camX=0;
+player={x:80,y:H/2-PLAYER_H/2,vy:0,dead:false};
+levelLen=1800+lv*200;
+speed=levelSpeed(lv);
+obstacles=[];
+particles=[];
+game.levelDeaths=0;
+game.levelStartTime=game.time;
+// spikes on floor and ceiling
+const count=6+lv*2;for(let i=0;i<count;i++){const x=300+Math.floor(rng()*(levelLen-400));const onFloor=rng()>0.5;const h=40+Math.floor(rng()*50);const w=26+Math.floor(rng()*30);obstacles.push({x,y:onFloor?H-h:0,w,h,onFloor,grazed:false});}
+// gap obstacles (floating blocks)
+const blocks=3+lv;for(let i=0;i<blocks;i++){const x=350+Math.floor(rng()*(levelLen-500));const y=80+Math.floor(rng()*(H-200));const w=60+Math.floor(rng()*80);obstacles.push({x,y,w,h:18,onFloor:null,grazed:false});}
+portal={x:levelLen-60,y:H/2-40,w:40,h:80};
+game.state='playing';}
+function flip(){if(game.state!=='playing'||game.paused)return;gravDir*=-1;player.vy=0;sndFlip();}
+function resetGame(){game.level=1;game.deaths=0;game.totalTime=0;game.cleanStreak=0;game.time=0;buildLevel(1);}
+function rectOverlap(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;}
+function spawnParticles(x,y,color,n){n=Math.max(1,Math.min(40,n|0));for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*140;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:300+Math.random()*300,maxLife:600,color});}}
+function updateParticles(dt){for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt*1000;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.98;p.vy*=0.98;}}
+function update(dt){dt=clamp(dt,0,48)/1000;game.time+=dt*1000;
+if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt*1000);
+if(game.closeFlashT>0)game.closeFlashT=Math.max(0,game.closeFlashT-dt*1000);
+updateParticles(dt);
+if(game.state!=='playing'||game.paused)return;
+player.vy+=GRAV*gravDir*dt;player.y+=player.vy*dt;player.x+=speed*dt;camX=player.x-200;
+// floor/ceil clamp
+const floor=H-PLAYER_H-4,ceil=4;if(gravDir===1&&player.y>=floor){player.y=floor;player.vy=0;}if(gravDir===-1&&player.y<=ceil){player.y=ceil;player.vy=0;}
+// out of bounds
+if(player.y>H+40||player.y<-40){die();return;}
+// obstacle collision + near-miss detection
+const NEAR=6;
+for(const o of obstacles){
+if(rectOverlap(player.x,player.y,PLAYER_W,PLAYER_H,o.x,o.y,o.w,o.h)){die();return;}
+if(o.onFloor!==null&&!o.grazed){
+// close-call: horizontally overlapping spike, vertically within NEAR px
+const hOverlap=player.x<o.x+o.w+NEAR&&player.x+PLAYER_W>o.x-NEAR;
+if(hOverlap){
+const vGap=o.onFloor?(o.y-(player.y+PLAYER_H)):((player.y)-(o.y+o.h));
+if(vGap>=0&&vGap<=NEAR){o.grazed=true;game.closeFlashT=180;sndClose();}
+}
+}
+}
+// portal
+if(rectOverlap(player.x,player.y,PLAYER_W,PLAYER_H,portal.x,portal.y,portal.w,portal.h)){
+sndWin();
+spawnParticles(player.x+PLAYER_W/2,player.y+PLAYER_H/2,'160,140,255',26);
+const levelTime=game.time-game.levelStartTime;
+game.totalTime+=levelTime;
+if(game.levelDeaths===0)game.cleanStreak++;else game.cleanStreak=0;
+if(best.cleanStreakBest===undefined||game.cleanStreak>best.cleanStreakBest){best.cleanStreakBest=game.cleanStreak;lsSave(best);}
+if(game.level>=20){
+if(best.bestDeaths===null||game.deaths<best.bestDeaths){best.bestDeaths=game.deaths;}
+if(best.bestTime===null||game.totalTime<best.bestTime){best.bestTime=game.totalTime;}
+lsSave(best);
+game.state='allclear';
+}else{
+game.state='won';
+}
+}}
+function die(){game.deaths++;game.levelDeaths++;game.shakeT=300;sndDie();
+spawnParticles(player.x+PLAYER_W/2,player.y+PLAYER_H/2,'255,110,110',22);
+if(game.levelDeaths>=MAX_DEATHS_PER_LEVEL){game.state='gameover';return;}
+buildLevel(game.level);}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndFlip=()=>tone(440,0.08,'sine',0.05);
+const sndDie=()=>tone(200,0.3,'sawtooth',0.06);
+const sndClose=()=>tone(880,0.06,'triangle',0.035);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#08060e'],[1,'#040308']]);ctx.fillRect(0,0,W,H);}
+function worldToScreen(wx){return wx-camX;}
+function fmtTime(ms){ms=Math.max(0,ms|0);const s=Math.floor(ms/1000),cs=Math.floor((ms%1000)/10);return s+'.'+String(cs).padStart(2,'0')+'s';}
+function drawLevel(){// floor and ceiling lines
+ctx.strokeStyle='rgba(80,100,140,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,H-2);ctx.lineTo(W,H-2);ctx.stroke();ctx.beginPath();ctx.moveTo(0,2);ctx.lineTo(W,2);ctx.stroke();
+// obstacles
+for(const o of obstacles){const sx=worldToScreen(o.x);if(sx>W+50||sx+o.w<-50)continue;if(o.onFloor===null){ctx.fillStyle='rgba(60,80,140,.85)';rr(sx,o.y,o.w,o.h,4);ctx.fill();ctx.strokeStyle='rgba(100,140,220,.5)';ctx.lineWidth=1;rr(sx,o.y,o.w,o.h,4);ctx.stroke();}else{// spike
+ctx.fillStyle='rgba(200,80,80,.85)';const n=Math.max(1,Math.floor(o.w/16));for(let i=0;i<n;i++){const tx=sx+i*(o.w/n),tw=o.w/n;ctx.beginPath();if(o.onFloor){ctx.moveTo(tx,o.y+o.h);ctx.lineTo(tx+tw/2,o.y);ctx.lineTo(tx+tw,o.y+o.h);}else{ctx.moveTo(tx,o.y);ctx.lineTo(tx+tw/2,o.y+o.h);ctx.lineTo(tx+tw,o.y);}ctx.closePath();ctx.fill();}
+ctx.fillStyle='rgba(255,200,200,.55)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ought',sx+o.w/2,o.onFloor?o.y+o.h*0.6:o.y+o.h*0.4);}}
+// portal
+const px=worldToScreen(portal.x);ctx.shadowColor='#8080ff';ctx.shadowBlur=20;ctx.fillStyle='rgba(100,80,220,.8)';rr(px,portal.y,portal.w,portal.h,8);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(200,200,255,.9)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('EXIT',px+portal.w/2,portal.y+portal.h/2);
+// particles
+for(const p of particles){const t=clamp(p.life/p.maxLife,0,1);const sxp=worldToScreen(p.x);ctx.fillStyle='rgba('+p.color+','+(t*0.9)+')';ctx.beginPath();ctx.arc(sxp,p.y,2.5*t+1,0,Math.PI*2);ctx.fill();}
+// player
+const glow=gravDir===1?'#60d0ff':'#ffd060';ctx.shadowColor=glow;ctx.shadowBlur=12;const sx2=worldToScreen(player.x);const g=ctx.createRadialGradient(sx2+PLAYER_W*0.4,player.y+PLAYER_H*0.35,2,sx2+PLAYER_W/2,player.y+PLAYER_H/2,PLAYER_W*0.6);g.addColorStop(0,'rgba(255,255,255,.7)');g.addColorStop(0.5,glow);g.addColorStop(1,'rgba(0,0,0,.3)');ctx.fillStyle=g;rr(sx2,player.y,PLAYER_W,PLAYER_H,6);ctx.fill();ctx.shadowBlur=0;}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,3,10,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#a0c0ff';ctx.font='bold 13px Arial';ctx.fillText('Level '+game.level+' / 20',18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Time '+fmtTime(game.time-game.levelStartTime),18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('GRAV',W/2,8);ctx.fillStyle=gravDir===1?'#60d0ff':'#ffd060';ctx.font='bold 22px Arial';ctx.fillText(gravDir===1?'▼ DOWN':'▲ UP',W/2,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Lives  '+(MAX_DEATHS_PER_LEVEL-game.levelDeaths)+'/'+MAX_DEATHS_PER_LEVEL+'   Deaths '+game.deaths,W-18,8);ctx.fillText('Clean streak '+game.cleanStreak,W-18,28);ctx.restore();
+if(game.closeFlashT>0){ctx.save();ctx.globalAlpha=game.closeFlashT/180*0.35;ctx.fillStyle='#ffe060';ctx.fillRect(0,0,W,H);ctx.restore();}
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(4,3,8,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(12,10,28,.97)'],[1,'rgba(7,6,18,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(120,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#a0c0ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+94;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=25;}ctx.restore();}
+function drawPauseOverlay(){ctx.save();ctx.fillStyle='rgba(4,3,8,.7)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#a0c0ff';ctx.font='bold 30px Arial';ctx.fillText('Paused',W/2,H/2-20);ctx.fillStyle='rgba(234,242,246,.8)';ctx.font='14px Arial';ctx.fillText('Tap the pause button or press P/Escape to resume',W/2,H/2+18);ctx.restore();}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);let dx=0,dy=0;if(game.shakeT>0){const m=game.shakeT/300*6;dx=Math.sin(game.time*.05)*m;dy=Math.cos(game.time*.07)*m;}ctx.save();ctx.translate(dx,dy);drawBg();if(game.state!=='title'&&game.state!=='gameover'&&game.state!=='allclear')drawLevel();vignette();if(game.state==='playing')drawHUD();
+if(game.state==='title'){const bestLines=[];if(best.bestTime!==null)bestLines.push('Best full run: '+fmtTime(best.bestTime)+'  ·  fewest deaths: '+best.bestDeaths);panelDraw('Gravity Flip',['Tap / click / Space / ArrowUp to flip gravity.','Dodge the expectation spikes.','Reach the exit portal.','','When life\'s script pulls you down — flip it.',...bestLines,'','Click / tap / Space to begin.']);}
+else if(game.state==='won')panelDraw('Portal Reached! ✓',['Level '+game.level+' cleared in '+fmtTime(game.time-game.levelStartTime),'Deaths this level: '+game.levelDeaths+(game.levelDeaths===0?'  — clean run!':''),'Clean streak: '+game.cleanStreak,'','Click / tap / Space for next level.']);
+else if(game.state==='gameover')panelDraw('Out of Tries',['Level '+game.level+' got the better of you this time.','Total deaths: '+game.deaths,'','Click / tap / Space to retry from Level 1.']);
+else if(game.state==='allclear')panelDraw('All 20 Levels Cleared! ✓',['Total time: '+fmtTime(game.totalTime),'Total deaths: '+game.deaths,'Best full run: '+(best.bestTime!==null?fmtTime(best.bestTime):'—')+'  ·  fewest deaths: '+(best.bestDeaths!==null?best.bestDeaths:'—'),'','Click / tap / Space to play again.']);
+if(game.state==='paused')drawPauseOverlay();
+ctx.restore();}catch(e){}}
+function togglePause(){if(game.state==='playing')game.paused=true,game.state='paused';else if(game.state==='paused')game.paused=false,game.state='playing';}
+function toggleMute(){game.muted=!game.muted;const b=document.getElementById('muteBtn');if(b)b.textContent=game.muted?'🔇':'🔊';}
+function goTitle(){game.paused=false;game.state='title';}
+function pointerDown(e){if(e&&e.preventDefault)e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+if(game.state==='title'){resetGame();return;}
+if(game.state==='gameover'){resetGame();return;}
+if(game.state==='allclear'){resetGame();return;}
+if(game.state==='won'){if(game.level<20)game.level++;buildLevel(game.level);return;}
+if(game.state==='paused')return;
+flip();}
+canvas.addEventListener('mousedown',e=>{e.preventDefault();pointerDown(e);});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pointerDown(e);},{passive:false});
+window.addEventListener('keydown',e=>{
+if(e.repeat)return;
+if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(game.state==='title'||game.state==='won'||game.state==='gameover'||game.state==='allclear'){pointerDown(e);}else if(game.state==='playing')flip();}
+else if(e.code==='KeyP'){togglePause();}
+else if(e.code==='Escape'){goTitle();}
+else if(e.code==='KeyM'){toggleMute();}
+});
+document.getElementById('pauseBtn').addEventListener('click',e=>{e.preventDefault();togglePause();});
+document.getElementById('muteBtn').addEventListener('click',e=>{e.preventDefault();toggleMute();});
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get player(){return player;},get obstacles(){return obstacles;},get gravDir(){return gravDir;},get best(){return best;},resetGame,buildLevel,flip,update,draw,togglePause,toggleMute,goTitle};
+</script>
+</body>
+</html>

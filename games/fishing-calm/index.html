@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Fishing for Calm</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#020810;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#020810;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(96,200,255,.35);background:rgba(3,10,18,.8);color:#eaf2f6;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(96,200,255,.25);}
+#a11yStart{position:fixed;left:50%;top:50%;transform:translate(-50%,60px);width:220px;height:44px;opacity:0;pointer-events:auto;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnPause" aria-label="Pause">⏸</button>
+<button id="btnMute" aria-label="Mute">🔊</button>
+</div>
+<button id="a11yStart" aria-label="Tap to begin fishing"></button>
+<div id="hint">Click / tap the water to cast &middot; hold the moment &middot; reel in calm</div>
+<script>
+'use strict';
+// Fishing for Calm (#39)
+// Click the water to cast a line. When the bobber dips, click again
+// to reel in a "calm" fish. Catch 10 fish in 90 seconds.
+// Noise debris also floats by — avoid hooking it.
+// Theme: choosing calm over noise, one patient cast at a time.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const HORIZON=H*0.42,ROD_X=160,ROD_Y=H*0.35;
+const CALMFISH=['serenity','peace','rest','joy','focus','clarity','ease','breath','flow','calm'];
+const NOISES=['guilt','fomo','rush','noise','compare','should'];
+const TARGET_FISH=10,TIME_LIMIT=90000;
+const isTouch=(typeof window!=='undefined')&&('ontouchstart' in window||(navigator&&navigator.maxTouchPoints>0));
+
+// ---- persistence ----
+function loadBest(){try{const v=parseInt(localStorage.getItem('fishingCalmBest')||'0',10);return isFinite(v)?Math.max(0,v):0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem('fishingCalmBest',String(v));}catch(e){}}
+
+const game={state:'title',time:0,fish:0,score:0,best:0,timeLeft:TIME_LIMIT,shakeT:0,streak:0,muted:false,paused:false,lowPulseT:0,golden:false,goldenUsed:false};
+let bobber,line,cast=false,waiting=false,waitTimer=0,waitDur=0,dipping=false,dipT=0,dipStartT=0,reeling=false,reelResult=null,reelT=0,debris=[],rng;
+let lastCatchName='';
+let popups=[]; // floating score text {x,y,t,text,color}
+let bursts=[]; // particle bursts {x,y,parts:[{x,y,vx,vy,life,maxLife,color}]}
+
+function comboMult(){return clamp(1+game.streak*0.15,1,2);}
+
+function spawnPopup(x,y,text,color){popups.push({x,y,t:0,life:900,text,color});}
+function spawnBurst(x,y,calm){
+  const n=calm?14:8;
+  const parts=[];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2;
+    const sp=calm?(40+Math.random()*70):(20+Math.random()*30);
+    parts.push({x:0,y:0,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,maxLife:calm?550+Math.random()*250:350+Math.random()*150,color:calm?'rgba(120,230,170,':'rgba(200,120,120,'});
+  }
+  bursts.push({x,y,parts});
+}
+
+function difficultyWaitDur(){
+  // shrinks the wait window floor as fish count rises, clamped
+  const t=clamp(game.fish/TARGET_FISH,0,1);
+  const minFloor=clamp(1500-900*t,600,1500);
+  const maxCeil=clamp(4500-1500*t,2200,4500);
+  return minFloor+Math.floor(rng()*(maxCeil-minFloor));
+}
+function difficultyDebrisChance(){
+  const t=clamp(game.fish/TARGET_FISH,0,1);
+  return clamp(2+3*t,2,5); // out of 100 per frame-ish check
+}
+
+function resetGame(){
+  game.fish=0;game.score=0;game.timeLeft=TIME_LIMIT;game.shakeT=0;game.streak=0;
+  game.paused=false;game.lowPulseT=0;game.golden=false;game.goldenUsed=false;
+  cast=false;waiting=false;dipping=false;reeling=false;reelResult=null;bobber=null;line=null;debris=[];
+  popups=[];bursts=[];lastCatchName='';
+  rng=seeded(Date.now()%99991);
+  game.best=loadBest();
+  game.state='playing';
+}
+
+function doCast(){
+  if(reeling||dipping||game.paused||game.state!=='playing')return;
+  cast=true;
+  const tx=200+Math.floor(rng()*(W-300));
+  const ty=HORIZON+30+Math.floor(rng()*80);
+  bobber={x:tx,y:ty,bobT:0};
+  line={x:tx,y:ty};
+  waiting=true;
+  waitDur=difficultyWaitDur();
+  waitTimer=0;
+  sndCast();
+}
+
+function doReel(){
+  if(game.paused||game.state!=='playing')return;
+  if(!waiting&&!dipping)return;
+  if(dipping){
+    const reactionMs=dipT; // time since dip began = reaction time
+    const isNoise=rng()<0.25;
+    reelResult=isNoise?'noise':'calm';
+    const bx=bobber?bobber.x:W/2,by=bobber?bobber.y:H/2;
+    if(isNoise){
+      game.streak=0;
+      const loss=5;
+      game.score=Math.max(0,game.score-loss);
+      game.shakeT=300;
+      lastCatchName='noise';
+      spawnPopup(bx,by-14,'-'+loss,'rgba(220,110,110,.95)');
+      spawnBurst(bx,by,false);
+      sndBad();
+    }else{
+      game.fish++;
+      game.streak++;
+      const mult=game.golden?2:comboMult();
+      let gain=Math.round(20*mult);
+      // quick-reaction bonus: fast reel within dip window
+      let bonus=0;
+      if(reactionMs<400)bonus=10;else if(reactionMs<700)bonus=5;
+      gain+=bonus;
+      game.score+=gain;
+      lastCatchName=CALMFISH[clamp(game.fish-1,0,CALMFISH.length-1)];
+      spawnPopup(bx,by-14,'+'+gain,'rgba(120,230,170,.95)');
+      if(bonus>0)spawnPopup(bx,by-30,'quick +'+bonus,'rgba(255,220,140,.9)');
+      spawnBurst(bx,by,true);
+      sndCatch();
+      if(game.golden){game.golden=false;}
+      else if(game.streak>0&&game.streak%3===0){game.golden=true;spawnPopup(bx,by-46,'GOLDEN BOBBER!','rgba(255,215,100,.95)');}
+    }
+    reeling=true;reelT=0;dipping=false;waiting=false;
+  }else{
+    // missed dip — penalty + streak break + feedback flash
+    game.streak=0;
+    game.score=Math.max(0,game.score-2);
+    game.shakeT=180;
+    if(bobber)spawnPopup(bobber.x,bobber.y-14,'miss','rgba(220,180,120,.85)');
+    waiting=false;cast=false;bobber=null;
+    sndMiss();
+  }
+}
+
+function togglePause(){
+  if(game.state!=='playing'&&game.state!=='paused')return;
+  if(game.state==='playing'){game.state='paused';game.paused=true;}
+  else if(game.state==='paused'){game.state='playing';game.paused=false;}
+}
+function toggleMute(){game.muted=!game.muted;}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  // popups & bursts animate regardless of pause? keep tied to playing for consistency
+  if(game.state==='paused')return;
+  if(game.state!=='playing'){return;}
+  game.timeLeft=Math.max(0,game.timeLeft-dt);
+  if(game.timeLeft<=10000)game.lowPulseT+=dt;else game.lowPulseT=0;
+  if(game.timeLeft<=10000&&game.timeLeft>0){
+    // heartbeat tick roughly once per second
+    if(Math.floor(game.timeLeft/1000)!==Math.floor((game.timeLeft+dt)/1000)){sndHeartbeat();}
+  }
+  if(game.timeLeft<=0||game.fish>=TARGET_FISH){
+    if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+    sndWin();
+    game.state='won';
+    return;
+  }
+  if(bobber)bobber.bobT+=dt;
+
+  // spawn debris, occasionally aimed near the bobber for spatial risk
+  const spawnChance=difficultyDebrisChance();
+  if(Math.floor(rng()*100)<spawnChance){
+    let dy=HORIZON+20+Math.floor(rng()*100);
+    let startX=rng()<0.5?-60:W+60;
+    let vx=(startX<0?1:-1)*(30+rng()*40);
+    if(bobber&&rng()<0.35){
+      // aim to drift near bobber's y for genuine spatial risk
+      dy=clamp(bobber.y+(rng()-0.5)*30,HORIZON+15,H-40);
+    }
+    debris.push({x:startX,y:dy,vx,label:NOISES[Math.floor(rng()*NOISES.length)],t:0});
+  }
+  for(let i=debris.length-1;i>=0;i--){
+    debris[i].x+=debris[i].vx*(dt/1000);
+    debris[i].t+=dt;
+    if(debris[i].x<-80||debris[i].x>W+80)debris.splice(i,1);
+  }
+
+  if(waiting){waitTimer+=dt;if(waitTimer>=waitDur){dipping=true;dipT=0;}}
+  if(dipping){dipT+=dt;if(dipT>=1200){dipping=false;waiting=false;cast=false;bobber=null;game.streak=0;}}
+  if(reeling){reelT+=dt;if(reelT>=800){reeling=false;reelResult=null;cast=false;bobber=null;}}
+
+  // popups
+  for(let i=popups.length-1;i>=0;i--){popups[i].t+=dt;popups[i].y-=dt*0.03;if(popups[i].t>=popups[i].life)popups.splice(i,1);}
+  // bursts
+  for(let bi=bursts.length-1;bi>=0;bi--){
+    const b=bursts[bi];
+    let alive=false;
+    for(const p of b.parts){
+      p.life+=dt;
+      if(p.life<p.maxLife){
+        alive=true;
+        p.x+=p.vx*(dt/1000);
+        p.y+=p.vy*(dt/1000);
+        p.vy+=60*(dt/1000);
+      }
+    }
+    if(!alive)bursts.splice(bi,1);
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndCast=()=>tone(480,0.1,'sine',0.04);
+const sndCatch=()=>{[440,550,660].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*70));};
+const sndBad=()=>tone(200,0.25,'sawtooth',0.05);
+const sndMiss=()=>tone(280,0.12,'sine',0.04);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndHeartbeat=()=>tone(90,0.09,'sine',0.05);
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function drawBg(){
+  ctx.fillStyle=lgrad(0,0,0,HORIZON,[[0,'#020810'],[1,'#0a1828']]);ctx.fillRect(0,0,W,HORIZON);
+  ctx.fillStyle=lgrad(0,HORIZON,0,H,[[0,'#0a1c2e'],[1,'#040c18']]);ctx.fillRect(0,HORIZON,W,H-HORIZON);
+  for(let i=0;i<8;i++){const ry=HORIZON+30+i*30;ctx.strokeStyle=`rgba(60,120,180,${0.05+i*0.01})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ry);ctx.lineTo(W,ry);ctx.stroke();}
+  for(let i=0;i<40;i++){const sx=((i*197)%W),sy=((i*89)%HORIZON*0.8);ctx.fillStyle='rgba(200,220,255,.3)';ctx.beginPath();ctx.arc(sx,sy,0.8,0,Math.PI*2);ctx.fill();}
+}
+function drawRod(){
+  ctx.strokeStyle='rgba(160,140,80,.7)';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(ROD_X,ROD_Y);
+  if(bobber){ctx.lineTo(ROD_X+40,ROD_Y-30);ctx.lineTo(bobber.x,bobber.y);}
+  else{ctx.lineTo(ROD_X+50,ROD_Y-20);}
+  ctx.stroke();
+}
+function drawBobber(){
+  if(!bobber)return;
+  const bob=dipping?Math.sin(dipT*0.012)*8:Math.sin(bobber.bobT*0.004)*3;
+  const hitR=isTouch?15:7;
+  ctx.shadowColor='rgba(80,200,255,.6)';ctx.shadowBlur=10;
+  ctx.fillStyle=dipping?'#ff6060':'#ff4040';
+  ctx.beginPath();ctx.arc(bobber.x,bobber.y+bob,7,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  if(isTouch){
+    ctx.strokeStyle='rgba(255,160,160,.35)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(bobber.x,bobber.y+bob,hitR,0,Math.PI*2);ctx.stroke();
+  }
+  if(dipping){
+    ctx.fillStyle='rgba(255,80,80,.3)';
+    ctx.beginPath();ctx.arc(bobber.x,bobber.y+bob,16,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,200,200,.8)';
+    ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(isTouch?'TAP!':'CLICK!',bobber.x,bobber.y+bob-10);
+  }
+}
+function drawDebris(){
+  for(const d of debris){
+    ctx.fillStyle='rgba(180,80,80,.4)';rr(d.x-24,d.y-8,48,16,5);ctx.fill();
+    // small static/noise glyph
+    ctx.strokeStyle='rgba(255,180,180,.7)';ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<3;i++){const zx=d.x-19+i*4;ctx.moveTo(zx,d.y-4);ctx.lineTo(zx+2,d.y);ctx.lineTo(zx,d.y+4);}
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,160,160,.6)';ctx.font='7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(d.label,d.x+6,d.y);
+  }
+}
+function drawReelResult(){
+  if(!reeling||!reelResult)return;
+  const alpha=clamp(1-reelT/600,0,1);
+  ctx.globalAlpha=alpha;
+  ctx.fillStyle=reelResult==='calm'?'rgba(80,220,140,.9)':'rgba(220,80,80,.9)';
+  ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  const label=reelResult==='calm'?('✓ '+(lastCatchName||'calm')):'✗ noise';
+  ctx.fillText(label,W/2,H/2-40);
+  ctx.globalAlpha=1;
+}
+function drawPopups(){
+  for(const p of popups){
+    const a=clamp(1-p.t/p.life,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.globalAlpha=1;
+}
+function drawBursts(){
+  for(const b of bursts){
+    for(const p of b.parts){
+      if(p.life>=p.maxLife)continue;
+      const a=clamp(1-p.life/p.maxLife,0,1);
+      ctx.fillStyle=p.color+a+')';
+      ctx.beginPath();ctx.arc(b.x+p.x,b.y+p.y,2.2,0,Math.PI*2);ctx.fill();
+    }
+  }
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,4,8,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#60c8ff';ctx.font='bold 13px Arial';ctx.fillText('Fishing for Calm',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText(cast?(dipping?'DIPPING — reel now!':(waiting?'Waiting…':'Cast the line')):(isTouch?'Tap water to cast':'Click water to cast'),18,28);
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Fish '+game.fish+' / '+TARGET_FISH,W/2,8);
+  ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,22);
+  if(game.streak>1||game.golden){
+    ctx.fillStyle=game.golden?'rgba(255,215,100,.9)':'rgba(140,230,180,.85)';
+    ctx.font='bold 11px Arial';
+    ctx.fillText(game.golden?'GOLDEN 2x':('streak x'+comboMult().toFixed(2)),W/2,40);
+  }
+  ctx.textAlign='right';
+  const lowTime=game.timeLeft<=10000;
+  if(lowTime){
+    const pulse=0.55+0.45*Math.sin(game.lowPulseT*0.008);
+    ctx.fillStyle=`rgba(255,${Math.round(90+60*pulse)},${Math.round(90+60*pulse)},0.95)`;
+  }else{
+    ctx.fillStyle='rgba(234,242,246,.5)';
+  }
+  ctx.font=lowTime?'bold 12px Arial':'11px Arial';
+  ctx.fillText(Math.ceil(game.timeLeft/1000)+'s  BEST '+game.best,W-18,8);
+  ctx.restore();
+}
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,4,8,.78)';ctx.fillRect(0,0,W,H);
+  const pw=540,ph=310,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,12,22,.97)'],[1,'rgba(3,7,14,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(60,160,220,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#60c8ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+100;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){const m=game.shakeT/300*5;dx=Math.sin(game.time*.06)*m;dy=Math.cos(game.time*.08)*m;}
+    ctx.save();ctx.translate(dx,dy);
+    drawBg();
+    if(game.state!=='title'){
+      drawDebris();drawRod();drawBobber();drawReelResult();drawBursts();drawPopups();
+    }
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='paused'){drawHUD();panelDraw('Paused',['Timer is stopped.','','Press Space, tap ▶, or click here to resume.']);}
+    if(game.state==='title')panelDraw('Fishing for Calm',['Click the water to cast your line.','When the bobber dips — click again to reel in calm.','Avoid the noise debris.','Catch '+TARGET_FISH+' calm fish in 90 seconds.','','Choosing calm, one patient cast at a time.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('Calm Caught!',['Fish: '+game.fish+' / '+TARGET_FISH+'  Score: '+game.score,'Best: '+game.best,'','Still waters run deep. So do you.','','Click / tap to play again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+function canvasPointFromEvent(e){
+  const rect=canvas.getBoundingClientRect();
+  const cx=(e.touches&&e.touches[0])?e.touches[0].clientX:e.clientX;
+  const cy=(e.touches&&e.touches[0])?e.touches[0].clientY:e.clientY;
+  const x=(cx-rect.left)/rect.width*W;
+  const y=(cy-rect.top)/rect.height*H;
+  return{x,y};
+}
+
+function handlePrimary(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='paused')return;
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state!=='playing')return;
+  if(!cast)doCast();else doReel();
+}
+canvas.addEventListener('mousedown',handlePrimary);
+canvas.addEventListener('touchstart',handlePrimary,{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='Enter'){
+    e.preventDefault();
+    if(game.state==='paused'){togglePause();return;}
+    if(game.state==='title'||game.state==='won'){resetGame();return;}
+    if(!cast)doCast();else doReel();
+  }else if(e.code==='KeyP'){
+    togglePause();
+  }else if(e.code==='KeyM'){
+    toggleMute();
+  }
+});
+
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();btnPause.textContent=game.state==='paused'?'▶':'⏸';});
+btnPause.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();togglePause();btnPause.textContent=game.state==='paused'?'▶':'⏸';},{passive:false});
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();btnMute.textContent=game.muted?'🔇':'🔊';});
+btnMute.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();toggleMute();btnMute.textContent=game.muted?'🔇':'🔊';},{passive:false});
+
+const a11yStart=document.getElementById('a11yStart');
+a11yStart.addEventListener('click',()=>{if(game.state==='title'||game.state==='won')resetGame();});
+
+function resizeCanvas(){
+  // letterbox to preserve 16:9 aspect ratio (960x540) instead of stretching
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const targetRatio=W/H;
+  let cw=vw,ch=vh;
+  if(vw/vh>targetRatio){cw=vh*targetRatio;ch=vh;}else{ch=vw/targetRatio;cw=vw;}
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.best=loadBest();
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get cast(){return cast;},
+  get dipping(){return dipping;},
+  get waiting(){return waiting;},
+  get bobber(){return bobber;},
+  get debris(){return debris;},
+  get popups(){return popups;},
+  get bursts(){return bursts;},
+  resetGame,doCast,doReel,update,draw,togglePause,toggleMute,
+  CALMFISH,TARGET_FISH
+};
+</script>
+</body>
+</html>

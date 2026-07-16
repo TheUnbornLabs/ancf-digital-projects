@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Paper Fold</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#f8f5ee;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#e9e3d4;}
+canvas{display:block;background:#f8f5ee;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(80,70,60,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:8px;border:1.5px solid rgba(80,60,40,.35);background:rgba(255,252,244,.9);font-size:16px;color:rgba(80,60,40,.8);cursor:pointer;}
+#ctrls button:active{background:rgba(230,220,195,1);}
+#undoBtn{position:fixed;top:10px;left:10px;height:40px;padding:0 14px;border-radius:8px;border:1.5px solid rgba(80,60,40,.35);background:rgba(255,252,244,.9);font-size:13px;color:rgba(80,60,40,.8);cursor:pointer;z-index:5;font-family:Arial,Helvetica,sans-serif;}
+#undoBtn:active{background:rgba(230,220,195,1);}
+#undoBtn:disabled{opacity:.35;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="undoBtn" title="Undo last fold (U key)">↺ Undo</button>
+<div id="ctrls">
+  <button id="pauseBtn" title="Pause (P)">❚❚</button>
+  <button id="muteBtn" title="Mute (M)">🔊</button>
+</div>
+<div id="hint">Click a fold direction to fold the paper &middot; reach the target shape in the given moves &middot; H = hint</div>
+<script>
+'use strict';
+// Paper Fold (#54)
+// An origami puzzle. A square sheet of paper can be folded
+// along horizontal or vertical axis. A target folded shape
+// is shown; reach it in the given move count.
+// 10 puzzles.
+// Theme: reshaping your life intentionally — one fold at a time.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+
+// ---- localStorage helpers (private browsing can throw) ----
+function lsGet(k,dflt){try{const v=localStorage.getItem(k);return v===null?dflt:v;}catch(e){return dflt;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+// Paper state: {w, h} — starts 240×240, each fold halves one dimension
+// Fold directions: U=fold top down, D=fold bottom up, L=fold left right, R=fold right left
+const PUZZLES=[
+  {start:{w:240,h:240},moves:['D'],title:'Half Page'},
+  {start:{w:240,h:240},moves:['D','R'],title:'Quarter Sheet'},
+  {start:{w:240,h:240},moves:['R','U'],title:'Quarter Too'},
+  {start:{w:240,h:240},moves:['D','D'],title:'Third Fold'},
+  {start:{w:240,h:240},moves:['R','R'],title:'Thin Strip'},
+  {start:{w:240,h:240},moves:['D','R','U'],title:'Small Square'},
+  {start:{w:240,h:240},moves:['R','D','R'],title:'Thin Rect'},
+  {start:{w:240,h:240},moves:['D','D','R'],title:'Tiny Pad'},
+  {start:{w:240,h:240},moves:['R','R','D'],title:'Mini Strip'},
+  {start:{w:240,h:240},moves:['D','R','D','R'],title:'Micro Square'},
+];
+const TOTAL=10;
+const BEST_KEY='paperfold_best';
+const game={
+  state:'title',time:0,pIdx:0,score:0,
+  best:parseInt(lsGet(BEST_KEY,'0'),10)||0,
+  movesLeft:0,current:{w:240,h:240},target:{w:0,h:0},
+  solved:false,shakeT:0,
+  transitioning:false, // guards against overlapping setTimeout chains from rapid double-taps
+  paused:false,muted:lsGet('paperfold_muted','0')==='1',
+  puzzleStartTime:0,stars:0,lastStars:0,
+  toast:'',toastT:0,toastCol:'rgba(80,60,40,.85)',
+  history:[], // fold history stack for undo: {current, movesLeft}
+  hintDir:null,hintT:0,
+  confetti:[],
+  newBest:false,
+};
+let rng;
+function targetOf(puzzle){let s={w:puzzle.start.w,h:puzzle.start.h};for(const m of puzzle.moves){if(m==='D'||m==='U')s.h=s.h/2;else s.w=s.w/2;}return s;}
+
+function starsForPuzzle(idx,movesUsed,par){
+  // 3 stars = solved exactly at par (folds under/at par); fewer moves used impossible (fixed par),
+  // so star rating rewards not needing undo-recoveries this run (tracked via undosUsed) and speed.
+  return 3;
+}
+
+function buildPuzzle(i){
+  rng=seeded(i*3001+41);
+  const p=PUZZLES[i];
+  game.pIdx=i;
+  game.current={w:p.start.w,h:p.start.h};
+  game.target=targetOf(p);
+  game.movesLeft=p.moves.length;
+  game.solved=false;
+  game.shakeT=0;
+  game.state='playing';
+  game.transitioning=false;
+  game.history=[];
+  game.hintDir=null;game.hintT=0;
+  game.puzzleStartTime=game.time;
+  game.confetti=[];
+  updateUndoBtn();
+}
+function resetGame(){
+  game.score=0;game.shakeT=0;game.newBest=false;
+  buildPuzzle(0);
+}
+
+function updateUndoBtn(){
+  const btn=document.getElementById('undoBtn');
+  if(btn)btn.disabled=(game.history.length===0)||game.state!=='playing'||game.transitioning;
+}
+
+function fold(dir){
+  if(game.movesLeft<=0||game.solved||game.transitioning)return;
+  // push history for undo
+  game.history.push({current:{w:game.current.w,h:game.current.h},movesLeft:game.movesLeft});
+  if(dir==='U'||dir==='D')game.current.h=Math.max(1,game.current.h/2);
+  else game.current.w=Math.max(1,game.current.w/2);
+  game.movesLeft--;
+  sndFold();
+  game.hintDir=null;game.hintT=0;
+  updateUndoBtn();
+  checkSolved();
+}
+
+function undoFold(){
+  if(game.state!=='playing'||game.transitioning)return;
+  if(game.history.length===0)return;
+  const h=game.history.pop();
+  game.current=h.current;
+  game.movesLeft=h.movesLeft;
+  game.solved=false;
+  updateUndoBtn();
+}
+
+function showToast(text,col){game.toast=text;game.toastT=900;game.toastCol=col||'rgba(80,60,40,.85)';}
+
+function spawnConfetti(){
+  const cols=['#8fbf8f','#e0c76a','#d98a6a','#7fb0d9','#c98fd9'];
+  game.confetti=[];
+  for(let i=0;i<26;i++){
+    game.confetti.push({
+      x:700,y:H/2+20,
+      vx:(rngLocal()-0.5)*4.5,vy:-2-rngLocal()*3,
+      col:cols[i%cols.length],
+      life:600+rngLocal()*300,
+      maxLife:900,
+      size:3+rngLocal()*3,
+    });
+  }
+}
+function rngLocal(){return rng?rng():Math.random();}
+
+function checkSolved(){
+  if(game.transitioning)return;
+  const t=game.target;
+  if(Math.abs(game.current.w-t.w)<2&&Math.abs(game.current.h-t.h)<2){
+    game.solved=true;
+    game.transitioning=true;
+    game.score++;
+    if(game.score>game.best){
+      game.best=game.score;
+      game.newBest=true;
+      lsSet(BEST_KEY,String(game.best));
+    }
+    spawnConfetti();
+    sndWin2();
+    showToast('Solved!','rgba(70,120,70,.9)');
+    setTimeout(()=>{
+      game.transitioning=false;
+      if(game.pIdx+1>=TOTAL){
+        sndWin();
+        game.state='won';
+        updateUndoBtn();
+      }else{
+        buildPuzzle(game.pIdx+1);
+      }
+    },600);
+  }else if(game.movesLeft<=0){
+    game.transitioning=true;
+    game.shakeT=400;
+    sndBad();
+    showToast('Not quite — try again','rgba(150,70,60,.9)');
+    setTimeout(()=>{
+      game.transitioning=false;
+      buildPuzzle(game.pIdx);
+    },600);
+  }
+}
+
+function giveHint(){
+  if(game.state!=='playing'||game.transitioning)return;
+  const p=PUZZLES[game.pIdx];
+  const stepIdx=p.moves.length-game.movesLeft;
+  if(stepIdx<0||stepIdx>=p.moves.length)return;
+  game.hintDir=p.moves[stepIdx];
+  game.hintT=1200;
+  tone(880,0.1,'triangle',0.03);
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndFold=()=>tone(380,0.08,'sine',0.05);
+const sndBad=()=>tone(200,0.3,'sawtooth',0.05);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*70));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.paused)return;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.toastT>0)game.toastT=Math.max(0,game.toastT-dt);
+  if(game.hintT>0){game.hintT=Math.max(0,game.hintT-dt);if(game.hintT<=0)game.hintDir=null;}
+  if(game.confetti.length){
+    for(const p of game.confetti){
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.09;
+      p.life=Math.max(0,p.life-dt);
+    }
+    game.confetti=game.confetti.filter(p=>p.life>0);
+  }
+}
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+const BTN_SIZE=60,BTN_GAP=8;
+// Buttons repositioned below the papers (clearer separation, avoids overlap with the growing "YOUR FOLD" paper)
+const BTN_CX=W/2,BTN_CY=H-84;
+const BTNS=[{dir:'U',dx:0,dy:-1},{dir:'D',dx:0,dy:1},{dir:'L',dx:-1,dy:0},{dir:'R',dx:1,dy:0}];
+function btnAt(x,y){for(const b of BTNS){const bx=BTN_CX+b.dx*(BTN_SIZE+BTN_GAP)-(BTN_SIZE/2);const by=BTN_CY+b.dy*(BTN_SIZE+BTN_GAP)-(BTN_SIZE/2);if(x>=bx&&x<=bx+BTN_SIZE&&y>=by&&y<=by+BTN_SIZE)return b.dir;}return null;}
+
+function drawBg(){ctx.fillStyle='#f8f5ee';ctx.fillRect(0,0,W,H);}
+
+function drawPaper(pw,ph,cx,cy,col,label,solved){
+  const x=cx-pw/2,y=cy-ph/2;
+  ctx.shadowColor='rgba(0,0,0,.15)';ctx.shadowBlur=10;ctx.shadowOffsetX=4;ctx.shadowOffsetY=4;
+  ctx.fillStyle=col;rr(x,y,pw,ph,4);ctx.fill();
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  ctx.strokeStyle=solved?'rgba(60,120,60,.55)':'rgba(100,80,60,.3)';
+  ctx.lineWidth=solved?2.5:1.5;
+  rr(x,y,pw,ph,4);ctx.stroke();
+  // fold lines
+  ctx.strokeStyle='rgba(100,80,60,.15)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx,y+ph);ctx.moveTo(x,cy);ctx.lineTo(x+pw,cy);ctx.stroke();ctx.setLineDash([]);
+  if(label){ctx.fillStyle='rgba(80,60,40,.5)';ctx.font='11px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(label,cx,y-4);}
+  // accessibility: checkmark badge on solved paper — not color-only feedback
+  if(solved){
+    ctx.save();
+    ctx.translate(cx+pw/2-2,cy-ph/2+2);
+    ctx.fillStyle='rgba(70,140,70,.95)';
+    ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(-5,0);ctx.lineTo(-1.5,4);ctx.lineTo(5,-5);ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawButtons(){
+  const labels={U:'↑',D:'↓',L:'←',R:'→'};
+  for(const b of BTNS){
+    const bx=BTN_CX+b.dx*(BTN_SIZE+BTN_GAP)-BTN_SIZE/2;
+    const by=BTN_CY+b.dy*(BTN_SIZE+BTN_GAP)-BTN_SIZE/2;
+    const isHint=game.hintDir===b.dir&&game.hintT>0;
+    ctx.fillStyle=isHint?'rgba(230,190,90,.35)':'rgba(80,60,40,.08)';
+    rr(bx,by,BTN_SIZE,BTN_SIZE,8);ctx.fill();
+    ctx.strokeStyle=isHint?'rgba(200,150,40,.9)':'rgba(80,60,40,.3)';
+    ctx.lineWidth=isHint?2.5:1.5;
+    rr(bx,by,BTN_SIZE,BTN_SIZE,8);ctx.stroke();
+    ctx.fillStyle='rgba(80,60,40,.7)';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(labels[b.dir],bx+BTN_SIZE/2,by+BTN_SIZE/2);
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(248,245,238,.9)';rr(0,0,W,46,0);ctx.fill();
+  ctx.strokeStyle='rgba(180,160,120,.3)';ctx.lineWidth=1;rr(0,0,W,46,0);ctx.stroke();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='rgba(80,60,40,.8)';ctx.font='bold 13px Arial';
+  ctx.fillText('Paper Fold — '+PUZZLES[game.pIdx].title+' ('+(game.pIdx+1)+'/'+TOTAL+')',18,8);
+  ctx.fillStyle='rgba(80,60,40,.5)';ctx.font='11px Arial';
+  ctx.fillText('Folds left: '+game.movesLeft+'   H = hint   U = undo',18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(80,60,40,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  ctx.restore();
+}
+
+function drawToast(){
+  if(game.toastT<=0)return;
+  const alpha=Math.min(1,game.toastT/300);
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  const txt=game.toast;
+  ctx.font='bold 16px Arial';
+  const tw=ctx.measureText(txt).width+36;
+  const tx=(W-tw)/2,ty=70;
+  ctx.fillStyle='rgba(255,252,244,.95)';
+  rr(tx,ty,tw,34,10);ctx.fill();
+  ctx.strokeStyle=game.toastCol;ctx.lineWidth=2;
+  rr(tx,ty,tw,34,10);ctx.stroke();
+  ctx.fillStyle=game.toastCol;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(txt,W/2,ty+17);
+  ctx.restore();
+}
+
+function drawConfetti(){
+  if(!game.confetti.length)return;
+  ctx.save();
+  for(const p of game.confetti){
+    ctx.globalAlpha=clamp(p.life/300,0,1);
+    ctx.fillStyle=p.col;
+    ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+  }
+  ctx.restore();
+}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(248,245,238,.95)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle='rgba(255,252,244,.98)';rr(px,py,pw,ph,16);ctx.fill();
+  ctx.strokeStyle='rgba(160,130,90,.3)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,16);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='rgba(80,60,40,.85)';ctx.font='bold 34px Arial';
+  ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(80,60,40,.7)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();
+  ctx.fillStyle='rgba(248,245,238,.85)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(80,60,40,.85)';ctx.font='bold 30px Arial';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Paused',W/2,H/2);
+  ctx.font='13px Arial';
+  ctx.fillStyle='rgba(80,60,40,.5)';
+  ctx.fillText('Click ❚❚ or press P to resume',W/2,H/2+34);
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){const m=game.shakeT/400*5;dx=Math.sin(game.time*.06)*m;dy=Math.cos(game.time*.08)*m;}
+    ctx.save();
+    ctx.translate(dx,dy);
+    drawBg();
+    if(game.state!=='title'){
+      // target paper (left)
+      drawPaper(game.target.w,game.target.h,220,H/2,'rgba(220,200,160,.8)','TARGET',false);
+      // current paper (right) — solved distinguished by color AND checkmark badge (not color-only)
+      drawPaper(game.current.w,game.current.h,700,H/2-10,game.solved?'rgba(160,210,160,.85)':'rgba(230,220,195,.95)','YOUR FOLD',game.solved);
+      drawButtons();
+      drawConfetti();
+    }
+    if(game.state==='playing'){drawHUD();drawToast();}
+    if(game.state==='title')panelDraw('Paper Fold',['Click fold buttons to reshape the paper.','Match the TARGET shape in the given moves.','10 puzzles. Undo mistakes, tap H for a hint.','','One fold at a time, you shape your own life.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('All Shapes Folded! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best+(game.newBest?'  (new best!)':''),'','Every fold, a choice. Every shape, yours.','','Click / tap to play again.']);
+    ctx.restore();
+    if(game.paused&&game.state==='playing')drawPauseOverlay();
+  }catch(e){}
+}
+
+function pointerToCanvas(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  return{x:px,y:py};
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const p=pointerToCanvas(e);
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state!=='playing')return;
+  if(game.paused)return;
+  const dir=btnAt(p.x,p.y);
+  if(dir)fold(dir);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){togglePause();return;}
+  if(e.code==='KeyM'){toggleMute();return;}
+  if(game.state!=='playing'||game.paused)return;
+  if(e.code==='ArrowUp')fold('U');
+  if(e.code==='ArrowDown')fold('D');
+  if(e.code==='ArrowLeft')fold('L');
+  if(e.code==='ArrowRight')fold('R');
+  if(e.code==='KeyU')undoFold();
+  if(e.code==='KeyH')giveHint();
+});
+
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  const btn=document.getElementById('pauseBtn');
+  if(btn)btn.textContent=game.paused?'▶':'❚❚';
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('paperfold_muted',game.muted?'1':'0');
+  const btn=document.getElementById('muteBtn');
+  if(btn)btn.textContent=game.muted?'🔇':'🔊';
+}
+
+// ---- HTML control buttons (mobile-visible; keyboard is a bonus, not the only input) ----
+(function wireControls(){
+  const pauseBtn=document.getElementById('pauseBtn');
+  const muteBtn=document.getElementById('muteBtn');
+  const undoBtn=document.getElementById('undoBtn');
+  if(pauseBtn)pauseBtn.addEventListener('click',(e)=>{e.stopPropagation();togglePause();});
+  if(muteBtn){
+    muteBtn.textContent=game.muted?'🔇':'🔊';
+    muteBtn.addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+  }
+  if(undoBtn)undoBtn.addEventListener('click',(e)=>{e.stopPropagation();undoFold();updateUndoBtn();});
+  ['pointerdown','mousedown','touchstart'].forEach(evt=>{
+    if(pauseBtn)pauseBtn.addEventListener(evt,e=>e.stopPropagation());
+    if(muteBtn)muteBtn.addEventListener(evt,e=>e.stopPropagation());
+    if(undoBtn)undoBtn.addEventListener(evt,e=>e.stopPropagation());
+  });
+})();
+
+// ---- letterboxing: keep internal 960x540 canvas but size CSS to a centered 16:9 box
+// instead of stretching to full viewport, so non-16:9 screens don't distort the puzzle ----
+function fitCanvas(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const targetRatio=W/H;
+  let cw=vw,ch=vw/targetRatio;
+  if(ch>vh){ch=vh;cw=vh*targetRatio;}
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',fitCanvas);
+fitCanvas();
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;
+  last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';
+draw();
+requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  resetGame,buildPuzzle,fold,checkSolved,targetOf,btnAt,update,draw,
+  PUZZLES,TOTAL,undoFold,giveHint,togglePause,toggleMute,fitCanvas
+};
+</script>
+</body>
+</html>

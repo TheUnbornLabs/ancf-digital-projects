@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Grand Finale</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#02030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#controls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#controls button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(220,200,60,.35);background:rgba(4,4,14,.85);color:#ffe060;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+#controls button:active{background:rgba(220,200,60,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="controls">
+<button id="btnPause" aria-label="Pause game" title="Pause game">&#10074;&#10074;</button>
+<button id="btnMute" aria-label="Mute sound" title="Mute sound">&#128266;</button>
+</div>
+<div id="hint">Game #100 &middot; Click / tap the rising affirmation stars before they fade &middot; 3 rounds of 20</div>
+<script>
+'use strict';
+// Grand Finale (#100) — ANCF 100 HTML Games
+// Celebration game. Affirmation stars and freedom words rise like fireworks.
+// Click / tap to "collect" each one before it fades. 3 rounds of 20.
+// Each collection triggers a firework burst.
+// Pressure words are absent — this is pure joy, pure freedom, pure arrival.
+// Theme: you made it. 100 games, 100 choices, your own. Celebrate.
+// State machine: title -> playing -> (paused) -> won | gameover -> title
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const WORDS=['Freedom','Joy','Rest','Peace','Ease','Flow','Wonder','Laugh','Play','Dream','Calm','Create','Rise','Wander','Glow','Bloom','Shine','Dance','Breathe','Soar','Trust','Choose','Begin','Live','Enough'];
+const AFFIRMATIONS=['I am free','I choose joy','Rest is sacred','Peace is mine','I am enough','I live fully','This is my life','Wonder awaits','I choose me','I trust myself'];
+const TOTAL_ROUNDS=3,PER_ROUND=20;
+const MAX_MISSES=8; // miss-penalty / gameover condition
+const TOUCH_PAD=20; // extra hit-radius padding for mobile-friendly tap targets
+
+// ---- persistence ----
+const LS_KEY='ancf_grandfinale_best_v1';
+function loadBest(){
+	try{
+		const raw=localStorage.getItem(LS_KEY);
+		if(!raw)return{bestScore:0,bestCombo:0,lifetimeStars:0};
+		const p=JSON.parse(raw);
+		return{bestScore:p.bestScore|0,bestCombo:p.bestCombo|0,lifetimeStars:p.lifetimeStars|0};
+	}catch(e){return{bestScore:0,bestCombo:0,lifetimeStars:0};}
+}
+function saveBest(b){
+	try{localStorage.setItem(LS_KEY,JSON.stringify(b));}catch(e){/* private browsing / disabled storage */}
+}
+let best=loadBest();
+
+const game={state:'title',time:0,round:0,score:0,collected:0,total:0,misses:0,combo:0,maxCombo:0,paused:false,muted:false};
+let stars=[],bursts=[],spawnTimer=0,rng,roundDone=false;
+let shakeT=0,shakeMag=0,flashT=0;
+
+function buildRound(r){
+	rng=seeded(r*6007+71);
+	stars=[];
+	spawnTimer=0;
+	game.collected=0;
+	game.misses=0;
+	game.combo=0;
+	roundDone=false;
+	game.state='playing';
+	game.paused=false;
+}
+function resetGame(){
+	game.round=0;game.score=0;game.total=0;game.maxCombo=0;
+	buildRound(0);
+}
+function roundSpeedMul(){return clamp(1-game.round*0.12,0.6,1);} // stars get a bit faster/shorter-lived each round
+function roundLifeMul(){return clamp(1-game.round*0.15,0.55,1);}
+
+function spawnStar(){
+	const word=WORDS[Math.floor(rng()*WORDS.length)];
+	const x=60+rng()*(W-120);
+	const y=H+30;
+	const vy=-(60+rng()*80)/roundSpeedMul();
+	const life=Math.max(900,(3000+rng()*2000)*roundLifeMul());
+	const hue=Math.floor(rng()*360);
+	stars.push({x,y,vy,vx:(rng()-.5)*20/roundSpeedMul(),word,life,maxLife:life,hue,r:14+rng()*10,collected:false,popT:0,tickPlayed:false});
+}
+function spawnBurst(x,y,hue){
+	const n=12+Math.floor(rng()*8);
+	for(let i=0;i<n;i++){
+		const a=i/n*Math.PI*2;
+		const spd=60+rng()*120;
+		bursts.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:600+rng()*400,maxLife:1000,hue,r:3+rng()*3});
+	}
+}
+function triggerShake(mag){shakeT=Math.max(shakeT,300);shakeMag=Math.max(shakeMag,mag);}
+function triggerFlash(){flashT=250;}
+
+function clickStar(px,py){
+	if(game.state!=='playing'||game.paused)return;
+	const isSmall=Math.min(canvas.getBoundingClientRect().width,canvas.getBoundingClientRect().height)<500;
+	const pad=TOUCH_PAD+(isSmall?8:0);
+	for(let i=stars.length-1;i>=0;i--){
+		const s=stars[i];
+		if(s.collected)continue;
+		if(Math.hypot(px-s.x,py-s.y)<s.r+pad){
+			s.collected=true;s.popT=0;
+			// combo: quick catches (>=50% life remaining) build the streak faster
+			const lifeFrac=s.life/s.maxLife;
+			game.combo++;
+			if(lifeFrac>0.5)game.combo++; // reaction-time bonus
+			game.maxCombo=Math.max(game.maxCombo,game.combo);
+			const comboMul=1+Math.floor(game.combo/3)*0.5;
+			game.score+=Math.round(1*comboMul);
+			game.collected++;game.total++;
+			spawnBurst(s.x,s.y,s.hue);
+			sndCollect(s.hue);
+			break;
+		}
+	}
+}
+function missStar(s){
+	// miss-penalty: uncollected star expiring resets the combo streak and costs a life
+	game.combo=0;
+	game.misses++;
+	sndMiss();
+	if(game.misses>=MAX_MISSES){
+		game.state='gameover';
+		saveProgress();
+	}
+}
+
+function saveProgress(){
+	best.bestScore=Math.max(best.bestScore,game.score);
+	best.bestCombo=Math.max(best.bestCombo,game.maxCombo);
+	best.lifetimeStars+=0; // lifetimeStars accumulated incrementally in update2 on collect instead
+	saveBest(best);
+}
+
+function update2(dt){
+	dt=clamp(dt,0,48);
+	const s=dt/1000;
+	game.time+=dt;
+	if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+	if(flashT>0)flashT=Math.max(0,flashT-dt);
+	if(game.state!=='playing'||game.paused)return;
+	spawnTimer+=dt;
+	const si=Math.max(300,1200-game.round*200);
+	const uncollected=stars.filter(st=>!st.collected).length;
+	if(uncollected<8&&spawnTimer>=si&&(uncollected+game.collected+game.misses)<PER_ROUND){
+		spawnTimer=0;
+		spawnStar();
+	}
+	for(const st of stars){
+		if(!st.collected){
+			st.life-=dt;
+			st.x+=st.vx*s;
+			st.y+=st.vy*s;
+			st.vx*=0.99;st.vy*=0.99;
+			if(!st.tickPlayed&&st.life<=500&&st.life>0){st.tickPlayed=true;sndTick();}
+			if(st.life<=0){
+				st.collected=false;
+				missStar(st);
+			}
+		}else{
+			st.popT+=dt;
+		}
+	}
+	stars=stars.filter(st=>(st.collected&&st.popT<=500)||(!st.collected&&st.life>0));
+	for(const b of bursts){
+		b.life-=dt;
+		b.x+=b.vx*s;b.y+=b.vy*s;
+		b.vx*=0.97;b.vy*=0.97;b.vy+=20*s;
+	}
+	bursts=bursts.filter(b=>b.life>0);
+	if(game.state==='gameover')return;
+	if(!roundDone&&(game.collected>=PER_ROUND||game.collected+game.misses>=PER_ROUND)){
+		if(game.collected<PER_ROUND){
+			// round ran out of stars without reaching target via misses alone; only complete on full collection
+		}
+	}
+	if(!roundDone&&game.collected>=PER_ROUND){
+		roundDone=true;
+		sndWin2();
+		triggerShake(6);
+		triggerFlash();
+		best.lifetimeStars+=game.collected;
+		saveBest(best);
+		setTimeout(()=>{
+			game.round++;
+			if(game.round>=TOTAL_ROUNDS){
+				sndWinBig();
+				triggerShake(10);
+				triggerFlash();
+				setTimeout(()=>{game.state='won';saveProgress();},600);
+			}else{
+				buildRound(game.round);
+			}
+		},800);
+	}
+}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+	if(game.muted)return;
+	const a=AC();if(!a)return;
+	try{
+		if(a.state==='suspended')a.resume();
+		const o=a.createOscillator(),g=a.createGain();
+		o.type=t||'sine';o.frequency.value=f;
+		g.gain.setValueAtTime(0.0001,a.currentTime);
+		g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+		g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+		o.connect(g);g.connect(a.destination);
+		o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+	}catch(e){}
+}
+const sndCollect=(hue)=>tone(400+hue*0.4,0.1,'sine',0.05);
+const sndTick=()=>tone(1200,0.05,'triangle',0.03);
+const sndMiss=()=>tone(160,0.12,'sawtooth',0.04);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.07),i*80));};
+const sndWinBig=()=>{[528,660,792,880,1056,1320].forEach((f,i)=>setTimeout(()=>tone(f,0.3,'sine',0.08),i*120));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function drawBg(){
+	const grad=lgrad(0,0,0,H,[[0,'#02030a'],[1,'#010208']]);
+	ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+	const t=game.time/6000;
+	for(let i=0;i<20;i++){
+		const sx=(Math.sin(i*2.3+t)*0.5+0.5)*W;
+		const sy=(Math.cos(i*1.7+t*0.8)*0.5+0.5)*H;
+		const a=0.04+0.03*Math.sin(i+game.time/1000);
+		ctx.fillStyle=`rgba(${120+Math.floor(Math.sin(i)*80)},${120+Math.floor(Math.cos(i)*80)},255,${a})`;
+		ctx.beginPath();ctx.arc(sx,sy,1.5,0,Math.PI*2);ctx.fill();
+	}
+}
+function drawBursts(){
+	for(const b of bursts){
+		const t=1-b.life/b.maxLife;
+		ctx.save();
+		ctx.globalAlpha=(1-t)*0.8;
+		ctx.fillStyle=`hsl(${b.hue},80%,70%)`;
+		ctx.shadowColor=`hsl(${b.hue},80%,60%)`;
+		ctx.shadowBlur=4;
+		ctx.beginPath();ctx.arc(b.x,b.y,b.r*(1-t*0.5),0,Math.PI*2);ctx.fill();
+		ctx.shadowBlur=0;
+		ctx.restore();
+	}
+}
+function drawStars(){
+	for(const st of stars){
+		if(st.collected){
+			const t=clamp(st.popT/500,0,1);
+			ctx.save();
+			ctx.globalAlpha=1-t;
+			ctx.translate(st.x,st.y);
+			ctx.scale(1+t,1+t);
+			ctx.fillStyle=`hsl(${st.hue},80%,75%)`;
+			ctx.font=`bold ${Math.floor(st.r*0.9)}px Arial`;
+			ctx.textAlign='center';ctx.textBaseline='middle';
+			ctx.fillText('✦',0,0);
+			ctx.restore();
+		}else{
+			const lifeFrac=st.life/st.maxLife;
+			const urgent=st.life<=500;
+			ctx.save();
+			ctx.globalAlpha=Math.min(1,lifeFrac*3)*0.9;
+			const pulse=urgent?1+0.15*Math.sin(game.time/40):1;
+			const hue=urgent?0:st.hue; // color-shift to red as it nears expiry
+			ctx.shadowColor=`hsl(${hue},80%,60%)`;
+			ctx.shadowBlur=urgent?14:8;
+			ctx.translate(st.x,st.y);
+			ctx.scale(pulse,pulse);
+			ctx.fillStyle=`hsl(${hue},80%,72%)`;
+			ctx.font=`bold ${Math.floor(st.r)}px Arial`;
+			ctx.textAlign='center';ctx.textBaseline='middle';
+			ctx.fillText('★',0,0);
+			ctx.shadowBlur=0;
+			ctx.fillStyle=`hsla(${hue},70%,80%,${Math.min(1,lifeFrac*2)})`;
+			ctx.font=`bold ${Math.floor(9+st.r*0.2)}px Arial`;
+			ctx.fillText(st.word,0,st.r+10);
+			ctx.restore();
+		}
+	}
+}
+function drawHUD(){
+	ctx.save();
+	ctx.fillStyle='rgba(1,1,4,.88)';
+	rr(0,0,W,46,0);ctx.fill();
+	ctx.textBaseline='top';ctx.textAlign='left';
+	ctx.fillStyle='#ffe060';ctx.font='bold 13px Arial';
+	ctx.fillText('Grand Finale — Game #100  ✦  Round '+(game.round+1)+' / '+TOTAL_ROUNDS,18,8);
+	ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+	ctx.fillText('Collected: '+game.collected+'/'+PER_ROUND+'  Misses: '+game.misses+'/'+MAX_MISSES+'  Combo: '+game.combo+'  Total: '+game.total,18,28);
+	ctx.textAlign='right';
+	ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+	ctx.fillText('Score '+game.score,W-18,8);
+	ctx.fillText('Best '+best.bestScore,W-18,28);
+	ctx.restore();
+}
+function vignette(){
+	const g=ctx.createRadialGradient(W/2,H/2,H*0.4,W/2,H/2,H*0.9);
+	g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+	ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function panelDraw(title,lines,colour){
+	ctx.save();
+	ctx.fillStyle='rgba(1,1,4,.78)';ctx.fillRect(0,0,W,H);
+	const pw=560,ph=420,px=(W-pw)/2,py=(H-ph)/2;
+	const bg=lgrad(px,py,px,py+ph,[[0,'rgba(4,4,14,.97)'],[1,'rgba(2,2,10,.97)']]);
+	ctx.fillStyle=bg;rr(px,py,pw,ph,22);ctx.fill();
+	ctx.strokeStyle='rgba(220,200,60,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+	ctx.textAlign='center';ctx.textBaseline='alphabetic';
+	ctx.fillStyle=colour||'#ffe060';ctx.font='bold 34px Arial';
+	ctx.fillText(title,W/2,py+62);
+	ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+	let ly=py+102;
+	for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+	ctx.restore();
+}
+function starRating(){
+	// accuracy-based rating for the win screen
+	const attempts=game.total+game.misses; // rough per-run proxy not tracked cumulatively; use misses vs total collected this run
+	const acc=game.total>0?game.total/Math.max(1,game.total+game.misses):1;
+	if(acc>=0.9)return'⭐⭐⭐';
+	if(acc>=0.65)return'⭐⭐';
+	return'⭐';
+}
+function drawWon(){
+	ctx.save();
+	ctx.fillStyle='rgba(1,1,4,.6)';ctx.fillRect(0,0,W,H);
+	const pw=680,ph=460,px=(W-pw)/2,py=(H-ph)/2;
+	ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,16,.97)'],[1,'rgba(4,2,12,.97)']]);
+	rr(px,py,pw,ph,26);ctx.fill();
+	ctx.strokeStyle='rgba(220,200,60,.35)';ctx.lineWidth=2;rr(px+1,py+1,pw-2,ph-2,26);ctx.stroke();
+	ctx.textAlign='center';ctx.textBaseline='alphabetic';
+	ctx.fillStyle='#ffe060';ctx.font='bold 38px Arial';
+	ctx.fillText('100 / 100',W/2,py+70);
+	ctx.fillStyle='rgba(234,242,246,.6)';ctx.font='16px Arial';
+	ctx.fillText('Grand Finale Complete  '+starRating(),W/2,py+100);
+	ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+	const lines=['You played all 100 games.','Each one a choice. Each one yours.','','100 moments of boundary, rest, joy, and freedom.','You proved something: your life is enough.','Your time is yours. Your path is real.','','Score: '+game.score+'  Stars collected: '+game.total+'  Best combo: '+game.maxCombo,'Best score ever: '+best.bestScore+'  Lifetime stars: '+best.lifetimeStars,'','Thank you for playing.','ANCF — A New Chapter of Freedom'];
+	let ly=py+138;
+	for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}
+	const t=game.time/8000;
+	for(let i=0;i<AFFIRMATIONS.length;i++){
+		const ax=(Math.sin(i*2.5+t)*0.4+0.5)*W;
+		const ay=60+Math.floor(game.time/60+i*60)%(H-120);
+		ctx.fillStyle=`hsla(${i/AFFIRMATIONS.length*360},60%,70%,.15)`;
+		ctx.font='11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+		ctx.fillText(AFFIRMATIONS[i],ax,ay);
+	}
+	ctx.fillStyle='rgba(234,242,246,.6)';ctx.font='13px Arial';
+	ctx.textAlign='center';ctx.textBaseline='alphabetic';
+	ctx.fillText('Click / tap to play again',W/2,py+ph-22);
+	ctx.restore();
+}
+function drawGameOver(){
+	panelDraw('So Close ✦',[
+		'You missed '+MAX_MISSES+' stars this round.',
+		'That is alright — freedom is not a test you can fail.',
+		'',
+		'Score: '+game.score+'  Stars collected: '+game.total,
+		'Best combo: '+game.maxCombo+'  Best score ever: '+best.bestScore,
+		'',
+		'Click / tap to try again.'
+	],'#ff9b6a');
+}
+function drawPaused(){
+	panelDraw('Paused',['Take a breath.','','Score: '+game.score+'  Combo: '+game.combo,'','Click / tap the pause button to resume.'],'#9adfff');
+}
+
+function draw(){
+	try{
+		ctx.setTransform(1,0,0,1,0,0);
+		ctx.clearRect(0,0,W,H);
+		ctx.save();
+		let ox=0,oy=0;
+		if(shakeT>0){
+			const p=shakeT/300;
+			ox=(Math.random()-0.5)*shakeMag*p;
+			oy=(Math.random()-0.5)*shakeMag*p;
+			ctx.translate(ox,oy);
+		}
+		drawBg();
+		if(game.state!=='title'){drawBursts();drawStars();}
+		vignette();
+		if(game.state==='playing'){drawHUD();if(game.paused)drawPaused();}
+		if(game.state==='title'){
+			panelDraw('Grand Finale ✦',['Game #100 of the ANCF 100 HTML Games.','Affirmation stars rise and fade — click each one before it disappears.','3 rounds of 20 stars each.','Miss '+MAX_MISSES+' and the round ends — but you can always try again.','','You made it here. This is yours.','','Best score: '+best.bestScore+'   Best combo: '+best.bestCombo,'','Click / tap to celebrate.'],'#ffe060');
+		}else if(game.state==='won'){
+			drawWon();
+		}else if(game.state==='gameover'){
+			drawGameOver();
+		}
+		if(flashT>0){
+			ctx.globalAlpha=flashT/250*0.35;
+			ctx.fillStyle='#ffe060';
+			ctx.fillRect(-ox-20,-oy-20,W+40,H+40);
+			ctx.globalAlpha=1;
+		}
+		ctx.restore();
+	}catch(e){}
+}
+
+function onDown(e){
+	e.preventDefault();
+	const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+	const rect=canvas.getBoundingClientRect();
+	const sx=W/rect.width,sy=H/rect.height;
+	let px,py;
+	if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+	else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+	if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+	if(game.state==='playing'&&!game.paused)clickStar(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+function togglePause(){
+	if(game.state!=='playing')return;
+	game.paused=!game.paused;
+	const b=document.getElementById('btnPause');
+	if(b){b.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';b.setAttribute('aria-label',game.paused?'Resume game':'Pause game');b.title=game.paused?'Resume game':'Pause game';}
+}
+function toggleMute(){
+	game.muted=!game.muted;
+	const b=document.getElementById('btnMute');
+	if(b){b.innerHTML=game.muted?'&#128263;':'&#128266;';b.setAttribute('aria-label',game.muted?'Unmute sound':'Mute sound');b.title=game.muted?'Unmute sound':'Mute sound';}
+}
+const btnPauseEl=document.getElementById('btnPause');
+const btnMuteEl=document.getElementById('btnMute');
+if(btnPauseEl)btnPauseEl.addEventListener('click',(e)=>{e.stopPropagation();togglePause();});
+if(btnMuteEl)btnMuteEl.addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+window.addEventListener('keydown',(e)=>{
+	if(e.key==='p'||e.key==='P')togglePause();
+	if(e.key==='m'||e.key==='M')toggleMute();
+});
+
+let last=0;
+function loop(ts){
+	if(!last)last=ts;
+	const dt=ts-last;last=ts;
+	update2(dt);
+	draw();
+	requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+	get game(){return game;},
+	get stars(){return stars;},
+	get bursts(){return bursts;},
+	resetGame,buildRound,clickStar,spawnStar,spawnBurst,
+	update:update2,draw,
+	togglePause,toggleMute,
+	TOTAL_ROUNDS,PER_ROUND,MAX_MISSES,WORDS,AFFIRMATIONS,
+	get best(){return best;}
+};
+</script>
+</body>
+</html>

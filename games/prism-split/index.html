@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Prism Split</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03020a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(192,160,255,.4);background:rgba(6,4,16,.8);color:#eaf2f6;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(160,100,255,.35);}
+#hintbtn{position:fixed;top:8px;left:8px;width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(192,160,255,.4);background:rgba(6,4,16,.8);color:#eaf2f6;font-size:16px;z-index:10;padding:0;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="hintbtn" title="Hint">?</button>
+<div id="ctrls">
+<button id="undobtn" title="Undo">&#8630;</button>
+<button id="pausebtn" title="Pause">&#10074;&#10074;</button>
+<button id="mutebtn" title="Mute">&#128266;</button>
+</div>
+<div id="hint">White light enters the prism &middot; click to rotate &middot; right-click/shift-click to rotate back &middot; direct beams to matching colour targets</div>
+<script>
+'use strict';
+// Prism Split (#87)
+// Light-beam puzzle. A white beam enters from the left, passes through a prism that splits it.
+// Click rotating mirrors to steer each coloured beam onto matching targets.
+// 8 puzzles, each with a different prism angle + mirror layout.
+// Theme: your light, split into its true spectrum — each colour has a right home.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const COLORS=['#ff6060','#ffa040','#ffe060','#60c060','#60a0ff','#c060ff'];
+const COLOR_NAMES=['Joy','Freedom','Calm','Growth','Truth','Wonder'];
+const SHAPES=['circle','triangle','square','diamond','star','hex'];
+const TOTAL=8;
+const LS_KEY='prismSplit.best';
+function loadBest(){try{const v=localStorage.getItem(LS_KEY);return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),paused:false,muted:false,puzzleTime:0,rotations:0,bonus:0};
+let mirrors=[],targets=[],beams=[],solved=false,rng,particles=[],flash=0,history=[];
+const PRISM_X=180,PRISM_Y=H/2;
+// Simple puzzle: prism always at fixed spot, mirrors and targets are parameterised
+function buildPuzzle(r){rng=seeded(r*6007+23);solved=false;particles=[];flash=0;history=[];game.puzzleTime=0;game.rotations=0;
+const numC=2+Math.min(4,Math.floor(r/2));// colours to use
+const cols=COLORS.slice(0,numC);// targets placed on right side in rows
+targets=cols.map((col,i)=>{const ty=80+i*(H-160)/(numC-1||1);return{x:W-60,y:ty,col,label:COLOR_NAMES[i],shape:SHAPES[i],hit:false};});// mirrors: one per colour beam, initially angled wrong
+const extra=r>=4?1:0;// harder puzzles get a second mirror stage per colour beam
+mirrors=[];
+cols.forEach((col,i)=>{
+  const n=1+((extra&&i%2===0)?1:0);
+  for(let k=0;k<n;k++){
+    const mx=280+Math.floor(rng()*(W-480))+k*40;
+    const my=80+Math.floor(rng()*(H-200));
+    mirrors.push({x:mx,y:my,angle:rng()*Math.PI,col,label:k===0?COLOR_NAMES[i]:'',shape:SHAPES[i]});
+  }
+});
+beams=[];game.state='playing';}
+function resetGame(){game.round=0;game.score=0;buildPuzzle(0);}
+function pushHistory(i){history.push({i,angle:mirrors[i].angle});if(history.length>50)history.shift();}
+function rotateMirror(i,dir){dir=dir||1;pushHistory(i);mirrors[i].angle+=(Math.PI/8)*dir;game.rotations++;sndClick();checkSolve();}
+function undoLast(){if(solved||!history.length)return;const h=history.pop();if(mirrors[h.i])mirrors[h.i].angle=h.angle;sndClick();checkSolve();}
+function spawnBurst(x,y,col){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,col});}}
+// proper segment intersection: ray from (sx,sy) dir ang, vs mirror segment of length 40 centered at m.x,m.y rotated by m.angle
+function segHit(sx,sy,ang,m){const dx=Math.cos(ang),dy=Math.sin(ang);
+  const hx=Math.cos(m.angle)*20,hy=Math.sin(m.angle)*20;
+  const ax=m.x-hx,ay=m.y-hy,bx=m.x+hx,by=m.y+hy;
+  const ex=bx-ax,ey=by-ay;
+  const denom=dx*ey-dy*ex;
+  if(Math.abs(denom)<1e-6)return null;
+  const qx=ax-sx,qy=ay-sy;
+  const t=(qx*ey-qy*ex)/denom;
+  const u=(qx*dy-qy*dx)/denom;
+  if(t<=0.001||u<0||u>1)return null;
+  return{t,x:sx+dx*t,y:sy+dy*t};
+}
+function castBeam(sx,sy,ang,col,depth){if(depth>8)return;// find first mirror of matching colour
+let hit=null,hp=null,minDist=Infinity;
+for(const m of mirrors){if(m.col!==col)continue;const r=segHit(sx,sy,ang,m);if(r&&r.t<minDist){minDist=r.t;hit=m;hp=r;}}
+if(hit){beams.push({x1:sx,y1:sy,x2:hp.x,y2:hp.y,col});
+const reflAng=2*hit.angle-ang+Math.PI;
+castBeam(hp.x,hp.y,reflAng,col,depth+1);
+}else{
+const clip=Math.min((W-sx)/Math.max(0.001,Math.cos(ang)),(H-sy)/Math.max(0.001,Math.sin(ang)));
+const dist=Math.max(10,Math.min(1200,Math.abs(clip)));
+const ex=sx+Math.cos(ang)*dist,ey=sy+Math.sin(ang)*dist;
+beams.push({x1:sx,y1:sy,x2:ex,y2:ey,col});
+for(const t of targets){if(t.col===col&&!t.hit&&Math.hypot(ex-t.x,ey-t.y)<30){t.hit=true;spawnBurst(t.x,t.y,t.col);sndHit();}}
+}}
+function checkSolve(){if(solved)return;beams=[];for(const t of targets)t.hit=false;// cast beams from prism
+const numC=targets.length;for(let i=0;i<numC;i++){const spreadAng=-0.3+(i/(numC-1||1))*0.6;castBeam(PRISM_X,PRISM_Y,spreadAng,COLORS[i],0);}
+if(targets.every(t=>t.hit)){solved=true;sndWin2();
+const par=targets.length*3;const speedBonus=game.puzzleTime<8000?50:0;const efficiencyBonus=Math.max(0,(par-game.rotations)*10);
+game.bonus=speedBonus+efficiencyBonus;
+game.score+=1+Math.floor(game.bonus/50);
+if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+flash=1;
+setTimeout(()=>{game.round++;if(game.round>=TOTAL){sndWin();game.state='won';flash=1;}else{buildPuzzle(game.round);}},700);}}
+function update(dt){dt=clamp(dt,0,48);game.time+=dt;
+if(game.state==='playing'&&!game.paused){game.puzzleTime+=dt;if(beams.length===0)checkSolve();}
+if(flash>0)flash=Math.max(0,flash-dt/600);
+for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=0.94;p.vy*=0.94;p.life-=dt/500;if(p.life<=0)particles.splice(i,1);}
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndClick=()=>tone(440,0.05,'sine',0.03);
+const sndHit=()=>tone(720,0.08,'triangle',0.04);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(3,2,10,1)';ctx.fillRect(0,0,W,H);}
+function drawPrism(){// triangular prism
+const pw=50,ph=80;ctx.save();ctx.translate(PRISM_X,PRISM_Y);const pulse=0.6+0.4*Math.sin(game.time/800);ctx.fillStyle=`rgba(180,180,255,${pulse*0.15})`;ctx.strokeStyle=`rgba(180,180,255,${pulse*0.6})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-ph/2);ctx.lineTo(pw/2,ph/2);ctx.lineTo(-pw/2,ph/2);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();// incoming beam
+ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=3;ctx.shadowColor='rgba(255,255,255,.3)';ctx.shadowBlur=4;ctx.beginPath();ctx.moveTo(0,PRISM_Y);ctx.lineTo(PRISM_X-26,PRISM_Y);ctx.stroke();ctx.shadowBlur=0;}
+function drawBeams(){for(const b of beams){ctx.strokeStyle=b.col+'bb';ctx.lineWidth=2.5;ctx.shadowColor=b.col+'60';ctx.shadowBlur=6;ctx.beginPath();ctx.moveTo(b.x1,b.y1);ctx.lineTo(b.x2,b.y2);ctx.stroke();}ctx.shadowBlur=0;}
+function drawShape(x,y,r,shape){ctx.beginPath();
+switch(shape){
+case'triangle':ctx.moveTo(x,y-r);ctx.lineTo(x+r*0.87,y+r*0.5);ctx.lineTo(x-r*0.87,y+r*0.5);ctx.closePath();break;
+case'square':ctx.rect(x-r*0.8,y-r*0.8,r*1.6,r*1.6);break;
+case'diamond':ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();break;
+case'star':{const spikes=5,outer=r,inner=r*0.45;let rot=Math.PI/2*3;const step=Math.PI/spikes;ctx.moveTo(x,y-outer);for(let i=0;i<spikes;i++){ctx.lineTo(x+Math.cos(rot)*outer,y+Math.sin(rot)*outer);rot+=step;ctx.lineTo(x+Math.cos(rot)*inner,y+Math.sin(rot)*inner);rot+=step;}ctx.closePath();break;}
+case'hex':{for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;const px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);}ctx.closePath();break;}
+default:ctx.arc(x,y,r,0,Math.PI*2);
+}
+}
+function drawMirrors(){for(let i=0;i<mirrors.length;i++){const m=mirrors[i];ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.angle);ctx.strokeStyle=m.col+'cc';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-20,0);ctx.lineTo(20,0);ctx.stroke();ctx.restore();
+ctx.save();ctx.fillStyle=m.col+'aa';drawShape(m.x,m.y-30,6,m.shape);ctx.fill();ctx.restore();
+if(m.label){ctx.fillStyle=m.col+'cc';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(m.label,m.x,m.y-38);}
+}}
+function drawTargets(){for(const t of targets){const pulse=0.5+0.5*Math.sin(game.time/500);ctx.shadowColor=t.col+(t.hit?'aa':'44');ctx.shadowBlur=t.hit?16:4;ctx.fillStyle=t.col+(t.hit?'cc':'44');drawShape(t.x,t.y,18,t.shape);ctx.fill();ctx.strokeStyle=t.col+(t.hit?'ff':'66');ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='rgba(234,242,246,.95)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.label,t.x,t.y+30);}}
+function drawParticles(){for(const p of particles){ctx.globalAlpha=clamp(p.life,0,1);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(2,1,6,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#c0a0ff';ctx.font='bold 13px Arial';ctx.fillText('Prism Split — Puzzle '+(game.round+1)+' / '+TOTAL,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Click a mirror to rotate — right-click/shift-click to rotate back — match colour + shape',18,28);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  Best '+game.best+'  Rotations '+game.rotations,W-18,8);ctx.restore();
+if(game.paused){ctx.save();ctx.fillStyle='rgba(2,1,6,.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#eaf2f6';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.fillText('Paused',W/2,H/2);ctx.restore();}
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+if(flash>0){ctx.fillStyle=`rgba(255,255,255,${flash*0.35})`;ctx.fillRect(0,0,W,H);}
+}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(2,1,6,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,16,.97)'],[1,'rgba(4,3,12,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(160,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#c0a0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();drawBg();if(game.state!=='title'){drawBeams();drawPrism();drawMirrors();drawTargets();drawParticles();}vignette();if(game.state==='playing')drawHUD();if(game.state==='title')panelDraw('Prism Split',['Light splits into colours through the prism.','Click mirrors to rotate and redirect each beam.','Match each colour + shape beam to its target.','8 puzzles.','','Your spectrum — each colour finds its place.','','Click / tap to begin.']);else if(game.state==='won')panelDraw('Spectrum Aligned! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Every colour found its true home.','','Click / tap to play again.']);ctx.restore();}catch(e){}}
+function mirrorAt(px,py){for(let i=0;i<mirrors.length;i++){if(Math.hypot(px-mirrors[i].x,py-mirrors[i].y)<32)return i;}return -1;}
+function toScene(e){const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;let px,py;
+if(e.touches&&e.touches.length){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+return{px,py};}
+function onDown(e){e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+const{px,py}=toScene(e);
+if(game.state==='title'||game.state==='won'){resetGame();return;}
+if(game.state==='playing'&&!game.paused&&!solved){const i=mirrorAt(px,py);if(i>=0){const dir=(e.shiftKey||e.button===2)?-1:1;rotateMirror(i,dir);}}
+}
+function onContext(e){e.preventDefault();const{px,py}=toScene(e);
+if(game.state==='playing'&&!game.paused&&!solved){const i=mirrorAt(px,py);if(i>=0)rotateMirror(i,-1);}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('contextmenu',onContext);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+document.getElementById('pausebtn').addEventListener('click',()=>{if(game.state==='playing')game.paused=!game.paused;});
+document.getElementById('mutebtn').addEventListener('click',()=>{game.muted=!game.muted;document.getElementById('mutebtn').textContent=game.muted?'\u{1F507}':'\u{1F50A}';});
+document.getElementById('undobtn').addEventListener('click',()=>{if(game.state==='playing'&&!game.paused)undoLast();});
+document.getElementById('hintbtn').addEventListener('click',()=>{
+if(game.state!=='playing'||solved)return;
+// find an unsolved colour and nudge its primary mirror toward a plausible angle by highlighting via a quick angle correction preview (does small hint: rotate first wrong mirror one accurate step is complex; instead flash the mirror for that colour)
+const missing=targets.find(t=>!t.hit);
+if(!missing)return;
+const m=mirrors.find(mm=>mm.col===missing.col);
+if(m){particles.push({x:m.x,y:m.y,vx:0,vy:0,life:1.2,col:missing.col});sndClick();}
+});
+window.addEventListener('keydown',e=>{
+if(e.key==='p'||e.key==='P'){if(game.state==='playing')game.paused=!game.paused;}
+if(e.key==='m'||e.key==='M'){game.muted=!game.muted;document.getElementById('mutebtn').textContent=game.muted?'\u{1F507}':'\u{1F50A}';}
+if(e.key==='z'||e.key==='Z'){if(game.state==='playing'&&!game.paused)undoLast();}
+});
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get mirrors(){return mirrors;},get targets(){return targets;},get beams(){return beams;},get solved(){return solved;},resetGame,buildPuzzle,rotateMirror,undoLast,checkSolve,mirrorAt,update,draw,setMirrorAngle:(i,a)=>{if(mirrors[i]){mirrors[i].angle=a;checkSolve();}},COLORS,COLOR_NAMES,TOTAL};
+</script>
+</body>
+</html>

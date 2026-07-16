@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Pendulum</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03040c;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{display:block;background:#03040c;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:10px;border:1.5px solid rgba(160,128,255,.4);background:rgba(4,4,14,.82);color:#eaf2f6;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrls button:active{background:rgba(160,128,255,.3);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute" title="Mute">&#128266;</button>
+  <button id="btnPause" aria-label="Pause" title="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint"></div>
+<script>
+'use strict';
+// Pendulum (#97)
+// A pendulum swings. A highlighted "release zone" appears along the arc.
+// Click / tap at the exact moment the bob passes through the zone = score.
+// Zone width narrows over rounds. Miss breaks your streak. Affirmation on hit; pressure-word on miss.
+// Theme: timing your own rhythm — acting when it feels right, not when told.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const PX=W/2,PY=80;
+const L=260;// pendulum length
+const TOTAL=12;
+const FEEDBACK_MS=1400;
+const NEXT_ROUND_DELAY=1400;
+const AMPLITUDE=Math.PI/3;// max reachable swing angle from vertical
+const HIT_LABELS=['Yes!','Now!','Flow!','Right time!','Your moment!','Perfect!'];
+const MISS_LABELS=['Not yet','Off rhythm','Too early','Too late','Wait for it'];
+const AFF=['I trust my timing','My rhythm is mine','I flow in my own time','I know when to move','My pace is enough','I decide when'];
+const hintEl=document.getElementById('hint');
+if(hintEl)hintEl.textContent='Click / tap when the pendulum swings into the golden window · '+TOTAL+' rounds';
+
+// ---------- localStorage helpers (private browsing can throw) ----------
+function lsGet(k){try{return window.localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{window.localStorage.setItem(k,v);}catch(e){}}
+let storedBest=0;{const v=lsGet('pendulum_best');if(v!==null){const n=parseInt(v,10);if(!isNaN(n))storedBest=n;}}
+let muted=false;{const v=lsGet('pendulum_muted');if(v==='1')muted=true;}
+
+const game={state:'title',time:0,round:0,score:0,best:storedBest,streak:0,bestStreak:0,paused:false};
+let angle=Math.PI/3,vel=0,zoneA,zoneW,hit=false,miss=false,feedback='',feedbackT=0,zoneDir=1,rng;
+let shakeT=0,shakeMag=0;
+let particles=[];
+let popups=[];
+
+function buildRound(r){
+  rng=seeded(r*6007+59);
+  // zone: a random sector of arc; width narrows with round, always clamped inside reachable amplitude
+  zoneW=Math.max(0.08,0.35-r*0.022);
+  const maxCenter=Math.max(0,AMPLITUDE-zoneW/2-0.02);
+  zoneA=clamp((rng()-.5)*1.2,-maxCenter,maxCenter);// centre angle within reachable swing range
+  zoneDir=rng()<0.5?1:-1;
+  hit=false;miss=false;feedback='';feedbackT=0;
+  // reset swing energy each round so difficulty comes from zone width, not accumulated damping loss
+  angle=AMPLITUDE*(rng()<0.5?1:-1);
+  vel=0;
+}
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+function resetGame(){game.round=0;game.score=0;game.streak=0;game.bestStreak=0;game.state='playing';buildRound(0);}
+
+function spawnHitFX(bx,by){
+  for(let i=0;i<14;i++){
+    const a=Math.random()*Math.PI*2,sp=1+Math.random()*2.6;
+    particles.push({x:bx,y:by,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,maxLife:400+Math.random()*300,col:'80,220,100'});
+  }
+  popups.push({x:bx,y:by,life:0,maxLife:800,text:'+1'});
+}
+function triggerShake(){shakeT=0;shakeMag=8;}
+
+function tryHit(){
+  if(game.state!=='playing'||game.paused||hit||miss)return;
+  const inZone=Math.abs(angle-zoneA)<zoneW/2;
+  const bx=PX+Math.sin(angle)*L,by=PY+Math.cos(angle)*L;
+  if(inZone){
+    hit=true;
+    game.streak++;
+    if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+    const mult=1+Math.floor(game.streak/3)*0.5;// streak multiplier for consecutive perfect hits
+    game.score+=Math.round(1*mult*10)/10;
+    if(game.score>game.best){game.best=game.score;lsSet('pendulum_best',String(game.best));}
+    feedback=HIT_LABELS[Math.floor(Math.random()*HIT_LABELS.length)]+' — '+AFF[game.round%AFF.length];
+    feedbackT=0;
+    spawnHitFX(bx,by);
+    sndHit2();
+  }else{
+    miss=true;
+    game.streak=0;// miss breaks the streak — real cost for misses
+    feedback=MISS_LABELS[Math.floor(Math.random()*MISS_LABELS.length)];
+    feedbackT=0;
+    triggerShake();
+    sndMiss();
+  }
+  setTimeout(nextRound,NEXT_ROUND_DELAY);
+}
+function nextRound(){
+  game.round++;
+  if(game.round>=TOTAL){
+    if(game.score>game.best){game.best=game.score;lsSet('pendulum_best',String(game.best));}
+    sndWin();
+    game.state='won';
+  }else{
+    buildRound(game.round);
+  }
+}
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(shakeT<600)shakeT+=dt;
+  shakeMag=Math.max(0,shakeMag-dt*0.03);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life+=dt;p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;if(p.life>=p.maxLife)particles.splice(i,1);}
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.life+=dt;p.y-=0.04*dt;if(p.life>=p.maxLife)popups.splice(i,1);}
+  if(game.state!=='playing'||game.paused)return;
+  // pendulum physics
+  const g=2.8;
+  vel+=(-g/L*Math.sin(angle)-(hit||miss?2:0.02)*vel)*s*60;
+  angle+=vel*s*60;
+  feedbackT+=dt;
+}
+
+// ---------- audio ----------
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndHit2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndMiss=()=>tone(200,0.2,'sawtooth',0.04);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#03040c'],[1,'#02030a']]);ctx.fillRect(0,0,W,H);}
+
+function drawPendulum(){
+  // arc guide — matches actual reachable amplitude
+  ctx.strokeStyle='rgba(80,80,140,.2)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(PX,PY,L,Math.PI/2-AMPLITUDE,Math.PI/2+AMPLITUDE,false);ctx.stroke();
+  // zone arc
+  const zA=zoneA-zoneW/2,zB=zoneA+zoneW/2;
+  const zCol=hit?'rgba(80,220,100,.5)':miss?'rgba(220,80,80,.3)':'rgba(220,200,60,.5)';
+  ctx.strokeStyle=zCol;ctx.lineWidth=18;ctx.lineCap='butt';
+  if(!hit&&!miss){
+    // dashed pending zone for colorblind-safe distinction from solid hit/miss
+    ctx.save();ctx.setLineDash([10,8]);
+    ctx.beginPath();ctx.arc(PX,PY,L,Math.PI/2+zA,Math.PI/2+zB);ctx.stroke();
+    ctx.restore();
+  }else{
+    ctx.beginPath();ctx.arc(PX,PY,L,Math.PI/2+zA,Math.PI/2+zB);ctx.stroke();
+  }
+  // pivot
+  ctx.fillStyle='rgba(180,180,220,.7)';ctx.beginPath();ctx.arc(PX,PY,8,0,Math.PI*2);ctx.fill();
+  // rod
+  const bx=PX+Math.sin(angle)*L,by=PY+Math.cos(angle)*L;
+  ctx.strokeStyle='rgba(160,180,220,.5)';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(PX,PY);ctx.lineTo(bx,by);ctx.stroke();
+  // bob
+  const bobCol=hit?'rgba(80,220,100,.9)':miss?'rgba(220,80,80,.7)':'rgba(120,200,255,.8)';
+  ctx.shadowColor=hit?'rgba(80,220,100,.4)':'rgba(120,200,255,.3)';ctx.shadowBlur=12;
+  ctx.fillStyle=bobCol;ctx.beginPath();ctx.arc(bx,by,18,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  // glyph backup for colorblind accessibility (checkmark / X near bob)
+  if(hit||miss){
+    ctx.save();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();
+    if(hit){
+      ctx.moveTo(bx-7,by);ctx.lineTo(bx-2,by+6);ctx.lineTo(bx+8,by-7);
+    }else{
+      ctx.moveTo(bx-6,by-6);ctx.lineTo(bx+6,by+6);ctx.moveTo(bx+6,by-6);ctx.lineTo(bx-6,by+6);
+    }
+    ctx.stroke();ctx.restore();
+  }
+  // particles
+  for(const p of particles){
+    const a=Math.max(0,1-p.life/p.maxLife);
+    ctx.fillStyle='rgba('+p.col+','+a+')';
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+  }
+  // score popups
+  for(const p of popups){
+    const a=Math.max(0,1-p.life/p.maxLife);
+    ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(120,255,150,1)';ctx.font='bold 18px Arial';ctx.textAlign='center';
+    ctx.fillText(p.text,p.x,p.y-10);ctx.restore();
+  }
+  // feedback text — larger, higher-contrast, panel-consistent style
+  if(feedback&&feedbackT<FEEDBACK_MS){
+    const alpha=Math.max(0,1-feedbackT/1200);
+    ctx.save();ctx.globalAlpha=alpha;
+    ctx.fillStyle=hit?'rgba(120,255,150,1)':'rgba(255,110,110,1)';
+    ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=6;
+    ctx.fillText(feedback,W/2,H/2+92);
+    ctx.restore();
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#a080ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Pendulum — Round '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const zStr=Math.round(zoneW/Math.PI*180)+'° zone';
+  ctx.fillText('Click when the bob enters the golden arc — '+zStr+' window',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best+'  Streak '+game.streak,W-18,8);
+  ctx.restore();
+  // danger warning near end (final 2 rounds) — subtle red pulse
+  if(game.round>=TOTAL-2){
+    const pulse=0.15+0.15*Math.abs(Math.sin(game.time/220));
+    ctx.save();ctx.strokeStyle='rgba(220,60,60,'+pulse+')';ctx.lineWidth=6;ctx.strokeRect(3,3,W-6,H-6);ctx.restore();
+  }
+  if(game.paused){
+    ctx.save();ctx.fillStyle='rgba(1,1,5,.6)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#eaf2f6';ctx.font='bold 30px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Paused',W/2,H/2);ctx.restore();
+  }
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(1,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,4,14,.97)'],[1,'rgba(3,3,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(140,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#a080ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    // screen shake on miss
+    if(shakeMag>0.1){
+      const dx=(Math.random()-.5)*shakeMag,dy=(Math.random()-.5)*shakeMag;
+      ctx.translate(dx,dy);
+    }
+    drawBg();
+    if(game.state!=='title')drawPendulum();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title')panelDraw('Pendulum',['A golden arc marks the release window.','Click / tap when the swinging bob enters it.','The window narrows each round. '+TOTAL+' rounds.','A miss breaks your streak — chain hits for bonus score.','','Your rhythm. Your timing. Your moment.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('In Flow! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'Best streak: '+game.bestStreak,'','12 perfect moments of your own timing.','','Click / tap to play again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+function onDown(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.paused)return;
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state==='playing')tryHit();
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// ---------- on-screen pause / mute controls ----------
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+function setPaused(p){
+  game.paused=p;
+  if(btnPause)btnPause.innerHTML=p?'&#9654;':'&#10074;&#10074;';
+}
+function togglePause(e){if(e){e.preventDefault();e.stopPropagation();}if(game.state!=='playing')return;setPaused(!game.paused);}
+function toggleMute(e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  muted=!muted;
+  lsSet('pendulum_muted',muted?'1':'0');
+  if(btnMute)btnMute.innerHTML=muted?'&#128263;':'&#128266;';
+}
+if(btnPause){btnPause.addEventListener('click',togglePause);btnPause.addEventListener('touchstart',togglePause,{passive:false});}
+if(btnMute){btnMute.addEventListener('click',toggleMute);btnMute.addEventListener('touchstart',toggleMute,{passive:false});if(muted)btnMute.innerHTML='&#128263;';}
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='p'||e.key==='P')togglePause();
+  if(e.key==='m'||e.key==='M')toggleMute();
+});
+
+// ---------- letterboxed responsive canvas: preserve 960:540 aspect via CSS ----------
+function resize(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.max(1,Math.floor(W*scale)),ch=Math.max(1,Math.floor(H*scale));
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get angle(){return angle;},
+  get vel(){return vel;},
+  get zoneA(){return zoneA;},
+  get zoneW(){return zoneW;},
+  get hit(){return hit;},
+  get miss(){return miss;},
+  resetGame,buildRound,tryHit,nextRound,update,draw,resize,
+  L,PX,PY,TOTAL,AMPLITUDE
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Recipe: Chosen Life</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#05030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#05030a;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(160,80,255,.35);background:rgba(10,8,20,.82);color:#eaf2f6;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:auto;}
+#ctrls button:active{background:rgba(160,80,255,.3);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute">🔊</button>
+  <button id="btnPause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Drag the correct ingredients into the pot &middot; follow the recipe for your chosen life</div>
+<script>
+'use strict';
+// Recipe: Chosen Life (#67)
+// A recipe is shown. Drag the matching ingredients into the pot.
+// Wrong ingredients (social expectations labelled) get rejected.
+// 8 rounds, different recipes each time, plus a Chef's Challenge bonus round.
+// Theme: life choices are a recipe you write yourself.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const RECIPES=[
+  {name:'Freedom',ingredients:['Travel','Solitude','Curiosity','Rest']},
+  {name:'Craft',ingredients:['Focus','Practice','Tools','Patience']},
+  {name:'Adventure',ingredients:['Risk','Maps','Courage','Wonder']},
+  {name:'Peace',ingredients:['Quiet','Nature','Breath','Space']},
+  {name:'Connection',ingredients:['Trust','Presence','Listen','Care']},
+  {name:'Growth',ingredients:['Challenge','Reflect','Fail','Try']},
+  {name:'Joy',ingredients:['Play','Laugh','Dance','Create']},
+  {name:'Purpose',ingredients:['Meaning','Clarity','Values','Action']},
+];
+const WRONG=['Marriage','Kids','Mortgage','Hustle','Settling','Approval','Status','Norms','Obedience','Conformity','Comparison','Guilt-trip','Tradition','Small-talk'];
+const POT_X=W/2,POT_Y=340,POT_R=60;
+const TOTAL=8;
+const MAX_MISTAKES=3;
+const LS_KEY='cfq_recipe_chosen_best_v1';
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+const saved=lsGet(LS_KEY,{bestScore:0,bestTime:0});
+const game={state:'title',time:0,round:0,score:0,best:saved.bestScore||0,bestTime:saved.bestTime||0,
+  shakeT:0,mistakes:0,roundTime:0,roundLimit:0,streak:0,muted:false,paused:false,
+  challenge:false,challengeCleared:false,perfectRound:true,lastPerfect:false};
+let recipe,items=[],added=[],dragging=null,dragOffX=0,dragOffY=0,rng;
+let particles=[];
+let popups=[];
+let roundTimeoutId=null;
+function roundTimeLimit(r){ // shrinking time limit per round, clamped
+  return Math.max(14000, 34000 - r*2500);
+}
+function wrongCountFor(r){ // increasing distractor count, clamped
+  return Math.min(8, 4 + Math.floor(r/2)*2);
+}
+function sampleWrong(pool,n,rngFn){
+  const arr=pool.slice();
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(rngFn()*(i+1));const t=arr[i];arr[i]=arr[j];arr[j]=t;}
+  return arr.slice(0,Math.min(n,arr.length));
+}
+function buildRound(r){
+  rng=seeded(r*6007+77);
+  recipe=RECIPES[r%RECIPES.length];
+  items=[];
+  const correct=recipe.ingredients;
+  const wrongPool=WRONG.filter(w=>!correct.includes(w));
+  const wCount=wrongCountFor(r);
+  const wrongPicked=sampleWrong(wrongPool,wCount,rng);
+  const pool=[...correct,...wrongPicked].sort(()=>rng()-.5);
+  const N=pool.length,cols=4,rows=Math.ceil(N/cols);
+  for(let i=0;i<N;i++){
+    const col=i%cols,row=Math.floor(i/cols);
+    const x=60+col*200+(rng()-.5)*20,y=80+row*90+(rng()-.5)*10;
+    items.push({label:pool[i],x,y,w:160,h:50,homeX:60+col*200,homeY:80+row*90,correct:correct.includes(pool[i]),inPot:false,shakeT:0});
+  }
+  added=[];
+  game.mistakes=0;
+  game.roundTime=0;
+  game.roundLimit=roundTimeLimit(r);
+  game.perfectRound=true;
+  game.state='playing';
+}
+function buildChallenge(){
+  rng=seeded(99991);
+  recipe={name:"Chef's Challenge",ingredients:RECIPES.reduce((a,r)=>a.concat(r.ingredients),[])};
+  items=[];
+  const correct=recipe.ingredients;
+  const wrongPicked=sampleWrong(WRONG,8,rng);
+  const pool=[...correct,...wrongPicked].sort(()=>rng()-.5);
+  const cols=6;
+  for(let i=0;i<pool.length;i++){
+    const col=i%cols,row=Math.floor(i/cols);
+    const x=30+col*150+(rng()-.5)*10,y=70+row*58+(rng()-.5)*8;
+    items.push({label:pool[i],x,y,w:130,h:42,homeX:30+col*150,homeY:70+row*58,correct:correct.includes(pool[i]),inPot:false,shakeT:0});
+  }
+  added=[];
+  game.mistakes=0;
+  game.roundTime=0;
+  game.roundLimit=60000;
+  game.perfectRound=true;
+  game.challenge=true;
+  game.state='playing';
+}
+function resetGame(){
+  game.round=0;game.score=0;game.shakeT=0;game.streak=0;game.challenge=false;game.challengeCleared=false;
+  if(roundTimeoutId){clearTimeout(roundTimeoutId);roundTimeoutId=null;}
+  buildRound(0);
+}
+function spawnParticles(x,y,color,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=0.5+Math.random()*1.5;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,life:600+Math.random()*400,maxLife:900,color});
+  }
+}
+function spawnPopup(x,y,text,color){
+  popups.push({x,y,text,color,life:800,maxLife:800});
+}
+function tryAdd(item){
+  if(item.inPot)return false;
+  if(!item.correct){
+    game.mistakes++;
+    game.perfectRound=false;
+    game.shakeT=260;
+    item.shakeT=350;
+    sndReject();
+    if(game.mistakes>=MAX_MISTAKES){
+      finishFail();
+    }
+    return false;
+  }
+  item.inPot=true;
+  added.push(item.label);
+  sndAdd();
+  spawnParticles(POT_X,POT_Y-POT_R+6,'rgba(120,220,170,.9)',10);
+  spawnPopup(POT_X,POT_Y-POT_R-6,'+1','rgba(120,220,170,.95)');
+  if(added.length>=recipe.ingredients.length){
+    completeRound();
+  }
+  return true;
+}
+function finishFail(){
+  if(roundTimeoutId){clearTimeout(roundTimeoutId);roundTimeoutId=null;}
+  game.state='gameover';
+  if(game.score>game.best){game.best=game.score;lsSet(LS_KEY,{bestScore:game.best,bestTime:game.bestTime});}
+}
+function completeRound(){
+  const timeBonus=Math.max(0,Math.floor((game.roundLimit-game.roundTime)/1000));
+  const streakBonus=game.perfectRound?2:0;
+  if(game.perfectRound)game.streak++;else game.streak=0;
+  game.score+= game.challenge?5:1;
+  game.lastPerfect=game.perfectRound;
+  spawnParticles(POT_X,POT_Y,'rgba(200,160,255,.9)',28);
+  spawnPopup(POT_X,POT_Y-POT_R-24,(game.perfectRound?'Perfect! ':'')+'+'+(timeBonus+streakBonus)+' bonus','rgba(200,180,255,.95)');
+  sndWin2();
+  if(game.score>game.best){game.best=game.score;}
+  const totalTime=game.roundTime;
+  if(!game.bestTime||totalTime<game.bestTime){/* per-round best time tracked loosely */}
+  lsSet(LS_KEY,{bestScore:game.best,bestTime:game.bestTime});
+  const roundAtCall=game.round;
+  const challengeAtCall=game.challenge;
+  if(roundTimeoutId)clearTimeout(roundTimeoutId);
+  roundTimeoutId=setTimeout(()=>{
+    roundTimeoutId=null;
+    if(game.state!=='playing')return;
+    if(challengeAtCall){
+      game.challengeCleared=true;
+      sndWin();
+      game.state='won';
+      return;
+    }
+    game.round=roundAtCall+1;
+    if(game.round>=TOTAL){
+      sndWin();
+      game.state='won';
+    } else {
+      buildRound(game.round);
+    }
+  },700);
+}
+function update(dt){
+  dt=clamp(dt,0,48);
+  if(game.state!=='playing'){return;}
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  for(const it of items){if(it.shakeT>0)it.shakeT=Math.max(0,it.shakeT-dt);}
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.life-=dt;p.x+=p.vx*(dt/16);p.y+=p.vy*(dt/16);p.vy+=0.02*(dt/16);
+    if(p.life<=0)particles.splice(i,1);
+  }
+  for(let i=popups.length-1;i>=0;i--){
+    const p=popups[i];p.life-=dt;p.y-=0.02*dt;
+    if(p.life<=0)popups.splice(i,1);
+  }
+  if(recipe){
+    game.roundTime=Math.max(0,game.roundTime+dt);
+    if(game.roundLimit>0 && game.roundTime>=game.roundLimit){
+      finishFail();
+    }
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndAdd=()=>tone(600,0.1,'sine',0.05);
+const sndReject=()=>tone(200,0.15,'sawtooth',0.05);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#05030a'],[1,'#030208']]);ctx.fillRect(0,0,W,H);}
+function drawPot(){
+  ctx.shadowColor='rgba(180,100,60,.3)';ctx.shadowBlur=12;ctx.fillStyle='rgba(80,50,30,.8)';ctx.beginPath();ctx.arc(POT_X,POT_Y,POT_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(180,120,60,.4)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(POT_X,POT_Y,POT_R,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='rgba(60,180,140,.3)';ctx.beginPath();ctx.ellipse(POT_X,POT_Y-10,POT_R-20,20,0,0,Math.PI*2);ctx.fill();
+  if(added.length>0){ctx.fillStyle='rgba(200,220,180,.7)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(added.join(' · '),POT_X,POT_Y-POT_R+8);}
+  ctx.fillStyle='rgba(220,200,160,.5)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(recipe?recipe.name+' Life':'',POT_X,POT_Y+POT_R+20);
+}
+function drawItems(){
+  for(const it of items){
+    if(it.inPot||it===dragging)continue;
+    const jitter=it.shakeT>0?(Math.sin(it.shakeT*0.08)*4):0;
+    const alpha=it.correct?0.85:0.55;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(jitter,0);
+    ctx.fillStyle=it.correct?'rgba(60,160,120,.7)':'rgba(120,60,60,.5)';
+    rr(it.x,it.y,it.w,it.h,8);ctx.fill();
+    ctx.strokeStyle=it.shakeT>0?'rgba(255,120,120,.9)':(it.correct?'rgba(80,200,160,.4)':'rgba(180,80,80,.3)');
+    ctx.lineWidth=it.shakeT>0?2.5:1.5;
+    rr(it.x,it.y,it.w,it.h,8);ctx.stroke();
+    ctx.fillStyle='rgba(234,242,246,.9)';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(it.label,it.x+it.w/2,it.y+it.h/2);
+    ctx.restore();
+  }
+  if(dragging){
+    ctx.globalAlpha=0.85;ctx.fillStyle=dragging.correct?'rgba(60,160,120,.7)':'rgba(120,60,60,.5)';
+    rr(dragging.x,dragging.y,dragging.w,dragging.h,8);ctx.fill();
+    ctx.fillStyle='rgba(234,242,246,.9)';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(dragging.label,dragging.x+dragging.w/2,dragging.y+dragging.h/2);
+    ctx.globalAlpha=1;
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  for(const p of popups){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.globalAlpha=1;
+}
+function drawRecipe(){
+  const rx=W-220,ry=60,rw=200,rh=40+Math.min(recipe.ingredients.length,10)*22;
+  ctx.fillStyle='rgba(10,8,20,.7)';rr(rx,ry,rw,rh,8);ctx.fill();
+  ctx.fillStyle='rgba(200,180,240,.5)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('RECIPE: '+recipe.name,rx+rw/2,ry+8);
+  let dy=ry+28;
+  const listed=game.challenge?recipe.ingredients.slice(0,10):recipe.ingredients;
+  for(const ing of listed){
+    const done=added.includes(ing);
+    ctx.fillStyle=done?'rgba(80,200,140,.7)':'rgba(200,200,220,.5)';
+    ctx.font='10px Arial';ctx.textAlign='left';
+    ctx.fillText((done?'✓ ':'○ ')+ing,rx+12,dy);
+    dy+=22;
+  }
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#c080ff';ctx.font='bold 13px Arial';
+  const label=game.challenge?"Chef's Challenge":'Recipe: Chosen Life — Round '+(game.round+1)+' / '+TOTAL;
+  ctx.fillText(label,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Mistakes '+game.mistakes+' / '+MAX_MISTAKES+'  ·  Streak '+game.streak,18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  const remain=Math.max(0,game.roundLimit-game.roundTime);
+  const lowTime=remain<5000;
+  ctx.fillStyle=lowTime?'rgba(255,110,110,.85)':'rgba(234,242,246,.5)';
+  ctx.fillText('Time '+Math.ceil(remain/1000)+'s',W-18,28);
+  ctx.restore();
+  if(lowTime){
+    const pulse=0.15+0.15*Math.abs(Math.sin(game.time*0.006));
+    ctx.save();
+    ctx.strokeStyle='rgba(255,60,60,'+pulse.toFixed(3)+')';
+    ctx.lineWidth=10;
+    ctx.strokeRect(5,5,W-10,H-10);
+    ctx.restore();
+  }
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(160,80,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#c080ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+94;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=25;}
+  ctx.restore();
+}
+function pausedOverlay(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.72)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.fillStyle='#c080ff';ctx.font='bold 28px Arial';
+  ctx.fillText('Paused',W/2,H/2-10);
+  ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='14px Arial';
+  ctx.fillText('Click Resume or press P / Esc to continue',W/2,H/2+22);
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+    ctx.save();
+    const sx=(game.shakeT>0)?(Math.random()-0.5)*6*(game.shakeT/260):0;
+    const sy=(game.shakeT>0)?(Math.random()-0.5)*6*(game.shakeT/260):0;
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title'&&recipe){drawPot();drawItems();drawParticles();drawRecipe();}
+    vignette();
+    if(game.state==='playing'||game.paused)drawHUD();
+    if(game.state==='title'){
+      panelDraw('Recipe: Chosen Life',['Drag the correct ingredients into the pot.','The recipe shows what you need.','Ignore the obligation ingredients — 3 mistakes ends the round.','Rounds get harder and faster as you go.','8 recipes, then a Chef\'s Challenge for masters.','','Your life is yours to cook.','','Click / tap to begin.']);
+    } else if(game.state==='won'){
+      const lines=game.challengeCleared
+        ?['You cleared the Chef\'s Challenge!','Score: '+game.score,'Best: '+game.best,'','Every recipe, your way.','','Click / tap to play again.']
+        :['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','All 8 chosen-life recipes cooked.','A Chef\'s Challenge awaits — click to try it.'];
+      panelDraw(game.challengeCleared?'Challenge Complete! ✓':'Recipe Complete! ✓',lines);
+    } else if(game.state==='gameover'){
+      const acc=game.roundTime>=0?Math.max(0,Math.round(100*(1-(game.mistakes/(MAX_MISTAKES+added.length+1))))):0;
+      panelDraw('Round Failed',['Too many wrong ingredients (or ran out of time).','Score: '+game.score,'Best: '+game.best,'Accuracy this round: '+acc+'%','','Click / tap to try again.']);
+    }
+    if(game.paused && game.state==='playing')pausedOverlay();
+    ctx.restore();
+  }catch(e){}
+}
+function getP(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};
+}
+function itemAt(px,py){for(const it of items){if(!it.inPot&&px>=it.x&&px<=it.x+it.w&&py>=it.y&&py<=it.y+it.h)return it;}return null;}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.paused)return;
+  if(game.state!=='playing'){
+    if(game.state==='won'&&!game.challenge&&!game.challengeCleared){
+      buildChallenge();
+    } else if(game.state==='won'&&game.challengeCleared){
+      resetGame();
+    } else {
+      resetGame();
+    }
+    return;
+  }
+  const p=getP(e);const it=itemAt(p.x,p.y);
+  if(it){dragging=it;dragOffX=p.x-it.x;dragOffY=p.y-it.y;}
+}
+function onMove(e){e.preventDefault();if(!dragging||game.paused)return;const p=getP(e);dragging.x=p.x-dragOffX;dragging.y=p.y-dragOffY;}
+function onUp(e){
+  e.preventDefault();
+  if(!dragging||game.paused){dragging=null;return;}
+  const p=getP(e);const d=Math.hypot(p.x-POT_X,p.y-POT_Y);
+  if(d<POT_R+20){
+    if(!tryAdd(dragging)){
+      dragging.x=dragging.homeX;dragging.y=dragging.homeY;
+    }
+  } else {
+    dragging.x=dragging.homeX;dragging.y=dragging.homeY;
+  }
+  dragging=null;
+}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp,{passive:false});
+
+// pause / mute controls
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  btnPause.textContent=game.paused?'▶':'⏸';
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  btnMute.textContent=game.muted?'🔇':'🔊';
+}
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+if(btnPause)btnPause.addEventListener('click',(e)=>{e.stopPropagation();togglePause();});
+if(btnMute)btnMute.addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){togglePause();}
+  if(e.key==='m'||e.key==='M'){toggleMute();}
+});
+
+// responsive letterboxed canvas sizing (preserve aspect ratio, no stretch distortion)
+function resizeCanvas(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.round(W*scale),ch=Math.round(H*scale);
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  if(!game.paused)update(dt);
+  draw();
+  updateHint();
+  requestAnimationFrame(loop);
+}
+const hintEl=document.getElementById('hint');
+function updateHint(){if(hintEl)hintEl.style.display=(game.state==='playing'&&!game.paused)?'block':'none';}
+game.state='title';updateHint();draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get recipe(){return recipe;},get items(){return items;},get added(){return added;},
+  resetGame,buildRound,buildChallenge,tryAdd,update,draw,RECIPES,WRONG,TOTAL,POT_X,POT_Y,POT_R,MAX_MISTAKES,
+  togglePause,toggleMute};
+</script>
+</body>
+</html>

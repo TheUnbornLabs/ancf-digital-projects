@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Meteor Shield</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#02030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(96,176,255,.35);background:rgba(1,2,5,.75);color:#cfe6ff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrls button:active{background:rgba(60,140,255,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnMute" aria-label="Mute">🔊</button>
+<button id="btnPause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Click / tap pressure meteors to destroy them &middot; protect the peace orb for 60 seconds &middot; Space/Esc to pause</div>
+<script>
+'use strict';
+// Meteor Shield (#70)
+// Pressure-labelled meteors fall toward a central peace orb.
+// Click to destroy them before they hit. 60-second survival game.
+// Theme: actively deflecting external pressures to maintain inner peace.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const ORB_R=30,METEOR_R_MIN=16,METEOR_R_MAX=30;
+const LABELS=['conform','hustle','compare','settle','regret','obey','tick tock','be normal','grow up'];
+// label -> category, tied to a border color + tiny icon glyph for legibility beyond 7px text
+const LABEL_CATS={
+  conform:{color:'rgba(120,190,255,.85)',icon:'≡'},
+  hustle:{color:'rgba(255,150,90,.85)',icon:'⚡'},
+  compare:{color:'rgba(200,140,255,.85)',icon:'⚖'},
+  settle:{color:'rgba(255,210,100,.85)',icon:'⌂'},
+  regret:{color:'rgba(150,150,160,.85)',icon:'↩'},
+  obey:{color:'rgba(255,100,100,.85)',icon:'!'},
+  'tick tock':{color:'rgba(120,255,190,.85)',icon:'⏱'},
+  'be normal':{color:'rgba(180,220,255,.85)',icon:'○'},
+  'grow up':{color:'rgba(255,180,180,.85)',icon:'↑'}
+};
+const DURATION=60000;
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+const savedBest=parseInt(lsGet('meteorShield_best','0'),10)||0;
+const savedMuted=lsGet('meteorShield_muted','0')==='1';
+const game={state:'title',time:0,survived:0,score:0,best:savedBest,lives:3,shakeT:0,
+  muted:savedMuted,combo:0,bestCombo:0,lastDestroyT:0,hits:0,clicks:0,waveTimer:0,waveWarnT:0};
+let meteors=[],particles=[],popups=[],rng,spawnTimer=0,spawnInterval=1400;
+let prevState='title';
+
+function resetGame(){
+  meteors=[];particles=[];popups=[];
+  game.survived=0;game.score=0;game.lives=3;game.shakeT=0;
+  game.combo=0;game.bestCombo=0;game.lastDestroyT=0;game.hits=0;game.clicks=0;
+  game.waveTimer=0;game.waveWarnT=0;
+  spawnTimer=0;spawnInterval=1400;
+  rng=seeded(Date.now()%99991);
+  game.state='playing';
+}
+
+function spawnMeteor(angleOverride){
+  const a=angleOverride!==undefined?angleOverride:rng()*Math.PI*2;
+  const dist=280+rng()*60;
+  const r=METEOR_R_MIN+rng()*(METEOR_R_MAX-METEOR_R_MIN);
+  const label=LABELS[Math.floor(rng()*LABELS.length)];
+  const spd=Math.min(160,50+game.survived*1.5);
+  meteors.push({x:CX+Math.cos(a)*dist,y:CY+Math.sin(a)*dist,vx:-Math.cos(a)*spd,vy:-Math.sin(a)*spd,r,label,exploding:false,explT:0,spawnDist:dist});
+}
+
+function spawnPressureWave(){
+  // 3-4 simultaneous meteors from different angles, telegraphed by waveWarnT
+  const n=3+Math.floor(rng()*2);
+  const base=rng()*Math.PI*2;
+  for(let i=0;i<n;i++){
+    spawnMeteor(base+(Math.PI*2/n)*i+(rng()-0.5)*0.3);
+  }
+  tone(220,0.25,'square',0.05);
+  setTimeout(()=>tone(280,0.2,'square',0.04),120);
+}
+
+function addPopup(x,y,text,color){popups.push({x,y,text,color:color||'rgba(255,213,128,.95)',t:0});}
+function addParticles(x,y,color){
+  const n=6+Math.floor(Math.random()*4);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:300+Math.random()*200,color:color||'rgba(255,170,90,.9)'});
+  }
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  // popups/particles animate even off-playing so they finish cleanly, but freeze fully when paused
+  if(game.state==='paused')return;
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.t+=dt;p.y-=dt*0.03;if(p.t>700)popups.splice(i,1);}
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.t+=dt;if(p.t>p.life){particles.splice(i,1);continue;}p.x+=p.vx*s;p.y+=p.vy*s;p.vx*=0.94;p.vy*=0.94;}
+  if(game.state!=='playing')return;
+  game.survived+=s;
+  game.score=Math.max(0,game.score);
+  spawnTimer+=dt;
+  if(spawnTimer>=spawnInterval){
+    spawnTimer=0;
+    spawnInterval=Math.max(500,spawnInterval-30);
+    spawnMeteor();
+  }
+  // periodic pressure waves every 15s
+  game.waveTimer+=dt;
+  if(game.waveWarnT>0){
+    game.waveWarnT=Math.max(0,game.waveWarnT-dt);
+    if(game.waveWarnT===0)spawnPressureWave();
+  } else if(game.waveTimer>=15000){
+    game.waveTimer=0;
+    game.waveWarnT=900; // telegraph window before wave fires
+  }
+  for(let i=meteors.length-1;i>=0;i--){
+    const m=meteors[i];
+    if(m.exploding){m.explT+=dt;if(m.explT>300){meteors.splice(i,1);}continue;}
+    m.x+=m.vx*s;m.y+=m.vy*s;
+    const dist=Math.hypot(m.x-CX,m.y-CY);
+    if(dist<ORB_R+m.r){
+      game.lives=Math.max(0,game.lives-1);
+      game.shakeT=400;
+      game.combo=0;
+      sndHurt();
+      meteors.splice(i,1);
+      if(game.lives<=0){
+        if(game.score>game.best){game.best=game.score;lsSet('meteorShield_best',String(game.best));}
+        sndWin();
+        game.state='gameover';
+        return;
+      }
+    }
+  }
+  if(game.survived*1000>=DURATION){
+    if(game.score>game.best){game.best=game.score;lsSet('meteorShield_best',String(game.best));}
+    sndWin();
+    game.state='won';
+  }
+}
+
+function destroyAt(px,py){
+  game.clicks++;
+  for(let i=meteors.length-1;i>=0;i--){
+    const m=meteors[i];
+    if(!m.exploding&&Math.hypot(px-m.x,py-m.y)<m.r+8){
+      m.exploding=true;m.explT=0;
+      game.hits++;
+      // combo: quick consecutive destroys (within 1.2s) increment, otherwise reset to 1
+      const now=game.time;
+      if(now-game.lastDestroyT<1200)game.combo++;else game.combo=1;
+      game.lastDestroyT=now;
+      if(game.combo>game.bestCombo)game.bestCombo=game.combo;
+      const mult=1+Math.floor((game.combo-1)/3); // combo grows multiplier every 3 chain
+      // reaction-time bonus: meteors destroyed further from orb (earlier) score more
+      const distFromOrb=Math.hypot(m.x-CX,m.y-CY);
+      const reactionBonus=distFromOrb>200?5:0;
+      const base=15+reactionBonus;
+      const gained=base*mult;
+      game.score+=gained;
+      const label=mult>1?('+'+gained+' x'+mult+' combo'):('+'+gained);
+      addPopup(m.x,m.y,label,mult>1?'rgba(255,120,180,.95)':'rgba(255,213,128,.95)');
+      addParticles(m.x,m.y,'rgba(255,170,90,.9)');
+      sndDestroy();
+      return;
+    }
+  }
+  // whiff: clicked empty space, register miss feedback + reset combo
+  game.combo=0;
+  sndWhiff();
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndDestroy=()=>tone(400+Math.random()*100,0.12,'sine',0.05);
+const sndHurt=()=>tone(180,0.3,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndWhiff=()=>tone(110,0.06,'triangle',0.02);
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(2,3,10,.2)';ctx.fillRect(0,0,W,H);}
+function drawOrb(){
+  const pulse=0.5+Math.sin(game.time/400)*0.5;
+  const gc=ctx.createRadialGradient(CX-6,CY-6,4,CX,CY,ORB_R);
+  gc.addColorStop(0,'rgba(160,220,255,.9)');
+  gc.addColorStop(0.6,'rgba(80,160,240,.7)');
+  gc.addColorStop(1,'rgba(20,60,160,.3)');
+  ctx.shadowColor=`rgba(100,180,255,${0.3+pulse*0.2})`;ctx.shadowBlur=16;
+  ctx.fillStyle=gc;ctx.beginPath();ctx.arc(CX,CY,ORB_R,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // orb-crack effect when at 1 life
+  if(game.lives===1){
+    ctx.strokeStyle='rgba(255,80,80,.7)';ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ctx.moveTo(CX-10,CY-14);ctx.lineTo(CX-2,CY-2);ctx.lineTo(CX-8,CY+8);
+    ctx.moveTo(CX+4,CY-16);ctx.lineTo(CX+6,CY+2);ctx.lineTo(CX+14,CY+10);
+    ctx.stroke();
+  }
+  ctx.fillStyle='rgba(200,230,255,.5)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('PEACE',CX,CY);
+}
+function drawMeteors(){
+  for(const m of meteors){
+    if(m.exploding){
+      const t=m.explT/300;
+      ctx.globalAlpha=1-t;
+      ctx.fillStyle='rgba(255,180,60,.7)';
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r*(1+t*2),0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+    }else{
+      const cat=LABEL_CATS[m.label]||{color:'rgba(200,120,60,.5)',icon:''};
+      ctx.shadowColor='rgba(200,100,60,.4)';ctx.shadowBlur=6;
+      ctx.fillStyle='rgba(120,60,30,.8)';
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=cat.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='rgba(230,240,255,.9)';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(cat.icon,m.x,m.y-m.r*0.42);
+      ctx.fillStyle='rgba(220,160,120,.85)';ctx.font='bold 7px Arial';
+      ctx.fillText(m.label,m.x,m.y+m.r*0.28);
+    }
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    const a=Math.max(0,1-p.t/p.life);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawPopups(){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const p of popups){
+    const a=Math.max(0,1-p.t/700);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.color;
+    ctx.font='bold 12px Arial';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.globalAlpha=1;
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#60b0ff';ctx.font='bold 13px Arial';ctx.fillText('Meteor Shield',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText(game.combo>1?('Combo x'+game.combo):'Click meteors to destroy them',18,28);
+  ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,16);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('♥'.repeat(game.lives)+'  '+(Math.max(0,60-Math.floor(game.survived)))+'s',W-18,8);
+  ctx.restore();
+  if(game.waveWarnT>0){
+    ctx.save();
+    const a=0.4+0.4*Math.sin(game.time/60);
+    ctx.fillStyle=`rgba(255,90,90,${a})`;
+    ctx.textAlign='center';ctx.font='bold 13px Arial';
+    ctx.fillText('PRESSURE WAVE INCOMING',W/2,58);
+    ctx.restore();
+  }
+}
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.28,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function lowLifePulse(){
+  if(game.lives!==1||game.state!=='playing')return;
+  const a=0.15+0.15*Math.sin(game.time/180);
+  ctx.save();
+  ctx.strokeStyle=`rgba(255,40,40,${a})`;
+  ctx.lineWidth=14;
+  ctx.strokeRect(7,7,W-14,H-14);
+  ctx.restore();
+}
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(3,5,14,.97)'],[1,'rgba(2,4,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(60,140,255,.22)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#60b0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    let shakeX=0,shakeY=0;
+    if(game.shakeT>0){
+      const mag=Math.min(6,game.shakeT/400*6);
+      shakeX=(Math.random()-0.5)*mag*2;
+      shakeY=(Math.random()-0.5)*mag*2;
+    }
+    ctx.save();
+    ctx.translate(shakeX,shakeY);
+    if(game.state==='playing'||game.state==='paused'){drawBg();}
+    ctx.save();
+    if(game.state!=='title'){
+      drawOrb();
+      drawMeteors();
+      drawParticles();
+      drawPopups();
+    }
+    lowLifePulse();
+    vignette();
+    if(game.state==='playing'||game.state==='paused')drawHUD();
+    if(game.state==='title'){
+      ctx.fillStyle='rgba(2,3,10,.9)';ctx.fillRect(0,0,W,H);
+      panelDraw('Meteor Shield',['Pressure meteors fall toward the peace orb.','Click them to destroy before impact.','3 lives — survive 60 seconds.','Chain quick hits for combo bonuses.','','Inner peace is worth defending.','','Click / tap to begin.']);
+    }else if(game.state==='won'){
+      const acc=game.clicks>0?Math.round(100*game.hits/game.clicks):100;
+      panelDraw('Peace Held! ✓',['Score: '+game.score+'  Best: '+game.best,'60 seconds of protection.','Best combo: x'+game.bestCombo+'   Accuracy: '+acc+'%','','No pressure broke through.','','Click / tap to play again.']);
+    }else if(game.state==='gameover'){
+      const acc=game.clicks>0?Math.round(100*game.hits/game.clicks):100;
+      panelDraw('Overwhelmed',['Score: '+game.score+'  Best: '+game.best,'Best combo: x'+game.bestCombo+'   Accuracy: '+acc+'%','','Try again — peace is learnable.','','Click / tap to play again.']);
+    }else if(game.state==='paused'){
+      ctx.fillStyle='rgba(2,3,10,.55)';ctx.fillRect(0,0,W,H);
+      panelDraw('Paused',['Score: '+game.score,'','Press Space/Esc or tap Resume to continue.']);
+    }
+    ctx.restore();
+    ctx.restore();
+  }catch(e){}
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused')return;
+  destroyAt(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+function togglePause(){
+  if(game.state==='playing'){prevState='playing';game.state='paused';btnPause.textContent='▶';}
+  else if(game.state==='paused'){game.state='playing';btnPause.textContent='⏸';}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('meteorShield_muted',game.muted?'1':'0');
+  btnMute.textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+}
+const keys={};
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key===' '||e.key==='Escape'){
+    e.preventDefault();
+    if(game.state==='playing'||game.state==='paused')togglePause();
+  }
+});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();});
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnPause.addEventListener('mousedown',e=>e.stopPropagation());
+btnMute.addEventListener('mousedown',e=>e.stopPropagation());
+btnPause.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();togglePause();},{passive:false});
+btnMute.addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();toggleMute();},{passive:false});
+if(game.muted)btnMute.textContent='\u{1F507}';
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;
+  last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';
+draw();
+requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get meteors(){return meteors;},
+  get particles(){return particles;},
+  get popups(){return popups;},
+  resetGame,spawnMeteor,destroyAt,update,draw,togglePause,toggleMute,
+  keys,LABELS,LABEL_CATS,DURATION,ORB_R,CX,CY
+};
+</script>
+</body>
+</html>

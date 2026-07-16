@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Autonomy Snake</title>
+<style>
+  :root{--text:#eaf2f6;--accent:#8affd2;--panel:rgba(12,18,32,.88);}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#060e0c;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{width:100vw;height:100vh;display:block;}
+  #hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.45);pointer-events:none;text-align:center;}
+
+  #ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+  #dpad{position:fixed;left:14px;bottom:14px;width:150px;height:150px;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:4px;}
+  .cbtn{appearance:none;border:1px solid rgba(138,255,210,.35);background:rgba(10,20,16,.55);color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:Arial,Helvetica,sans-serif;pointer-events:auto;cursor:pointer;}
+  .cbtn:active{background:rgba(138,255,210,.25);}
+  #dpad .cbtn{width:100%;height:100%;min-width:0;min-height:0;font-size:20px;}
+  #dpad .up{grid-column:2;grid-row:1;}
+  #dpad .left{grid-column:1;grid-row:2;}
+  #dpad .right{grid-column:3;grid-row:2;}
+  #dpad .down{grid-column:2;grid-row:3;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" class="cbtn" aria-label="Mute">&#128266;</button>
+  <button id="btnPause" class="cbtn" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<div id="dpad">
+  <button class="cbtn up" data-dir="up" aria-label="Up">&#9650;</button>
+  <button class="cbtn left" data-dir="left" aria-label="Left">&#9664;</button>
+  <button class="cbtn right" data-dir="right" aria-label="Right">&#9654;</button>
+  <button class="cbtn down" data-dir="down" aria-label="Down">&#9660;</button>
+</div>
+<div id="hint">Arrow keys / WASD to steer &middot; Swipe or D-pad on mobile &middot; P pause &middot; M mute</div>
+<script>
+'use strict';
+
+// =========================================================
+// Autonomy Snake (#12)
+// Classic snake: collect autonomy tokens (green), avoid
+// obligation chains (red walls) that spawn over time.
+// Freedom power-ups grant temporary invincibility.
+// Theme: growing self-determination, dodging social traps.
+// =========================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const CELL = 30;
+const COLS = Math.floor(W / CELL);   // 32
+const ROWS = Math.floor(H / CELL);   // 18
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+function seeded(s){ let n=s>>>0||1; return()=>{ n=(n*1664525+1013904223)>>>0; return n/4294967296; }; }
+
+// ---- localStorage helpers (safe) ----
+function lsGet(key, fallback){
+  try{ const v = window.localStorage.getItem(key); return v===null ? fallback : v; }catch(e){ return fallback; }
+}
+function lsSet(key, val){
+  try{ window.localStorage.setItem(key, val); }catch(e){ /* private browsing etc */ }
+}
+
+// ---- Token labels ----
+const TOKENS = ['rest','community','craft','travel','study','freedom','health','joy','focus','peace'];
+const CHAINS = ['guilt trip','peer pressure','life script','social clock','obligation fog'];
+const SHRINK_CHAINS = ['unsolicited advice','someday you\'ll understand','ticking clock talk'];
+
+const STEP_MS  = 130;   // ms per snake step (gets faster as score rises)
+const CHAIN_EVERY_BASE = 8;   // spawn a chain wall segment every N food eaten (scales down with level)
+const CHAIN_MAX = 40;         // hard cap on live chain segments (also despawn-by-age keeps this fair)
+const CHAIN_LIFETIME = 22000; // ms before an old chain segment fades away
+const FREEDOM_LEVEL_STEP = 5; // base score interval for freedom star, scaled by level
+
+const game = {
+  state: 'title',
+  time: 0,
+  score: 0,
+  best: 0,
+  level: 1,
+  shakeT: 0,
+  freedomT: 0,   // freedom power-up ms remaining
+  muted: lsGet('ancfSnakeMuted','0')==='1',
+  streak: 0,
+  bestStreak: 0,
+  eaten: 0,
+  freedomUsed: 0,
+  lastEatT: -99999,
+};
+game.best = parseInt(lsGet('ancfSnakeBest','0'),10) || 0;
+
+let snake, dir, nextDir, food, chains, rng, stepAcc, chainSegs, freedomPickup, particles, popups, nextFreedomAt;
+
+function makeRng(seed){ return seeded(seed); }
+
+function emptyCell(){
+  const occupied = new Set();
+  snake.forEach(s=>occupied.add(s.x+','+s.y));
+  chains.forEach(c=>occupied.add(c.x+','+c.y));
+  let x,y,tries=0;
+  do { x=1+Math.floor(rng()*(COLS-2)); y=1+Math.floor(rng()*(ROWS-2)); tries++; }
+  while(occupied.has(x+','+y) && tries<200);
+  if(occupied.has(x+','+y)){
+    // hard fallback: scan for first genuinely free cell so nothing spawns on top of the snake/chains
+    for(let yy=1; yy<ROWS-1; yy++){
+      for(let xx=1; xx<COLS-1; xx++){
+        if(!occupied.has(xx+','+yy)) return {x:xx,y:yy};
+      }
+    }
+  }
+  return {x,y};
+}
+
+function spawnFood(){
+  const pos = emptyCell();
+  // freedom-star frequency scales with level/difficulty instead of a flat modulo
+  const interval = Math.max(3, FREEDOM_LEVEL_STEP - Math.floor(game.level/3));
+  const isFreedom = (game.score > 0 && game.score >= nextFreedomAt && !freedomPickup);
+  if(isFreedom){
+    freedomPickup = true;
+    nextFreedomAt = game.score + interval;
+  }
+  food = {
+    x: pos.x, y: pos.y,
+    label: isFreedom ? '★ Freedom' : TOKENS[Math.floor(rng()*TOKENS.length)],
+    freedom: isFreedom,
+    bob: rng()*Math.PI*2
+  };
+}
+
+function spawnChain(){
+  if(chains.length >= CHAIN_MAX) return; // cap total chain segments so the board stays fair
+  const pos = emptyCell();
+  // occasional "life-script" shrink chain: grazing it shortens the snake instead of instant death
+  const isShrink = rng() < 0.18;
+  const label = isShrink ? SHRINK_CHAINS[Math.floor(rng()*SHRINK_CHAINS.length)] : CHAINS[Math.floor(rng()*CHAINS.length)];
+  chains.push({x:pos.x, y:pos.y, label, age:0, shrink:isShrink});
+}
+
+function reset(){
+  rng = makeRng(42 + Date.now()%100000);
+  const cx = Math.floor(COLS/2), cy = Math.floor(ROWS/2);
+  snake = [{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}];
+  dir = {x:1,y:0}; nextDir = {x:1,y:0};
+  chains = []; chainSegs = 0; freedomPickup = null;
+  particles = []; popups = [];
+  nextFreedomAt = FREEDOM_LEVEL_STEP;
+  game.state = 'playing';
+  game.score = 0;
+  game.level = 1;
+  game.freedomT = 0;
+  game.shakeT = 0;
+  game.streak = 0;
+  game.bestStreak = 0;
+  game.eaten = 0;
+  game.freedomUsed = 0;
+  game.lastEatT = -99999;
+  stepAcc = 0;
+  spawnFood();
+}
+
+// ---- Audio ----
+let actx=null;
+function audioCtx(){ if(actx)return actx; try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;actx=new AC();}catch(e){actx=null;}return actx; }
+function tone(freq,dur,type,vol){ if(game.muted) return; const a=audioCtx();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.value=freq;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(vol||0.07,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(dur||0.2));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(dur||0.2)+0.02);}catch(e){} }
+const sndEat    = ()=>tone(528,0.14,'sine',0.07);
+const sndFreedom= ()=>{ [528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'sine',0.07),i*70)); };
+const sndDie    = ()=>{ tone(220,0.35,'sawtooth',0.06); setTimeout(()=>tone(150,0.4,'sine',0.05),90); };
+const sndWarn   = ()=>tone(340,0.06,'square',0.025);
+const sndShrink = ()=>tone(180,0.2,'triangle',0.05);
+
+function setMuted(m){
+  game.muted = !!m;
+  lsSet('ancfSnakeMuted', game.muted ? '1' : '0');
+  const b = document.getElementById('btnMute');
+  if(b) b.innerHTML = game.muted ? '&#128263;' : '&#128266;';
+}
+
+// ---- Particles / popups ----
+function burst(x,y,color,count){
+  for(let i=0;i<count;i++){
+    const a = rng ? rng()*Math.PI*2 : Math.random()*Math.PI*2;
+    const spd = 1 + (rng?rng():Math.random())*2.5;
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:400+((rng?rng():Math.random())*300),maxLife:700,color});
+  }
+}
+function addPopup(x,y,text,color){
+  popups.push({x,y,text,color,life:700,maxLife:700});
+}
+function updateFx(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.life -= dt; p.x += p.vx*(dt/16); p.y += p.vy*(dt/16); p.vy += 0.02*(dt/16);
+    if(p.life<=0) particles.splice(i,1);
+  }
+  for(let i=popups.length-1;i>=0;i--){
+    const p=popups[i];
+    p.life -= dt; p.y -= 0.02*dt;
+    if(p.life<=0) popups.splice(i,1);
+  }
+}
+
+// ---- Step (move snake) ----
+function step(){
+  dir = {...nextDir};
+  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+  // edge collision = death (no more wall-wrap): the obligation-chain theme
+  // needs a real fail state, and walls give the board a bounded, threatening edge.
+  if(head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS){
+    die(); return;
+  }
+
+  // hit self
+  const hitSelf = snake.some(s=>s.x===head.x&&s.y===head.y);
+
+  if(hitSelf){ die(); return; }
+
+  // hit chain (unless freedom)
+  const hitIdx = chains.findIndex(c=>c.x===head.x&&c.y===head.y);
+  if(hitIdx>=0 && !game.freedomT){
+    const c = chains[hitIdx];
+    if(c.shrink){
+      // life-script graze: shorten the snake by 1-2 segments instead of instant death
+      sndShrink();
+      game.shakeT = Math.max(game.shakeT,150);
+      const cut = Math.min(2, Math.max(0, snake.length-3));
+      for(let k=0;k<cut;k++) snake.pop();
+      chains.splice(hitIdx,1);
+      burst(head.x*CELL+CELL/2, head.y*CELL+CELL/2, '200,120,120', 10);
+      game.streak = 0;
+    } else {
+      die(); return;
+    }
+  }
+
+  snake.unshift(head);
+
+  // eat food?
+  if(head.x===food.x && head.y===food.y){
+    const px = food.x*CELL+CELL/2, py=food.y*CELL+CELL/2;
+    if(food.freedom){
+      game.freedomT = 5000;
+      game.freedomUsed++;
+      sndFreedom();
+      addPopup(px,py,'★ FREEDOM','255,220,80');
+      burst(px,py,'255,210,80',18);
+      game.score += 3; // bonus for freedom pickup
+      freedomPickup = null;
+    } else {
+      sndEat();
+      // speed-eating streak bonus
+      const gapMs = game.time - game.lastEatT;
+      let gain = 1;
+      if(gapMs < 900){ game.streak++; } else { game.streak = 1; }
+      if(game.streak > game.bestStreak) game.bestStreak = game.streak;
+      if(game.streak >= 3) gain = 2;
+      if(game.streak >= 6) gain = 3;
+      game.score += gain;
+      addPopup(px,py,'+'+gain+(game.streak>=3?' combo x'+game.streak:''), '120,255,180');
+      burst(px,py,'80,240,150',8);
+    }
+    game.lastEatT = game.time;
+    game.eaten++;
+    if(game.score > game.best){ game.best = game.score; lsSet('ancfSnakeBest', String(game.best)); }
+    game.level = Math.floor(game.score/5)+1;
+    chainSegs++;
+    const chainEvery = Math.max(3, CHAIN_EVERY_BASE - Math.floor(game.level/2));
+    if(chainSegs >= chainEvery){ spawnChain(); chainSegs=0; }
+    spawnFood();
+  } else {
+    snake.pop();
+  }
+}
+
+function die(){
+  game.shakeT = 350;
+  sndDie();
+  burst(snake[0].x*CELL+CELL/2, snake[0].y*CELL+CELL/2, '255,120,110', 26);
+  game.state = 'gameover';
+}
+
+// ---- Update ----
+function update(dt){
+  dt = clamp(dt,0,48);
+  game.time += dt;
+  if(game.freedomT > 0) game.freedomT = Math.max(0, game.freedomT - dt);
+  if(game.shakeT > 0) game.shakeT = Math.max(0, game.shakeT - dt);
+  updateFx(dt);
+  // age + despawn old chains so the board can't fill up unboundedly
+  for(const c of chains) c.age += dt;
+  for(let i=chains.length-1;i>=0;i--){
+    if(chains[i].age > CHAIN_LIFETIME) chains.splice(i,1);
+  }
+
+  // near-miss warning cue: head adjacent to a chain tile
+  if(snake && snake[0]){
+    const hx=snake[0].x, hy=snake[0].y;
+    const adj = chains.some(c=> Math.abs(c.x-hx)+Math.abs(c.y-hy) === 1);
+    if(adj && !game.freedomT && Math.floor(game.time/220) !== Math.floor((game.time-dt)/220)){
+      sndWarn();
+    }
+  }
+
+  const speed = Math.max(60, STEP_MS - game.level * 4);
+  stepAcc += dt;
+  let guard = 0;
+  while(stepAcc >= speed && guard < 50){ stepAcc -= speed; step(); guard++; if(game.state!=='playing') return; }
+}
+
+// ---- Draw ----
+function lgrad(x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); for(const s of stops)g.addColorStop(s[0],s[1]); return g; }
+function rgrad(x,y,r0,r1,stops){ const g=ctx.createRadialGradient(x,y,r0,x,y,r1); for(const s of stops)g.addColorStop(s[0],s[1]); return g; }
+function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath(); }
+
+function drawBackground(){
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#070e0b'],[1,'#040a08']]);
+  ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(60,140,90,.06)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=CELL){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for(let y=0;y<H;y+=CELL){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+  // wall edge: subtle danger border since edges now kill
+  ctx.strokeStyle='rgba(220,60,60,.35)'; ctx.lineWidth=3;
+  ctx.strokeRect(1.5,1.5,W-3,H-3);
+}
+
+function drawChains(){
+  for(const c of chains){
+    const px=c.x*CELL, py=c.y*CELL;
+    const pulse = 0.6 + 0.4*Math.sin(game.time*0.003 + c.age*0.002);
+    const fading = c.age > CHAIN_LIFETIME*0.7;
+    const fadeMul = fading ? clamp(1 - (c.age-CHAIN_LIFETIME*0.7)/(CHAIN_LIFETIME*0.3), 0.15, 1) : 1;
+    const harmless = game.freedomT>0;
+    ctx.fillStyle = harmless
+      ? `rgba(200,80,80,${(pulse*0.35*fadeMul).toFixed(2)})`
+      : `rgba(220,60,60,${(pulse*0.75*fadeMul).toFixed(2)})`;
+    rr(px+2,py+2,CELL-4,CELL-4,5); ctx.fill();
+    if(c.shrink){
+      ctx.strokeStyle=`rgba(255,190,120,${(0.8*fadeMul).toFixed(2)})`; ctx.lineWidth=2;
+      rr(px+3,py+3,CELL-6,CELL-6,4); ctx.stroke();
+    }
+    // harmless-during-freedom state gets an outline instead of relying on alpha alone
+    if(harmless){
+      ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(px+5,py+5); ctx.lineTo(px+CELL-5,py+CELL-5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px+CELL-5,py+5); ctx.lineTo(px+5,py+CELL-5); ctx.stroke();
+    }
+    ctx.fillStyle=`rgba(255,200,200,${(0.7*fadeMul).toFixed(2)})`;
+    ctx.font='8px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(c.label.substring(0,7), px+CELL/2, py+CELL/2);
+  }
+}
+
+function drawFood(){
+  const px=food.x*CELL+CELL/2, py=food.y*CELL+CELL/2;
+  const bob = Math.sin(game.time*0.005 + food.bob)*3;
+  ctx.save(); ctx.translate(px, py+bob);
+  if(food.freedom){
+    const glow = rgrad(0,0,2,18,[[0,'rgba(255,220,80,1)'],[0.5,'rgba(255,180,40,.6)'],[1,'rgba(255,180,40,0)']]);
+    ctx.fillStyle=glow; ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffd840'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('★',0,0);
+  } else {
+    const glow = rgrad(0,0,2,14,[[0,'rgba(80,255,160,1)'],[0.5,'rgba(60,200,120,.6)'],[1,'rgba(60,200,120,0)']]);
+    ctx.fillStyle=glow; ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#50f090'; ctx.beginPath();ctx.arc(0,0,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#050e08'; ctx.font='7px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const short = food.label.substring(0,6);
+    ctx.fillText(short, 0, 1);
+  }
+  ctx.restore();
+}
+
+function drawSnake(){
+  snake.forEach((seg,i)=>{
+    const px=seg.x*CELL, py=seg.y*CELL;
+    const isHead = i===0;
+    const freedom = game.freedomT > 0;
+    const pulse = freedom ? (0.7+0.3*Math.sin(game.time*0.015)) : 1;
+    if(isHead){
+      ctx.fillStyle = freedom ? `rgba(100,255,180,${pulse.toFixed(2)})` : '#3ddc70';
+      rr(px+1,py+1,CELL-2,CELL-2,7); ctx.fill();
+      ctx.fillStyle = '#fff';
+      const dx=dir.x, dy=dir.y;
+      const ex=px+CELL/2+dx*5, ey=py+CELL/2+dy*5;
+      const perp = {x:-dy,y:dx};
+      ctx.beginPath();ctx.arc(ex+perp.x*4,ey+perp.y*4,2.5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(ex-perp.x*4,ey-perp.y*4,2.5,0,Math.PI*2);ctx.fill();
+    } else {
+      const t=i/snake.length;
+      const alpha = freedom ? (0.5+0.4*pulse) : (0.9-t*0.5);
+      ctx.fillStyle = freedom
+        ? `rgba(80,220,140,${alpha.toFixed(2)})`
+        : `rgba(40,180,90,${alpha.toFixed(2)})`;
+      rr(px+3,py+3,CELL-6,CELL-6,4); ctx.fill();
+    }
+  });
+}
+
+function drawFx(){
+  for(const p of particles){
+    const a = clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle = `rgba(${p.color},${a.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(p.x,p.y,2.4,0,Math.PI*2); ctx.fill();
+  }
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const p of popups){
+    const a = clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle = `rgba(${p.color},${a.toFixed(2)})`;
+    ctx.font='bold 12px Arial';
+    ctx.fillText(p.text, p.x, p.y);
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(6,14,10,.75)'; rr(0,0,W,48,0); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fillRect(0,47,W,1);
+  ctx.textBaseline='top';
+  ctx.fillStyle='#8affd2'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+  ctx.fillText(`Level ${game.level}`,18,10);
+  ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText('Length: '+snake.length,18,28);
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText('SCORE',W/2,8);
+  ctx.fillStyle='#8affd2'; ctx.font='bold 24px Arial';
+  ctx.fillText(game.score,W/2,22);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)'; ctx.font='11px Arial';
+  ctx.fillText('BEST  '+game.best,W-90,8);
+  if(game.streak>=3){
+    ctx.fillStyle='rgba(255,200,120,.85)'; ctx.font='bold 11px Arial';
+    ctx.fillText('STREAK x'+game.streak,W-90,26);
+  }
+  if(game.freedomT>0){
+    ctx.fillStyle='rgba(255,220,80,.85)';
+    ctx.font='bold 12px Arial';
+    ctx.fillText('★ FREEDOM '+(Math.ceil(game.freedomT/1000))+'s',W-90,26);
+  }
+  ctx.restore();
+}
+
+function vignette(){
+  ctx.fillStyle=rgrad(W/2,H/2,H*0.4,H*0.85,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.4)']]);
+  ctx.fillRect(0,0,W,H);
+}
+
+function panel(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(4,10,7,.7)'; ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(16,32,22,.97)'],[1,'rgba(8,18,12,.97)']]);
+  rr(px,py,pw,ph,22); ctx.fill();
+  ctx.strokeStyle='rgba(138,255,210,.2)'; ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22); ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#8affd2'; ctx.font='bold 36px Arial';
+  ctx.fillText(title, W/2, py+64);
+  ctx.fillStyle='rgba(234,242,246,.88)'; ctx.font='15px Arial';
+  let ly=py+100;
+  for(const l of lines){ ctx.fillText(l,W/2,ly); ly+=25; }
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){ const m=game.shakeT/350*5; dx=Math.sin(game.time*0.06)*m; dy=Math.cos(game.time*0.08)*m; }
+    ctx.save(); ctx.translate(dx,dy);
+    drawBackground();
+    drawChains();
+    drawFood();
+    if(game.state==='playing'||game.state==='gameover'||game.state==='paused') drawSnake();
+    if(particles && popups) drawFx();
+    vignette();
+    if(game.state==='playing'||game.state==='paused'||game.state==='gameover') drawHUD();
+    if(game.state==='title'){
+      panel('Autonomy Snake',[
+        'Collect autonomy tokens to grow.',
+        'Avoid red obligation-chain traps.',
+        '★ Freedom star: brief invincibility + bonus.',
+        'Orange "life-script" chains graze-shrink you instead of a kill.',
+        '','Steer with arrow keys / WASD / D-pad.','','Press any arrow key to begin.']);
+    } else if(game.state==='paused'){
+      panel('Paused',['Take a breath.','','Press P or tap the pause icon to continue.']);
+    } else if(game.state==='gameover'){
+      panel('Caught in a Chain',[
+        `Score: ${game.score}  ·  Length: ${snake.length}  ·  Best: ${game.best}`,
+        `Tokens eaten: ${game.eaten}  ·  Freedom stars: ${game.freedomUsed}  ·  Longest streak: ${game.bestStreak}`,
+        '','Self-determination is a practice, not a destination.','','Press any arrow / Enter to try again.']);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---- Input ----
+const DIRS = {
+  ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},
+  KeyW:{x:0,y:-1},KeyS:{x:0,y:1},KeyA:{x:-1,y:0},KeyD:{x:1,y:0}
+};
+const DPAD_DIRS = { up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0} };
+const input={};
+function activate(a){
+  const a2=audioCtx(); if(a2&&a2.state==='suspended'){try{a2.resume();}catch(ex){}}
+  if(game.state==='title'){reset();return;}
+  if(game.state==='gameover'){reset();return;}
+  if(a==='pause'){ if(game.state==='playing') game.state='paused'; else if(game.state==='paused') game.state='playing'; return; }
+  if(a==='mute'){ setMuted(!game.muted); return; }
+  if(game.state!=='playing') return;
+  if(!a || typeof a!=='object') return;
+  // prevent 180deg reversal
+  if(a.x !== 0 && a.x === -dir.x) return;
+  if(a.y !== 0 && a.y === -dir.y) return;
+  nextDir={...a};
+}
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){e.preventDefault();activate('pause');return;}
+  if(e.code==='KeyM'){e.preventDefault();activate('mute');return;}
+  if(e.code==='Enter'||e.code==='Space'){e.preventDefault();activate(null);return;}
+  const d=DIRS[e.code]; if(d){e.preventDefault();activate(d);}
+});
+
+// Touch swipe
+let tx0=0,ty0=0;
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];tx0=t.clientX;ty0=t.clientY;},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  e.preventDefault();
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tx0, dy=t.clientY-ty0;
+  if(Math.abs(dx)<10&&Math.abs(dy)<10){ activate(null); return; }
+  if(Math.abs(dx)>Math.abs(dy)) activate(dx>0?{x:1,y:0}:{x:-1,y:0});
+  else activate(dy>0?{x:0,y:1}:{x:0,y:-1});
+},{passive:false});
+
+// On-screen buttons
+const btnPause = document.getElementById('btnPause');
+const btnMute = document.getElementById('btnMute');
+if(btnPause) btnPause.addEventListener('click',e=>{e.preventDefault();activate('pause');});
+if(btnMute) btnMute.addEventListener('click',e=>{e.preventDefault();activate('mute');});
+document.querySelectorAll('#dpad [data-dir]').forEach(btn=>{
+  const d = DPAD_DIRS[btn.getAttribute('data-dir')];
+  btn.addEventListener('click',e=>{e.preventDefault();activate(d);});
+  btn.addEventListener('touchstart',e=>{e.preventDefault();activate(d);},{passive:false});
+});
+setMuted(game.muted);
+
+// ---- Loop ----
+let last=0;
+function loop(ts){
+  if(!last) last=ts; const dt=ts-last; last=ts;
+  if(game.state==='playing') update(dt);
+  else if(game.state==='title'||game.state==='gameover') game.time+=dt;
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title'; game.time=0;
+particles=[]; popups=[];
+draw();
+requestAnimationFrame(loop);
+
+// ---- Test hook ----
+window.__cfq={
+  get game(){return game;}, get snake(){return snake;}, get dir(){return dir;},
+  get food(){return food;}, get chains(){return chains;},
+  reset, step, die, update, draw, spawnFood, spawnChain, activate, setMuted,
+  COLS, ROWS, CELL, STEP_MS,
+};
+</script>
+</body>
+</html>

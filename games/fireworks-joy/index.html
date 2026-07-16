@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Fireworks of Joy</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#01010a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#controls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#controls button{width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,213,128,.4);background:rgba(1,1,10,.55);color:#ffd580;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#controls button:active{background:rgba(255,213,128,.25);}
+#controls button svg{width:18px;height:18px;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="controls">
+<button id="muteBtn" aria-label="Mute" title="Mute/unmute sound"></button>
+<button id="pauseBtn" aria-label="Pause" title="Pause/resume">&#10073;&#10073;</button>
+<button id="resetBtn" aria-label="Restart" title="Restart">&#8635;</button>
+</div>
+<div id="hint">Click / tap anywhere to launch a firework &middot; 20 launches to celebrate</div>
+<script>
+'use strict';
+// Fireworks of Joy (#53)
+// Click to launch fireworks that explode into affirmation words.
+// 20 fireworks to celebrate freedom and self-determination.
+// Theme: pure celebration — this life is worth celebrating.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ---- localStorage persistence (guarded) ----
+const LS_KEY='fireworksJoy_v1';
+function loadSave(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw)return{totalLaunched:0,fastestMs:null,completions:0};
+    const d=JSON.parse(raw);
+    return{totalLaunched:d.totalLaunched|0,fastestMs:(typeof d.fastestMs==='number')?d.fastestMs:null,completions:d.completions|0};
+  }catch(e){return{totalLaunched:0,fastestMs:null,completions:0};}
+}
+function saveSave(d){
+  try{localStorage.setItem(LS_KEY,JSON.stringify(d));}catch(e){}
+}
+const save=loadSave();
+
+const WORD_SETS=[
+  ['free','joy','mine','yes','love','bloom','real','now','whole','true','rest','bold','light','open','alive','calm','grow','rise','peace','glow'],
+  ['soar','shine','ease','wild','kind','vast','deep','warm','clear','brave','still','spark','wide','true self','gentle','fierce','tender','steady','wonder','home']
+];
+const COLOR_SETS=[
+  ['#ff6b9d','#c44bff','#6b9dff','#4bffdf','#ffb347','#ffd700','#6bff9d','#ff6b6b','#b0e0ff','#ffeaa7'],
+  ['#ff9ecf','#8f5bff','#5be0ff','#5bffb0','#ffd166','#ffe66d','#a0ff6b','#ff8f8f','#c8f2ff','#fff3b0']
+];
+// shape backup so color isn't the only differentiator (accessibility)
+const SHAPES=['circle','star','diamond','ring'];
+const paletteIdx=clamp(save.completions,0,COLOR_SETS.length-1);
+const WORDS=WORD_SETS[paletteIdx%WORD_SETS.length];
+const COLORS=COLOR_SETS[paletteIdx%COLOR_SETS.length];
+
+const TARGET=20;
+const game={state:'title',time:0,count:0,shakeT:0,muted:false,paused:false,startMs:0,streak:0,lastPopGood:0,cooldownT:0};
+let rockets=[],particles=[];
+
+function shapeFor(i){return SHAPES[i%SHAPES.length];}
+
+function launchFirework(tx,ty){
+  if(game.state!=='playing')return;
+  if(game.count>=TARGET){game.cooldownT=250;return;} // brief feedback flash instead of silent no-op
+  game.count++;
+  save.totalLaunched++;
+  saveSave(save);
+  const idx=Math.floor(Math.random()*COLORS.length);
+  const col=COLORS[idx];
+  const word=WORDS[Math.floor(Math.random()*WORDS.length)];
+  const shape=shapeFor(idx);
+  // difficulty curve: ease speeds up slightly and burst grows as count rises, clamped
+  const prog=clamp(game.count/TARGET,0,1);
+  const ease=clamp(0.12+prog*0.10,0.12,0.24);
+  const isClimax=game.count>TARGET-3; // last 3 fireworks escalate
+  const sx=W/2+((Math.random()-.5)*300);
+  rockets.push({x:sx,y:H-20,px:sx,py:H-20,tx:tx,ty:clamp(ty,80,H*0.6),vx:0,vy:0,col,word,shape,t:0,exploded:false,ease,isClimax});
+  sndLaunch();
+  if(game.count%5===0)game.shakeT=Math.max(game.shakeT,120); // milestone shake every 5th launch
+  if(game.count>=TARGET){
+    sndWin();
+    game.startedWinAt=game.time;
+    setTimeout(()=>{
+      game.state='won';
+      save.completions++;
+      const elapsed=game.time-game.startMs;
+      if(save.fastestMs===null||elapsed<save.fastestMs)save.fastestMs=elapsed;
+      saveSave(save);
+    },1200);
+  }
+}
+
+function explode(r){
+  const climaxMul=r.isClimax?1.6:1;
+  const n=Math.floor((40+Math.floor(Math.random()*20))*climaxMul);
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,spd=80+Math.random()*160;
+    particles.push({x:r.x,y:r.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,col:r.col,shape:r.shape,t:0,life:800+Math.random()*600,r:2+Math.random()*3,scale:0});
+  }
+  // word burst
+  const wc=Math.floor((6+Math.floor(Math.random()*4))*(r.isClimax?1.5:1));
+  for(let i=0;i<wc;i++){
+    const a=Math.random()*Math.PI*2,spd=50+Math.random()*80;
+    particles.push({x:r.x,y:r.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,col:r.col,t:0,life:1200+Math.random()*400,r:0,word:r.word,fs:10+Math.random()*6,scale:0});
+  }
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.cooldownT>0)game.cooldownT=Math.max(0,game.cooldownT-dt);
+  if(game.state!=='playing'||game.paused)return;
+  for(let i=rockets.length-1;i>=0;i--){
+    const r=rockets[i];
+    r.t+=dt;
+    r.px=r.x;r.py=r.y;
+    const ease=Math.max(0.05,r.ease||0.12);
+    r.x=r.x+(r.tx-r.x)*ease;
+    r.y=r.y+(r.ty-r.y)*ease;
+    const dist=Math.hypot(r.x-r.tx,r.y-r.ty);
+    if(!r.exploded&&(r.t>500||dist<15)){
+      r.exploded=true;
+      if(r.t>500){r.x=r.tx;r.y=r.ty;} // snap to tapped position so bursts visibly land where tapped
+      explode(r);
+      sndPop();
+      rockets.splice(i,1);
+    }
+  }
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.t+=dt;
+    p.x+=p.vx*s;
+    p.y+=p.vy*s;
+    p.vy+=200*s;
+    p.vx*=0.97;
+    p.vy*=0.97;
+    // pop-in tween (juice)
+    const inT=clamp(p.t/150,0,1);
+    p.scale=1-(1-inT)*(1-inT);
+    if(p.t>=p.life)particles.splice(i,1);
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndLaunch=()=>tone(200+Math.random()*100,0.1,'sine',0.04);
+const sndPop=()=>{const f=400+Math.random()*200;tone(f,0.06,'sine',0.07);setTimeout(()=>tone(f*0.5,0.15,'sine',0.04),40);};
+const sndWin=()=>{[528,660,792,1056,1320].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(1,1,10,.18)';ctx.fillRect(0,0,W,H);}
+
+function drawShape(x,y,r,shape){
+  ctx.beginPath();
+  if(shape==='star'){
+    const spikes=5,outer=r,inner=r*0.45;
+    for(let i=0;i<spikes*2;i++){
+      const ang=(Math.PI/spikes)*i-Math.PI/2;
+      const rad=i%2===0?outer:inner;
+      const px=x+Math.cos(ang)*rad,py=y+Math.sin(ang)*rad;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+  }else if(shape==='diamond'){
+    ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();
+  }else if(shape==='ring'){
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.moveTo(x+r*0.5,y);ctx.arc(x,y,r*0.5,0,Math.PI*2,true);
+  }else{
+    ctx.arc(x,y,r,0,Math.PI*2);
+  }
+}
+
+function drawRockets(){
+  for(const r of rockets){
+    ctx.fillStyle=r.col;ctx.shadowColor=r.col;ctx.shadowBlur=8;
+    drawShape(r.x,r.y,4,r.shape);ctx.fill();
+    ctx.shadowBlur=0;
+    // trail: computed from actual per-frame delta (direction of travel), fallback to previous target vector
+    let dx=r.x-r.px,dy=r.y-r.py;
+    const mag=Math.hypot(dx,dy);
+    if(mag<0.01){dx=r.tx-r.x;dy=r.ty-r.y;}
+    const tmag=Math.hypot(dx,dy)||1;
+    const tx2=r.x-(dx/tmag)*20,ty2=r.y-(dy/tmag)*20;
+    ctx.strokeStyle=r.col+'80';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(r.x,r.y);ctx.lineTo(tx2,ty2);ctx.stroke();
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const alpha=clamp(1-p.t/p.life,0,1);
+    const sc=p.scale===undefined?1:p.scale;
+    if(p.word){
+      ctx.globalAlpha=alpha*0.85;ctx.shadowColor=p.col;ctx.shadowBlur=6;ctx.fillStyle=p.col;
+      const fs=Math.max(1,(p.fs|0)*sc);
+      ctx.font=`bold ${fs}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(p.word,p.x,p.y);
+    }else{
+      ctx.globalAlpha=alpha;ctx.shadowColor=p.col;ctx.shadowBlur=4;ctx.fillStyle=p.col;
+      drawShape(p.x,p.y,Math.max(0.1,p.r*sc),p.shape||'circle');ctx.fill();
+    }
+    ctx.globalAlpha=1;ctx.shadowBlur=0;
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,1,6,.7)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#ffd580';ctx.font='bold 13px Arial';ctx.fillText('Fireworks of Joy',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Click to launch — '+game.count+' / '+TARGET+' celebrations',18,28);
+  // progress bar
+  const bw=200,bh=6,bx=W-260,by=14;
+  ctx.fillStyle='rgba(255,255,255,.08)';rr(bx,by,bw,bh,3);ctx.fill();
+  ctx.fillStyle='#ffd580';rr(bx,by,bw*clamp(game.count/TARGET,0,1),bh,3);ctx.fill();
+  if(game.cooldownT>0){
+    ctx.globalAlpha=clamp(game.cooldownT/250,0,1)*0.9;
+    ctx.fillStyle='#ffd580';ctx.font='bold 11px Arial';ctx.textAlign='right';
+    ctx.fillText('all 20 launched — finishing…',W-18,28);
+    ctx.globalAlpha=1;ctx.textAlign='left';
+  }
+  if(game.paused){
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='bold 11px Arial';ctx.textAlign='right';
+    ctx.fillText('paused',W-18,8);ctx.textAlign='left';
+  }
+  ctx.restore();
+}
+
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.4)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,1,6,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=340,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,18,.97)'],[1,'rgba(4,3,12,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(200,160,80,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#ffd580';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';
+  let ly=py+94;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    // screen shake wired to game.shakeT
+    let shakeX=0,shakeY=0;
+    if(game.shakeT>0){
+      const mag=clamp(game.shakeT/120,0,1)*6;
+      shakeX=(Math.random()-.5)*mag;
+      shakeY=(Math.random()-.5)*mag;
+    }
+    ctx.setTransform(1,0,0,1,shakeX,shakeY);
+    if(game.state==='playing'){drawBg();}else{ctx.clearRect(-10,-10,W+20,H+20);}
+    drawRockets();drawParticles();vignette();
+    if(game.state==='playing'||game.paused)drawHUD();
+    ctx.setTransform(1,0,0,1,0,0);
+    if(game.state==='title'){
+      ctx.fillStyle='rgba(1,1,10,.85)';ctx.fillRect(0,0,W,H);
+      const best=save.fastestMs?(Math.round(save.fastestMs/100)/10)+'s':'—';
+      panelDraw('Fireworks of Joy',[
+        'Click / tap anywhere to launch a firework.',
+        'Each burst carries a word of freedom and joy.',
+        '20 celebrations — one for each chapter of your life.',
+        '',
+        'This life is worth celebrating, exactly as it is.',
+        '',
+        'Fastest 20: '+best+'   ·   Total ever launched: '+save.totalLaunched,
+        '',
+        'Click / tap to begin.'
+      ]);
+    }else if(game.state==='won'){
+      ctx.fillStyle='rgba(1,1,10,.5)';ctx.fillRect(0,0,W,H);
+      const elapsed=Math.round((game.time-game.startMs)/100)/10;
+      const isBest=save.fastestMs!==null&&Math.abs((game.time-game.startMs)-save.fastestMs)<1;
+      panelDraw('Celebration Complete! ✓',[
+        '20 fireworks of joy — all yours.',
+        '',
+        'You chose your life. You lit your own sky.',
+        '',
+        'This round: '+elapsed+'s'+(isBest?'  (new best!)':''),
+        'Completions: '+save.completions+'   ·   Total launched: '+save.totalLaunched,
+        '',
+        'Click / tap to celebrate again.'
+      ]);
+    }
+    if(game.paused&&game.state==='playing'){
+      ctx.fillStyle='rgba(1,1,10,.55)';ctx.fillRect(0,0,W,H);
+      panelDraw('Paused',['Tap the play button to resume.']);
+    }
+  }catch(e){}
+}
+
+function resetGame(){
+  game.state='playing';
+  game.count=0;
+  game.paused=false;
+  game.shakeT=0;
+  game.cooldownT=0;
+  game.startMs=game.time;
+  rockets=[];particles=[];
+}
+
+function onDown(e){
+  e.preventDefault();
+  if(game.paused)return;
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'){resetGame();launchFirework(px,py);return;}
+  if(game.state==='won'){resetGame();return;}
+  launchFirework(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// ---- on-screen controls ----
+const muteBtn=document.getElementById('muteBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+function speakerIcon(muted){
+  return muted
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="21" y2="15"/><line x1="21" y1="9" x2="16" y2="15"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a9 9 0 0 1 0 12"/></svg>';
+}
+function updateMuteIcon(){muteBtn.innerHTML=speakerIcon(game.muted);}
+function updatePauseIcon(){pauseBtn.innerHTML=game.paused?'&#9654;':'&#10073;&#10073;';}
+
+muteBtn.addEventListener('click',(e)=>{e.stopPropagation();game.muted=!game.muted;updateMuteIcon();});
+pauseBtn.addEventListener('click',(e)=>{e.stopPropagation();if(game.state!=='playing')return;game.paused=!game.paused;updatePauseIcon();});
+resetBtn.addEventListener('click',(e)=>{e.stopPropagation();resetGame();});
+[muteBtn,pauseBtn,resetBtn].forEach(b=>{
+  b.addEventListener('mousedown',e=>e.stopPropagation());
+  b.addEventListener('touchstart',e=>{e.stopPropagation();},{passive:true});
+});
+updateMuteIcon();updatePauseIcon();
+
+// keyboard bonus input
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='m'||e.key==='M'){game.muted=!game.muted;updateMuteIcon();}
+  else if(e.key==='p'||e.key==='P'){if(game.state==='playing'){game.paused=!game.paused;updatePauseIcon();}}
+  else if(e.key==='r'||e.key==='R'){resetGame();}
+});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get rockets(){return rockets;},
+  get particles(){return particles;},
+  launchFirework,update,draw,resetGame,
+  WORDS,COLORS,TARGET,
+  get save(){return save;}
+};
+</script>
+</body>
+</html>

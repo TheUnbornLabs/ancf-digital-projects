@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Lights Out</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#08100c;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(138,255,210,.35);background:rgba(4,10,6,.88);color:#8affd2;font-size:18px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;touch-action:manipulation;}
+#ctrls button:active{background:rgba(138,255,210,.18);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnHint" title="Hint">&#128161;</button>
+<button id="btnUndo" title="Undo">&#8630;</button>
+<button id="btnMute" title="Mute">&#128266;</button>
+<button id="btnPause" title="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Click / tap a tile to toggle it and its neighbours &middot; P pause &middot; U undo &middot; H hint &middot; M mute</div>
+<script>
+'use strict';
+// Lights Out (#22)
+// Toggle tiles on a 5×5 grid; clicking a tile flips it and
+// its orthogonal neighbours. Goal: turn all lights OFF (clear
+// all the "noise"). Ten procedurally generated puzzles.
+// Theme: silencing noise one choice at a time.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const GRID=5,CELL=82,PAD=8;
+const GX=(W-GRID*(CELL+PAD)-PAD)/2,GY=(H-GRID*(CELL+PAD)-PAD)/2+20;
+const LABELS=['guilt','clock','pressure','noise','compare','script','norm','fomo','expect','regret','should','hustle','judge','conform','deny','rush','ought','obligate','impose','envy','crowd','trend','habit','nag','prod'];
+const game={state:'title',time:0,level:1,moves:0,best:Infinity,shakeT:0,muted:false,newBest:false,solved:0,milestoneT:0,hintT:0};
+let grid=[],rng,history=[],hintCell=null,clickSeq=[];
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+game.best=(()=>{const v=parseInt(lsGet('lightsout_best',''),10);return isFinite(v)&&v>0?v:Infinity;})();
+game.muted=lsGet('lightsout_muted','0')==='1';
+game.solved=parseInt(lsGet('lightsout_solved','0'),10)||0;
+function makeGrid(){return Array.from({length:GRID},()=>Array(GRID).fill(0));}
+function toggle(r,c,g){g=g||grid;[[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const nr=r+dr,nc=c+dc;if(nr>=0&&nr<GRID&&nc>=0&&nc<GRID)g[nr][nc]^=1;});}
+function buildLevel(lv){
+  game.level=lv;
+  rng=seeded(lv*7919+3);grid=makeGrid();game.moves=0;history=[];clickSeq=[];hintCell=null;game.newBest=false;
+  // generate solvable puzzle: apply random clicks to solved state, clamped so high levels stay playable
+  const clicks=Math.min(5+lv*2,40);
+  const seq=[];
+  for(let i=0;i<clicks;i++){const r=Math.floor(rng()*GRID),c=Math.floor(rng()*GRID);toggle(r,c);seq.push([r,c]);}
+  // the puzzle's minimal solution is the same click set (each click is its own inverse)
+  clickSeq=seq;
+  // ensure not already solved
+  if(isSolved()){game.level=lv+1;buildLevel(lv+1);return;}
+  game.state='playing';
+}
+function isSolved(){return grid.flat().every(v=>v===0);}
+function clickCell(r,c){history.push(grid.map(row=>row.slice()));toggle(r,c);game.moves++;sndToggle();hintCell=null;if(isSolved()){game.newBest=false;if(game.moves<game.best){game.best=game.moves;game.newBest=true;lsSet('lightsout_best',String(game.best));}game.solved++;lsSet('lightsout_solved',String(game.solved));if(game.solved%5===0)game.milestoneT=2200;sndWin();game.shakeT=260;game.state='won';}}
+function undoMove(){if(game.state!=='playing'||!history.length)return;grid=history.pop();game.moves=Math.max(0,game.moves-1);hintCell=null;}
+function showHint(){if(game.state!=='playing')return;for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(grid[r][c]){hintCell={r,c};game.hintT=1400;return;}}
+function resetGame(){game.level=1;game.best=(()=>{const v=parseInt(lsGet('lightsout_best',''),10);return isFinite(v)&&v>0?v:Infinity;})();buildLevel(1);}
+function toggleMute(){game.muted=!game.muted;lsSet('lightsout_muted',game.muted?'1':'0');}
+function togglePause(){if(game.state==='playing')game.state='paused';else if(game.state==='paused')game.state='playing';}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndToggle=()=>tone(350+Math.random()*50,0.1,'sine',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function update(dt){dt=clamp(dt,0,48);game.time+=dt;if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);if(game.hintT>0)game.hintT=Math.max(0,game.hintT-dt);if(game.milestoneT>0)game.milestoneT=Math.max(0,game.milestoneT-dt);}
+// draw
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function cellAt(mx,my){const c=Math.floor((mx-GX)/(CELL+PAD)),r=Math.floor((my-GY)/(CELL+PAD));if(c<0||c>=GRID||r<0||r>=GRID)return null;return{r,c};}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#08100c'],[1,'#040808']]);ctx.fillRect(0,0,W,H);}
+function drawGrid2(){ctx.fillStyle='rgba(10,20,14,.9)';rr(GX-PAD,GY-PAD,GRID*(CELL+PAD)+PAD,GRID*(CELL+PAD)+PAD,14);ctx.fill();
+const li=Math.floor(game.level*GRID)%LABELS.length;
+for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){const x=GX+c*(CELL+PAD),y=GY+r*(CELL+PAD),on=grid[r][c];
+if(on){ctx.shadowColor='rgba(255,160,80,.8)';ctx.shadowBlur=18;ctx.fillStyle=lgrad(x,y,x+CELL,y+CELL,[[0,'#c06030'],[1,'#804020']]);rr(x,y,CELL,CELL,10);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,160,80,.6)';ctx.lineWidth=2;rr(x,y,CELL,CELL,10);ctx.stroke();ctx.fillStyle='rgba(255,220,180,.8)';const lbl=LABELS[(r*GRID+c+li)%LABELS.length];const fz=lbl.length>7?9:11;ctx.font=`bold ${fz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,x+CELL/2,y+CELL/2-6);ctx.font='13px Arial';ctx.fillStyle='rgba(255,220,180,.55)';ctx.fillText('✖',x+CELL/2,y+CELL/2+16);}
+else{ctx.shadowBlur=0;ctx.fillStyle='rgba(20,40,26,.8)';rr(x,y,CELL,CELL,10);ctx.fill();ctx.strokeStyle='rgba(60,120,80,.3)';ctx.lineWidth=1;rr(x,y,CELL,CELL,10);ctx.stroke();ctx.fillStyle='rgba(80,160,100,.35)';ctx.font='18px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✓',x+CELL/2,y+CELL/2);}
+if(hintCell&&hintCell.r===r&&hintCell.c===c&&game.hintT>0){ctx.save();ctx.globalAlpha=0.4+0.4*Math.sin(game.time*0.01);ctx.strokeStyle='#8affd2';ctx.lineWidth=4;rr(x-2,y-2,CELL+4,CELL+4,12);ctx.stroke();ctx.restore();}}}
+const HUD_H=46,BTN=34,BTN_GAP=8;
+function hudButtons(){
+  // canvas-space hit boxes for pause/mute icons (mirrors HTML buttons for pointer/touch hit-testing)
+  const y=(HUD_H-BTN)/2;
+  const xPause=W-18-BTN,xMute=xPause-BTN_GAP-BTN;
+  return{pause:{x:xPause,y,w:BTN,h:BTN},mute:{x:xMute,y,w:BTN,h:BTN}};
+}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,10,6,.88)';rr(0,0,W,HUD_H,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#8affd2';ctx.font='bold 13px Arial';ctx.fillText('Level '+game.level,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Turn all tiles OFF',18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('MOVES',W/2-40,8);ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.moves,W/2-40,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('BEST '+( game.best===Infinity?'—':game.best),W/2+70,8);
+  const b=hudButtons();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(138,255,210,.35)';ctx.lineWidth=1;ctx.fillStyle='rgba(138,255,210,.08)';
+  rr(b.mute.x,b.mute.y,b.mute.w,b.mute.h,8);ctx.fill();ctx.stroke();
+  rr(b.pause.x,b.pause.y,b.pause.w,b.pause.h,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#8affd2';ctx.font='16px Arial';
+  ctx.fillText(game.muted?'🔇':'🔊',b.mute.x+b.mute.w/2,b.mute.y+b.mute.h/2+1);
+  ctx.fillText(game.state==='paused'?'▶':'❚❚',b.pause.x+b.pause.w/2,b.pause.y+b.pause.h/2+1);
+  ctx.restore();
+  return b;
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(3,7,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(10,22,14,.97)'],[1,'rgba(6,12,8,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,220,140,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#8affd2';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function draw(){try{ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+if(game.shakeT>0){const m=game.shakeT/260,dx=(Math.random()*2-1)*6*m,dy=(Math.random()*2-1)*6*m;ctx.setTransform(1,0,0,1,dx,dy);}
+ctx.save();drawBg();if(game.state!=='title')drawGrid2();vignette();if(game.state==='playing'||game.state==='paused')drawHUD();if(game.state==='title')panelDraw('Lights Out',['Click a tile to toggle it and its neighbours.','Goal: turn all the noise tiles OFF.','','Silencing noise one choice at a time.','','Click / tap to begin.']);else if(game.state==='paused')panelDraw('Paused',['Breathe.','','Press P to resume.']);else if(game.state==='won')panelDraw(game.newBest?'All Quiet ✓  ★ New Best!':'All Quiet ✓',['Solved in '+game.moves+' moves.','Best: '+(game.best===Infinity?'—':game.best+' moves'),'','Silence is a choice you can make.','','Click / tap for next level.']);
+if(game.milestoneT>0){ctx.save();ctx.globalAlpha=Math.min(1,game.milestoneT/400);ctx.fillStyle='rgba(4,10,6,.85)';const mw=340,mh=54,mx=(W-mw)/2,my=HUD_H+16;rr(mx,my,mw,mh,14);ctx.fill();ctx.strokeStyle='rgba(138,255,210,.4)';ctx.lineWidth=1.5;rr(mx+.5,my+.5,mw-1,mh-1,14);ctx.stroke();ctx.fillStyle='#8affd2';ctx.font='bold 15px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(game.solved+' puzzles quieted this session',W/2,my+mh/2);ctx.restore();}
+ctx.restore();}catch(e){}}
+function inBox(px,py,b){return b&&px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h;}
+function pointerDown(e){const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;let px,py;if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}const a2=AC();if(a2&&a2.state==='suspended'){try{a2.resume();}catch(ex){}}
+if(game.state==='playing'||game.state==='paused'){const b=hudButtons();if(inBox(px,py,b.pause)){togglePause();return;}if(inBox(px,py,b.mute)){toggleMute();return;}}
+if(game.state==='title'){resetGame();return;}if(game.state==='won'){buildLevel(++game.level);return;}if(game.state!=='playing')return;const co=cellAt(px,py);if(co)clickCell(co.r,co.c);}
+canvas.addEventListener('mousedown',e=>{e.preventDefault();pointerDown(e);});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pointerDown(e);},{passive:false});
+window.addEventListener('keydown',e=>{if(e.code==='KeyP'){e.preventDefault();togglePause();}else if(e.code==='KeyM'){e.preventDefault();toggleMute();}else if(e.code==='KeyU'){e.preventDefault();undoMove();}else if(e.code==='KeyH'){e.preventDefault();showHint();}else if((e.code==='Enter'||e.code==='Space')&&(game.state==='title'||game.state==='won')){e.preventDefault();if(game.state==='won')buildLevel(++game.level);else resetGame();}});
+const btnPause=document.getElementById('btnPause'),btnMute=document.getElementById('btnMute'),btnUndo=document.getElementById('btnUndo'),btnHint=document.getElementById('btnHint');
+function bindBtn(el,fn){if(!el)return;el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();fn();});el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn();},{passive:false});}
+bindBtn(btnPause,togglePause);bindBtn(btnMute,toggleMute);bindBtn(btnUndo,undoMove);bindBtn(btnHint,showHint);
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();if(btnPause)btnPause.textContent=game.state==='paused'?'▶':'❚❚';if(btnMute)btnMute.textContent=game.muted?'🔇':'🔊';requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get grid(){return grid;},buildLevel,resetGame,clickCell,isSolved,toggle,cellAt,update,draw,GRID,CELL,GX,GY,undoMove,showHint,toggleMute,togglePause,pointerDown,hudButtons};
+</script>
+</body>
+</html>

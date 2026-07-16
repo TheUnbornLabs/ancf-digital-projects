@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Chain Breaker</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:13px;color:rgba(234,242,246,.55);pointer-events:none;text-align:center;}
+.ctrlBtn{position:fixed;top:12px;width:44px;height:44px;border-radius:50%;background:rgba(10,8,18,.72);border:1.5px solid rgba(200,140,60,.5);color:#e0b060;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;padding:0;}
+.ctrlBtn:active{background:rgba(200,140,60,.25);}
+#pauseBtn{right:12px;}
+#muteBtn{left:12px;}
+.ctrlBtn svg{width:20px;height:20px;display:block;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<button id="muteBtn" class="ctrlBtn" aria-label="Mute">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path id="muteIcon" d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/><path id="muteSlash" d="M16 8l6 8M22 8l-6 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"/><path id="muteWaves" d="M15.5 8.5a5 5 0 010 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+</button>
+<button id="pauseBtn" class="ctrlBtn" aria-label="Pause">
+  <svg viewBox="0 0 24 24"><g id="pauseIconBars" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></g><path id="pauseIconPlay" d="M7 5l12 7-12 7z" fill="currentColor" style="display:none"/></svg>
+</button>
+<div id="hint">Click chain links to break them &middot; break the complete chain to free the orb &middot; 10 rounds</div>
+<script>
+'use strict';
+// Chain Breaker (#80)
+// A chain of links (labelled with social expectations) connects two posts.
+// Click each link to break it before time runs out. Break all links to free the orb.
+// 10 rounds, chains get longer and the clock gets tighter.
+// Theme: breaking the chains of expectation one link at a time.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const CHAIN_LABELS=['settle','conform','obey','marry','breed','impress','comply','hustle','regret','sacrifice','shrink','pretend','compare','diminish','rush'];
+const TOTAL=10;
+
+// ---- localStorage helpers (private browsing safe) ----
+const LS_BEST='chainbreaker_best',LS_STREAK='chainbreaker_streak',LS_MUTE='chainbreaker_mute';
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+const game={
+  state:'title',time:0,round:0,score:0,best:0,streak:0,bestStreak:0,
+  shakeT:0,shakeMag:0,freed:false,paused:false,muted:false,
+  roundTime:0,roundTimeMax:0,misses:0,lastBreakAt:-99999,combo:0,flashT:0
+};
+game.best=parseInt(lsGet(LS_BEST,'0'),10)||0;
+game.bestStreak=parseInt(lsGet(LS_STREAK,'0'),10)||0;
+game.muted=lsGet(LS_MUTE,'0')==='1';
+
+let links=[],orbY=H/2,orbVY=0,rng,particles=[];
+const POST_LX=100,POST_RX=W-100,POST_Y=H/2;
+const ORB_R=22;
+const COMBO_WINDOW=900; // ms — break within this of previous break for bonus
+
+function buildRound(r){
+  rng=seeded(r*6007+7);
+  const count=4+r;
+  links=Array.from({length:count},(_,i)=>{
+    const t=i/(count-1);
+    const x=POST_LX+t*(POST_RX-POST_LX);
+    const y=POST_Y+Math.sin(i*0.8)*30*(rng()-.5)*2;
+    // reinforced (2-click) links appear from round 5 on, rare, never the last link
+    const reinforced=r>=4 && i<count-1 && rng()<0.16;
+    return{x,y,label:CHAIN_LABELS[i%CHAIN_LABELS.length],broken:false,breakT:0,reinforced,hits:0};
+  });
+  orbY=H/2;orbVY=0;game.freed=false;game.state='playing';
+  game.roundTimeMax=clamp(9000-r*500,3000,9000);
+  game.roundTime=game.roundTimeMax;
+  game.misses=0;game.combo=0;game.lastBreakAt=-99999;
+  particles=[];
+}
+function resetGame(){
+  game.round=0;game.score=0;game.streak=0;game.shakeT=0;game.shakeMag=0;game.flashT=0;game.paused=false;
+  buildRound(0);
+}
+function shake(mag,dur){game.shakeMag=Math.max(game.shakeMag,mag);game.shakeT=Math.max(game.shakeT,dur);}
+function spawnParticles(x,y,color,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=60+Math.random()*140;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,maxLife:300+Math.random()*250,color});
+  }
+}
+function breakLink(i){
+  if(links[i].broken)return;
+  if(links[i].reinforced && links[i].hits<1){
+    links[i].hits++;
+    sndHit();
+    spawnParticles(links[i].x,links[i].y,'200,150,90',6);
+    shake(2,120);
+    return;
+  }
+  links[i].broken=true;
+  sndBreak();
+  spawnParticles(links[i].x,links[i].y,'220,140,70',14);
+  shake(4,160);
+  // combo/speed bonus
+  const now=game.time;
+  let bonus=0;
+  if(now-game.lastBreakAt<=COMBO_WINDOW){game.combo++;bonus=game.combo*2;}else{game.combo=0;}
+  game.lastBreakAt=now;
+  game.score+=bonus?0:0; // link breaks don't add round score directly; bonus tracked via streak below
+  if(bonus>0)game.streak+=bonus;
+  // check all broken
+  if(links.every(l=>l.broken)){
+    game.score++;
+    // snap combo bonus: whole chain broken within a tight window from round start
+    const elapsed=game.roundTimeMax-game.roundTime;
+    if(elapsed<=Math.max(2000,game.roundTimeMax*0.5)){
+      game.streak+=10;
+    }
+    if(game.score>game.best){game.best=game.score;lsSet(LS_BEST,String(game.best));}
+    if(game.streak>game.bestStreak){game.bestStreak=game.streak;lsSet(LS_STREAK,String(game.bestStreak));}
+    game.freed=true;sndWin2();orbVY=-200;
+    shake(8,320);game.flashT=280;
+    setTimeout(()=>{
+      game.round++;
+      if(game.round>=TOTAL){sndWin();game.state='won';}
+      else{buildRound(game.round);}
+    },1200);
+  }
+}
+function registerMiss(){
+  game.misses++;
+  game.combo=0;
+  sndMiss();
+  shake(2,100);
+}
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.flashT>0)game.flashT=Math.max(0,game.flashT-dt);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.life+=dt;
+    if(p.life>=p.maxLife){particles.splice(i,1);continue;}
+    p.x+=p.vx*s;p.y+=p.vy*s;p.vx*=0.94;p.vy*=0.94;p.vy+=140*s;
+  }
+  if(game.state!=='playing'||game.paused)return;
+  for(const l of links)if(l.broken)l.breakT+=dt;
+  if(game.freed){orbVY-=200*s;orbY+=orbVY*s;}
+  else{
+    game.roundTime=clamp(game.roundTime-dt,0,game.roundTimeMax);
+    if(game.roundTime<=0){
+      // time's up — gameover
+      game.state='gameover';
+      sndLose();
+      shake(6,260);
+    }
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndBreak=()=>tone(300+links.filter(l=>l.broken).length*20,0.12,'sawtooth',0.05);
+const sndHit=()=>tone(180,0.08,'square',0.04);
+const sndMiss=()=>tone(90,0.1,'sawtooth',0.05);
+const sndLose=()=>{[220,180,140].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sawtooth',0.06),i*100));};
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04030a'],[1,'#030208']]);ctx.fillRect(0,0,W,H);}
+function drawChain(){
+  const lowTime=game.roundTimeMax>0 && game.roundTime/game.roundTimeMax<0.25 && !game.freed;
+  const pulse=lowTime?(0.5+0.5*Math.sin(game.time/90)):0;
+  // posts
+  for(const px of[POST_LX,POST_RX]){ctx.fillStyle='rgba(100,80,60,.8)';ctx.fillRect(px-8,POST_Y-60,16,120);ctx.strokeStyle='rgba(160,130,100,.4)';ctx.lineWidth=2;ctx.strokeRect(px-8,POST_Y-60,16,120);}
+  // links
+  for(let i=0;i<links.length;i++){
+    const l=links[i];
+    if(l.broken){
+      const t=clamp(l.breakT/400,0,1);ctx.globalAlpha=1-t;
+      const a=Math.PI/4+t*Math.PI/2;
+      ctx.save();ctx.translate(l.x,l.y);ctx.rotate(a);ctx.strokeStyle='rgba(200,100,60,.7)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,18,0,Math.PI);ctx.stroke();ctx.restore();ctx.globalAlpha=1;
+    }else{
+      const ringColor=lowTime?`rgba(${220},${60+80*(1-pulse)},${60},${0.85})`:(l.reinforced?'rgba(160,190,220,.85)':'rgba(180,120,60,.8)');
+      ctx.shadowColor=lowTime?'rgba(220,60,60,.4)':'rgba(160,100,60,.3)';ctx.shadowBlur=4;
+      ctx.strokeStyle=ringColor;ctx.lineWidth=l.reinforced?10:8;ctx.lineCap='round';
+      ctx.beginPath();ctx.arc(l.x,l.y,18,0,Math.PI*2);ctx.stroke();
+      if(l.reinforced && l.hits>0){ctx.strokeStyle='rgba(255,220,140,.9)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(l.x,l.y,12,0,Math.PI*2);ctx.stroke();}
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(255,235,210,.95)';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(l.label,l.x,l.y);
+    }
+    if(i<links.length-1&&!l.broken&&!links[i+1].broken){
+      const nx=links[i+1].x,ny=links[i+1].y;
+      ctx.strokeStyle='rgba(180,120,60,.4)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(nx,ny);ctx.stroke();
+    }
+  }
+  // particles
+  for(const p of particles){
+    const t=1-p.life/p.maxLife;
+    ctx.fillStyle=`rgba(${p.color},${clamp(t,0,1)})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,2.5*t+1,0,Math.PI*2);ctx.fill();
+  }
+  // orb
+  if(!game.freed||orbY>-ORB_R){const go=ctx.createRadialGradient(W/2-4,orbY-4,2,W/2,orbY,ORB_R);go.addColorStop(0,'rgba(200,180,255,.9)');go.addColorStop(1,'rgba(80,60,180,.4)');ctx.shadowColor='rgba(180,140,255,.4)';ctx.shadowBlur=10;ctx.fillStyle=go;ctx.beginPath();ctx.arc(W/2,orbY,ORB_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+}
+function drawTimerBar(){
+  if(game.state!=='playing')return;
+  const frac=game.roundTimeMax>0?game.roundTime/game.roundTimeMax:0;
+  const bw=W-36,bx=18,by=50,bh=10;
+  ctx.fillStyle='rgba(255,255,255,.08)';rr(bx,by,bw,bh,5);ctx.fill();
+  const low=frac<0.25;
+  const pulse=low?(0.6+0.4*Math.sin(game.time/90)):1;
+  ctx.fillStyle=low?`rgba(230,70,60,${pulse})`:'rgba(220,160,90,.9)';
+  rr(bx,by,bw*clamp(frac,0,1),bh,5);ctx.fill();
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#f0c070';ctx.font='bold 15px Arial';
+  ctx.fillText('Chain Breaker — Round '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.75)';ctx.font='12px Arial';
+  ctx.fillText('Click each link to break it — break the whole chain before time runs out',18,27);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.75)';ctx.font='12px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best+'  Streak '+game.streak+'  Misses '+game.misses,W-18,8);
+  ctx.restore();
+  drawTimerBar();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,12,.97)'],[1,'rgba(4,3,9,.97)']]);rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(200,140,60,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#e0b060';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.92)';ctx.font='16px Arial';let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=27;}
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    let sx=0,sy=0;
+    if(game.shakeT>0){const m=game.shakeMag*(game.shakeT/Math.max(1,game.shakeT));sx=(Math.random()-.5)*2*game.shakeMag;sy=(Math.random()-.5)*2*game.shakeMag;}
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title')drawChain();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.flashT>0){ctx.fillStyle=`rgba(255,240,200,${(game.flashT/280)*0.35})`;ctx.fillRect(0,0,W,H);}
+    if(game.state==='title')panelDraw('Chain Breaker',['A chain of expectations connects two posts.','Click each link to break it before time runs out.','Break every link to free the orb.','10 rounds — chains grow longer, clock grows tighter.','Some later links need two hits to break.','','One expectation at a time, you are free.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('All Chains Broken! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best+'   Streak: '+game.streak+' (Best '+game.bestStreak+')','Misses: '+game.misses,'','Every expectation shattered. Fully free.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Out of Time',['The chain held this round.','Score: '+game.score+' / '+TOTAL,'Best: '+game.best+'   Streak: '+game.streak+' (Best '+game.bestStreak+')','','Pressure never runs out — but neither do you.','','Click / tap to try again.']);
+    else if(game.state==='paused')panelDraw('Paused',['Round '+(game.round+1)+' / '+TOTAL,'Score '+game.score+'  Best '+game.best,'','Click / tap the pause button to resume.']);
+    ctx.restore();
+  }catch(e){}
+}
+function linkAt(px,py){for(let i=links.length-1;i>=0;i--){if(!links[i].broken&&Math.hypot(px-links[i].x,py-links[i].y)<26)return i;}return -1;}
+function toCanvasXY(e){
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches&&e.touches.length){return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};}
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const{x:px,y:py}=toCanvasXY(e);
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused')return;
+  if(game.state!=='playing')return;
+  const i=linkAt(px,py);
+  if(i>=0)breakLink(i);
+  else registerMiss();
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// ---- pause / mute buttons ----
+const pauseBtn=document.getElementById('pauseBtn');
+const muteBtn=document.getElementById('muteBtn');
+const pauseBarsEl=document.getElementById('pauseIconBars');
+const pausePlayEl=document.getElementById('pauseIconPlay');
+const muteWavesEl=document.getElementById('muteWaves');
+const muteSlashEl=document.getElementById('muteSlash');
+function updatePauseIcon(){
+  if(game.paused){pauseBarsEl.style.display='none';pausePlayEl.style.display='';}
+  else{pauseBarsEl.style.display='';pausePlayEl.style.display='none';}
+}
+function updateMuteIcon(){
+  muteWavesEl.style.display=game.muted?'none':'';
+  muteSlashEl.style.display=game.muted?'':'none';
+}
+function togglePause(e){
+  e.preventDefault();e.stopPropagation();
+  if(game.state==='playing'){game.paused=true;game.state='paused';}
+  else if(game.state==='paused'){game.paused=false;game.state='playing';}
+  updatePauseIcon();
+}
+function toggleMute(e){
+  e.preventDefault();e.stopPropagation();
+  game.muted=!game.muted;lsSet(LS_MUTE,game.muted?'1':'0');
+  updateMuteIcon();
+}
+pauseBtn.addEventListener('click',togglePause);
+pauseBtn.addEventListener('touchstart',togglePause,{passive:false});
+muteBtn.addEventListener('click',toggleMute);
+muteBtn.addEventListener('touchstart',toggleMute,{passive:false});
+updatePauseIcon();updateMuteIcon();
+
+// keyboard bonus input
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){togglePause(e);}
+  else if(e.code==='KeyM'){toggleMute(e);}
+});
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get links(){return links;},get orbY(){return orbY;},get particles(){return particles;},resetGame,buildRound,breakLink,linkAt,registerMiss,update,draw,togglePause,toggleMute,CHAIN_LABELS,TOTAL,POST_LX,POST_RX,ORB_R};
+</script>
+</body>
+</html>

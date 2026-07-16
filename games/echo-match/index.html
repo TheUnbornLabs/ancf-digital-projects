@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Echo Match</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:44px;height:44px;border-radius:12px;border:1.5px solid rgba(160,100,255,.4);background:rgba(6,4,14,.85);color:#eaf2f6;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrls button:active{background:rgba(160,100,255,.3);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnMute" aria-label="Mute">&#128266;</button>
+  <button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Watch the echo pattern &middot; tap tiles in the same order &middot; 12 rounds &middot; 3 misses ends the run</div>
+<script>
+'use strict';
+// Echo Match (#88)
+// Simon-says with labelled tiles (positive affirmations vs social echoes).
+// A sequence plays — tiles light up in order.
+// Repeat the sequence by clicking the tiles. 12 rounds; sequence grows by 1 each round.
+// Theme: learning to echo your own affirmations back to yourself.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const TILE_LABELS=['My Choice','My Time','My Path','My Pace','My Joy','My Life','My Terms','My Voice'];
+const COLORS=['#6080ff','#e060c0','#60c080','#ffa040','#60d0d0','#ff8060','#c0a0ff','#a0e060'];
+const GRID=4;// 4x2 = 8 tiles
+const ROWS=2;
+const TILE_W=180,TILE_H=80,GAP=14;
+const GX=(W-GRID*(TILE_W+GAP))/2,GY=(H-ROWS*(TILE_H+GAP))/2+20;
+const TOTAL=12;
+const MAX_MISSES=3;
+function stepDur(round){return Math.max(280,600-round*20);}
+
+// --- localStorage best-score persistence ---
+function loadBest(){try{const v=parseInt(localStorage.getItem('echoMatch_best'),10);return Number.isFinite(v)?v:0;}catch(e){return 0;}}
+function saveBest(v){try{localStorage.setItem('echoMatch_best',String(v));}catch(e){}}
+
+const game={state:'title',time:0,round:0,score:0,best:loadBest(),misses:0,streakRoundsFlawless:0,lastBeat:false,muted:false};
+let sequence=[],playerInput=[],showPhase=false,showStep=0,showTimer=0,litTile=-1,lockout=false,rng;
+let distractorTile=-1,distractorStep=-1;// "distractor" flash - shouldn't be clicked
+let reactionStart=0;
+let particles=[];// {x,y,vx,vy,life,color}
+let shakeT=0,shakeMag=0;
+let flashT=0;// red flash overlay timer
+let popups=[];// {x,y,text,life,color}
+let pausedBeforeState=null;
+
+function spawnParticles(x,y,color,n){for(let i=0;i<(n||10);i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:400+Math.random()*200,maxLife:600,color});}}
+function addPopup(x,y,text,color){popups.push({x,y,text,life:700,maxLife:700,color});}
+function shake(mag){shakeT=Math.max(shakeT,220);shakeMag=Math.max(shakeMag,mag);}
+
+function buildRound(r){rng=seeded(r*6007+29);if(r===0)sequence=[Math.floor(rng()*GRID*ROWS)];else sequence=[...sequence,Math.floor(rng()*GRID*ROWS)];playerInput=[];showPhase=true;showStep=0;showTimer=0;litTile=-1;lockout=true;distractorTile=-1;distractorStep=(r>=4&&rng()<0.35)?Math.floor(rng()*sequence.length):-1;game.state='playing';}
+
+function resetGame(){game.round=0;game.score=0;game.misses=0;game.streakRoundsFlawless=0;game.lastBeat=false;sequence=[];buildRound(0);}
+
+function clickTile(i){
+  if(lockout||showPhase||game.state!=='playing')return;
+  playerInput.push(i);
+  const idx=playerInput.length-1;
+  if(playerInput[idx]!==sequence[idx]){
+    // wrong answer: strike + penalty + juice
+    sndWrong();
+    game.misses++;
+    flashT=260;
+    shake(6);
+    const col=GX+(i%GRID)*(TILE_W+GAP)+TILE_W/2,row=GY+Math.floor(i/GRID)*(TILE_H+GAP)+TILE_H/2;
+    spawnParticles(col,row,'#ff5050',10);
+    game.streakRoundsFlawless=0;
+    playerInput=[];
+    if(game.misses>=MAX_MISSES){
+      lockout=true;
+      setTimeout(()=>{game.state='gameover';},450);
+      return;
+    }
+    setTimeout(()=>{litTile=-1;showPhase=true;showStep=0;showTimer=0;lockout=true;},500);
+  }else if(playerInput.length===sequence.length){
+    // correct full sequence
+    sndGood();
+    const reactMs=performance.now()-reactionStart;
+    const speedBonus=Math.max(0,Math.round((1200-clamp(reactMs,0,1200))/40));
+    game.score+=10+speedBonus;
+    const beatBest=game.score>game.best;
+    if(beatBest){game.best=game.score;saveBest(game.best);game.lastBeat=true;}
+    game.streakRoundsFlawless++;
+    litTile=i;
+    const col=GX+(i%GRID)*(TILE_W+GAP)+TILE_W/2,row=GY+Math.floor(i/GRID)*(TILE_H+GAP)+TILE_H/2;
+    spawnParticles(col,row,COLORS[i%COLORS.length],14);
+    addPopup(col,row-30,'+'+(10+speedBonus),'#7ee787');
+    if(game.streakRoundsFlawless>0&&game.streakRoundsFlawless%3===0){
+      game.score+=15;addPopup(W/2,GY-24,'Flawless streak +15','#ffd166');
+    }
+    setTimeout(()=>{game.round++;if(game.round>=TOTAL){sndWin();game.state='won';}else{litTile=-1;buildRound(game.round);}},500);
+  }
+}
+
+function clickDistractor(){
+  // penalize clicking the distractor tile like a wrong answer
+  sndWrong();
+  game.misses++;
+  flashT=260;shake(6);
+  game.streakRoundsFlawless=0;
+  playerInput=[];
+  if(game.misses>=MAX_MISSES){lockout=true;setTimeout(()=>{game.state='gameover';},450);return;}
+  setTimeout(()=>{litTile=-1;showPhase=true;showStep=0;showTimer=0;lockout=true;},500);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
+  if(flashT>0)flashT=Math.max(0,flashT-dt);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=200*dt/1000;}
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.life-=dt;if(p.life<=0){popups.splice(i,1);continue;}p.y-=dt*0.03;}
+  if(game.state!=='playing')return;
+  if(showPhase){
+    const sd=stepDur(game.round);
+    showTimer+=dt;
+    if(showTimer>=sd){
+      showStep++;showTimer=0;
+      if(showStep>sequence.length){
+        showPhase=false;litTile=-1;lockout=false;reactionStart=performance.now();
+      }else{
+        litTile=sequence[showStep-1];
+        sndPing(sequence[showStep-1]);
+      }
+    }else{
+      litTile=showStep>0?sequence[showStep-1]:-1;
+    }
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const FREQS=[261,294,329,349,392,440,494,523];
+const sndPing=i=>tone(FREQS[i%FREQS.length],0.25,'sine',0.05);
+const sndGood=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWrong=()=>tone(180,0.2,'sawtooth',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndLose=()=>{[392,330,262].forEach((f,i)=>setTimeout(()=>tone(f,0.22,'sawtooth',0.05),i*90));};
+const sndClick=()=>tone(700,0.06,'square',0.03);
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04030a'],[1,'#030208']]);ctx.fillRect(0,0,W,H);}
+
+function drawTiles(){
+  const pulsing=showPhase;
+  const pulse=pulsing?(0.5+0.5*Math.sin(game.time/160)):0;
+  for(let i=0;i<GRID*ROWS;i++){
+    const col=i%GRID,row=Math.floor(i/GRID);const x=GX+col*(TILE_W+GAP),y=GY+row*(TILE_H+GAP);
+    const lit=litTile===i;
+    const cc=COLORS[i%COLORS.length];
+    ctx.shadowColor=cc+'60';ctx.shadowBlur=lit?16:2;
+    ctx.fillStyle=lit?cc+'ee':cc+'44';
+    rr(x,y,TILE_W,TILE_H,10);ctx.fill();
+    ctx.strokeStyle=cc+(lit?'ff':'66');ctx.lineWidth=2;
+    rr(x,y,TILE_W,TILE_H,10);ctx.stroke();
+    if(pulsing){
+      ctx.save();ctx.globalAlpha=0.25+0.35*pulse;ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;rr(x+1.5,y+1.5,TILE_W-3,TILE_H-3,9);ctx.stroke();ctx.restore();
+    }
+    ctx.shadowBlur=0;
+    ctx.fillStyle=lit?'rgba(10,10,20,.9)':'rgba(200,220,255,.6)';
+    ctx.font=`bold ${lit?13:11}px Arial`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(TILE_LABELS[i],x+TILE_W/2,y+TILE_H/2);
+    if(!lockout&&!showPhase&&game.state==='playing'){
+      ctx.save();ctx.globalAlpha=0.12;ctx.fillStyle='#ffffff';rr(x,y,TILE_W,TILE_H,10);ctx.fill();ctx.restore();
+    }
+  }
+}
+
+function drawParticles(){for(const p of particles){const a=clamp(p.life/p.maxLife,0,1);ctx.fillStyle=p.color;ctx.globalAlpha=a;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}}
+function drawPopups(){ctx.textAlign='center';for(const p of popups){const a=clamp(p.life/p.maxLife,0,1);ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font='bold 15px Arial';ctx.fillText(p.text,p.x,p.y);ctx.globalAlpha=1;}}
+
+function drawStatus(){
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='13px Arial';ctx.textAlign='center';ctx.textBaseline='top';
+  const msg=showPhase?'Watch the echo…':(lockout?'':'Your turn — repeat the sequence');
+  ctx.fillText(msg,W/2,GY+ROWS*(TILE_H+GAP)+20);
+  // sequence progress dots: checkmark = done, outline = pending (colorblind-safe)
+  const total=sequence.length;const dotX=W/2-total*10;
+  for(let i=0;i<total;i++){
+    const done=i<playerInput.length;
+    const cx=dotX+i*20,cy=GY+ROWS*(TILE_H+GAP)+52;
+    ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);
+    ctx.fillStyle=done?'rgba(120,200,100,.85)':'rgba(80,100,140,.25)';ctx.fill();
+    ctx.strokeStyle=done?'rgba(120,200,100,1)':'rgba(160,180,220,.6)';ctx.lineWidth=1.2;ctx.stroke();
+    if(done){
+      ctx.strokeStyle='#0a1a0a';ctx.lineWidth=1.4;ctx.beginPath();
+      ctx.moveTo(cx-2.6,cy);ctx.lineTo(cx-0.6,cy+2.2);ctx.lineTo(cx+2.8,cy-2.4);ctx.stroke();
+    }
+  }
+  // miss/strike indicators
+  ctx.font='11px Arial';ctx.fillStyle='rgba(255,120,120,.85)';ctx.textAlign='center';
+  let strikes='';for(let i=0;i<MAX_MISSES;i++)strikes+=i<game.misses?'✕ ':'○ ';
+  ctx.fillText(strikes,W/2,GY+ROWS*(TILE_H+GAP)+68);
+}
+
+function drawHUD(){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Echo Match — Round '+(game.round+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Sequence length: '+sequence.length+'   Misses: '+game.misses+'/'+MAX_MISSES,18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-64,8);
+  ctx.restore();
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(160,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+94;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();ctx.fillStyle='rgba(2,1,5,.72)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.fillStyle='#c0a0ff';ctx.font='bold 30px Arial';ctx.fillText('Paused',W/2,H/2-10);
+  ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='14px Arial';ctx.fillText('Tap the pause button to resume',W/2,H/2+22);
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if(shakeT>0){const m=shakeMag*(shakeT/220);ctx.translate((Math.random()*2-1)*m,(Math.random()*2-1)*m);}
+    drawBg();
+    if(game.state!=='title'){drawTiles();drawStatus();drawParticles();drawPopups();}
+    vignette();
+    if(flashT>0){ctx.save();ctx.globalAlpha=(flashT/260)*0.35;ctx.fillStyle='#ff2d2d';ctx.fillRect(0,0,W,H);ctx.restore();}
+    if(game.state==='playing'||game.state==='paused')drawHUD();
+    if(game.state==='title')panelDraw('Echo Match',['Watch the tiles light up in sequence.','Then click them in the same order.','12 rounds — sequence grows by one each round.','3 misses ends the run — avoid the flickering distractor tile.','','The affirmation you echo shapes you.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('Echo Remembered! ✓',['Score: '+game.score+(game.lastBeat?'  — New Best!':''),'Best: '+game.best,'Misses: '+game.misses+' / '+MAX_MISSES,'','12 affirmations echoed back perfectly.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Signal Lost',['You reached round '+(game.round+1)+' of '+TOTAL,'Score: '+game.score+(game.lastBeat?'  — New Best!':''),'Best: '+game.best,'','Too many echoes lost along the way — that\'s okay.','Every voice needs practice to be heard clearly.','','Click / tap to try again.']);
+    if(game.state==='paused')drawPauseOverlay();
+    ctx.restore();
+  }catch(e){}
+}
+
+function tileAt(px,py){for(let i=0;i<GRID*ROWS;i++){const col=i%GRID,row=Math.floor(i/GRID);const x=GX+col*(TILE_W+GAP),y=GY+row*(TILE_H+GAP);if(px>=x&&px<=x+TILE_W&&py>=y&&py<=y+TILE_H)return i;}return -1;}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='paused')return;
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='playing'){const i=tileAt(px,py);if(i>=0)clickTile(i);}
+}
+
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// --- pause / mute controls ---
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+function updateCtrlLabels(){
+  btnMute.innerHTML=game.muted?'&#128263;':'&#128266;';
+  btnPause.innerHTML=game.state==='paused'?'&#9654;':'&#10074;&#10074;';
+}
+function toggleMute(){game.muted=!game.muted;updateCtrlLabels();}
+function togglePause(){
+  if(game.state==='paused'){game.state=pausedBeforeState||'title';pausedBeforeState=null;}
+  else if(game.state==='playing'){pausedBeforeState='playing';game.state='paused';}
+  updateCtrlLabels();
+}
+btnMute.addEventListener('click',e=>{e.preventDefault();toggleMute();});
+btnPause.addEventListener('click',e=>{e.preventDefault();togglePause();});
+btnMute.addEventListener('touchstart',e=>{e.preventDefault();toggleMute();},{passive:false});
+btnPause.addEventListener('touchstart',e=>{e.preventDefault();togglePause();},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='m'||e.key==='M'){toggleMute();}
+  else if(e.key==='p'||e.key==='P'||e.key==='Escape'){if(game.state==='playing'||game.state==='paused')togglePause();}
+});
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+updateCtrlLabels();
+window.__cfq={get game(){return game;},get sequence(){return sequence;},get playerInput(){return playerInput;},get showPhase(){return showPhase;},get litTile(){return litTile;},resetGame,buildRound,clickTile,tileAt,update,draw,TILE_LABELS,COLORS,TOTAL,GRID,ROWS,MAX_MISSES,togglePause,toggleMute};
+</script>
+</body>
+</html>

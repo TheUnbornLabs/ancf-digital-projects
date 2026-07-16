@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Water Flow</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#030810;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrl{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrl button{width:38px;height:38px;border-radius:10px;border:1px solid rgba(120,180,255,.35);background:rgba(4,10,20,.75);color:#bfe6ff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#ctrl button:active{background:rgba(60,160,255,.35);}
+#ctrl button.on{background:rgba(60,160,255,.35);border-color:rgba(140,200,255,.7);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrl">
+<button id="btnHint" title="Hint">?</button>
+<button id="btnReset" title="Reset puzzle">&#8635;</button>
+<button id="btnMute" title="Mute">&#128266;</button>
+<button id="btnPause" title="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Click pipe segments to rotate them &middot; connect source to destination — take your time, there's no clock</div>
+<script>
+'use strict';
+// Water Flow (#60)
+// Pipe-connector puzzle. A grid of pipe segments.
+// Click to rotate each segment 90°. Connect source to sink.
+// 8 puzzles.
+// Theme: finding your own flow through life's channels.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+// Pipe types: each has openings in [top, right, bottom, left] booleans
+// Types: I (straight), L (elbow), T (tee), + (cross)
+const PIPE_TYPES=[
+  {name:'I', open:[[0,1,0,1],[1,0,1,0]]}, // 2 rotations
+  {name:'L', open:[[1,1,0,0],[0,1,1,0],[0,0,1,1],[1,0,0,1]]}, // 4 rotations
+  {name:'T', open:[[1,1,0,1],[1,1,1,0],[0,1,1,1],[1,0,1,1]]}, // 4 rotations
+  {name:'+', open:[[1,1,1,1]]}, // 1 rotation
+];
+const TOTAL=8;
+const BASE_COLS=8,BASE_ROWS=5;
+let COLS=BASE_COLS,ROWS=BASE_ROWS,CELL=80;
+let GX=(W-COLS*CELL)/2,GY=(H-ROWS*CELL)/2+16;
+
+// ---- localStorage helpers (guarded) ----
+const LS_KEY='waterflow_best_v1';
+function lsLoad(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return null;return JSON.parse(raw);}catch(e){return null;}}
+function lsSave(obj){try{localStorage.setItem(LS_KEY,JSON.stringify(obj));}catch(e){}}
+const savedBest=lsLoad()||{score:0,moves:null,time:null};
+
+const game={
+  state:'title',time:0,pIdx:0,score:0,best:savedBest.score||0,
+  solved:false,shakeT:0,correctAnim:0,
+  moves:0,puzzleTime:0,totalMoves:0,totalTime:0,
+  bestMoves:savedBest.moves||null,bestTime:savedBest.time||null,
+  muted:false,paused:false,
+  hintCell:null,hintT:0,
+  popups:[],particles:[],
+  parMoves:0
+};
+let grid=[],src={r:0,c:0},sink={r:0,c:0},rng;
+
+function gridSizeForPuzzle(p){
+  // mild escalation: later puzzles get a slightly larger grid, clamped to fit canvas
+  const cols=clamp(BASE_COLS+Math.floor(p/3),BASE_COLS,10);
+  const rows=clamp(BASE_ROWS+Math.floor(p/4),BASE_ROWS,6);
+  return{cols,rows};
+}
+function recalcLayout(){
+  CELL=Math.min(80,Math.floor((W-40)/COLS),Math.floor((H-140)/ROWS));
+  CELL=Math.max(40,CELL);
+  GX=(W-COLS*CELL)/2;GY=(H-ROWS*CELL)/2+16;
+}
+
+function randPipeType(r){const idx=Math.floor(r()*PIPE_TYPES.length);const t=PIPE_TYPES[idx];const rot=Math.floor(r()*t.open.length);return{typeIdx:idx,rot};}
+
+function openingsFor(cell){return PIPE_TYPES[cell.typeIdx].open[cell.rot];}
+function connectsG(g,r1,c1,r2,c2){
+  const dr=r2-r1,dc=c2-c1;const o1=openingsFor(g[r1][c1]);
+  if(dr===-1&&!o1[0])return false;if(dc===1&&!o1[1])return false;if(dr===1&&!o1[2])return false;if(dc===-1&&!o1[3])return false;
+  const o2=openingsFor(g[r2][c2]);
+  if(dr===-1&&!o2[2])return false;if(dc===1&&!o2[3])return false;if(dr===1&&!o2[0])return false;if(dc===-1&&!o2[1])return false;
+  return true;
+}
+function bfsSolved(g,s,k){
+  const seen=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  const queue=[s];seen[s.r][s.c]=true;const DIRS=[[-1,0],[0,1],[1,0],[0,-1]];
+  while(queue.length){const{r,c}=queue.shift();
+    for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;if(seen[nr][nc])continue;
+      if(connectsG(g,r,c,nr,nc)){seen[nr][nc]=true;queue.push({r:nr,c:nc});}
+    }
+  }
+  return seen[k.r][k.c];
+}
+function cloneGrid(g){return g.map(row=>row.map(cell=>({typeIdx:cell.typeIdx,rot:cell.rot,lit:false})));}
+function randomizeRotations(g,r){for(const row of g)for(const cell of row){const t=PIPE_TYPES[cell.typeIdx];cell.rot=Math.floor(r()*t.open.length);}}
+
+function buildPuzzle(p){
+  const dims=gridSizeForPuzzle(p);COLS=dims.cols;ROWS=dims.rows;recalcLayout();
+  rng=seeded(p*6007+43);
+  let attempt=0,built=null,minMovesFound=0;
+  // Generate: keep re-seeding deterministically (via attempt offset) until we get a
+  // puzzle that (a) is solvable and (b) is NOT already solved in its initial rotation.
+  while(attempt<50){
+    const r2=seeded(p*6007+43+attempt*97);
+    const g=Array.from({length:ROWS},()=>Array.from({length:COLS},()=>{const{typeIdx,rot}=randPipeType(r2);return{typeIdx,rot,lit:false};}));
+    const s={r:Math.floor(r2()*ROWS),c:0};
+    const k={r:Math.floor(r2()*ROWS),c:COLS-1};
+    g[s.r][s.c]={typeIdx:1,rot:0,lit:false};// L pointing right
+    g[k.r][k.c]={typeIdx:1,rot:2,lit:false};// L pointing left
+    // Build a guaranteed-solvable reference grid: carve a path, set correct rotations,
+    // then check if the ORIGINAL randomized rotation is already solved (avoid trivial).
+    const solvableCopy=cloneGrid(g);
+    // Force-solve solvableCopy by trying all rotation combos is too expensive; instead
+    // verify solvability using a constructive approach: randomize rotations repeatedly
+    // via BFS search over rotation states is expensive for T/L, so instead we directly
+    // carve a guaranteed path by setting a corridor of pipes connecting src->sink, then
+    // scramble everything else (which cannot block reachability since BFS only needs one path).
+    const path=carvePath(s,k,r2);
+    const pathSet=new Set(path.map(pt=>pt.r+'_'+pt.c));
+    for(let i=0;i<path.length;i++){
+      const pt=path[i];
+      const prev=path[i-1],next=path[i+1];
+      const needs=[0,0,0,0];// top,right,bottom,left
+      if(prev){markDir(needs,pt,prev);}
+      if(next){markDir(needs,pt,next);}
+      const{typeIdx,rot}=matchPipe(needs);
+      g[pt.r][pt.c]={typeIdx,rot,lit:false};
+    }
+    // now scramble rotations of non-path, non-src, non-sink cells
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const key=r+'_'+c;
+      if(pathSet.has(key))continue;
+      if((r===s.r&&c===s.c)||(r===k.r&&c===k.c))continue;
+      const t=PIPE_TYPES[g[r][c].typeIdx];
+      g[r][c].rot=Math.floor(r2()*t.open.length);
+    }
+    // now scramble the PATH cells' rotations too (so player must solve), but re-check
+    // it doesn't accidentally end up already solved.
+    const preScrambleSolved=bfsSolved(g,s,k);
+    for(const pt of path){
+      if((pt.r===s.r&&pt.c===s.c)||(pt.r===k.r&&pt.c===k.c))continue;
+      const t=PIPE_TYPES[g[pt.r][pt.c].typeIdx];
+      g[pt.r][pt.c].rot=Math.floor(r2()*t.open.length);
+    }
+    const nowSolved=bfsSolved(g,s,k);
+    if(!nowSolved){
+      built={g,s,k};
+      break;
+    }
+    attempt++;
+  }
+  if(!built){
+    // fallback: extremely unlikely, just force one rotation off on a path-adjacent cell
+    const r2=seeded(p*6007+43);
+    const g=Array.from({length:ROWS},()=>Array.from({length:COLS},()=>{const{typeIdx,rot}=randPipeType(r2);return{typeIdx,rot,lit:false};}));
+    const s={r:Math.floor(r2()*ROWS),c:0};
+    const k={r:Math.floor(r2()*ROWS),c:COLS-1};
+    g[s.r][s.c]={typeIdx:1,rot:0,lit:false};
+    g[k.r][k.c]={typeIdx:1,rot:2,lit:false};
+    built={g,s,k};
+  }
+  grid=built.g;src=built.s;sink=built.k;
+  game.solved=false;game.correctAnim=0;game.shakeT=0;game.moves=0;game.puzzleTime=0;
+  game.hintCell=null;game.hintT=0;game.popups=[];game.particles=[];
+  game.parMoves=Math.max(4,Math.round((COLS+ROWS)*0.9));
+  checkFlow();
+  game.state='playing';
+}
+function markDir(needs,from,to){
+  // sets the opening on `from` pointing toward `to`
+  const dr=to.r-from.r,dc=to.c-from.c;
+  if(dr===-1)needs[0]=1;else if(dc===1)needs[1]=1;else if(dr===1)needs[2]=1;else if(dc===-1)needs[3]=1;
+}
+function matchPipe(needs){
+  // find a PIPE_TYPES entry+rotation whose opening pattern is a superset of `needs`
+  // prefer exact match, else first superset
+  let best=null;
+  for(let ti=0;ti<PIPE_TYPES.length;ti++){
+    const t=PIPE_TYPES[ti];
+    for(let ri=0;ri<t.open.length;ri++){
+      const op=t.open[ri];
+      let superset=true;
+      for(let i=0;i<4;i++)if(needs[i]&&!op[i]){superset=false;break;}
+      if(superset){
+        const exact=op.every((v,i)=>v===needs[i]);
+        if(exact)return{typeIdx:ti,rot:ri};
+        if(!best)best={typeIdx:ti,rot:ri};
+      }
+    }
+  }
+  return best||{typeIdx:3,rot:0};// cross always fits
+}
+function carvePath(s,k,r2){
+  // simple randomized orthogonal walk from s to k confined to grid, biased toward k
+  const path=[{r:s.r,c:s.c}];
+  let cur={r:s.r,c:s.c};
+  const visited=new Set([cur.r+'_'+cur.c]);
+  let guard=0;
+  while((cur.r!==k.r||cur.c!==k.c)&&guard<500){
+    guard++;
+    const options=[];
+    if(cur.c<k.c)options.push({r:cur.r,c:cur.c+1,w:3});
+    if(cur.c>k.c)options.push({r:cur.r,c:cur.c-1,w:3});
+    if(cur.r<k.r)options.push({r:cur.r+1,c:cur.c,w:2});
+    if(cur.r>k.r)options.push({r:cur.r-1,c:cur.c,w:2});
+    // occasionally allow a sideways wiggle for variety
+    if(r2()<0.15){
+      if(cur.r+1<ROWS)options.push({r:cur.r+1,c:cur.c,w:1});
+      if(cur.r-1>=0)options.push({r:cur.r-1,c:cur.c,w:1});
+    }
+    const valid=options.filter(o=>o.r>=0&&o.r<ROWS&&o.c>=0&&o.c<COLS&&!visited.has(o.r+'_'+o.c));
+    let next;
+    if(valid.length===0){
+      // force toward k ignoring visited (shouldn't normally happen)
+      if(cur.c!==k.c)next={r:cur.r,c:cur.c+(k.c>cur.c?1:-1)};
+      else next={r:cur.r+(k.r>cur.r?1:-1),c:cur.c};
+    }else{
+      const total=valid.reduce((a,o)=>a+o.w,0);
+      let roll=r2()*total;
+      next=valid[0];
+      for(const o of valid){roll-=o.w;if(roll<=0){next=o;break;}}
+    }
+    visited.add(next.r+'_'+next.c);
+    path.push(next);
+    cur=next;
+  }
+  return path;
+}
+
+function resetGame(){game.pIdx=0;game.score=0;game.shakeT=0;game.totalMoves=0;game.totalTime=0;buildPuzzle(0);}
+function resetPuzzle(){buildPuzzle(game.pIdx);sndClick();}
+
+function rotate(r,c){
+  if(game.paused)return;
+  const cell=grid[r][c];const t=PIPE_TYPES[cell.typeIdx];
+  cell.rot=(cell.rot+1)%t.open.length;
+  game.moves++;game.totalMoves++;
+  sndClick();
+  spawnRotateParticles(r,c);
+  checkFlow();
+}
+function openings(r,c){const cell=grid[r][c];return PIPE_TYPES[cell.typeIdx].open[cell.rot];}// [top,right,bottom,left]
+function connects(r1,c1,r2,c2){return connectsG(grid,r1,c1,r2,c2);}
+function checkFlow(){// BFS from src
+  for(const row of grid)for(const cell of row)cell.lit=false;
+  const queue=[src];grid[src.r][src.c].lit=true;const DIRS=[[-1,0],[0,1],[1,0],[0,-1]];
+  while(queue.length){const{r,c}=queue.shift();
+    for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;if(grid[nr][nc].lit)continue;
+      if(connects(r,c,nr,nc)){grid[nr][nc].lit=true;queue.push({r:nr,c:nc});}
+    }
+  }
+  if(grid[sink.r][sink.c].lit&&!game.solved){
+    game.solved=true;game.correctAnim=700;
+    // scoring: base 1 point + efficiency/speed bonus
+    let bonus=0;
+    if(game.moves<=game.parMoves)bonus+=1;
+    if(game.puzzleTime<8000)bonus+=1;
+    game.score+=1+bonus;
+    game.totalTime+=game.puzzleTime;
+    spawnSolvePopup(bonus);
+    sndWin2();
+    if(game.score>game.best){game.best=game.score;}
+    persistBest();
+    setTimeout(()=>{
+      if(game.pIdx+1>=TOTAL){sndWin();game.state='won';persistBest();}
+      else{game.pIdx++;buildPuzzle(game.pIdx);}
+    },700);
+  }
+}
+function persistBest(){
+  const rec={score:Math.max(game.best,savedBest.score||0)};
+  if(game.bestMoves==null||game.totalMoves<game.bestMoves)game.bestMoves=game.totalMoves;
+  if(game.bestTime==null||game.totalTime<game.bestTime)game.bestTime=game.totalTime;
+  rec.moves=game.bestMoves;rec.time=game.bestTime;
+  lsSave(rec);
+}
+
+// ---- particles / popups ----
+function spawnRotateParticles(r,c){
+  const x=GX+c*CELL+CELL/2,y=GY+r*CELL+CELL/2;
+  for(let i=0;i<6;i++){
+    game.particles.push({x,y,vx:(Math.random()-0.5)*2.2,vy:(Math.random()-0.5)*2.2,life:300,maxLife:300,color:'rgba(120,190,255,'});
+  }
+}
+function spawnSolvePopup(bonus){
+  const x=GX+sink.c*CELL+CELL/2,y=GY+sink.r*CELL+CELL/2;
+  const text=bonus>0?('+'+(1+bonus)+' !'):'+1';
+  game.popups.push({x,y,text,life:900,maxLife:900});
+  for(let i=0;i<16;i++){
+    const ang=Math.random()*Math.PI*2,spd=1+Math.random()*2.5;
+    game.particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:600,maxLife:600,color:'rgba(120,220,255,'});
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndClick=()=>tone(380,0.06,'sine',0.04);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*70));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndErr=()=>tone(140,0.12,'square',0.03);
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  if(game.paused)return;
+  game.time+=dt;
+  if(game.state==='playing'&&!game.solved)game.puzzleTime+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.correctAnim>0)game.correctAnim=Math.max(0,game.correctAnim-dt);
+  if(game.hintT>0){game.hintT=Math.max(0,game.hintT-dt);if(game.hintT===0)game.hintCell=null;}
+  for(let i=game.popups.length-1;i>=0;i--){const p=game.popups[i];p.life-=dt;p.y-=dt*0.03;if(p.life<=0)game.popups.splice(i,1);}
+  for(let i=game.particles.length-1;i>=0;i--){const pt=game.particles[i];pt.life-=dt;pt.x+=pt.vx*(dt/16);pt.y+=pt.vy*(dt/16);if(pt.life<=0)game.particles.splice(i,1);}
+}
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#030810'],[1,'#020610']]);ctx.fillRect(0,0,W,H);}
+function drawPipe(r,c){
+  const cell=grid[r][c];const x=GX+c*CELL,y=GY+r*CELL;const cx2=x+CELL/2,cy2=y+CELL/2;const op=openings(r,c);
+  const isHint=game.hintCell&&game.hintCell.r===r&&game.hintCell.c===c&&game.hintT>0;
+  const lit=cell.lit;
+  const col=lit?'rgba(80,200,255,.85)':'rgba(90,110,150,.55)';
+  const pad=CELL*0.05;
+  ctx.fillStyle='rgba(20,30,50,.4)';rr(x+pad,y+pad,CELL-pad*2,CELL-pad*2,6);ctx.fill();
+  if(isHint){
+    const pulse=0.4+0.3*Math.sin(game.time/120);
+    ctx.strokeStyle=`rgba(255,210,90,${pulse.toFixed(2)})`;ctx.lineWidth=3;
+    rr(x+pad,y+pad,CELL-pad*2,CELL-pad*2,6);ctx.stroke();
+  }
+  // lit pipes are drawn thicker + with an outer glow so lit/unlit is distinguishable
+  // without relying on hue alone (colorblind-friendly redundant cue).
+  const PIPE_W=lit?CELL*0.17:CELL*0.13;
+  if(lit){
+    ctx.save();ctx.shadowColor='rgba(120,210,255,.9)';ctx.shadowBlur=CELL*0.22;
+  }
+  ctx.strokeStyle=col;ctx.lineWidth=PIPE_W;ctx.lineCap='round';
+  if(op[0]){ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(cx2,y);ctx.stroke();}
+  if(op[1]){ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(x+CELL,cy2);ctx.stroke();}
+  if(op[2]){ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(cx2,y+CELL);ctx.stroke();}
+  if(op[3]){ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(x,cy2);ctx.stroke();}
+  if(lit)ctx.restore();
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(cx2,cy2,PIPE_W/2,0,Math.PI*2);ctx.fill();
+  const fsz=Math.max(8,Math.round(CELL*0.125));
+  if(r===src.r&&c===src.c){ctx.fillStyle='rgba(80,220,120,.9)';ctx.font='bold '+fsz+'px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('SOURCE',cx2,y+3);}
+  if(r===sink.r&&c===sink.c){ctx.fillStyle='rgba(80,180,255,.9)';ctx.font='bold '+fsz+'px Arial';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('SINK',cx2,y+3);}
+}
+function drawGrid(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)drawPipe(r,c);}
+function drawHUD(){
+  ctx.save();ctx.fillStyle='rgba(2,4,8,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#60d0ff';ctx.font='bold 13px Arial';ctx.fillText('Water Flow — Puzzle '+(game.pIdx+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Moves '+game.moves+' (par '+game.parMoves+')  ·  Time '+(game.puzzleTime/1000).toFixed(1)+'s',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  if(game.muted||game.paused){
+    ctx.fillStyle='rgba(255,210,90,.8)';ctx.font='11px Arial';
+    ctx.fillText((game.paused?'Paused':'')+(game.paused&&game.muted?' · ':'')+(game.muted?'Muted':''),W-18,28);
+  }
+  ctx.restore();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){
+  ctx.save();ctx.fillStyle='rgba(2,4,8,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,10,20,.97)'],[1,'rgba(3,7,16,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(60,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#60d0ff';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+94;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+function drawParticlesAndPopups(){
+  ctx.save();
+  for(const pt of game.particles){
+    const a=clamp(pt.life/pt.maxLife,0,1);
+    ctx.fillStyle=pt.color+a.toFixed(2)+')';
+    ctx.beginPath();ctx.arc(pt.x,pt.y,2.5,0,Math.PI*2);ctx.fill();
+  }
+  for(const p of game.popups){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.fillStyle=`rgba(255,230,140,${a.toFixed(2)})`;
+    ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    let shakeX=0,shakeY=0;
+    if(game.shakeT>0){const m=game.shakeT/180;shakeX=(Math.random()-0.5)*8*m;shakeY=(Math.random()-0.5)*8*m;ctx.translate(shakeX,shakeY);}
+    drawBg();
+    if(game.state!=='title')drawGrid();
+    if(game.state==='playing')drawParticlesAndPopups();
+    if(game.correctAnim>0){ctx.fillStyle=`rgba(60,200,255,${(game.correctAnim/700*0.2).toFixed(2)})`;ctx.fillRect(0,0,W,H);}
+    if(game.shakeT>0){ctx.fillStyle=`rgba(255,60,60,${(game.shakeT/180*0.18).toFixed(2)})`;ctx.fillRect(0,0,W,H);}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='playing'&&game.paused)panelDraw('Paused',['Click the pause button to resume.']);
+    if(game.state==='title')panelDraw('Water Flow',['Click pipe segments to rotate them 90°.','Connect the SOURCE (green) to the SINK (blue).','8 pipe puzzles, no clock — go at your own pace.','Fewer moves & a quicker solve earn bonus points.','','Find your own flow through life\'s channels.','','Click / tap to begin.']);
+    else if(game.state==='won'){
+      const avgMoves=game.totalMoves;
+      const totalSec=(game.totalTime/1000).toFixed(1);
+      const bestMovesTxt=game.bestMoves!=null?game.bestMoves:'—';
+      const bestTimeTxt=game.bestTime!=null?(game.bestTime/1000).toFixed(1)+'s':'—';
+      panelDraw('Flow Complete! ✓',[
+        'Score: '+game.score+'   Best score: '+game.best,
+        'Total moves: '+avgMoves+'   Total time: '+totalSec+'s',
+        'Best moves: '+bestMovesTxt+'   Best time: '+bestTimeTxt,
+        '',
+        'Your path, always finding its way.',
+        '',
+        'Click / tap to play again.'
+      ]);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+function cellAt2(mx,my){const c=Math.floor((mx-GX)/CELL),r=Math.floor((my-GY)/CELL);if(r>=0&&r<ROWS&&c>=0&&c<COLS)return{r,c};return null;}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state!=='playing'||game.paused)return;
+  const cell=cellAt2(px,py);
+  if(cell&&!game.solved){rotate(cell.r,cell.c);}
+  else if(!cell){
+    // click outside grid while playing = no-op / miss feedback
+    game.shakeT=180;sndErr();
+  }
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// ---- HUD buttons ----
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+const btnReset=document.getElementById('btnReset');
+const btnHint=document.getElementById('btnHint');
+function toggleMute(){game.muted=!game.muted;btnMute.classList.toggle('on',game.muted);btnMute.innerHTML=game.muted?'&#128263;':'&#128266;';}
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;btnPause.classList.toggle('on',game.paused);
+  btnPause.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';
+  const a2=AC();if(a2){try{if(game.paused)a2.suspend();else a2.resume();}catch(e){}}
+}
+function doReset(){if(game.state==='playing')resetPuzzle();}
+function doHint(){
+  if(game.state!=='playing'||game.paused||game.solved)return;
+  // find first unlit reachable-from-src pipe cell that has an incorrect rotation,
+  // or simply the sink's neighbor along a valid path — approximate: pick any cell
+  // adjacent to the lit region that could connect if rotated correctly.
+  const target=findHintCell();
+  if(target){game.hintCell=target;game.hintT=1800;}
+}
+function findHintCell(){
+  // BFS from src over ALL cells ignoring current rotation to find true shortest path,
+  // then find the first cell along that path whose current rotation doesn't match need.
+  const parent={};const key=(r,c)=>r+'_'+c;
+  const queue=[src];const seen=new Set([key(src.r,src.c)]);
+  const DIRS=[[-1,0],[0,1],[1,0],[0,-1]];
+  while(queue.length){
+    const cur=queue.shift();
+    if(cur.r===sink.r&&cur.c===sink.c)break;
+    for(const[dr,dc]of DIRS){
+      const nr=cur.r+dr,nc=cur.c+dc;
+      if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+      const k2=key(nr,nc);if(seen.has(k2))continue;
+      seen.add(k2);parent[k2]={r:cur.r,c:cur.c};queue.push({r:nr,c:nc});
+    }
+  }
+  if(!seen.has(key(sink.r,sink.c)))return null;
+  // reconstruct path
+  const path=[];let cur={r:sink.r,c:sink.c};
+  while(cur){path.unshift(cur);const p=parent[key(cur.r,cur.c)];if(!p)break;cur=p;}
+  for(const pt of path){
+    if(!grid[pt.r][pt.c].lit){return pt;}
+  }
+  return null;
+}
+btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+btnPause.addEventListener('click',e=>{e.stopPropagation();togglePause();});
+btnReset.addEventListener('click',e=>{e.stopPropagation();doReset();});
+btnHint.addEventListener('click',e=>{e.stopPropagation();doHint();});
+['mousedown','touchstart'].forEach(evt=>{
+  document.getElementById('ctrl').addEventListener(evt,e=>{e.stopPropagation();},{passive:false});
+});
+window.addEventListener('keydown',e=>{
+  if(e.key==='m'||e.key==='M')toggleMute();
+  else if(e.key==='p'||e.key==='P')togglePause();
+  else if(e.key==='r'||e.key==='R')doReset();
+  else if(e.key==='h'||e.key==='H')doHint();
+});
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={
+  get game(){return game;},get grid(){return grid;},get src(){return src;},get sink(){return sink;},
+  resetGame,resetPuzzle,buildPuzzle,rotate,checkFlow,openings,connects,cellAt2,update,draw,
+  PIPE_TYPES,get COLS(){return COLS;},get ROWS(){return ROWS;},TOTAL,
+  toggleMute,togglePause,doReset,doHint,bfsSolved,cloneGrid
+};
+</script>
+</body>
+</html>

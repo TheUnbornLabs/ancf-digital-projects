@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Crystal Grow</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#020408;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:10px;border:1.5px solid rgba(120,160,255,.35);background:rgba(2,6,14,.75);color:#cfe0ff;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#ctrls button:active{background:rgba(60,100,200,.5);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnMute" aria-label="Mute">&#128266;</button>
+<button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Click / tap empty space to plant crystal seeds &middot; grow your garden to fill 60% of the space</div>
+<script>
+'use strict';
+// Crystal Grow (#62)
+// Click to plant crystal seeds. Each grows outward in branches.
+// Fill 60% of the canvas with crystal to win. Obstacle: void patches that shrink crystals.
+// Theme: growing in your own unique shape — no two crystals are the same.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const MAX_SEEDS=8,TARGET_FILL=0.60;
+const COLORS=['#60a0ff','#a060ff','#60e0c0','#ff80a0','#80e060','#ffcc40'];
+const STALL_LIMIT=9000; // ms with no coverage growth once seeds exhausted -> gameover
+
+// --- persistence ---
+let saved={best:0,bestEff:0};
+try{const raw=localStorage.getItem('crystalGrowSave');if(raw){const p=JSON.parse(raw);if(p&&typeof p==='object'){saved.best=p.best||0;saved.bestEff=p.bestEff||0;}}}catch(e){}
+function saveProgress(){try{localStorage.setItem('crystalGrowSave',JSON.stringify({best:saved.best,bestEff:saved.bestEff}));}catch(e){}}
+
+const game={state:'title',time:0,score:0,best:saved.best,bestEff:saved.bestEff,shakeT:0,roundsWon:0,muted:false,paused:false,newBest:false,stallT:0,seedsUsed:0,winTime:0,startTime:0,rejectFlash:0};
+let crystals=[],voids=[],coverage=0,coverTimer=0,rng,filledPx=0;
+
+function difficulty(){
+  const voidCount=clamp(3+Math.min(game.roundsWon,4),3,7);
+  const radBoost=clamp(game.roundsWon*2,0,18);
+  return{voidCount,radBoost};
+}
+
+function resetGame(){
+  crystals=[];voids=[];coverage=0;coverTimer=0;filledPx=0;
+  rng=seeded((Date.now()+game.roundsWon*7919)%99991);
+  const d=difficulty();
+  for(let i=0;i<d.voidCount;i++){
+    voids.push({x:120+rng()*(W-240),y:80+rng()*(H-160),r:30+rng()*20+d.radBoost,drift:(i===0),dx:(rng()-.5)*8,dy:(rng()-.5)*8});
+  }
+  game.score=0;game.shakeT=0;game.state='playing';game.newBest=false;game.stallT=0;game.seedsUsed=0;game.startTime=game.time;game.paused=false;
+}
+
+function plantCrystal(mx,my){
+  if(game.state!=='playing')return;
+  if(crystals.length>=MAX_SEEDS){rejectFeedback();return;}
+  for(const v of voids){if(Math.hypot(mx-v.x,my-v.y)<v.r+10){rejectFeedback();return;}}
+  const col=COLORS[crystals.length%COLORS.length];
+  const ang=rng()*Math.PI*2;
+  crystals.push({x:mx,y:my,branches:[{a:ang,len:0,maxLen:40+rng()*60,speed:30+rng()*20}],col,age:0,r:rng()*Math.PI*2,idx:crystals.length});
+  game.seedsUsed++;
+  spawnBurst(mx,my,col);
+  game.shakeT=Math.max(game.shakeT,80);
+  sndPlant();
+}
+function rejectFeedback(){
+  game.shakeT=Math.max(game.shakeT,140);
+  sndReject();
+}
+
+function addBranch(c){const last=c.branches[c.branches.length-1];const spread=(rng()-.5)*1.2;c.branches.push({a:last.a+spread,len:0,maxLen:30+rng()*50,speed:20+rng()*25});}
+
+// --- particles ---
+let particles=[];
+function spawnBurst(x,y,col){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:400+Math.random()*300,age:0,col,sz:1.5+Math.random()*2});}}
+function spawnConfetti(){for(let i=0;i<60;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*160;particles.push({x:W/2,y:H/2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:700+Math.random()*500,age:0,col:COLORS[i%COLORS.length],sz:2+Math.random()*2.5});}}
+function updateParticles(dt){const s=dt/1000;for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){particles.splice(i,1);continue;}p.x+=p.vx*s;p.y+=p.vy*s;p.vy+=60*s;p.vx*=0.98;}}
+function drawParticles(){for(const p of particles){const t=1-p.age/p.life;ctx.globalAlpha=clamp(t,0,1);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+
+function update(dt){
+  dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  updateParticles(dt);
+  if(game.state==='paused'||game.state==='title'||game.state==='won'||game.state==='gameover')return;
+  if(game.state!=='playing')return;
+
+  // drifting void
+  for(const v of voids){
+    if(v.drift){
+      v.x+=v.dx*s;v.y+=v.dy*s;
+      if(v.x<v.r+40||v.x>W-v.r-40)v.dx*=-1;
+      if(v.y<v.r+60||v.y>H-v.r-40)v.dy*=-1;
+      v.x=clamp(v.x,v.r+40,W-v.r-40);v.y=clamp(v.y,v.r+60,H-v.r-40);
+    }
+  }
+
+  for(const c of crystals){
+    c.age+=s;
+    for(const b of c.branches){b.len=Math.min(b.len+b.speed*s,b.maxLen);}
+    if(c.age>1.5&&c.branches.length<12&&rng()<s*0.8)addBranch(c);
+  }
+
+  coverTimer+=dt;
+  if(coverTimer>200){coverTimer=0;calcCoverage();}
+  game.score=Math.floor(coverage*100);
+
+  // stall / loss condition
+  if(crystals.length>=MAX_SEEDS&&coverage<TARGET_FILL){
+    game.stallT+=dt;
+    if(game.stallT>STALL_LIMIT){
+      game.state='gameover';
+      sndLose();
+    }
+  }else{
+    game.stallT=0;
+  }
+}
+
+function calcCoverage(){
+  const off=document.createElement('canvas');off.width=W;off.height=H;const oc=off.getContext('2d');
+  oc.fillStyle='#000';oc.fillRect(0,0,W,H);
+  for(const c of crystals)drawCrystalOC(oc,c);
+  const d=oc.getImageData(0,0,W,H).data;
+  let cnt=0;for(let i=0;i<d.length;i+=4)if(d[i]>10||d[i+1]>10||d[i+2]>10)cnt++;
+  coverage=cnt/(W*H);
+  filledPx=cnt;
+  if(coverage>=TARGET_FILL&&game.state==='playing'){
+    const timeBonus=Math.max(0,Math.floor((30000-(game.time-game.startTime))/1000));
+    const effBonus=Math.max(0,Math.floor((MAX_SEEDS-game.seedsUsed)*3));
+    game.score=Math.floor(coverage*100)+timeBonus+effBonus;
+    const eff=coverage/Math.max(1,game.seedsUsed);
+    game.newBest=game.score>game.best;
+    if(game.score>game.best){game.best=game.score;}
+    if(eff>game.bestEff)game.bestEff=eff;
+    saveProgress();
+    sndWin();
+    spawnConfetti();
+    game.shakeT=250;
+    game.roundsWon++;
+    game.winTime=game.time;
+    game.state='won';
+  }
+}
+function drawCrystalOC(oc,c){oc.strokeStyle='#fff';oc.lineWidth=3;oc.lineCap='round';for(const b of c.branches){const bx=c.x+Math.cos(b.a)*b.len,by=c.y+Math.sin(b.a)*b.len;oc.beginPath();oc.moveTo(c.x,c.y);oc.lineTo(bx,by);oc.stroke();
+if(b.len>15){const facetLen=b.len*0.4,fl=b.a+Math.PI*0.25;const fx=bx+Math.cos(fl)*facetLen,fy=by+Math.sin(fl)*facetLen;oc.beginPath();oc.moveTo(bx,by);oc.lineTo(fx,fy);oc.stroke();}}}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndPlant=()=>tone(440+crystals.length*40,0.12,'sine',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndReject=()=>{tone(120,0.15,'sawtooth',0.05);};
+const sndLose=()=>{[300,220,160].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sine',0.06),i*110));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#020408'],[1,'#010306']]);ctx.fillRect(0,0,W,H);}
+function drawVoids(){for(const v of voids){ctx.fillStyle='rgba(0,0,0,.8)';ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(120,40,40,.4)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(180,80,80,.3)';ctx.font='7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('void',v.x,v.y);}}
+function drawCrystal(c){ctx.save();ctx.shadowColor=c.col+'60';ctx.shadowBlur=6;ctx.strokeStyle=c.col;ctx.lineWidth=2.5;ctx.lineCap='round';for(const b of c.branches){const bx=c.x+Math.cos(b.a)*b.len,by=c.y+Math.sin(b.a)*b.len;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(bx,by);ctx.stroke();if(b.len>15){ctx.lineWidth=1.5;const facetLen=b.len*0.4,fl=b.a+Math.PI*0.25;const fx=bx+Math.cos(fl)*facetLen,fy=by+Math.sin(fl)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx,fy);ctx.stroke();const fl2=b.a-Math.PI*0.25;const fx2=bx+Math.cos(fl2)*facetLen,fy2=by+Math.sin(fl2)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx2,fy2);ctx.stroke();ctx.lineWidth=2.5;}}ctx.shadowBlur=0;ctx.restore();
+// secondary shape cue: numbered label near origin, angle-spread varies by idx already via rng
+ctx.save();ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String((c.idx||0)+1),c.x,c.y-12);ctx.restore();}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(1,3,5,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';ctx.fillText('Crystal Grow',18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Seeds: '+crystals.length+' / '+MAX_SEEDS+'  Crystals grow on their own',18,28);ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(Math.floor(coverage*100)+'%',W/2,10);ctx.fillStyle='rgba(234,242,246,.3)';ctx.font='10px Arial';ctx.fillText('target: '+(TARGET_FILL*100)+'%',W/2,30);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Best: '+game.best+'%',W-18,8);ctx.restore();}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,3,5,.78)';ctx.fillRect(0,0,W,H);const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(3,6,14,.97)'],[1,'rgba(2,4,10,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function drawPauseOverlay(){ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#cfe0ff';ctx.font='bold 30px Arial';ctx.fillText('Paused',W/2,H/2-6);ctx.font='13px Arial';ctx.fillStyle='rgba(234,242,246,.6)';ctx.fillText('Tap the pause button or press P to resume',W/2,H/2+22);ctx.restore();}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    let sx=0,sy=0;
+    if(game.shakeT>0){const m=game.shakeT/250;sx=(Math.random()-.5)*10*m;sy=(Math.random()-.5)*10*m;}
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title'){drawVoids();for(const c of crystals)drawCrystal(c);drawParticles();}
+    vignette();
+    if(game.state==='playing'||game.state==='paused')drawHUD();
+    if(game.state==='title')panelDraw('Crystal Grow',['Click to plant crystal seeds (up to '+MAX_SEEDS+').','They branch and grow on their own.','Fill '+Math.floor(TARGET_FILL*100)+'% of the space to win.','','No two crystals grow the same way.','','Click / tap to begin.']);
+    else if(game.state==='won'){
+      const eff=(coverage/Math.max(1,game.seedsUsed)*100).toFixed(1);
+      const lines=['Coverage: '+Math.floor(coverage*100)+'%  Score: '+game.score,'Seeds used: '+game.seedsUsed+'  Efficiency: '+eff+'%/seed','Best score: '+game.best+'  Best efficiency: '+(game.bestEff*100).toFixed(1)+'%'];
+      if(game.newBest)lines.push('★ New Best! ★');
+      lines.push('','Your garden, your shape, your growth.','','Click / tap to grow again.');
+      panelDraw('Crystal Garden! ✓',lines);
+    }
+    else if(game.state==='gameover')panelDraw('Garden Stalled',['Seeds ran out before reaching '+Math.floor(TARGET_FILL*100)+'%.','Final coverage: '+Math.floor(coverage*100)+'%','Best score: '+game.best,'','Try again — plant away from voids.','','Click / tap to retry.']);
+    if(game.state==='paused')drawPauseOverlay();
+    ctx.restore();
+  }catch(e){}
+}
+
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';}
+  else if(game.state==='paused'){game.state='playing';}
+}
+function toggleMute(){game.muted=!game.muted;updateCtrlLabels();}
+function updateCtrlLabels(){
+  const bm=document.getElementById('btnMute'),bp=document.getElementById('btnPause');
+  if(bm)bm.innerHTML=game.muted?'&#128263;':'&#128266;';
+  if(bp)bp.innerHTML=game.state==='paused'?'&#9654;':'&#10074;&#10074;';
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended'){try{a2.resume();}catch(ex){}}
+  const rect=canvas.getBoundingClientRect();const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused')return;
+  plantCrystal(px,py);
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+document.getElementById('btnPause').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(game.state==='playing'||game.state==='paused'){togglePause();updateCtrlLabels();}});
+document.getElementById('btnMute').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMute();});
+['mousedown','touchstart'].forEach(evt=>{
+  document.getElementById('btnPause').addEventListener(evt,e=>e.stopPropagation());
+  document.getElementById('btnMute').addEventListener(evt,e=>e.stopPropagation());
+});
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){if(game.state==='playing'||game.state==='paused'){togglePause();updateCtrlLabels();}}
+  if(e.key==='m'||e.key==='M'){toggleMute();}
+});
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get crystals(){return crystals;},get voids(){return voids;},get coverage(){return coverage;},get particles(){return particles;},resetGame,plantCrystal,addBranch,calcCoverage,update,draw,togglePause,toggleMute,MAX_SEEDS,TARGET_FILL,COLORS};
+</script>
+</body>
+</html>

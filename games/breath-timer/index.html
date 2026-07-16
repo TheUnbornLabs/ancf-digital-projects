@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Breath Timer</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04080c;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hud-ctrl{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#hud-ctrl button{width:40px;height:40px;border-radius:10px;border:1px solid rgba(120,170,220,.35);background:rgba(4,10,18,.75);color:#cfe8ff;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+#hud-ctrl button:active{background:rgba(60,120,180,.5);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="hud-ctrl">
+  <button id="btnMute" aria-label="Mute">&#128266;</button>
+  <button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<script>
+'use strict';
+// Breath Timer (#30)
+// A gentle paced breathing exercise game.
+// Follow the expanding/contracting circle: inhale/hold/exhale/pause per
+// the selected pattern. Complete the chosen number of cycles to earn calm.
+// Press-and-hold in sync with the guide (inhale=hold expand, exhale=release)
+// for a small accuracy bonus and rhythm feedback.
+// Theme: reclaiming your breath from the noise.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const CX=W/2,CY=H/2;
+
+// ---- persistence helpers (localStorage can throw in private mode) ----
+function lsGet(k,def){try{const v=localStorage.getItem(k);return v===null?def:v;}catch(e){return def;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+// ---- breathing patterns (data-driven) ----
+const PATTERNS={
+  relax:{label:'Relaxing (4-4-6-2)',phases:[
+    {name:'Inhale',dur:4000,target:1.0,col:'#60c8ff'},
+    {name:'Hold',  dur:4000,target:1.0,col:'#a0e0ff'},
+    {name:'Exhale',dur:6000,target:0.0,col:'#80f0c0'},
+    {name:'Pause', dur:2000,target:0.0,col:'#60c080'},
+  ]},
+  box:{label:'Box Breathing (4-4-4-4)',phases:[
+    {name:'Inhale',dur:4000,target:1.0,col:'#60c8ff'},
+    {name:'Hold',  dur:4000,target:1.0,col:'#a0e0ff'},
+    {name:'Exhale',dur:4000,target:0.0,col:'#80f0c0'},
+    {name:'Pause', dur:4000,target:0.0,col:'#60c080'},
+  ]},
+};
+let PHASES=PATTERNS.relax.phases;
+
+const SESSION_LENGTHS=[3,5,10];
+const MIN_R=50,MAX_R=120;
+let CYCLES=5;
+
+const game={
+  state:'title',time:0,cycle:0,phaseIdx:0,phaseT:0,radius:MIN_R,
+  score:0,pressed:false,pressStartT:0,shakeT:0,
+  paused:false,muted:lsGet('bt_muted','0')==='1',
+  patternKey:lsGet('bt_pattern','relax'),
+  cyclesTarget:parseInt(lsGet('bt_cycles','5'),10)||5,
+  streak:0,popupT:0,popupText:'',accGood:0,accTotal:0,
+};
+if(!PATTERNS[game.patternKey])game.patternKey='relax';
+if(SESSION_LENGTHS.indexOf(game.cyclesTarget)===-1)game.cyclesTarget=5;
+PHASES=PATTERNS[game.patternKey].phases;
+CYCLES=game.cyclesTarget;
+
+let bestCycles=parseInt(lsGet('bt_best_cycles','0'),10)||0;
+let bestSessions=parseInt(lsGet('bt_best_sessions','0'),10)||0;
+
+function resetGame(){
+  PHASES=PATTERNS[game.patternKey].phases;
+  CYCLES=game.cyclesTarget;
+  game.cycle=0;game.phaseIdx=0;game.phaseT=0;game.radius=MIN_R;
+  game.score=0;game.pressed=false;game.pressStartT=0;game.shakeT=0;
+  game.streak=0;game.popupT=0;game.popupText='';game.accGood=0;game.accTotal=0;
+  game.paused=false;
+  game.state='playing';
+}
+function currentPhase(){return PHASES[game.phaseIdx];}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.04,a.currentTime+0.05);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.5));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.5)+0.05);}catch(e){}}
+function sndPhase(i){const freqs=[340,420,280,200];tone(freqs[i],0.4,'sine',0.04);}
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.3,'sine',0.05),i*120));};
+
+function toggleMute(){game.muted=!game.muted;lsSet('bt_muted',game.muted?'1':'0');updateCtrlButtons();}
+function togglePause(){if(game.state!=='playing')return;game.paused=!game.paused;updateCtrlButtons();}
+function updateCtrlButtons(){
+  const bm=document.getElementById('btnMute'),bp=document.getElementById('btnPause');
+  if(bm)bm.innerHTML=game.muted?'&#128263;':'&#128266;';
+  if(bp)bp.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';
+}
+
+// ---- update ----
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.popupT>0)game.popupT=Math.max(0,game.popupT-dt);
+  if(game.state!=='playing'||game.paused)return;
+  const ph=currentPhase();
+  game.phaseT+=dt;
+  // animate radius
+  const t2=clamp(game.phaseT/ph.dur,0,1);
+  const fromR=game.phaseIdx===0||game.phaseIdx===3?MIN_R:MAX_R;
+  const toR=ph.target>0.5?MAX_R:MIN_R;
+  game.radius=fromR+(toR-fromR)*easeInOut(t2);
+  // press-to-follow accuracy: reward holding during inhale/hold, releasing during exhale/pause
+  const shouldPress=(ph.target>0.5);
+  if(game.pressed===shouldPress){
+    game.accGood+=dt;
+  }
+  game.accTotal+=dt;
+  // advance phase
+  if(game.phaseT>=ph.dur){
+    game.phaseIdx=(game.phaseIdx+1)%PHASES.length;
+    game.phaseT=0;
+    sndPhase(game.phaseIdx);
+    // per-phase-transition scoring feedback
+    const acc=game.accTotal>0?game.accGood/game.accTotal:0;
+    if(acc>0.6){
+      game.score+=Math.round(acc*20);
+      game.streak++;
+      game.popupText=game.streak>=3?'Great rhythm!':'In sync';
+      game.popupT=900;
+    } else {
+      game.streak=0;
+    }
+    game.accGood=0;game.accTotal=0;
+    if(game.phaseIdx===0){
+      game.cycle++;
+      game.shakeT=Math.max(game.shakeT,140);
+      if(game.cycle>=CYCLES){
+        sndWin();
+        game.state='won';
+        game.paused=false;
+        if(game.cycle>bestCycles){bestCycles=game.cycle;lsSet('bt_best_cycles',String(bestCycles));}
+        bestSessions++;lsSet('bt_best_sessions',String(bestSessions));
+      }
+    }
+  }
+}
+function easeInOut(t){return t<0.5?2*t*t:(1-Math.pow(-2*t+2,2)/2);}
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04080c'],[1,'#020406']]);ctx.fillRect(0,0,W,H);}
+
+function drawBreathCircle(){
+  const ph=currentPhase();
+  let r=game.radius;
+  const t2=clamp(game.phaseT/ph.dur,0,1);
+  ctx.save();
+  if(game.shakeT>0){
+    const s=game.shakeT/140;
+    ctx.translate((Math.random()-0.5)*3*s,(Math.random()-0.5)*3*s);
+  }
+  // outer guide ring
+  ctx.strokeStyle='rgba(100,140,180,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(CX,CY,MAX_R+24,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='rgba(100,140,180,.15)';ctx.beginPath();ctx.arc(CX,CY,MIN_R-10,0,Math.PI*2);ctx.stroke();
+  // progress arc
+  ctx.strokeStyle=ph.col;ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.arc(CX,CY,MAX_R+24,-Math.PI/2,-Math.PI/2+Math.PI*2*t2);ctx.stroke();
+  // press-follow ring (shows if player is holding)
+  if(game.pressed){
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(CX,CY,MAX_R+16,0,Math.PI*2);ctx.stroke();
+  }
+  // main circle
+  const gc=ctx.createRadialGradient(CX-r*0.3,CY-r*0.3,r*0.05,CX,CY,r);gc.addColorStop(0,'rgba(255,255,255,.3)');gc.addColorStop(0.5,ph.col+'aa');gc.addColorStop(1,'rgba(10,20,40,.4)');ctx.shadowColor=ph.col;ctx.shadowBlur=28;ctx.fillStyle=gc;ctx.beginPath();ctx.arc(CX,CY,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  // inner particles (breath dots)
+  const numDots=6;for(let i=0;i<numDots;i++){const a=game.time*0.0015+(i/numDots)*Math.PI*2;const dr=r*0.5;ctx.fillStyle='rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(CX+Math.cos(a)*dr,CY+Math.sin(a)*dr,3,0,Math.PI*2);ctx.fill();}
+  // phase label
+  ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 28px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ph.name,CX,CY);ctx.fillStyle='rgba(200,230,255,.55)';ctx.font='13px Arial';const remaining=Math.ceil((ph.dur-game.phaseT)/1000);ctx.fillText(remaining+'s',CX,CY+34);
+  ctx.restore();
+  // accuracy popup
+  if(game.popupT>0){
+    const a=clamp(game.popupT/900,0,1);
+    ctx.save();
+    ctx.globalAlpha=a;
+    ctx.fillStyle='#ffe9a8';
+    ctx.font='bold 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText(game.popupText,CX,CY-MAX_R-46-(1-a)*10);
+    ctx.restore();
+  }
+  if(game.paused){
+    ctx.save();
+    ctx.fillStyle='rgba(2,4,8,.55)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#cfe8ff';ctx.font='bold 26px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Paused',CX,CY);
+    ctx.font='13px Arial';ctx.fillStyle='rgba(200,230,255,.7)';
+    ctx.fillText('Tap pause icon, press Space, or Esc to resume',CX,CY+30);
+    ctx.restore();
+  }
+}
+
+function drawCycles(){
+  const step=Math.min(W*0.85/CYCLES,44);
+  const startX=CX-(CYCLES-1)*step/2;
+  for(let i=0;i<CYCLES;i++){
+    const done=i<game.cycle;
+    ctx.beginPath();
+    ctx.arc(startX+i*step,H-40,7,0,Math.PI*2);
+    if(done){
+      ctx.fillStyle='rgba(80,220,140,.85)';
+      ctx.fill();
+      // checkmark glyph for colorblind accessibility
+      ctx.strokeStyle='#062';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.beginPath();
+      ctx.moveTo(startX+i*step-3,H-40);
+      ctx.lineTo(startX+i*step-1,H-37);
+      ctx.lineTo(startX+i*step+3.5,H-44);
+      ctx.stroke();
+    } else {
+      // hollow ring for pending
+      ctx.strokeStyle='rgba(140,170,200,.6)';ctx.lineWidth=1.6;
+      ctx.stroke();
+    }
+  }
+  // subtle color escalation as session nears completion
+  const frac=game.cycle/CYCLES;
+  if(frac>0.6){
+    ctx.save();
+    ctx.globalAlpha=(frac-0.6)/0.4*0.12;
+    ctx.fillStyle='#ffd27a';
+    ctx.fillRect(0,H-2,W*frac,2);
+    ctx.restore();
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,4,8,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80c8ff';ctx.font='bold 13px Arial';ctx.fillText('Breath Timer',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Score '+game.score+'  •  Best '+bestCycles+' cycles',18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Cycle '+game.cycle+' / '+CYCLES,W-84,8);
+  ctx.fillText(PATTERNS[game.patternKey].label,W-84,28);
+  ctx.restore();
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+// ---- title / won panel with selectable options ----
+const uiRects={cycles:[],pattern:[],start:null};
+function panelDraw(title,lines,showOptions){
+  ctx.save();
+  ctx.fillStyle='rgba(2,4,8,.78)';ctx.fillRect(0,0,W,H);
+  const pw=600,ph=showOptions?400:320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(8,14,22,.97)'],[1,'rgba(4,8,14,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,160,220,.2)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80c8ff';ctx.font='bold 30px Arial';ctx.fillText(title,W/2,py+52);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';
+  let ly=py+82;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=22;}
+
+  uiRects.cycles=[];uiRects.pattern=[];uiRects.start=null;
+
+  if(showOptions){
+    ly+=8;
+    ctx.font='12px Arial';ctx.fillStyle='rgba(200,230,255,.6)';ctx.fillText('Session length (cycles)',W/2,ly);
+    ly+=14;
+    const bw=64,bh=30,gap=12;
+    const totalW=SESSION_LENGTHS.length*bw+(SESSION_LENGTHS.length-1)*gap;
+    let bx=W/2-totalW/2;
+    for(const n of SESSION_LENGTHS){
+      const sel=n===game.cyclesTarget;
+      ctx.fillStyle=sel?'rgba(80,180,255,.35)':'rgba(40,60,80,.4)';
+      rr(bx,ly,bw,bh,8);ctx.fill();
+      ctx.strokeStyle=sel?'#80c8ff':'rgba(100,140,180,.3)';ctx.lineWidth=1.4;
+      rr(bx+.5,ly+.5,bw-1,bh-1,8);ctx.stroke();
+      ctx.fillStyle=sel?'#fff':'rgba(220,230,240,.8)';ctx.font='bold 14px Arial';
+      ctx.fillText(String(n),bx+bw/2,ly+bh/2+5);
+      uiRects.cycles.push({x:bx,y:ly,w:bw,h:bh,val:n});
+      bx+=bw+gap;
+    }
+    ly+=bh+26;
+    ctx.font='12px Arial';ctx.fillStyle='rgba(200,230,255,.6)';ctx.fillText('Breathing pattern',W/2,ly);
+    ly+=14;
+    const pkeys=Object.keys(PATTERNS);
+    const pbw=260,pbh=32,pgap=14;
+    const ptotalW=pkeys.length*pbw+(pkeys.length-1)*pgap;
+    let px2=W/2-ptotalW/2;
+    for(const k of pkeys){
+      const sel=k===game.patternKey;
+      ctx.fillStyle=sel?'rgba(80,180,255,.35)':'rgba(40,60,80,.4)';
+      rr(px2,ly,pbw,pbh,8);ctx.fill();
+      ctx.strokeStyle=sel?'#80c8ff':'rgba(100,140,180,.3)';ctx.lineWidth=1.4;
+      rr(px2+.5,ly+.5,pbw-1,pbh-1,8);ctx.stroke();
+      ctx.fillStyle=sel?'#fff':'rgba(220,230,240,.8)';ctx.font='bold 13px Arial';
+      ctx.fillText(PATTERNS[k].label,px2+pbw/2,ly+pbh/2+5);
+      uiRects.pattern.push({x:px2,y:ly,w:pbw,h:pbh,val:k});
+      px2+=pbw+pgap;
+    }
+    ly+=pbh+30;
+    const sbw=180,sbh=40;
+    const sbx=W/2-sbw/2;
+    ctx.fillStyle='rgba(80,220,140,.35)';
+    rr(sbx,ly,sbw,sbh,10);ctx.fill();
+    ctx.strokeStyle='rgba(120,240,170,.5)';ctx.lineWidth=1.6;
+    rr(sbx+.5,ly+.5,sbw-1,sbh-1,10);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 16px Arial';
+    ctx.fillText('Start',sbx+sbw/2,ly+sbh/2+6);
+    uiRects.start={x:sbx,y:ly,w:sbw,h:sbh};
+  }
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    drawBg();
+    if(game.state==='playing'){drawBreathCircle();drawCycles();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title'){
+      panelDraw('Breath Timer',[
+        'A gentle paced breathing guide.',
+        'Follow the expanding / contracting circle,',
+        'and press & hold in sync for a rhythm bonus.',
+        'Best streak: '+bestCycles+' cycles  •  Sessions completed: '+bestSessions,
+        '',
+        'Your breath is always yours.'
+      ],true);
+    } else if(game.state==='won'){
+      const acc=game.cycle>0?Math.round((game.score/(game.cycle*20))*100):0;
+      panelDraw('Session Complete',[
+        'You reclaimed your breath from the noise.',
+        'Score: '+game.score+'   •   Best streak: '+bestCycles+' cycles',
+        'Sessions completed: '+bestSessions,
+        '',
+        'Breathe well. Live well. On your terms.'
+      ],true);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+function hitTest(rects,x,y){
+  for(const r of rects){if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;}
+  return null;
+}
+function canvasCoords(e){
+  const rect=canvas.getBoundingClientRect();
+  const cx=(e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX);
+  const cy=(e.touches&&e.touches[0]?e.touches[0].clientY:e.clientY);
+  const x=(cx-rect.left)/rect.width*W;
+  const y=(cy-rect.top)/rect.height*H;
+  return{x,y};
+}
+
+function pointerDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'){
+    const{x,y}=canvasCoords(e);
+    const cHit=hitTest(uiRects.cycles,x,y);
+    if(cHit){game.cyclesTarget=cHit.val;lsSet('bt_cycles',String(cHit.val));draw();return;}
+    const pHit=hitTest(uiRects.pattern,x,y);
+    if(pHit){game.patternKey=pHit.val;lsSet('bt_pattern',pHit.val);draw();return;}
+    if(uiRects.start&&hitTest([uiRects.start],x,y)){resetGame();return;}
+    // fallback: tap anywhere else also starts (keeps original "anywhere" affordance)
+    resetGame();
+    return;
+  }
+  if(game.state==='playing'&&!game.paused){
+    game.pressed=true;
+    game.pressStartT=game.time;
+  }
+}
+function pointerUp(e){
+  if(e)e.preventDefault();
+  game.pressed=false;
+}
+
+canvas.addEventListener('mousedown',e=>{e.preventDefault();pointerDown(e);});
+canvas.addEventListener('mouseup',e=>{pointerUp(e);});
+canvas.addEventListener('mouseleave',e=>{pointerUp(e);});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();pointerDown(e);},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();pointerUp(e);},{passive:false});
+canvas.addEventListener('touchcancel',e=>{e.preventDefault();pointerUp(e);},{passive:false});
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){
+    e.preventDefault();
+    if(game.state==='title'||game.state==='won'){resetGame();return;}
+    if(game.state==='playing'){togglePause();return;}
+  }
+  if(e.code==='Enter'){
+    e.preventDefault();
+    if(game.state==='title'||game.state==='won')resetGame();
+  }
+  if(e.code==='Escape'){
+    if(game.state==='playing')togglePause();
+  }
+  if(e.code==='KeyM'){
+    toggleMute();
+  }
+});
+
+const btnMuteEl=document.getElementById('btnMute');
+const btnPauseEl=document.getElementById('btnPause');
+if(btnMuteEl)btnMuteEl.addEventListener('click',e=>{e.preventDefault();toggleMute();});
+if(btnPauseEl)btnPauseEl.addEventListener('click',e=>{e.preventDefault();togglePause();});
+updateCtrlButtons();
+
+let last=0;
+function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get radius(){return game.radius;},
+  get phase(){return currentPhase();},
+  resetGame,update,draw,
+  get PHASES(){return PHASES;},
+  get CYCLES(){return CYCLES;},
+  MIN_R,MAX_R,easeInOut,
+  PATTERNS,SESSION_LENGTHS,
+  toggleMute,togglePause,
+  setPattern(k){if(PATTERNS[k]){game.patternKey=k;lsSet('bt_pattern',k);}},
+  setCycles(n){if(SESSION_LENGTHS.indexOf(n)!==-1){game.cyclesTarget=n;lsSet('bt_cycles',String(n));}},
+};
+</script>
+</body>
+</html>

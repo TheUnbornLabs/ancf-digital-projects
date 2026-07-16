@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Free Path Climber</title>
+<style>
+  :root{--bg:#0c1422;--panel:rgba(8,14,26,.86);--line:rgba(255,255,255,.16);--text:#f3f0e6;--accent:#ffd071;}
+  *{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#050a14;font-family:Arial,Helvetica,sans-serif;color:var(--text);}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 16%,#22335c,#050a14 72%);}
+  canvas{width:100vw;height:100vh;max-width:calc(100vh * 960 / 540);max-height:calc(100vw * 540 / 960);aspect-ratio:960/540;display:block;background:#0e1830;image-rendering:auto;margin:auto;}
+  #touchControls{position:fixed;inset:0;pointer-events:none;z-index:5;}
+  .pad{position:absolute;bottom:18px;display:flex;gap:10px;pointer-events:auto;align-items:flex-end;}
+  .pad.left{left:18px}.pad.right{right:18px}
+  .btn{width:60px;height:60px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.28);}
+  .btn.tall{height:72px}.btn:active{transform:translateY(2px);background:rgba(255,208,113,.26);}
+  .pad.top{top:14px;bottom:auto;left:auto;right:14px;gap:8px;}
+  .btn.small{width:44px;height:44px;border-radius:12px;font-size:16px;}
+  .btn.muted{background:rgba(255,80,80,.28);}
+  @media (min-width:900px){.btn{opacity:.4}.btn:hover{opacity:.95}.pad.top .btn{opacity:.75}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="touchControls">
+  <div class="pad left">
+    <div class="btn" data-act="left">&#9664;</div>
+    <div class="btn" data-act="right">&#9654;</div>
+  </div>
+  <div class="pad right">
+    <div class="btn tall" data-act="jump">&#9650;</div>
+  </div>
+  <div class="pad top">
+    <div class="btn small" id="pauseBtn" data-act="pause" aria-label="Pause">&#10074;&#10074;</div>
+    <div class="btn small" id="muteBtn" data-act="mute" aria-label="Mute">&#128266;</div>
+  </div>
+</div>
+<script>
+'use strict';
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 960, H = 540;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const TAU = Math.PI*2;
+function seeded(n){let s=(n*2654435761+12345)>>>0; return ()=>{s=(s*1664525+1013904223)>>>0; return s/4294967296;};}
+const hash = n => { let x = Math.sin(n*127.1+311.7)*43758.5453; return x-Math.floor(x); };
+
+const input = {left:false,right:false,jump:false,jumpPressed:false,pausePressed:false,startPressed:false};
+const keyMap = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'jump',KeyW:'jump',Space:'jump'};
+window.addEventListener('keydown', e=>{
+  if(e.code==='KeyP'){input.pausePressed=true; return;}
+  if(e.code==='Enter'){input.startPressed=true;}
+  const a=keyMap[e.code]; if(!a) return; e.preventDefault();
+  if(a==='jump'&&!input.jump){input.jumpPressed=true; input.startPressed=true;}
+  input[a]=true;
+});
+window.addEventListener('keyup', e=>{const a=keyMap[e.code]; if(a){e.preventDefault(); input[a]=false;}});
+document.querySelectorAll('.btn').forEach(btn=>{
+  const a=btn.dataset.act;
+  if(a==='pause'||a==='mute') return; // handled separately (single tap toggle, not hold)
+  const down=e=>{e.preventDefault(); if(a==='jump'&&!input.jump){input.jumpPressed=true; input.startPressed=true;} input[a]=true;};
+  const up=e=>{e.preventDefault(); input[a]=false;};
+  btn.addEventListener('touchstart',down,{passive:false}); btn.addEventListener('touchend',up,{passive:false}); btn.addEventListener('touchcancel',up,{passive:false});
+  btn.addEventListener('mousedown',down); btn.addEventListener('mouseup',up); btn.addEventListener('mouseleave',up);
+});
+canvas.addEventListener('mousedown',()=>{input.startPressed=true;});
+canvas.addEventListener('touchstart',()=>{input.startPressed=true;},{passive:true});
+
+function safeLS(fn){ try{ return fn(); }catch(e){ return undefined; } }
+const pauseBtn = document.getElementById('pauseBtn');
+const muteBtn = document.getElementById('muteBtn');
+if(pauseBtn) pauseBtn.addEventListener('click', e=>{ e.preventDefault(); input.pausePressed=true; });
+if(muteBtn) muteBtn.addEventListener('click', e=>{ e.preventDefault(); toggleMute(); });
+[pauseBtn,muteBtn].forEach(b=>{ if(b) b.addEventListener('touchend', e=>{ e.preventDefault(); b.click(); }, {passive:false}); });
+
+const Audio2 = {
+  ctx:null, master:null, on:true, volume:0.5,
+  init(){ if(this.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ this.ctx=new AC(); this.master=this.ctx.createGain(); this.master.gain.value=this.volume; this.master.connect(this.ctx.destination); }catch(e){ this.ctx=null; } },
+  tone(freq,dur,type,gain,slide){ if(!this.ctx||!this.on) return; type=type||'sine'; gain=gain||0.18; slide=slide||0;
+    try{ const o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type=type; const t=this.ctx.currentTime;
+      o.frequency.setValueAtTime(freq,t); if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),t+dur);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(gain,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+0.03);
+    }catch(e){} },
+  hop(){ this.tone(330,0.16,'square',0.14,260); },
+  land(){ this.tone(180,0.1,'sine',0.16,-60); },
+  checkpoint(){ this.tone(523,0.16,'triangle',0.18); setTimeout(()=>this.tone(784,0.22,'triangle',0.16),120); },
+  fail(){ this.tone(220,0.5,'sawtooth',0.2,-160); },
+  win(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3,'triangle',0.16),i*150)); },
+  danger(){ this.tone(140,0.12,'square',0.08); }
+};
+(function loadMuteState(){
+  const saved = safeLS(()=>localStorage.getItem('fpc_muted'));
+  if(saved==='1') Audio2.on=false;
+})();
+function toggleMute(){
+  Audio2.on = !Audio2.on;
+  safeLS(()=>localStorage.setItem('fpc_muted', Audio2.on?'0':'1'));
+  if(muteBtn){ muteBtn.innerHTML = Audio2.on? '&#128266;' : '&#128263;'; muteBtn.classList.toggle('muted', !Audio2.on); }
+}
+if(!Audio2.on && muteBtn){ muteBtn.innerHTML='&#128263;'; muteBtn.classList.add('muted'); }
+const BEST_KEY = 'fpc_bestHeight';
+function loadBestHeight(){ const v = safeLS(()=>localStorage.getItem(BEST_KEY)); const n = v?parseInt(v,10):0; return (isFinite(n)&&n>0)?n:0; }
+function saveBestHeight(n){ safeLS(()=>localStorage.setItem(BEST_KEY, String(n))); }
+const rockLabels = ['Should','Guilt','Settle down','When?','Tradition','Legacy','Selfish?','Who cares for you?','Expectation','Norm','Blame','Pressure'];
+const banners = [
+  'A full life needs no permission.',
+  'Your path is yours to choose.',
+  'Persistence is its own summit.',
+  'Agency is built one step up.',
+  'You owe no one your future.',
+  'Keep climbing your own way.',
+  'Self-respect needs no excuse.',
+  'The view is worth the doubt you left below.'
+];
+const bands = ['Foothills of Doubt','Slopes of Choosing','Ridge of Resolve','Cliffs of Clarity','Summit of Self-Respect'];
+
+const SUMMIT_HEIGHT = 200;
+const ROW_GAP = 86;
+const FLOOR_Y = H - 40;
+const GRAV = 1500, GRAV_JUMP = 640, MOVE_ACCEL = 1700, MOVE_MAX = 320, AIR_ACCEL = 1200, FRICTION = 1400;
+
+let game, player;
+function freshGame(){
+  return {
+    state:'title', time:0, scrollY:0, height:0, maxClimbY:FLOOR_Y,
+    rows:[], rocks:[], tideY:FLOOR_Y+300, tideSpeed:14, nextRowIdx:0,
+    bannerText:'', bannerTimer:0, lastBand:-1, shake:0, shakeKind:'', particles:[],
+    summitReached:false, bestHeight:loadBestHeight(), _lastCp:-1,
+    combo:0, bestCombo:0, checkpointRow:0, checkpointY:FLOOR_Y, popups:[],
+    deathCause:''
+  };
+}
+function freshPlayer(){
+  return { x:W/2, y:FLOOR_Y-38, w:26, h:38, vx:0, vy:0,
+    onGround:true, onPlatform:null, face:1, coyote:0, jumpBuffer:0, squash:0 };
+}
+
+function genRow(idx){
+  const rnd = seeded((idx*73856093) ^ 0x9e3779b9);
+  const worldY = FLOOR_Y - idx*ROW_GAP;
+  const diff = clamp(idx/SUMMIT_HEIGHT,0,1);
+  const plats = [];
+  if(idx===0){
+    plats.push({x:0, y:FLOOR_Y, w:W, h:40, ground:true, idx:0});
+    return {idx, worldY:FLOOR_Y, plats, hazard:false, hazardX:0, hazardSpeed:0};
+  }
+  const count = idx<6 ? 2 : (rnd()<0.5?1:2);
+  const minW = lerp(150,66,diff);
+  const maxW = lerp(220,108,diff);
+  for(let i=0;i<count;i++){
+    const pw = minW + rnd()*(maxW-minW);
+    const margin = 30;
+    const px = margin + rnd()*(W - pw - margin*2);
+    const jitter = (rnd()-0.5)*lerp(8,26,diff);
+    plats.push({x:px, y:worldY+jitter, w:pw, h:16, ground:false, idx});
+  }
+  const hazard = idx>5 && rnd() < lerp(0.12,0.72,diff);
+  return {idx, worldY, plats, hazard, hazardX: 30+rnd()*(W-60), hazardSpeed: lerp(80,210,diff)+rnd()*40};
+}
+
+function ensureRows(uptoIdx){
+  while(game.nextRowIdx <= uptoIdx){
+    const row = genRow(game.nextRowIdx);
+    game.rows.push(row);
+    if(row.hazard){
+      const r2 = seeded(row.idx*31+7);
+      game.rocks.push({ x:row.hazardX, y:row.worldY-220, r:13+(r2()*8),
+        vy:row.hazardSpeed, rot:0, spin:(r2()-0.5)*4,
+        label:rockLabels[(row.idx*3)%rockLabels.length], alive:true });
+    }
+    game.nextRowIdx++;
+  }
+}
+
+function platformsInView(){
+  const top = player.y - H*1.2;
+  const bot = player.y + H*0.6;
+  const out=[];
+  for(const row of game.rows){
+    for(const p of row.plats){ if(p.y>=top && p.y<=bot+40) out.push(p); }
+  }
+  return out;
+}
+function reset(){
+  const carryBest = loadBestHeight();
+  game = freshGame(); player = freshPlayer();
+  game.bestHeight = carryBest;
+  game.state='playing'; game.nextRowIdx=0;
+  ensureRows(8);
+  player.onPlatform = game.rows[0].plats[0];
+  player.onGround=true; game.maxClimbY=player.y;
+  game.tideY = FLOOR_Y + 300;
+  game.checkpointRow=0; game.checkpointY=player.y;
+}
+function respawnAtCheckpoint(){
+  // used for a soft checkpoint retry (kept for future power-up use); currently death still goes to gameover
+  player.x = W/2; player.y = game.checkpointY; player.vx=0; player.vy=0;
+  player.onGround=true;
+  game.rocks = game.rocks.filter(r=>r.y > game.scrollY + H + 200 || r.y < game.scrollY - 400);
+  game.combo = 0;
+}
+function setState(s){ if(game) game.state=s; }
+function hop(power){
+  const p = power===undefined?1:power;
+  player.vy = -GRAV_JUMP*p;
+  player.onGround=false; player.onPlatform=null; player.squash=0.5; Audio2.hop();
+}
+function spawnPuff(x,y,n,col){
+  for(let i=0;i<n;i++){ game.particles.push({x,y,vx:(Math.random()-0.5)*120,vy:-Math.random()*120-20,life:0.5+Math.random()*0.4,age:0,r:2+Math.random()*3,col:col||'#cdd8ee'}); }
+}
+function updateBanner(dt){
+  const band = clamp(Math.floor(game.height/40),0,bands.length-1);
+  if(band!==game.lastBand && game.height>0){
+    game.lastBand=band; game.bannerText = banners[band % banners.length]; game.bannerTimer = 3.2;
+    Audio2.checkpoint(); spawnPuff(player.x+player.w/2, player.y, 16, '#ffd071');
+  }
+  if(game.height>0 && game.height % 25 === 0 && game.bannerTimer<=0 && game._lastCp!==game.height){
+    game._lastCp=game.height; game.bannerText = banners[((game.height/25)|0) % banners.length];
+    game.bannerTimer = 3.0; Audio2.checkpoint();
+  }
+  if(game.bannerTimer>0) game.bannerTimer-=dt;
+}
+function updateRocks(dt){
+  const top = game.scrollY - 260, bot = game.scrollY + H + 400;
+  for(const r of game.rocks){
+    if(!r.alive) continue;
+    if(r.y < top-200 || r.y > bot+200){ continue; }
+    if(!r.dodged && r.y > player.y + player.h + 30 && !r.warned){
+      // rock has passed below player without a hit -> count as a safely-dodged rock once it clears view
+    }
+    r.y = Math.max(-100000, r.y + r.vy*dt); r.rot += r.spin*dt;
+    const px=player.x+player.w/2, py=player.y+player.h/2;
+    const dx=px-r.x, dy=py-r.y;
+    if(dx*dx+dy*dy < (r.r+14)*(r.r+14)){
+      r.alive=false; game.shake=1; game.shakeKind='rock'; game.deathCause='rock'; Audio2.fail(); spawnPuff(r.x,r.y,18,'#8a5a4a');
+      game.combo=0;
+      finalizeRun();
+      game.state='gameover'; return;
+    }
+    if(r.y > game.tideY+40){
+      if(r.alive && !r.dodged){ r.dodged=true; game.combo=Math.max(0,game.combo)+1; game.bestCombo=Math.max(game.bestCombo,game.combo); }
+      r.alive=false;
+    }
+  }
+  if(game.rocks.length>60) game.rocks = game.rocks.filter(r=>r.alive);
+}
+function updateTide(dt){
+  const diff = clamp(game.height/SUMMIT_HEIGHT,0,1);
+  game.tideSpeed = Math.max(0, lerp(20,78,diff));
+  game.tideY -= game.tideSpeed*dt;
+  const floorLimit = FLOOR_Y + 320;
+  if(game.tideY > floorLimit && game.height<2) game.tideY=floorLimit;
+  if(game.tideY <= player.y + player.h - 6){
+    game.shake=1; game.shakeKind='tide'; game.deathCause='tide'; Audio2.fail(); game.combo=0;
+    finalizeRun();
+    game.state='gameover';
+  }
+}
+function finalizeRun(){
+  if(game.height>game.bestHeight){ game.bestHeight=game.height; }
+  saveBestHeight(game.bestHeight);
+}
+function updateParticles(dt){
+  for(const p of game.particles){ p.age+=dt; p.vy+=600*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+  game.particles = game.particles.filter(p=>p.age<p.life);
+}
+
+function updatePlaying(dt){
+  game.time += dt;
+  if(input.pausePressed){ input.pausePressed=false; game.state='paused'; return; }
+  const accel = player.onGround?MOVE_ACCEL:AIR_ACCEL;
+  if(input.left){ player.vx -= accel*dt; player.face=-1; }
+  if(input.right){ player.vx += accel*dt; player.face=1; }
+  if(!input.left && !input.right && player.onGround){
+    if(player.vx>0) player.vx=Math.max(0,player.vx-FRICTION*dt);
+    else if(player.vx<0) player.vx=Math.min(0,player.vx+FRICTION*dt);
+  }
+  player.vx = clamp(player.vx,-MOVE_MAX,MOVE_MAX);
+  if(input.jumpPressed){ player.jumpBuffer=0.12; input.jumpPressed=false; }
+  if(player.jumpBuffer>0) player.jumpBuffer-=dt;
+  if(player.onGround) player.coyote=0.1; else if(player.coyote>0) player.coyote-=dt;
+  if(player.jumpBuffer>0 && (player.onGround||player.coyote>0)){ hop(1); player.jumpBuffer=0; player.coyote=0; }
+  player.vy += GRAV*dt;
+  if(player.vy>900) player.vy=900;
+  const prevY = player.y;
+  player.x += player.vx*dt;
+  player.y += player.vy*dt;
+  if(player.x < -player.w) player.x = W;
+  if(player.x > W) player.x = -player.w;
+  player.onGround=false;
+  if(player.vy >= 0){
+    const pbX = player.x + player.w/2;
+    for(const p of platformsInView()){
+      const top = p.y;
+      const prevBottom = prevY + player.h;
+      const curBottom = player.y + player.h;
+      if(pbX > p.x-2 && pbX < p.x+p.w+2 && prevBottom <= top+6 && curBottom >= top){
+        player.y = top - player.h;
+        if(player.vy>120) Audio2.land();
+        player.vy=0; player.onGround=true; player.onPlatform=p; player.squash=-0.4; break;
+      }
+    }
+  }
+  if(player.y < game.maxClimbY){
+    game.maxClimbY = player.y;
+    const newHeight = Math.max(0, Math.round((FLOOR_Y - game.maxClimbY)/ROW_GAP));
+    if(newHeight>game.height){
+      game.height=newHeight;
+      if(newHeight>game.bestHeight){ game.bestHeight=newHeight; saveBestHeight(newHeight); }
+      if(newHeight%25===0 && newHeight>0){
+        game.checkpointRow=newHeight; game.checkpointY=player.y;
+        game.popups.push({x:player.x+player.w/2,y:player.y-10,text:'+'+newHeight,age:0,life:1.0});
+      }
+    }
+  }
+  const targetScroll = player.y - H*0.62;
+  game.scrollY = lerp(game.scrollY, targetScroll, 0.12);
+  const topVisibleIdx = Math.ceil((FLOOR_Y - game.scrollY)/ROW_GAP) + 10;
+  ensureRows(Math.max(8, topVisibleIdx));
+  updateRocks(dt);
+  updateTide(dt);
+  updateParticles(dt);
+  updateBanner(dt);
+  updatePopups(dt);
+  pruneRows();
+  if(player.squash<0) player.squash=Math.min(0,player.squash+dt*3);
+  if(player.squash>0) player.squash=Math.max(0,player.squash-dt*3);
+  if(game.shake>0) game.shake=Math.max(0,game.shake-dt*4);
+  if(game.height>=SUMMIT_HEIGHT && !game.summitReached){
+    game.summitReached=true; game.state='win'; Audio2.win();
+    if(game.height>game.bestHeight) game.bestHeight=game.height;
+    saveBestHeight(game.bestHeight);
+  }
+}
+function updatePopups(dt){
+  for(const p of game.popups){ p.age+=dt; p.y-=30*dt; }
+  game.popups = game.popups.filter(p=>p.age<p.life);
+}
+function pruneRows(){
+  // keep memory bounded on long climbs: drop rows well below current scroll view
+  const cutoff = game.scrollY + H*2.5;
+  if(game.rows.length>40){
+    game.rows = game.rows.filter(row=>row.worldY <= cutoff);
+  }
+  if(game.rocks.length>40){
+    const rcut = game.scrollY + H*2.5;
+    game.rocks = game.rocks.filter(r=>r.alive && r.y <= rcut);
+  }
+}
+
+function update(dt){
+  if(!game) return;
+  if(input.startPressed && (game.state==='title'||game.state==='gameover'||game.state==='win')){
+    input.startPressed=false; Audio2.init(); reset(); return;
+  }
+  input.startPressed=false;
+  if(game.state==='paused'){
+    if(input.pausePressed){ input.pausePressed=false; game.state='playing'; }
+    return;
+  }
+  if(game.state==='playing') updatePlaying(dt);
+  else { input.pausePressed=false; }
+}
+// ---------- render helpers ----------
+function lgrad(x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); for(const s of stops) g.addColorStop(s[0],s[1]); return g; }
+function rgrad(x,y,r,stops){ const g=ctx.createRadialGradient(x,y,0,x,y,r); for(const s of stops) g.addColorStop(s[0],s[1]); return g; }
+function rr(x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function tint(hex,f){ const n=parseInt(hex.slice(1),16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  if(f>=0){ r=r+(255-r)*f; g=g+(255-g)*f; b=b+(255-b)*f; } else { const k=1+f; r*=k; g*=k; b*=k; }
+  return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')'; }
+// world y -> screen y
+function sy(worldY){ return worldY - game.scrollY; }
+
+function drawBackground(){
+  // sky gradient shifting cooler with altitude
+  const alt = clamp(game.height/SUMMIT_HEIGHT,0,1);
+  const top1 = lerp(0x2a, 0x6c, 1-alt), // simple two-tone blend approximation
+        topHex = '#'+[ (lerp(40,150,1-alt)|0), (lerp(70,190,1-alt)|0), (lerp(120,235,1-alt)|0) ].map(v=>v.toString(16).padStart(2,'0')).join('');
+  ctx.fillStyle = lgrad(0,0,0,H,[[0,'#0c1630'],[0.5,topHex],[1,'#dfeefc']]);
+  ctx.fillRect(0,0,W,H);
+  // sun/moon glow (deterministic position)
+  ctx.fillStyle = rgrad(W*0.78,90,150,[[0,'rgba(255,244,210,0.9)'],[0.4,'rgba(255,230,170,0.35)'],[1,'rgba(255,230,170,0)']]);
+  ctx.fillRect(W*0.78-160,-70,320,320);
+  // parallax mountain layers (deterministic, scroll-tied)
+  const layers=[ {f:0.10,col:'#243a5e',base:0.62,amp:60,n:5},
+                 {f:0.22,col:'#2f4d72',base:0.72,amp:80,n:6},
+                 {f:0.38,col:'#3c5e84',base:0.86,amp:110,n:7} ];
+  for(const L of layers){
+    const off = (game.scrollY*L.f) % 1000;
+    ctx.fillStyle = L.col;
+    ctx.beginPath(); ctx.moveTo(0,H);
+    for(let i=0;i<=L.n;i++){
+      const x = (i/L.n)*W;
+      const peak = H*L.base - L.amp*(0.5+0.5*Math.sin(i*1.7+L.f*9));
+      const yy = peak + Math.sin((i+off*0.01)*1.3)* (L.amp*0.18);
+      ctx.lineTo(x, yy);
+    }
+    ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+    // snow caps on the nearest layer
+    if(L.f>0.3){
+      ctx.fillStyle='rgba(235,243,255,0.5)';
+      for(let i=0;i<=L.n;i++){ const x=(i/L.n)*W; const peak=H*L.base - L.amp*(0.5+0.5*Math.sin(i*1.7+L.f*9));
+        ctx.beginPath(); ctx.moveTo(x-22,peak+26); ctx.lineTo(x,peak); ctx.lineTo(x+22,peak+26); ctx.closePath(); ctx.fill(); }
+    }
+  }
+}
+
+function drawPlatform(p){
+  const yScreen = sy(p.y);
+  if(yScreen < -40 || yScreen > H+60) return;
+  if(p.ground){
+    ctx.fillStyle = lgrad(0,yScreen,0,yScreen+p.h+30,[[0,'#5a6f55'],[1,'#3a4a38']]);
+    ctx.fillRect(0,yScreen,W,p.h+200);
+    ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(0,yScreen,W,4);
+    return;
+  }
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  rr(p.x+4,yScreen+6,p.w,p.h,7); ctx.fill();
+  // body: stone ledge with warm top
+  ctx.fillStyle = lgrad(p.x,yScreen,p.x,yScreen+p.h,[[0,'#9b8a72'],[1,'#5f5446']]);
+  rr(p.x,yScreen,p.w,p.h,7); ctx.fill();
+  // grassy / mossy top cap
+  ctx.fillStyle = lgrad(p.x,yScreen,p.x,yScreen+6,[[0,'#86b46a'],[1,'#5d8a48']]);
+  rr(p.x,yScreen,p.w,6,5); ctx.fill();
+  // highlight line
+  ctx.fillStyle='rgba(255,255,255,0.16)'; ctx.fillRect(p.x+6,yScreen+1,p.w-12,1.5);
+}
+
+function drawRock(r){
+  const yScreen = sy(r.y);
+  if(yScreen < -60 || yScreen > H+60) return;
+  ctx.save();
+  ctx.translate(r.x,yScreen); ctx.rotate(r.rot);
+  // jagged guilt-rock
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(2,r.r*0.7,r.r*0.95,r.r*0.45,0,0,TAU); ctx.fill();
+  ctx.fillStyle = rgrad(-r.r*0.3,-r.r*0.3,r.r*1.6,[[0,'#6e5b52'],[1,'#3b2f2a']]);
+  ctx.beginPath();
+  const sides=7;
+  for(let i=0;i<sides;i++){ const a=i/sides*TAU; const rad=r.r*(0.8+0.25*Math.sin(i*3.1)); const x=Math.cos(a)*rad,y=Math.sin(a)*rad; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(255,180,150,0.25)'; ctx.lineWidth=1.4; ctx.stroke();
+  ctx.restore();
+  // colorblind-safe warning glyph badge (shape, not just color, distinguishes hazard from platform)
+  ctx.save();
+  ctx.translate(r.x + r.r*0.7, yScreen - r.r*0.7);
+  ctx.fillStyle='#2a1810'; ctx.beginPath(); ctx.arc(0,0,7,0,TAU); ctx.fill();
+  ctx.strokeStyle='#ffd071'; ctx.lineWidth=1.4; ctx.stroke();
+  ctx.fillStyle='#ffd071'; ctx.font='bold 10px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('!', 0, 1);
+  ctx.textBaseline='alphabetic';
+  ctx.restore();
+  // label tag
+  ctx.font='bold 11px Arial'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,200,170,0.9)';
+  ctx.fillText(r.label, r.x, yScreen - r.r - 6);
+}
+function drawRockWarnings(){
+  // telegraph rocks about to enter the view from above so falls aren't sudden
+  const viewTop = 0, margin = 60;
+  for(const r of game.rocks){
+    if(!r.alive) continue;
+    const yScreen = sy(r.y);
+    if(yScreen < viewTop && yScreen > -260){
+      const x = clamp(r.x, 24, W-24);
+      const a = clamp(1-( -yScreen/260 ),0.25,0.9);
+      ctx.save();
+      ctx.globalAlpha=a;
+      ctx.translate(x, 22);
+      ctx.fillStyle='#ff8a5a';
+      ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(8,0); ctx.lineTo(0,12); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function drawClimber(){
+  const px=player.x, py=sy(player.y);
+  const cx=px+player.w/2, cy=py+player.h/2;
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.scale(player.face,1);
+  const sq = player.squash;
+  const sx = 1 - sq*0.4, syc = 1 + sq*0.4;
+  ctx.scale(sx,syc);
+  // ground shadow under climber (only if near ground-ish)
+  // body — a determined small climber figure (abstract, not a child): adult hiker silhouette
+  const air = !player.onGround;
+  // legs
+  ctx.strokeStyle='#3a4a63'; ctx.lineWidth=5; ctx.lineCap='round';
+  const swing = air ? 6 : Math.sin(game.time*11)*4*Math.min(1,Math.abs(player.vx)/120);
+  ctx.beginPath(); ctx.moveTo(-4,6); ctx.lineTo(-6, 18-(air?4:0)+swing); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4,6); ctx.lineTo(7, 18-(air?-4:0)-swing); ctx.stroke();
+  // torso (jacket)
+  ctx.fillStyle = lgrad(0,-12,0,8,[[0,'#3f7ec2'],[1,'#2a5790']]);
+  rr(-8,-12,16,22,6); ctx.fill();
+  // backpack
+  ctx.fillStyle='#d97a3c'; rr(-12,-8,7,14,3); ctx.fill();
+  // arms reaching up (climbing)
+  ctx.strokeStyle='#3f7ec2'; ctx.lineWidth=5;
+  const armUp = air ? -14 : -10 + Math.sin(game.time*11)*2;
+  ctx.beginPath(); ctx.moveTo(-6,-8); ctx.lineTo(-12, armUp); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6,-8); ctx.lineTo(11, armUp-2); ctx.stroke();
+  // head
+  ctx.fillStyle='#e9b98c'; ctx.beginPath(); ctx.arc(0,-18,8,0,TAU); ctx.fill();
+  // hat / beanie
+  ctx.fillStyle='#d4452f'; ctx.beginPath(); ctx.arc(0,-20,8,Math.PI,0); ctx.fill(); ctx.fillRect(-8,-20,16,3);
+  // determined eye
+  ctx.fillStyle='#243'; ctx.beginPath(); ctx.arc(3,-18,1.5,0,TAU); ctx.fill();
+  ctx.restore();
+}
+
+function drawTide(){
+  const yScreen = sy(game.tideY);
+  if(yScreen > H+80) return;
+  const yy = Math.max(yScreen, -40);
+  // glowing "shoulds" tide of pressure
+  const grad = lgrad(0,yy,0,H,[[0,'rgba(180,70,160,0.0)'],[0.12,'rgba(170,60,150,0.65)'],[1,'rgba(90,20,90,0.95)']]);
+  ctx.fillStyle=grad; ctx.fillRect(0,yy,W,H-yy+40);
+  // wavy bright top edge
+  ctx.beginPath(); ctx.moveTo(0,yy);
+  for(let x=0;x<=W;x+=24){ const wy=yy + Math.sin((x*0.03)+game.time*3)*6; ctx.lineTo(x,wy); }
+  ctx.lineTo(W,yy+40); ctx.lineTo(0,yy+40); ctx.closePath();
+  ctx.fillStyle='rgba(255,150,230,0.5)'; ctx.fill();
+  ctx.fillStyle='rgba(255,210,250,0.85)';
+  ctx.fillRect(0,yy-1,W,2);
+  // floating "should" words rising
+  ctx.font='bold 13px Arial'; ctx.textAlign='center'; ctx.fillStyle='rgba(255,225,250,0.55)';
+  const words=['should','should','must','ought'];
+  for(let i=0;i<4;i++){ const wx=(i*257+ (game.time*30))%W; const wy=yy+30+ (i*22) + Math.sin(game.time+i)*6; if(wy<H) ctx.fillText(words[i], wx, wy); }
+}
+function drawDangerPulse(){
+  // escalating warning as the tide closes in on the player, ahead of instant death
+  const gap = (player.y + player.h) - game.tideY;
+  const threshold = 140;
+  if(gap > -threshold){
+    const closeness = clamp((gap+threshold)/threshold, 0, 1);
+    if(closeness>0){
+      const pulse = 0.35 + 0.35*Math.sin(game.time*(6+closeness*8));
+      ctx.save();
+      ctx.globalAlpha = closeness*0.5*Math.max(0,pulse);
+      ctx.fillStyle = lgrad(0,0,0,H,[[0,'rgba(220,60,180,0.55)'],[0.15,'rgba(220,60,180,0)'],[0.85,'rgba(220,60,180,0)'],[1,'rgba(220,60,180,0.55)']]);
+      ctx.fillRect(0,0,W,H);
+      ctx.restore();
+    }
+  }
+}
+function drawPopups(){
+  ctx.textAlign='center';
+  for(const p of game.popups){
+    const a = clamp(1-p.age/p.life,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle='#9affc0'; ctx.font='bold 16px Arial';
+    ctx.fillText(p.text, p.x, sy(p.y));
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  // height panel
+  ctx.fillStyle='rgba(8,14,26,0.6)'; rr(14,14,182,70,12); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.14)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.textAlign='left';
+  ctx.fillStyle='#ffd071'; ctx.font='bold 26px Arial';
+  ctx.fillText('Height '+game.height, 26, 46);
+  const band = bands[clamp(Math.floor(game.height/40),0,bands.length-1)];
+  ctx.fillStyle='#cfe0ff'; ctx.font='13px Arial'; ctx.fillText(band, 26, 68);
+  // combo panel
+  if(game.combo>0){
+    ctx.fillStyle='rgba(8,14,26,0.6)'; rr(14,92,150,30,10); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.14)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#9affc0'; ctx.font='bold 14px Arial'; ctx.textAlign='left';
+    ctx.fillText('Dodge streak x'+game.combo, 24, 112);
+  }
+  // theme tag
+  ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='12px Arial';
+  ctx.fillText('[Autonomy]  ⛰️ Free Path Climber', W-16, 28);
+  // summit progress bar
+  const bw=W-32, bx=16, by=H-16;
+  ctx.fillStyle='rgba(255,255,255,0.12)'; rr(bx,by-7,bw,7,4); ctx.fill();
+  const prog=clamp(game.height/SUMMIT_HEIGHT,0,1);
+  ctx.fillStyle=lgrad(bx,0,bx+bw,0,[[0,'#7fd1ff'],[1,'#ffd071']]); rr(bx,by-7,bw*prog,7,4); ctx.fill();
+  // checkpoint banner
+  if(game.bannerTimer>0){
+    const a=clamp(game.bannerTimer/0.6,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle='rgba(12,18,32,0.82)'; rr(W/2-300,96,600,52,14); ctx.fill();
+    ctx.strokeStyle='rgba(255,208,113,0.6)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.textAlign='center'; ctx.fillStyle='#ffd071'; ctx.font='bold 22px Arial';
+    ctx.fillText(game.bannerText, W/2, 130);
+    ctx.globalAlpha=1;
+  }
+}
+function drawParticles(){
+  for(const p of game.particles){
+    const a=clamp(1-p.age/p.life,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle=p.col;
+    ctx.beginPath(); ctx.arc(p.x, sy(p.y), p.r, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function panel(title,lines,accent){
+  ctx.fillStyle='rgba(6,11,22,0.78)'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(12,20,38,0.92)'; rr(W/2-280,H/2-150,560,300,20); ctx.fill();
+  ctx.strokeStyle='rgba(255,208,113,0.5)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.textAlign='center';
+  ctx.fillStyle=accent||'#ffd071'; ctx.font='bold 38px Arial';
+  ctx.fillText(title, W/2, H/2-86);
+  ctx.font='17px Arial'; ctx.fillStyle='#dde6f5';
+  lines.forEach((ln,i)=>ctx.fillText(ln, W/2, H/2-36+i*30));
+}
+
+function drawTitle(){
+  ctx.fillStyle='rgba(6,11,22,0.55)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ffd071'; ctx.font='bold 52px Arial';
+  ctx.fillText('⛰️  Free Path Climber', W/2, 150);
+  ctx.fillStyle='#cfe0ff'; ctx.font='19px Arial';
+  ctx.fillText('Hop UP the mountain of self-respect.', W/2, 196);
+  ctx.fillText('Dodge falling guilt-rocks. Outclimb the rising tide of "shoulds".', W/2, 224);
+  ctx.fillStyle='rgba(12,20,38,0.85)'; rr(W/2-250,260,500,150,16); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.16)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='16px Arial';
+  ctx.fillText('← →  /  A D   move with momentum', W/2, 296);
+  ctx.fillText('↑ / W / Space   hop', W/2, 322);
+  ctx.fillText('P / pause button   pause    ·    mute button   sound', W/2, 348);
+  ctx.fillStyle='#ffd071'; ctx.font='bold 20px Arial';
+  ctx.fillText('Press  Space  or  tap  to climb', W/2, 388);
+  ctx.fillStyle='#9affc0'; ctx.font='15px Arial';
+  ctx.fillText('Best height: '+ (game.bestHeight||0), W/2, 418);
+  ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='13px Arial';
+  ctx.fillText('Theme [Autonomy]: agency & persistence. The pressure is the hazard — never people.', W/2, 470);
+}
+
+function draw(){
+  if(!game){ ctx.fillStyle='#0e1830'; ctx.fillRect(0,0,W,H); return; }
+  ctx.save();
+  ctx.fillStyle='#0e1830'; ctx.fillRect(0,0,W,H);
+  if(game.shake>0){ const s=game.shake*8; ctx.translate((Math.random()-0.5)*s,(Math.random()-0.5)*s); }
+  if(game.shake>0 && game.shakeKind){
+    ctx.save();
+    ctx.globalAlpha = game.shake*0.35;
+    ctx.fillStyle = game.shakeKind==='rock' ? '#ff4444' : '#c04fe0';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+  drawBackground();
+  if(game.state!=='title'){
+    for(const row of game.rows){ for(const p of row.plats) drawPlatform(p); }
+    drawTide();
+    drawDangerPulse();
+    for(const r of game.rocks){ if(r.alive) drawRock(r); }
+    drawRockWarnings();
+    drawParticles();
+    drawPopups();
+    drawClimber();
+    drawHUD();
+  }
+  ctx.restore();
+  // vignette
+  ctx.fillStyle = rgrad(W/2,H/2,H*0.9,[[0.55,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,0.42)']]);
+  ctx.fillRect(0,0,W,H);
+  if(game.state==='title') drawTitle();
+  else if(game.state==='paused') panel('Paused',['Press  P  or the pause button to resume','','Keep your footing — the tide is patient.'],'#7fd1ff');
+  else if(game.state==='gameover'){
+    const causeText = game.deathCause==='rock' ? 'A guilt-rock caught you.' : (game.deathCause==='tide' ? 'The tide of "shoulds" caught up.' : 'The shoulds caught up.');
+    const accent = game.deathCause==='rock' ? '#ff9aa2' : (game.deathCause==='tide' ? '#e0a2ff' : '#ff9aa2');
+    panel(causeText,['You reached height '+game.height+'  ·  Best '+game.bestHeight,'Best dodge streak '+game.bestCombo,'','Every climb builds the path back up.','Press  Space  to climb again'],accent);
+  }
+  else if(game.state==='win') panel('Summit of Self-Respect!',['You climbed all '+SUMMIT_HEIGHT+' tiers on your own terms.','','A full life needs no permission.','Press  Space  to climb again'],'#9affc0');
+}
+
+// ---------- main loop ----------
+let last=0;
+function frame(ts){
+  const dt = last? Math.min(0.033,(ts-last)/1000) : 0.016;
+  last=ts;
+  update(dt);
+  try{ draw(); }catch(e){ /* draw must never throw */ }
+  requestAnimationFrame(frame);
+}
+game = freshGame();
+player = freshPlayer();
+requestAnimationFrame(frame);
+
+// ---------- test hook (harmless in production) ----------
+window.__game = {
+  get game(){return game;}, get player(){return player;}, get input(){return input;},
+  update, draw, reset, genRow, hop, setState, toggleMute,
+  get Audio2(){return Audio2;},
+  get FLOOR_Y(){return FLOOR_Y;}, get ROW_GAP(){return ROW_GAP;}, get SUMMIT_HEIGHT(){return SUMMIT_HEIGHT;}
+};
+// keep legacy cfq test hook name working too, same shape
+window.__cfq = window.__game;
+</script>
+</body>
+</html>

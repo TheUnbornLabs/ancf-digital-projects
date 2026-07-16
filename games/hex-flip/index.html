@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Hex Flip</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03050a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#03050a;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(96,176,255,.35);background:rgba(3,6,12,.82);color:#eaf2f6;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrls button:active{background:rgba(60,140,255,.3);}
+#leftctrls{position:fixed;top:10px;left:10px;display:flex;gap:8px;z-index:10;}
+#leftctrls button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(96,176,255,.35);background:rgba(3,6,12,.82);color:#eaf2f6;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#leftctrls button:active{background:rgba(60,140,255,.3);}
+#leftctrls button:disabled{opacity:.35;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="leftctrls">
+<button id="btnUndo" title="Undo">&#8630;</button>
+<button id="btnHint" title="Hint">?</button>
+</div>
+<div id="ctrls">
+<button id="btnMute" title="Mute">&#128266;</button>
+<button id="btnMenu" title="Menu">&#9776;</button>
+</div>
+<div id="hint">Click hexagons to flip them &middot; make all hexagons the same colour &middot; U = undo, H = hint, M = mute, Esc = menu</div>
+<script>
+'use strict';
+// Hex Flip (#72)
+// A hex grid of tiles, each ON or OFF (two colours).
+// Clicking one hex flips it AND its neighbours.
+// Goal: make all hexes the same colour. 10 levels.
+// Theme: finding alignment — everything clicking into place together.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const HEX_R=36;// hex radius
+const TOTAL=10;
+const ON_COL='rgba(80,160,255,.85)';const OFF_COL='rgba(60,30,80,.7)';
+
+// --- localStorage helpers (guarded — private browsing can throw) ---
+function lsGet(k,d){try{const v=window.localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{window.localStorage.setItem(k,v);}catch(e){}}
+
+const game={
+  state:'title',time:0,level:0,score:0,best:0,moves:0,shakeT:0,
+  cols:7,rows:5,
+  muted:lsGet('hexflip_muted','0')==='1',
+  bestStars:parseInt(lsGet('hexflip_beststars','0'),10)||0,
+  bestClearMoves:parseInt(lsGet('hexflip_bestclear','0'),10)||0,
+  par:0,levelMoves:0,stars:0,
+  winDelay:0,
+  popups:[],// score/feedback popups
+  locked:null // {c,r} locked hex at higher levels (needs 2 flips to change)
+};
+let grid=[],rng,history=[];
+
+// grid size grows modestly with level for a real difficulty curve
+function gridSizeFor(lv){
+  const cols=clamp(7+Math.floor(lv/4),7,9);
+  const rows=clamp(5+Math.floor(lv/5),5,6);
+  return{cols,rows};
+}
+
+// flat-top hex: center(col,row) — computed against current game.cols/rows
+function hexCenter(col,row){
+  const cols=game.cols,rows=game.rows;
+  const x=HEX_R*1.5*col+(W-(cols-1)*HEX_R*1.5)/2;
+  const y=HEX_R*Math.sqrt(3)*(row+(col%2)*0.5)+(H-(rows-1)*HEX_R*Math.sqrt(3))/2;
+  return{x,y};
+}
+function hexNeighbors(col,row){const even=col%2===0;return[[col-1,row+(even?-1:0)],[col-1,row+(even?0:1)],[col,row-1],[col,row+1],[col+1,row+(even?-1:0)],[col+1,row+(even?0:1)]];}
+
+function buildLevel(lv){
+  rng=seeded(lv*6007+33);
+  const sz=gridSizeFor(lv);game.cols=sz.cols;game.rows=sz.rows;
+  grid=Array.from({length:game.cols},(_,c)=>Array.from({length:game.rows},(_2,r)=>({c,r,on:false,locked:false})));
+  // introduce a locked hex type at higher levels for real curve progression
+  game.locked=null;
+  if(lv>=6){
+    const lc=1+Math.floor(rng()*(game.cols-2));
+    const lr=1+Math.floor(rng()*(game.rows-2));
+    if(grid[lc]&&grid[lc][lr]){grid[lc][lr].locked=true;game.locked={c:lc,r:lr};}
+  }
+  const flips=3+Math.floor(lv/2)+Math.floor(lv/3);
+  game.par=Math.max(1,flips);
+  const seq=[];
+  for(let i=0;i<flips;i++){
+    const c=Math.floor(rng()*game.cols),r=Math.floor(rng()*game.rows);
+    seq.push([c,r]);
+    doFlipRaw(c,r);
+  }
+  // record the solution (self-inverse: same sequence undoes the scramble) for hint use
+  game.solution=seq.slice();
+  game.moves=0;game.levelMoves=0;game.shakeT=0;game.stars=0;game.winDelay=0;
+  history=[];
+  game.state='playing';
+}
+
+function snapshotGrid(){return grid.map(col=>col.map(cell=>({...cell})));}
+function restoreGrid(snap){grid=snap.map(col=>col.map(cell=>({...cell})));}
+
+// doFlipRaw: flips without sound/win-check, used for scrambling and undo/redo
+function doFlipRaw(c,r){
+  const cell=grid[c]?.[r];if(!cell)return;
+  if(cell.locked){cell.lockHits=(cell.lockHits||0)+1;if(cell.lockHits%2===0)cell.on=!cell.on;}
+  else cell.on=!cell.on;
+  for(const[nc,nr]of hexNeighbors(c,r)){
+    const n=grid[nc]&&grid[nc][nr];
+    if(!n)continue;
+    if(n.locked){n.lockHits=(n.lockHits||0)+1;if(n.lockHits%2===0)n.on=!n.on;}
+    else n.on=!n.on;
+  }
+}
+
+function doFlip(c,r){
+  if(game.state!=='playing')return; // freeze input during win-delay/transition
+  const cell=grid[c]?.[r];if(!cell)return;
+  history.push(snapshotGrid());
+  if(history.length>200)history.shift();
+  doFlipRaw(c,r);
+  sndFlip();
+  checkWin();
+}
+
+function undo(){
+  if(game.state!=='playing')return;
+  if(!history.length)return;
+  restoreGrid(history.pop());
+  game.moves=Math.max(0,game.moves-1);
+  game.levelMoves=Math.max(0,game.levelMoves-1);
+  tone(220,0.08,'triangle',0.05);
+}
+
+function mismatchCount(){
+  const first=grid[0][0].on;let n=0;
+  for(const col of grid)for(const cell of col)if(cell.on!==first)n++;
+  return n;
+}
+
+function hint(){
+  if(game.state!=='playing')return;
+  if(!game.solution||!game.solution.length){game.hintCell=null;return;}
+  const[c,r]=game.solution[game.solution.length-1];
+  game.hintCell={c,r,t:1500};
+  tone(500,0.1,'sine',0.04);
+}
+
+function addPopup(text,x,y,col){game.popups.push({text,x,y,t:900,life:900,col:col||'#eaf2f6'});}
+
+function checkWin(){
+  const first=grid[0][0].on;
+  for(const col of grid)for(const cell of col){if(cell.on!==first)return;}
+  // freeze input during the win-delay window
+  game.state='transition';
+  game.winDelay=600;
+  game.score++;
+  if(game.score>game.best)game.best=game.score;
+  // star rating: moves vs par (1-3 stars)
+  const ratio=game.levelMoves/Math.max(1,game.par);
+  let stars=1;
+  if(ratio<=1)stars=3;else if(ratio<=1.5)stars=2;else stars=1;
+  game.stars=stars;
+  game.totalStars=(game.totalStars||0)+stars;
+  if(game.totalStars>game.bestStars){game.bestStars=game.totalStars;lsSet('hexflip_beststars',String(game.bestStars));}
+  if(game.bestClearMoves===0||game.levelMoves<game.bestClearMoves){game.bestClearMoves=game.levelMoves;lsSet('hexflip_bestclear',String(game.bestClearMoves));}
+  addPopup('+1! Solved in '+game.levelMoves+' moves  '+'★'.repeat(stars)+'☆'.repeat(3-stars),W/2,H/2-20,'#7dd8ff');
+  sndWin2();
+  game.shakeT=180;
+  setTimeout(()=>{
+    game.level++;
+    if(game.level>=TOTAL){
+      sndWin();
+      game.state='won';
+      game.shakeT=260;
+    }else{
+      buildLevel(game.level);
+    }
+  },600);
+}
+
+function resetGame(){
+  game.level=0;game.score=0;game.shakeT=0;game.totalStars=0;game.popups=[];
+  buildLevel(0);
+}
+
+function goToMenu(){
+  game.state='title';
+  game.popups=[];
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.hintCell){game.hintCell.t-=dt;if(game.hintCell.t<=0)game.hintCell=null;}
+  for(let i=game.popups.length-1;i>=0;i--){
+    const p=game.popups[i];p.t-=dt;p.y-=dt*0.02;
+    if(p.t<=0)game.popups.splice(i,1);
+  }
+}
+
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndFlip=()=>tone(300+game.moves*8,0.06,'sine',0.04);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function hexPath(cx,cy,r){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/6+i*Math.PI/3;i===0?ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r):ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#03050a'],[1,'#020408']]);ctx.fillRect(0,0,W,H);}
+
+function drawGrid(){
+  for(let c=0;c<game.cols;c++){
+    for(let r=0;r<game.rows;r++){
+      const{x,y}=hexCenter(c,r);
+      const cell=grid[c][r];
+      ctx.fillStyle=cell.on?ON_COL:OFF_COL;
+      hexPath(x,y,HEX_R-2);ctx.fill();
+      ctx.strokeStyle=cell.on?'rgba(120,200,255,.4)':'rgba(100,60,140,.3)';
+      ctx.lineWidth=1.5;
+      hexPath(x,y,HEX_R-2);ctx.stroke();
+      // accessibility: shape/icon backup so colorblind players can distinguish state
+      ctx.save();
+      ctx.fillStyle=cell.on?'rgba(255,255,255,.85)':'rgba(255,255,255,.55)';
+      if(cell.on){
+        // dot for ON
+        ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
+      }else{
+        // small ring for OFF
+        ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.lineWidth=1.6;ctx.strokeStyle='rgba(255,255,255,.6)';ctx.stroke();
+      }
+      ctx.restore();
+      // locked-hex indicator (special hex type introduced at higher levels)
+      if(cell.locked){
+        ctx.save();
+        ctx.strokeStyle='rgba(255,210,90,.9)';
+        ctx.lineWidth=2.4;
+        hexPath(x,y,HEX_R-6);ctx.stroke();
+        ctx.fillStyle='rgba(255,210,90,.9)';
+        ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('\u{1F512}',x,y-14);
+        ctx.restore();
+      }
+      // hint highlight
+      if(game.hintCell&&game.hintCell.c===c&&game.hintCell.r===r){
+        ctx.save();
+        const a=0.4+0.4*Math.sin(game.time*0.01);
+        ctx.strokeStyle='rgba(255,255,255,'+a+')';
+        ctx.lineWidth=3;
+        hexPath(x,y,HEX_R+2);ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,3,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#60b0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Hex Flip — Level '+(game.level+1)+' / '+TOTAL,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const mm=mismatchCount(),tot=game.cols*game.rows;
+  ctx.fillText('Mismatched: '+mm+' / '+tot+'   Par: '+game.par,18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Moves: '+game.moves+'  Score: '+game.score+'  Best: '+game.best,W-18,8);
+  ctx.fillText('Best stars: '+(game.bestStars||0)+'  Best clear: '+(game.bestClearMoves||'-')+' moves',W-18,26);
+  ctx.restore();
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,3,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,8,16,.97)'],[1,'rgba(3,6,12,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(60,140,255,.22)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#60b0ff';ctx.font='bold 34px Arial';
+  ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function drawPopups(){
+  ctx.save();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const p of game.popups){
+    const a=clamp(p.t/p.life,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=p.col;
+    ctx.font='bold 20px Arial';
+    ctx.fillText(p.text,p.x,p.y);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    // screen shake wired to game.shakeT: brief shake on flip-solve/win
+    if(game.shakeT>0){
+      const mag=Math.min(6,game.shakeT/30);
+      const ox=(Math.random()*2-1)*mag,oy=(Math.random()*2-1)*mag;
+      ctx.translate(ox,oy);
+    }
+    drawBg();
+    if(game.state!=='title')drawGrid();
+    vignette();
+    if(game.state==='playing'||game.state==='transition')drawHUD();
+    if(game.state==='playing'||game.state==='transition')drawPopups();
+    if(game.state==='title'){
+      panelDraw('Hex Flip',[
+        'Click a hexagon to flip it and its neighbours.',
+        'Make ALL hexagons the same colour to win.',
+        '10 puzzles — harder each time, with locked hexes later.',
+        '',
+        'Everything clicking into place together.',
+        '',
+        'Click / tap to begin.'
+      ]);
+    }else if(game.state==='won'){
+      panelDraw('All Aligned! ✓',[
+        'Score: '+game.score+' / '+TOTAL,
+        'Best: '+game.best,
+        'Total stars: '+(game.totalStars||0)+'  (best: '+(game.bestStars||0)+')',
+        '',
+        'Every hex found its place.',
+        '',
+        'Click / tap to play again.'
+      ]);
+    }
+    ctx.restore();
+  }catch(e){}
+}
+
+function hexAt(px,py){
+  for(let c=0;c<game.cols;c++){
+    for(let r=0;r<game.rows;r++){
+      const{x,y}=hexCenter(c,r);
+      if(Math.hypot(px-x,py-y)<HEX_R*0.9)return{c,r};
+    }
+  }
+  return null;
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+  if(game.state==='title'||game.state==='won'){resetGame();return;}
+  if(game.state!=='playing')return; // frozen during transition
+  const h=hexAt(px,py);
+  if(h){game.moves++;game.levelMoves++;doFlip(h.c,h.r);}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+// on-screen controls
+const btnMute=document.getElementById('btnMute');
+const btnMenu=document.getElementById('btnMenu');
+const btnUndo=document.getElementById('btnUndo');
+const btnHint=document.getElementById('btnHint');
+function refreshMuteBtn(){btnMute.innerHTML=game.muted?'&#128263;':'&#128266;';}
+function toggleMute(){game.muted=!game.muted;lsSet('hexflip_muted',game.muted?'1':'0');refreshMuteBtn();if(!game.muted)tone(440,0.08,'sine',0.05);}
+btnMute.addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+btnMenu.addEventListener('click',(e)=>{e.stopPropagation();goToMenu();});
+btnUndo.addEventListener('click',(e)=>{e.stopPropagation();undo();});
+btnHint.addEventListener('click',(e)=>{e.stopPropagation();hint();});
+refreshMuteBtn();
+
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='m'||e.key==='M'){toggleMute();}
+  else if(e.key==='Escape'){goToMenu();}
+  else if(e.key==='u'||e.key==='U'){undo();}
+  else if(e.key==='h'||e.key==='H'){hint();}
+});
+
+// letterboxing: preserve aspect ratio (object-fit: contain-style sizing)
+function resizeCanvas(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const targetAR=W/H;
+  let cw=vw,ch=vw/targetAR;
+  if(ch>vh){ch=vh;cw=vh*targetAR;}
+  canvas.style.width=Math.round(cw)+'px';
+  canvas.style.height=Math.round(ch)+'px';
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';
+buildLevel(0);
+game.state='title';
+draw();
+requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get grid(){return grid;},
+  resetGame,buildLevel,doFlip,checkWin,hexAt,hexCenter,hexNeighbors,update,draw,
+  undo,hint,goToMenu,toggleMute,
+  get COLS(){return game.cols;},get ROWS(){return game.rows;},TOTAL,HEX_R
+};
+</script>
+</body>
+</html>

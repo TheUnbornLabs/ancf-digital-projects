@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Bowling for Myths</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#08060e;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#08060e;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#hud-btns{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#hud-btns button{width:42px;height:42px;border-radius:10px;border:1.5px solid rgba(200,160,80,.35);background:rgba(10,8,4,.75);color:#e0c060;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+#hud-btns button:active{background:rgba(200,160,80,.25);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="hud-btns">
+  <button id="btnMute" title="Mute (M)" aria-label="Mute">&#128266;</button>
+  <button id="btnPause" title="Pause (P)" aria-label="Pause">&#10074;&#10074;</button>
+</div>
+<div id="hint">Drag left/right to aim &middot; release to bowl &middot; knock down all the myth pins &middot; M mute &middot; P pause</div>
+<script>
+'use strict';
+// Bowling for Myths (#55)
+// Aim and release a bowling ball to knock down myth pins.
+// 10 frames. Strike = all 10 knocked first ball; spare = all knocked second.
+// Theme: knocking down society's myths about the childfree.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const MYTHS10=[
+  'selfish','lonely','cold','regret','boring',
+  'missing out','heartless','confused','odd','immature'
+];
+const PIN_ROWS=4;// 1+2+3+4 = 10 pins
+const PIN_R=16,BALL_R=16;
+const LANE_Y=60,LANE_X=260,LANE_W=440;
+const FOUL_Y=H-80,RELEASE_Y=H-120;
+const PIN_TOP_Y=LANE_Y+20;
+function pinLayout(){const pins=[];let i=0;for(let r=0;r<PIN_ROWS;r++){const count=r+1;const startX=W/2-(count-1)*(PIN_R*2+4)/2;for(let c=0;c<count;c++){pins.push({x:startX+c*(PIN_R*2+4),y:PIN_TOP_Y+r*(PIN_R*2+6),label:MYTHS10[i++],fallen:false,vx:0,vy:0});}}return pins;}
+const TOTAL_FRAMES=10;
+const MIN_SCORE_TO_CLEAR=40;// below this after 10 frames -> gameover ("myths linger")
+
+// ---- persistence ----
+function lsGet(k,fallback){try{const v=localStorage.getItem(k);return v===null?fallback:v;}catch(e){return fallback;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+const game={
+  state:'title',time:0,frame:1,ball1:true,
+  pins:0,          // total pins knocked (raw)
+  score:0,          // real bowling score w/ strike & spare bonus
+  best:parseInt(lsGet('bowlingMyths_best','0'),10)||0,
+  shakeT:0,shakeMag:0,
+  muted:lsGet('bowlingMyths_muted','0')==='1',
+  paused:false,
+  streak:0,maxStreak:0,
+  ballsThrown:0,pinsHitTotal:0,
+  perfect:false
+};
+let pins=[],ball=null,ballMoving=false,dragStart=null,aimX=W/2,rng;
+let frameLog=[];// {k1,k2, bonusApplied}
+let popups=[];// score/text popups {x,y,text,life,vy}
+let particles=[];// {x,y,vx,vy,life,color}
+
+function laneDifficulty(){
+  // clamp progression: lane narrows slightly & ball speeds slightly by frame 10
+  const t=clamp((game.frame-1)/(TOTAL_FRAMES-1),0,1);
+  const wShrink=clamp(t*40,0,40);// up to 40px narrower total
+  const speedBoost=clamp(t*90,0,90);// up to +90 speed
+  return {wShrink,speedBoost};
+}
+function laneBounds(){
+  const {wShrink}=laneDifficulty();
+  return {x0:LANE_X+wShrink/2,x1:LANE_X+LANE_W-wShrink/2};
+}
+
+function newFrame(){pins=pinLayout();ball=null;ballMoving=false;game.ball1=true;aimX=W/2;}
+function resetGame(){
+  game.frame=1;game.pins=0;game.score=0;game.shakeT=0;game.shakeMag=0;
+  game.streak=0;game.maxStreak=0;game.ballsThrown=0;game.pinsHitTotal=0;game.perfect=false;
+  frameLog=[];popups=[];particles=[];
+  newFrame();game.state='playing';
+}
+function triggerShake(mag){game.shakeMag=mag;game.shakeT=Math.max(game.shakeT,220);}
+function addPopup(x,y,text,color){popups.push({x,y,text,life:900,maxLife:900,vy:-40,color:color||'#e0c060'});}
+function addParticles(x,y,color,n){for(let i=0;i<(n||10);i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*160;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:500+Math.random()*300,maxLife:800,color:color||'#e0c060'});}}
+
+function releaseBall(){
+  if(ballMoving||game.state!=='playing'||game.paused)return;
+  const {speedBoost}=laneDifficulty();
+  const speed=580+speedBoost;
+  const dx=aimX-W/2,dy=PIN_TOP_Y-RELEASE_Y;
+  const dlen=Math.hypot(dx,dy)||1;
+  ball={x:W/2,y:RELEASE_Y,vx:(dx/dlen)*speed,vy:(dy/dlen)*speed,energy:1};
+  ballMoving=true;game.ballsThrown++;sndRoll();
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);const s=dt/1000;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  // popups & particles always tick down (even paused feels ok, but pause fully freezes gameplay)
+  if(game.state==='paused'){return;}
+  game.time+=dt;
+  for(let i=popups.length-1;i>=0;i--){const p=popups[i];p.life-=dt;p.y+=p.vy*s;if(p.life<=0)popups.splice(i,1);}
+  for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.life-=dt;pt.x+=pt.vx*s;pt.y+=pt.vy*s;pt.vy+=260*s;if(pt.life<=0)particles.splice(i,1);}
+  if(game.state!=='playing')return;
+  if(!ballMoving)return;
+  ball.x+=ball.vx*s;ball.y+=ball.vy*s;
+  const {x0,x1}=laneBounds();
+  // wall bounce
+  if(ball.x<x0+BALL_R){ball.x=x0+BALL_R;ball.vx=Math.abs(ball.vx);}
+  if(ball.x>x1-BALL_R){ball.x=x1-BALL_R;ball.vx=-Math.abs(ball.vx);}
+  // pin collision — ball loses energy per pin hit, decays speed (no free pass-through)
+  for(const p of pins){
+    if(p.fallen)continue;
+    const d=Math.hypot(ball.x-p.x,ball.y-p.y);
+    if(d<BALL_R+PIN_R && ball.energy>0.12){
+      p.fallen=true;
+      p.vx=(ball.x-p.x)*0.35+(Math.random()-.5)*2;
+      p.vy=(ball.y-p.y)*0.35-1;
+      game.pinsHitTotal++;
+      addParticles(p.x,p.y,'#e0c060',8);
+      sndKnock();
+      // energy loss & deflection per pin — ball bounces/slows, can't clean through all 10 for free
+      ball.energy*=0.62;
+      ball.vx*=0.65;ball.vy*=0.72;
+      // nudge ball direction slightly off pin center to feel like a deflection
+      const nx=(ball.x-p.x)||0.001,ny=(ball.y-p.y)||0.001,nl=Math.hypot(nx,ny);
+      ball.vx+=(nx/nl)*40;ball.vy+=(ny/nl)*20;
+    }
+  }
+  // pin-pin spread
+  for(let i=0;i<pins.length;i++){for(let j=i+1;j<pins.length;j++){const pi=pins[i],pj=pins[j];if(!pi.fallen||pj.fallen)continue;const d=Math.hypot(pi.x-pj.x,pi.y-pj.y);if(d<PIN_R*2+4){pj.fallen=true;pj.vx=(pj.x-pi.x)*0.2+(Math.random()-.5)*1.5;pj.vy=(pj.y-pi.y)*0.2;}}}
+  // settle fallen pins
+  for(const p of pins){if(!p.fallen)continue;p.x+=p.vx*s*40;p.y+=p.vy*s*40;p.vx*=0.9;p.vy*=0.9;}
+  // ball left lane or past pins or ran out of energy near the pins area (stopped dead)
+  const stalled=ball.energy<=0.12 && Math.abs(ball.vx)<8 && Math.abs(ball.vy)<8;
+  if(ball.y<LANE_Y-40||ball.y>H+40||stalled){endBall();}
+}
+
+function endBall(){
+  const knocked=pins.filter(p=>p.fallen).length;
+  if(game.ball1){
+    frameLog.push({k1:knocked,k2:0,frameIdx:game.frame});
+    game.pins+=knocked;
+    if(knocked===0){addPopup(W/2,H/2,'GUTTER',' #7788aa');sndGutter();}
+    else if(knocked===10){game.streak++;game.maxStreak=Math.max(game.maxStreak,game.streak);triggerShake(10);addPopup(W/2,H*0.4,'STRIKE!','#ff5a7a');sndStrikeCall();}
+    if(knocked===10||game.frame>=TOTAL_FRAMES){endFrame();}
+    else{game.ball1=false;ball=null;ballMoving=false;aimX=W/2;}
+  }else{
+    const prev=frameLog[frameLog.length-1];
+    const newK=Math.max(0,knocked-prev.k1);
+    prev.k2=newK;
+    game.pins+=newK;
+    if(prev.k1+newK===0){addPopup(W/2,H/2,'GUTTER','#7788aa');sndGutter();}
+    else if(prev.k1+newK===10){triggerShake(6);addPopup(W/2,H*0.4,'SPARE!','#5ad0ff');sndSpareCall();game.streak=0;}
+    else{game.streak=0;}
+    endFrame();
+  }
+}
+
+function computeRealScore(){
+  // classic bowling scoring with strike/spare bonus lookahead
+  let total=0;
+  for(let i=0;i<frameLog.length;i++){
+    const f=frameLog[i];
+    const k1=f.k1,k2=f.k2||0;
+    if(k1===10){// strike
+      let bonus=0,got=0;
+      for(let j=i+1;j<frameLog.length&&got<2;j++){
+        const fj=frameLog[j];
+        bonus+=fj.k1;got++;
+        if(got<2){if(fj.k1===10){/* next frame also strike, need one more ball */}else{bonus+=fj.k2||0;got++;}}
+      }
+      total+=10+bonus;
+    }else if(k1+k2===10){// spare
+      const nxt=frameLog[i+1];
+      total+=10+(nxt?nxt.k1:0);
+    }else{
+      total+=k1+k2;
+    }
+  }
+  return total;
+}
+
+function endFrame(){
+  game.score=computeRealScore();
+  if(game.frame>=TOTAL_FRAMES){
+    game.perfect=frameLog.length===TOTAL_FRAMES && frameLog.every(f=>f.k1===10);
+    if(game.score>game.best){game.best=game.score;lsSet('bowlingMyths_best',String(game.best));}
+    if(game.pins<MIN_SCORE_TO_CLEAR && !game.perfect){
+      sndLose();
+      setTimeout(()=>{game.state='gameover';},700);
+    }else{
+      sndWin();
+      setTimeout(()=>{game.state='won';},800);
+    }
+  }else{
+    game.frame++;sndWin2();setTimeout(()=>newFrame(),600);
+  }
+}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}
+}
+const sndRoll=()=>tone(80,0.4,'sawtooth',0.04);
+const sndKnock=()=>tone(300+Math.random()*100,0.06,'sine',0.06);
+const sndGutter=()=>{tone(140,0.25,'triangle',0.05);setTimeout(()=>tone(100,0.3,'triangle',0.04),90);};
+const sndWin2=()=>{[528,660].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*70));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndStrikeCall=()=>{[660,880,1100].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'square',0.06),i*50));};
+const sndSpareCall=()=>{[520,780].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndLose=()=>{[300,220,160].forEach((f,i)=>setTimeout(()=>tone(f,0.3,'sawtooth',0.05),i*120));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#08060e'],[1,'#06040c']]);ctx.fillRect(0,0,W,H);}
+function drawLane(){const {x0,x1}=laneBounds();ctx.fillStyle='rgba(180,160,100,.08)';rr(LANE_X,LANE_Y,LANE_W,H-LANE_Y,4);ctx.fill();ctx.strokeStyle='rgba(180,160,100,.2)';ctx.lineWidth=2;rr(LANE_X,LANE_Y,LANE_W,H-LANE_Y,4);ctx.stroke();
+  // difficulty guide rails
+  ctx.strokeStyle='rgba(255,90,120,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,LANE_Y);ctx.lineTo(x0,H-20);ctx.moveTo(x1,LANE_Y);ctx.lineTo(x1,H-20);ctx.stroke();
+}
+function drawPins(){
+  for(const p of pins){
+    if(p.fallen){
+      ctx.globalAlpha=0.35;ctx.fillStyle='rgba(150,100,80,.5)';ctx.beginPath();ctx.ellipse(p.x,p.y+PIN_R,PIN_R,PIN_R*0.3,0,0,Math.PI*2);ctx.fill();
+      // shape cue for accessibility: X mark over fallen pins, not just opacity
+      ctx.globalAlpha=0.8;ctx.strokeStyle='rgba(255,90,90,.9)';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(p.x-8,p.y+PIN_R-6);ctx.lineTo(p.x+8,p.y+PIN_R+6);ctx.moveTo(p.x+8,p.y+PIN_R-6);ctx.lineTo(p.x-8,p.y+PIN_R+6);ctx.stroke();
+    }else{
+      ctx.globalAlpha=1;ctx.shadowColor='rgba(220,200,160,.4)';ctx.shadowBlur=6;ctx.fillStyle='rgba(220,200,160,.9)';ctx.beginPath();ctx.arc(p.x,p.y,PIN_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(60,40,20,.85)';ctx.font='bold 6px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.label,p.x,p.y);
+    }
+    ctx.globalAlpha=1;
+  }
+}
+function drawBall(){if(!ball)return;ctx.shadowColor='rgba(100,80,200,.5)';ctx.shadowBlur=10;const gb=ctx.createRadialGradient(ball.x-4,ball.y-4,2,ball.x,ball.y,BALL_R);gb.addColorStop(0,'rgba(160,140,255,.9)');gb.addColorStop(0.6,'rgba(80,60,180,.8)');gb.addColorStop(1,'rgba(30,20,80,.7)');ctx.fillStyle=gb;ctx.beginPath();ctx.arc(ball.x,ball.y,BALL_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+function drawAim(){if(ballMoving)return;
+ctx.strokeStyle='rgba(180,160,100,.35)';ctx.lineWidth=1.5;ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(W/2,RELEASE_Y);ctx.lineTo(aimX,PIN_TOP_Y);ctx.stroke();ctx.setLineDash([]);
+ctx.fillStyle='rgba(220,200,160,.6)';ctx.beginPath();ctx.arc(aimX,RELEASE_Y-10,8,0,Math.PI*2);ctx.fill();}
+function drawPopups(){
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const p of popups){const a=clamp(p.life/p.maxLife,0,1);ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font='bold 26px Arial';ctx.fillText(p.text,p.x,p.y);}
+  ctx.globalAlpha=1;ctx.restore();
+}
+function drawParticles(){
+  ctx.save();
+  for(const pt of particles){const a=clamp(pt.life/pt.maxLife,0,1);ctx.globalAlpha=a;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,3,0,Math.PI*2);ctx.fill();}
+  ctx.globalAlpha=1;ctx.restore();
+}
+function drawScorecard(){
+  // classic 10-box bowling sheet, small strip at bottom of HUD area
+  const boxW=88,boxH=30,x0=18,y0=46;
+  ctx.save();ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let i=0;i<TOTAL_FRAMES;i++){
+    const bx=x0+i*boxW,isCurrent=(i+1)===game.frame && game.state==='playing';
+    ctx.fillStyle=isCurrent?'rgba(224,192,96,.16)':'rgba(255,255,255,.03)';
+    ctx.fillRect(bx,y0,boxW-4,boxH);
+    ctx.strokeStyle=isCurrent?'rgba(224,192,96,.6)':'rgba(200,160,80,.18)';
+    ctx.lineWidth=isCurrent?1.6:1;ctx.strokeRect(bx,y0,boxW-4,boxH);
+    const f=frameLog[i];
+    let label='';
+    if(f){
+      if(f.k1===10)label='X';
+      else if((f.k1+ (f.k2||0))===10)label=f.k1+' /';
+      else label=f.k1+' '+(f.k2!==undefined?f.k2:'');
+    }
+    ctx.fillStyle='rgba(234,242,246,.8)';
+    ctx.fillText(label,bx+(boxW-4)/2,y0+boxH/2);
+    ctx.fillStyle='rgba(234,242,246,.35)';ctx.font='7px Arial';ctx.fillText('F'+(i+1),bx+(boxW-4)/2,y0+8);ctx.font='9px Arial';
+  }
+  ctx.restore();
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(4,3,7,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  const isFinalFrame=game.frame>=TOTAL_FRAMES;
+  ctx.fillStyle=isFinalFrame?('rgba(255,90,90,'+(0.7+0.3*Math.sin(game.time/140))+')'):'#e0c060';
+  ctx.font='bold 13px Arial';
+  ctx.fillText('Bowling for Myths  Frame '+game.frame+' / '+TOTAL_FRAMES+(isFinalFrame?'  FINAL FRAME':''),18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText(game.ball1?'Ball 1: drag to aim, release to bowl':'Ball 2: spare attempt',18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best+(game.streak>=2?'  Streak x'+game.streak:''),W-18,8);
+  ctx.fillText('Pins '+game.pins+'/100',W-18,26);
+  ctx.restore();
+  drawScorecard();
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(4,3,7,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(12,9,4,.97)'],[1,'rgba(8,6,3,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(200,160,80,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#e0c060';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+94;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=25;}ctx.restore();}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    // screen shake
+    let sx=0,sy=0;
+    if(game.shakeT>0){const mag=game.shakeMag*(game.shakeT/220);sx=(Math.random()-.5)*mag;sy=(Math.random()-.5)*mag;}
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title'){drawLane();drawPins();drawAim();drawBall();drawParticles();drawPopups();}
+    vignette();
+    if(game.state==='playing'||game.state==='paused')drawHUD();
+    if(game.state==='title')panelDraw('Bowling for Myths',['Drag to aim, release to bowl.','Knock down all 10 myth pins per frame.','10 frames total. Real strike/spare scoring.','','Strike every myth from the record.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw(game.perfect?'Perfect Game! Every Myth, Every Frame.':'Myths Cleared! ✓',[
+      'Score: '+game.score+'  Best: '+game.best,
+      'Pins knocked: '+game.pins+'/100'+(game.maxStreak>=2?'  Best streak: '+game.maxStreak:''),
+      '','None of them were ever true.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('The Myths Linger',[
+      'Score: '+game.score+'  Best: '+game.best,
+      'Pins knocked: '+game.pins+'/100',
+      '','Old stories are stubborn — they take another try.','','Click / tap to try again.']);
+    else if(game.state==='paused')panelDraw('Paused',['Game paused.','','Press P or tap the button to resume.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---- input ----
+let dragging=false,startAimX=0,startMouseX=0;
+function canvasScaleRect(){
+  const rect=canvas.getBoundingClientRect();
+  return rect;
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvasScaleRect();const sx=W/rect.width;
+  let mx;if(e.touches)mx=(e.touches[0].clientX-rect.left)*sx;else mx=(e.clientX-rect.left)*sx;
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state!=='playing'||ballMoving)return;
+  dragging=true;startAimX=aimX;startMouseX=mx;
+}
+function onMove(e){
+  e.preventDefault();if(!dragging)return;
+  const rect=canvasScaleRect();const sx=W/rect.width;
+  let mx;if(e.touches)mx=(e.touches[0].clientX-rect.left)*sx;else mx=(e.clientX-rect.left)*sx;
+  const {x0,x1}=laneBounds();
+  aimX=clamp(startAimX+(mx-startMouseX)*1.2,x0+20,x1-20);
+}
+function onUp(e){
+  e.preventDefault();if(!dragging)return;dragging=false;
+  if(game.state==='playing'&&!ballMoving)releaseBall();
+}
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp,{passive:false});
+
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';game.paused=true;}
+  else if(game.state==='paused'){game.state='playing';game.paused=false;}
+  updateBtnLabels();
+}
+function toggleMute(){
+  game.muted=!game.muted;lsSet('bowlingMyths_muted',game.muted?'1':'0');updateBtnLabels();
+}
+function updateBtnLabels(){
+  const bm=document.getElementById('btnMute'),bp=document.getElementById('btnPause');
+  if(bm)bm.textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+  if(bp)bp.textContent=(game.state==='paused')?'▶':'❙❙';
+}
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyM'){toggleMute();return;}
+  if(e.code==='KeyP'){togglePause();return;}
+  if(game.state!=='playing'||ballMoving)return;
+  const {x0,x1}=laneBounds();
+  if(e.code==='ArrowLeft')aimX=Math.max(x0+20,aimX-15);
+  if(e.code==='ArrowRight')aimX=Math.min(x1-20,aimX+15);
+  if(e.code==='Space'){e.preventDefault();releaseBall();}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&game.state==='playing'){game.state='paused';game.paused=true;updateBtnLabels();}
+});
+const btnMuteEl=document.getElementById('btnMute'),btnPauseEl=document.getElementById('btnPause');
+if(btnMuteEl)btnMuteEl.addEventListener('click',e=>{e.preventDefault();toggleMute();});
+if(btnPauseEl)btnPauseEl.addEventListener('click',e=>{e.preventDefault();togglePause();});
+updateBtnLabels();
+
+// ---- letterboxed resize: internal fixed 960x540, scaled to fit viewport preserving aspect ----
+function resize(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  canvas.style.width=(W*scale)+'px';
+  canvas.style.height=(H*scale)+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get pins(){return pins;},get ball(){return ball;},get frameLog(){return frameLog;},resetGame,newFrame,releaseBall,endBall,endFrame,update,draw,MYTHS10,TOTAL_FRAMES,PIN_R,BALL_R,togglePause,toggleMute};
+</script>
+</body>
+</html>

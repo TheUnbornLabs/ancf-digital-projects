@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Cave Explore</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#03020a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;max-width:100vw;max-height:100vh;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;width:90%;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:10;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1.5px solid rgba(160,100,255,.4);background:rgba(6,4,14,.8);color:#eaf2f6;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+#ctrls button:active{background:rgba(160,100,255,.3);}
+#pads{position:fixed;left:0;right:0;bottom:0;top:0;display:flex;flex-direction:column;pointer-events:none;z-index:5;}
+#padUp,#padDown{flex:1;display:flex;align-items:center;pointer-events:none;}
+#padUp{justify-content:flex-start;}
+#padDown{justify-content:flex-end;}
+.padBtn{pointer-events:auto;width:56px;height:56px;margin:0 auto 0 12px;border-radius:50%;border:1.5px solid rgba(120,200,255,.35);background:rgba(6,4,14,.55);color:rgba(234,242,246,.6);font-size:22px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+@media (min-width:900px){#pads{display:none;}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+<button id="btnPause" title="Pause">&#10074;&#10074;</button>
+<button id="btnMute" title="Mute">&#128266;</button>
+</div>
+<div id="pads">
+<div id="padUp"><div class="padBtn" id="tapUp">&#9650;</div></div>
+<div id="padDown"><div class="padBtn" id="tapDown">&#9660;</div></div>
+</div>
+<div id="hint">Arrow keys / WASD / swipe or on-screen arrows to move &middot; collect crystals &middot; avoid stalactite walls &middot; 10 caves &middot; P to pause, M to mute</div>
+<script>
+'use strict';
+// Cave Explore (#92)
+// Side-scrolling cave. Navigate a glowing orb through a winding cave tunnel.
+// Collect freedom-crystals. Avoid the cave walls (labelled with social norms).
+// 10 levels — caves get narrower.
+// Theme: forging your own path through the underground of expectation.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const CRYSTAL_LABELS=['Joy','Flow','Rest','Peace','Dream','Create'];
+const WALL_LABELS=['conform','obey','settle','impress','sacrifice','routine'];
+const TOTAL=10;
+const SEG_W=80;// width per cave segment
+const NUM_SEGS=18;
+const PLAYER_R=12;
+
+// ---- persistence ----
+const STORAGE_KEY='cave_explore_save_v1';
+function loadSave(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return{best:0};
+    const parsed=JSON.parse(raw);
+    return{best:Math.max(0,Number(parsed.best)||0)};
+  }catch(e){return{best:0};}
+}
+function saveBest(best){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({best}));}catch(e){}
+}
+function loadMute(){
+  try{return localStorage.getItem('cave_explore_mute')==='1';}catch(e){return false;}
+}
+function saveMute(m){
+  try{localStorage.setItem('cave_explore_mute',m?'1':'0');}catch(e){}
+}
+
+const save=loadSave();
+const game={state:'title',time:0,round:0,score:0,best:save.best,lives:3,scroll:0,crystals:0,
+  hitFlash:0,shake:0,noHit:true,muted:loadMute(),prevState:'playing',popups:[],particles:[]};
+let player,segs=[],crystals=[],rng;
+
+function speedMul(r){return 1+r*0.045;} // gentle forward-speed ramp per round
+function wobbleMul(r){return 1+r*0.06;} // gentle wobble amplitude ramp
+
+function buildSegs(r){
+  rng=seeded(r*6007+41);
+  const minGap=180-r*8;
+  const gap=Math.max(minGap,80);
+  const wob=wobbleMul(r);
+  segs=[];
+  let cy=H/2;
+  for(let i=0;i<NUM_SEGS+2;i++){
+    cy+=(rng()*60-30)*wob;
+    cy=clamp(cy,gap/2+40,H-gap/2-40);
+    segs.push({cy,gap,topLabel:WALL_LABELS[Math.floor(rng()*WALL_LABELS.length)],botLabel:WALL_LABELS[Math.floor(rng()*WALL_LABELS.length)]});
+  }
+  crystals=[];
+  for(let i=3;i<NUM_SEGS-2;i++){
+    if(rng()<0.5){
+      const s=segs[i];
+      crystals.push({seg:i,y:s.cy+(rng()-.5)*(s.gap-PLAYER_R*4),r:9,collected:false});
+    }
+  }
+}
+function resetGame(){
+  game.round=0;game.score=0;game.lives=3;game.state='playing';
+  buildLevel(0);
+}
+function buildLevel(r){
+  buildSegs(r);
+  player={x:80,y:H/2,vy:0};
+  game.scroll=0;game.crystals=0;game.noHit=true;
+  game.state='playing';
+}
+function segAt(worldX){const i=Math.floor(worldX/SEG_W);return segs[clamp(i,0,segs.length-1)];}
+
+function addPopup(x,y,text,color){
+  game.popups.push({x,y,text,color:color||'#c8ff78',life:0,maxLife:700});
+}
+function addParticles(x,y,color,n){
+  n=n||10;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2;
+    const sp=40+Math.random()*90;
+    game.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,maxLife:400+Math.random()*300,color:color||'#ffcf6b',r:2+Math.random()*2});
+  }
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  const s=dt/1000;
+  game.time+=dt;
+  // always tick down juice timers regardless of state, clamped >=0
+  game.hitFlash=Math.max(0,game.hitFlash-dt);
+  game.shake=Math.max(0,game.shake-dt);
+  for(let i=game.popups.length-1;i>=0;i--){const p=game.popups[i];p.life+=dt;if(p.life>=p.maxLife)game.popups.splice(i,1);}
+  for(let i=game.particles.length-1;i>=0;i--){
+    const p=game.particles[i];
+    p.life+=dt;
+    if(p.life>=p.maxLife){game.particles.splice(i,1);continue;}
+    p.x+=p.vx*s;p.y+=p.vy*s;p.vx*=0.94;p.vy*=0.94;
+  }
+  if(game.state!=='playing')return;
+  const mul=speedMul(game.round);
+  game.scroll+=Math.max(0,100*mul*s);
+  player.x=80;// fixed horizontal, world scrolls
+  // apply input
+  if(input.up)player.vy-=300*s;
+  if(input.down)player.vy+=300*s;
+  player.vy*=0.92;
+  player.y+=player.vy*s;
+  player.y=clamp(player.y,PLAYER_R,H-PLAYER_R);
+  // check wall collision at world X = scroll + player.x
+  const worldX=game.scroll+player.x;
+  const seg=segAt(worldX);
+  const topWall=seg.cy-seg.gap/2;
+  const botWall=seg.cy+seg.gap/2;
+  if(player.y-PLAYER_R<topWall||player.y+PLAYER_R>botWall){
+    game.lives=Math.max(0,game.lives-1);
+    game.noHit=false;
+    game.hitFlash=260;
+    game.shake=260;
+    sndHit();
+    addParticles(player.x,player.y,'#ff6a6a',16);
+    if(game.lives<=0){
+      game.lives=0;
+      if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+      sndLose();
+      game.state='roundover-wait';// guard: block re-entry into hit branch during delay
+      setTimeout(()=>{if(game.state==='roundover-wait')game.state='gameover';},400);
+    }else{
+      buildLevel(game.round);
+    }
+    return;
+  }
+  // collect crystals
+  for(const c of crystals){
+    if(c.collected)continue;
+    const cx2=c.seg*SEG_W-game.scroll+player.x;
+    const cy2=c.y;
+    if(cx2>-20&&cx2<W&&Math.hypot(cx2-player.x,cy2-player.y)<PLAYER_R+c.r+4){
+      c.collected=true;
+      game.crystals++;
+      const streakBonus=Math.min(20,game.crystals*2);
+      const gain=10+streakBonus;
+      game.score+=gain;
+      sndCollect();
+      addPopup(player.x,player.y-16,'+'+gain,'#c8ff78');
+      addParticles(cx2,cy2,'#c8ff78',10);
+    }
+  }
+  // win condition: scroll past all segs
+  if(game.scroll>=(NUM_SEGS-1)*SEG_W){
+    if(game.noHit){game.score+=50;addPopup(player.x,player.y-30,'No-Hit Bonus +50','#ffd76b');}
+    sndWin2();
+    game.round++;
+    if(game.round>=TOTAL){
+      if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+      sndWin();
+      game.state='won';
+    }else{
+      buildLevel(game.round);
+    }
+  }
+}
+
+// ---- input ----
+const input={up:false,down:false};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'||e.key==='w')input.up=true;
+  if(e.key==='ArrowDown'||e.key==='s')input.down=true;
+  if(e.key==='p'||e.key==='P'||e.key==='Escape')togglePause();
+  if(e.key==='m'||e.key==='M')toggleMute();
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowUp'||e.key==='w')input.up=false;
+  if(e.key==='ArrowDown'||e.key==='s')input.down=false;
+});
+let ty0=0;
+function scaledDelta(rawDelta){
+  // scale swipe pixel delta by CSS->canvas ratio so sensitivity is consistent across screen sizes
+  const rect=canvas.getBoundingClientRect();
+  const ratio=rect.height>0?H/rect.height:1;
+  return rawDelta*ratio;
+}
+canvas.addEventListener('touchstart',e=>{e.preventDefault();ty0=e.touches[0].clientY;},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const dyRaw=e.touches[0].clientY-ty0;
+  const dy=scaledDelta(dyRaw);
+  input.up=dy<-10;
+  input.down=dy>10;
+},{passive:false});
+canvas.addEventListener('touchend',()=>{input.up=false;input.down=false;},{passive:true});
+
+// on-screen tap zones for accessibility
+function bindHold(el,key){
+  const on=e=>{e.preventDefault();input[key]=true;};
+  const off=e=>{e.preventDefault();input[key]=false;};
+  el.addEventListener('touchstart',on,{passive:false});
+  el.addEventListener('touchend',off,{passive:false});
+  el.addEventListener('touchcancel',off,{passive:false});
+  el.addEventListener('mousedown',on);
+  el.addEventListener('mouseup',off);
+  el.addEventListener('mouseleave',off);
+}
+bindHold(document.getElementById('tapUp'),'up');
+bindHold(document.getElementById('tapDown'),'down');
+
+// ---- pause / mute controls ----
+function togglePause(){
+  if(game.state==='playing'){game.prevState='playing';game.state='paused';}
+  else if(game.state==='paused'){game.state=game.prevState||'playing';}
+  updatePauseBtn();
+}
+function updatePauseBtn(){
+  const b=document.getElementById('btnPause');
+  if(b)b.innerHTML=game.state==='paused'?'&#9654;':'&#10074;&#10074;';
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  saveMute(game.muted);
+  updateMuteBtn();
+}
+function updateMuteBtn(){
+  const b=document.getElementById('btnMute');
+  if(b)b.innerHTML=game.muted?'&#128263;':'&#128266;';
+}
+document.getElementById('btnPause').addEventListener('click',e=>{e.preventDefault();togglePause();});
+document.getElementById('btnMute').addEventListener('click',e=>{e.preventDefault();toggleMute();});
+updatePauseBtn();updateMuteBtn();
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndCollect=()=>tone(600+Math.min(game.crystals,20)*10,0.07,'sine',0.04);
+const sndHit=()=>tone(200,0.2,'sawtooth',0.05);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.15,'sine',0.06),i*60));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+
+// ---- drawing helpers ----
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(3,2,10,1)';ctx.fillRect(0,0,W,H);}
+function drawCave(){
+  for(let i=0;i<segs.length;i++){
+    const sx=i*SEG_W-game.scroll;
+    if(sx>W+SEG_W||sx<-SEG_W*2)continue;
+    const s=segs[i];
+    const topH=s.cy-s.gap/2;
+    const botH=H-(s.cy+s.gap/2);
+    ctx.fillStyle='rgba(40,30,70,.9)';ctx.fillRect(sx,0,SEG_W+1,topH);
+    ctx.strokeStyle='rgba(80,60,140,.5)';ctx.lineWidth=1;ctx.strokeRect(sx,0,SEG_W+1,topH);
+    ctx.fillStyle='rgba(40,30,70,.9)';ctx.fillRect(sx,H-botH,SEG_W+1,botH);
+    ctx.strokeStyle='rgba(80,60,140,.5)';ctx.strokeRect(sx,H-botH,SEG_W+1,botH);
+    if(i%2===0){
+      ctx.fillStyle='rgba(160,120,220,.4)';ctx.font='bold 7px Arial';ctx.textAlign='center';
+      ctx.textBaseline='bottom';ctx.fillText(s.topLabel,sx+SEG_W/2,topH-2);
+      ctx.textBaseline='top';ctx.fillText(s.botLabel,sx+SEG_W/2,H-botH+2);
+    }
+  }
+}
+function drawCrystals(){
+  for(const c of crystals){
+    if(c.collected)continue;
+    const cx2=c.seg*SEG_W-game.scroll+player.x;
+    const cy2=c.y;
+    if(cx2<-20||cx2>W+20)continue;
+    const pulse=0.6+0.4*Math.sin(game.time/400+c.seg);
+    ctx.shadowColor='rgba(200,240,120,.4)';ctx.shadowBlur=8;
+    ctx.fillStyle=`rgba(200,255,120,${pulse})`;
+    ctx.beginPath();
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2-Math.PI/6;const r=i%2===0?c.r:c.r*0.5;ctx.lineTo(cx2+Math.cos(a)*r,cy2+Math.sin(a)*r);}
+    ctx.closePath();ctx.fill();ctx.shadowBlur=0;
+  }
+}
+function drawPlayer(){
+  const bob=Math.sin(game.time/300)*2;
+  ctx.shadowColor='rgba(120,200,255,.4)';ctx.shadowBlur=12;
+  const pg=ctx.createRadialGradient(player.x-3,player.y-3+bob,2,player.x,player.y+bob,PLAYER_R);
+  pg.addColorStop(0,'rgba(200,240,255,.95)');pg.addColorStop(1,'rgba(80,160,240,.5)');
+  ctx.fillStyle=pg;ctx.beginPath();ctx.arc(player.x,player.y+bob,PLAYER_R,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+function drawParticles(){
+  for(const p of game.particles){
+    const t=1-p.life/p.maxLife;
+    ctx.globalAlpha=Math.max(0,t);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawPopups(){
+  for(const p of game.popups){
+    const t=p.life/p.maxLife;
+    ctx.globalAlpha=Math.max(0,1-t);
+    ctx.fillStyle=p.color;
+    ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(p.text,p.x,p.y-t*24);
+  }
+  ctx.globalAlpha=1;
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  const prog=Math.floor(clamp(game.scroll/((NUM_SEGS-1)*SEG_W),0,1)*100);
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 13px Arial';
+  ctx.fillText('Cave Explore — Cave '+(game.round+1)+' / '+TOTAL,18,8);
+  const lowLives=game.lives<=1;
+  ctx.fillStyle=lowLives?'rgba(255,110,110,.85)':'rgba(234,242,246,.5)';
+  ctx.font='11px Arial';
+  ctx.fillText('Progress: '+prog+'%  Crystals: '+game.crystals+'  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives),18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-18,8);
+  ctx.restore();
+}
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.6)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function hitFlashOverlay(){
+  if(game.hitFlash<=0)return;
+  const t=game.hitFlash/260;
+  ctx.save();
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.9);
+  g.addColorStop(0,'rgba(255,0,0,0)');
+  g.addColorStop(1,`rgba(255,20,20,${0.5*t})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+function lowLivesWarning(){
+  if(game.state!=='playing'||game.lives>1)return;
+  const pulse=0.3+0.25*Math.sin(game.time/180);
+  ctx.save();
+  ctx.strokeStyle=`rgba(255,60,60,${pulse})`;
+  ctx.lineWidth=10;
+  ctx.strokeRect(5,5,W-10,H-10);
+  ctx.restore();
+}
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(2,1,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,4,14,.97)'],[1,'rgba(4,3,10,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(160,100,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#c0a0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  // fake button for discoverability
+  const bw=220,bh=44,bx=W/2-bw/2,by=py+ph-70;
+  ctx.fillStyle='rgba(160,100,255,.18)';rr(bx,by,bw,bh,12);ctx.fill();
+  ctx.strokeStyle='rgba(160,100,255,.45)';ctx.lineWidth=1.5;rr(bx+.5,by+.5,bw-1,bh-1,12);ctx.stroke();
+  ctx.fillStyle='#eaf2f6';ctx.font='bold 15px Arial';
+  ctx.fillText(title==='Cave Explore'?'Start':'Play Again',W/2,by+28);
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    let sx=0,sy=0;
+    if(game.shake>0){
+      const mag=6*(game.shake/260);
+      sx=(Math.random()*2-1)*mag;sy=(Math.random()*2-1)*mag;
+      ctx.translate(sx,sy);
+    }
+    drawBg();
+    if(game.state!=='title'){
+      drawCave();
+      drawCrystals();
+      drawParticles();
+      drawPlayer();
+      drawPopups();
+    }
+    vignette();
+    hitFlashOverlay();
+    if(game.state==='playing'||game.state==='paused'){drawHUD();lowLivesWarning();}
+    if(game.state==='title')panelDraw('Cave Explore',['Navigate the cave with Arrow keys / WASD / swipe.','Collect freedom crystals along the way.','Avoid the labelled walls. 3 lives. 10 caves.','','Your own path winds where others don\'t go.','','Click / tap or press any key to begin.']);
+    else if(game.state==='won')panelDraw('Path Forged! ✓',['Score: '+game.score+'  Best: '+game.best,'','Ten caves. Your way through every one.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Wall Hit',['Score: '+game.score+'  Best: '+game.best,'','The cave narrows — try again.','','Click / tap to retry.']);
+    else if(game.state==='paused')panelDraw('Paused',['Score: '+game.score+'  Best: '+game.best,'','Press P / Esc or the pause button to resume.','','Click / tap to resume.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();
+  if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}
+  else if(game.state==='paused'){game.state=game.prevState||'playing';updatePauseBtn();}
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();}
+  else if(game.state==='paused'){game.state=game.prevState||'playing';updatePauseBtn();}
+  else{ty0=e.touches[0].clientY;}
+},{passive:false});
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;
+  last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get player(){return player;},
+  get segs(){return segs;},
+  get crystals(){return crystals;},
+  get input(){return input;},
+  resetGame,buildLevel,buildSegs,update,draw,
+  togglePause,toggleMute,
+  SEG_W,NUM_SEGS,PLAYER_R,TOTAL
+};
+</script>
+</body>
+</html>

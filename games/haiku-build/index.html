@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Haiku Build</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#04080a;font-family:Georgia,serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;background:#04080a;}
+#ctrls{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(100,180,200,.5);background:rgba(4,10,12,.8);color:#9fd6e6;font-size:16px;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+#ctrls button:active{background:rgba(100,180,200,.3);}
+#ctrls button[aria-pressed="true"]{background:rgba(100,180,200,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <button id="btnHint" title="Hint (H)" aria-label="Hint">?</button>
+  <button id="btnShuffle" title="Shuffle pool (S)" aria-label="Shuffle pool">&#8635;</button>
+  <button id="btnPause" title="Pause (P)" aria-label="Pause" aria-pressed="false">&#10074;&#10074;</button>
+  <button id="btnMute" title="Mute (M)" aria-label="Mute" aria-pressed="false">&#128266;</button>
+</div>
+<script>
+'use strict';
+// Haiku Build (#49)
+// Drag syllable tiles to build a 5-7-5 haiku from a pool.
+// Each haiku has a childfree/antinatalist theme.
+// 8 haikus to complete.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+// Each haiku: 3 lines, syllables split so tiles can be dragged.
+// Each tile has syllable count. Lines need 5, 7, 5.
+const HAIKUS=[
+  {lines:[['my','life','is','my','own'],['no','script','can','hold','what','I','choose'],['I','bloom','a','lone','here']]},
+  {lines:[['qui','et','morn','ing','tea'],['no','cry','in','the','hall','way','now'],['per','fect','just','like','this']]},
+  {lines:[['free','dom','tastes','like','dawn'],['chose','my','self','o','ver','the','crowd'],['roots','grown','ver','y','deep']]},
+  {lines:[['rest','with','out','guilt','now'],['the','world','can','keep','its','expec','tations'],['I','keep','my','own','peace']]},
+  {lines:[['sil','ence','is','my','gift'],['no','pres','sure','call','ing','my','name'],['space','full','of','my','joy']]},
+  {lines:[['bound','aries','hold','me','firm'],['kind','ness','starts','at','the','door','step'],['of','my','own','self','hood']]},
+  {lines:[['trav','el','light','and','free'],['no','script','to','fol','low','to','day'],['just','the','o','pen','road']]},
+  {lines:[['we','chose','each','oth','er'],['no','child','to','fill','our','si','lence'],['love','is','e','nough','here']]},
+];
+// Build 3 drop zones (lines 0,1,2) and a pool of shuffled tiles.
+const LINE_COUNTS=[5,7,5];
+const DZ_X=280,DZ_W=400,DZ_H=52,DZ_GAP=16;
+const DZ_Y=[110,110+DZ_H+DZ_GAP,110+2*(DZ_H+DZ_GAP)];
+const POOL_Y=340;
+const TILE_H=44; // >=44px touch target
+const MIN_TILE_W=58;
+
+// ---------- persistence ----------
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+let storedBest=parseInt(lsGet('haikuBuild_best','0'),10)||0;
+let storedMuted=lsGet('haikuBuild_muted','0')==='1';
+
+const game={state:'title',time:0,hIdx:0,score:0,best:storedBest,correctAnim:0,shakeT:0,
+  paused:false,muted:storedMuted,wrongFlash:0,wrongCount:0,streak:0,bestStreak:0,
+  lineFlash:[0,0,0],placedCorrect:0,placedWrong:0,hintCost:0,hintSlot:-1,hintT:0,
+  startTime:0,fails:0,maxFails:6,gameoverReason:''};
+let slots=[],tiles=[],dragging=null,dragOx=0,dragOy=0,rng;
+let particles=[];
+
+function countSyls(line){return line.length;}
+
+function buildHaiku(h){
+  rng=seeded(h*3607+23);
+  const haiku=HAIKUS[h%HAIKUS.length];
+  // create drop slots
+  slots=[];for(let l=0;l<3;l++){const need=LINE_COUNTS[l];for(let s=0;s<need;s++){slots.push({line:l,pos:s,tile:null,x:DZ_X+s*(DZ_W/need),y:DZ_Y[l],w:DZ_W/need-4,h:DZ_H-4,wrong:false});}}
+  // create tiles from all lines
+  tiles=[];let allWords=haiku.lines.flat();allWords=[...allWords].sort(()=>rng()-.5);
+  const perRow=Math.max(1,Math.floor((W-100)/(MIN_TILE_W+10)));
+  allWords.forEach((w,i)=>{tiles.push({label:w,x:60+(i%perRow)*(MIN_TILE_W+10),y:POOL_Y+Math.floor(i/perRow)*(TILE_H+10),slotIdx:-1,disposed:false});});
+  game.correctAnim=0;
+  game.wrongFlash=0;
+  game.lineFlash=[0,0,0];
+  game.state='playing';
+  game.paused=false;
+  game.startTime=game.time;
+  dragging=null; // guard: never leave a stale drag pointer across haiku rebuilds
+  particles=[];
+}
+
+function resetGame(){
+  game.hIdx=0;game.score=0;game.shakeT=0;game.wrongCount=0;game.streak=0;
+  game.placedCorrect=0;game.placedWrong=0;game.hintCost=0;game.fails=0;
+  game.gameoverReason='';
+  buildHaiku(0);
+}
+
+function tileW(t){return Math.max(MIN_TILE_W,t.label.length*9+18);}
+
+function repackPool(){
+  // collision-avoidance repacking: lay out all unplaced tiles neatly in a grid, no overlap
+  const perRow=Math.max(1,Math.floor((W-100)/(MIN_TILE_W+10)));
+  const pool=tiles.filter(t=>t.slotIdx<0&&t!==dragging);
+  pool.forEach((t,i)=>{t.x=60+(i%perRow)*(MIN_TILE_W+10);t.y=POOL_Y+Math.floor(i/perRow)*(TILE_H+10);});
+}
+
+function nearestSlot(cx,cy){
+  let best=null,bestD=Infinity;
+  for(let i=0;i<slots.length;i++){
+    const s=slots[i];const sx2=s.x+s.w/2,sy2=s.y+s.h/2;
+    const d=Math.hypot(cx-sx2,cy-sy2);
+    if(d<bestD){bestD=d;best=i;}
+  }
+  return bestD<50?best:null;
+}
+
+function addParticles(x,y,color,n){
+  for(let i=0;i<(n||8);i++){
+    particles.push({x,y,vx:(Math.random()-.5)*140,vy:(Math.random()-.5)*140-40,life:500,maxLife:500,color});
+  }
+}
+
+function snapToSlot(tile,si){
+  const target=slots[si];
+  const haiku=HAIKUS[game.hIdx%HAIKUS.length];
+  const expectedWord=haiku.lines[target.line][target.pos];
+  const old=target.tile;
+  if(old&&old!==tile){old.slotIdx=-1;}
+  if(tile.slotIdx>=0)slots[tile.slotIdx].tile=null;
+  target.tile=tile;tile.slotIdx=si;tile.x=target.x+2;tile.y=target.y+2;
+  // collision-avoidance: displaced tile goes back into a clean repacked pool spot, not onto another tile's resting spot
+  repackPool();
+  if(old&&old!==tile){
+    // find old a slot in the freshly repacked pool grid (append at end so it never overlaps)
+    const perRow=Math.max(1,Math.floor((W-100)/(MIN_TILE_W+10)));
+    const poolCount=tiles.filter(t=>t.slotIdx<0).length-1;
+    old.x=60+(poolCount%perRow)*(MIN_TILE_W+10);
+    old.y=POOL_Y+Math.floor(poolCount/perRow)*(TILE_H+10);
+  }
+  if(expectedWord===tile.label){
+    target.wrong=false;
+    game.placedCorrect++;
+    game.streak++;
+    if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+    addParticles(target.x+target.w/2,target.y+target.h/2,'100,220,180',10);
+    sndSnap();
+  }else{
+    target.wrong=true;
+    game.placedWrong++;
+    game.wrongCount++;
+    game.streak=0;
+    game.wrongFlash=350;
+    game.shakeT=220;
+    game.fails++;
+    addParticles(target.x+target.w/2,target.y+target.h/2,'220,90,90',10);
+    sndWrong();
+    if(game.fails>=game.maxFails){
+      game.state='gameover';
+      game.gameoverReason='Too many mismatched lines — take a breath and try again.';
+      return;
+    }
+  }
+  checkDone();
+}
+
+function checkDone(){
+  const haiku=HAIKUS[game.hIdx%HAIKUS.length];
+  let correct=0;
+  for(let l=0;l<3;l++){
+    const lineSlots=slots.filter(s=>s.line===l);
+    const filled=lineSlots.every(s=>s.tile);
+    if(!filled)continue;
+    const words=lineSlots.map(s=>s.tile.label);
+    const expected=haiku.lines[l];
+    // compare with a joiner to avoid word-boundary collisions (e.g. ['no','script'] vs ['n','oscript'])
+    if(words.join('|')===expected.join('|')){
+      correct++;
+      if(game.lineFlash[l]<=0){
+        game.lineFlash[l]=500;
+        addParticles(DZ_X+DZ_W/2,DZ_Y[l]+DZ_H/2,'120,220,255',14);
+      }
+    }
+  }
+  if(correct===3&&game.correctAnim<=0){
+    // time bonus: faster completion of this haiku = more points
+    const elapsed=(game.time-game.startTime)/1000;
+    const speedBonus=Math.max(0,Math.round(30-elapsed));
+    const accuracyBonus=game.placedWrong===0?15:0;
+    const streakBonus=Math.min(20,game.streak*2);
+    const gained=10+speedBonus+accuracyBonus+streakBonus-game.hintCost;
+    game.score+=Math.max(1,gained);
+    game.placedWrong=0;game.hintCost=0;
+    game.correctAnim=800;
+    sndWin2();
+  }
+}
+
+function advanceIfDone(){
+  // called from update() instead of setTimeout, guarded by game.correctAnim so a mid-window
+  // drag can never race buildHaiku() while a tile is being dragged.
+  if(game.correctAnim<=0&&game.pendingAdvance&&dragging===null){
+    game.pendingAdvance=false;
+    if(game.hIdx+1>=HAIKUS.length){
+      if(game.score>game.best){game.best=game.score;lsSet('haikuBuild_best',String(game.best));}
+      sndWin();
+      game.state='won';
+      game.correctAnim=0;
+    }else{
+      game.hIdx++;
+      buildHaiku(game.hIdx);
+    }
+  }
+}
+
+// ---------- audio ----------
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndSnap=()=>tone(500,0.07,'sine',0.04);
+const sndWrong=()=>tone(140,0.16,'sawtooth',0.05);
+const sndWin2=()=>{[528,660,792].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.06),i*70));};
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndClick=()=>tone(700,0.05,'triangle',0.03);
+
+// ---------- update ----------
+function update(dt){
+  dt=clamp(dt,0,48);
+  if(game.state==='playing'&&!game.paused){
+    game.time+=dt;
+  }
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.wrongFlash>0)game.wrongFlash=Math.max(0,game.wrongFlash-dt);
+  if(game.hintT>0)game.hintT=Math.max(0,game.hintT-dt); else game.hintSlot=-1;
+  for(let l=0;l<3;l++){if(game.lineFlash[l]>0)game.lineFlash[l]=Math.max(0,game.lineFlash[l]-dt);}
+  if(game.correctAnim>0){
+    game.correctAnim=Math.max(0,game.correctAnim-dt);
+    advanceIfDone();
+  }
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.life-=dt;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=260*dt/1000;
+  }
+}
+
+// ---------- drawing ----------
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#04080a'],[1,'#030608']]);ctx.fillRect(0,0,W,H);}
+
+function drawSlots(){
+  const labels=['5 syllables','7 syllables','5 syllables'];
+  for(let l=0;l<3;l++){
+    ctx.fillStyle='rgba(180,200,210,.3)';ctx.font='10px Arial';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(labels[l],DZ_X-110,DZ_Y[l]+DZ_H/2);
+    if(game.lineFlash[l]>0){
+      ctx.save();
+      ctx.globalAlpha=game.lineFlash[l]/500;
+      ctx.fillStyle='rgba(120,220,255,.9)';ctx.font='bold 12px Arial';ctx.textAlign='left';
+      ctx.fillText('✓ line complete',DZ_X-110,DZ_Y[l]+DZ_H/2+16);
+      ctx.restore();
+    }
+  }
+  for(const s of slots){
+    const isHint=game.hintSlot===s.line*100+s.pos;
+    ctx.fillStyle=s.tile?(s.wrong?'rgba(90,30,30,.55)':'rgba(40,70,80,.6)'):'rgba(20,40,50,.4)';
+    rr(s.x,s.y,s.w,s.h,6);ctx.fill();
+    ctx.strokeStyle=s.tile?(s.wrong?'rgba(220,100,100,.6)':'rgba(100,180,200,.4)'):'rgba(60,100,120,.3)';
+    ctx.lineWidth=s.wrong?2:1;
+    rr(s.x,s.y,s.w,s.h,6);ctx.stroke();
+    // accessibility: icon, not just color, to convey correct/incorrect/empty
+    if(s.tile){
+      ctx.fillStyle=s.wrong?'rgba(255,150,150,.9)':'rgba(140,255,200,.9)';
+      ctx.font='bold 11px Arial';ctx.textAlign='right';ctx.textBaseline='top';
+      ctx.fillText(s.wrong?'✕':'✓',s.x+s.w-3,s.y+2);
+    }
+    if(isHint&&!s.tile){
+      const haiku=HAIKUS[game.hIdx%HAIKUS.length];
+      ctx.save();ctx.globalAlpha=.7;ctx.fillStyle='rgba(255,220,120,.9)';ctx.font='italic bold 12px Georgia,serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(haiku.lines[s.line][s.pos],s.x+s.w/2,s.y+s.h/2);
+      ctx.restore();
+    }
+  }
+}
+
+function drawTiles(){
+  const sorted=[...tiles].sort((a,b)=>(a===dragging?1:0)-(b===dragging?1:0));
+  for(const t of sorted){
+    if(t===dragging||(t.slotIdx<0)){
+      // pool tile
+      ctx.shadowColor='rgba(100,180,200,.3)';ctx.shadowBlur=t===dragging?14:4;
+      ctx.fillStyle='rgba(10,30,40,.9)';
+      const tw=tileW(t),th=TILE_H;
+      rr(t.x,t.y,tw,th,7);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='rgba(100,180,200,.4)';ctx.lineWidth=1.5;
+      rr(t.x,t.y,tw,th,7);ctx.stroke();
+      ctx.fillStyle='rgba(200,230,240,.85)';ctx.font='bold 14px Georgia,serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(t.label,t.x+tw/2,t.y+th/2);
+    }else{
+      // placed tile — drawn by slot
+      const s=slots[t.slotIdx];
+      ctx.fillStyle=s.wrong?'rgba(120,50,50,.7)':'rgba(60,100,120,.7)';
+      rr(s.x,s.y,s.w,s.h,6);ctx.fill();
+      ctx.fillStyle='rgba(200,240,255,.9)';ctx.font='bold 12px Georgia,serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(t.label,s.x+s.w/2,s.y+s.h/2);
+    }
+  }
+}
+
+function drawParticles(){
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life/p.maxLife);
+    ctx.fillStyle=`rgba(${p.color},1)`;
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(2,4,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#90d0e0';ctx.font='bold 13px Arial';
+  ctx.fillText('Haiku Build  '+(game.hIdx+1)+' / '+HAIKUS.length,18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Drag syllable tiles to the correct line slots to form the haiku  •  H hint  •  S shuffle',18,28);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'   Streak '+game.streak+'   Misses '+game.fails+'/'+game.maxFails,W-18,8);
+  ctx.fillStyle='rgba(234,242,246,.4)';ctx.font='10px Arial';
+  ctx.fillText('Best '+game.best,W-18,28);
+  if(game.paused){
+    ctx.restore();ctx.save();
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#cfeeff';ctx.font='bold 28px Georgia,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Paused',W/2,H/2);
+    ctx.font='13px Arial';ctx.fillText('Tap the pause button or press P to resume',W/2,H/2+34);
+  }
+  ctx.restore();
+}
+
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(2,4,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,12,16,.97)'],[1,'rgba(4,8,12,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(100,200,220,.22)';ctx.lineWidth=1.5;
+  rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#90d0e0';ctx.font='bold 32px Georgia,serif';
+  ctx.fillText(title,W/2,py+58);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+94;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=25;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    let ox=0,oy=0;
+    if(game.shakeT>0){const s=game.shakeT/220;ox=(Math.random()-.5)*8*s;oy=(Math.random()-.5)*8*s;ctx.translate(ox,oy);}
+    drawBg();
+    if(game.state!=='title'){drawSlots();drawTiles();drawParticles();}
+    if(game.correctAnim>0){
+      ctx.fillStyle=`rgba(100,200,220,${(game.correctAnim/800*0.3).toFixed(2)})`;
+      ctx.fillRect(0,0,W,H);
+    }
+    if(game.wrongFlash>0){
+      ctx.fillStyle=`rgba(220,60,60,${(game.wrongFlash/350*0.25).toFixed(2)})`;
+      ctx.fillRect(0,0,W,H);
+    }
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='title')panelDraw('Haiku Build',['Drag syllable tiles to each line slot.','Line 1: 5 syllables  Line 2: 7  Line 3: 5','8 haikus on freedom, rest, and choice.','','Poetry as self-authorship.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('All Haikus Written! ✓',['Score: '+game.score,'Best: '+game.best,'Best streak: '+game.bestStreak,'','Every word, chosen by you.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Take a Breath',[game.gameoverReason||'A few lines went astray.','Score: '+game.score,'Best: '+game.best,'','No pressure — poetry welcomes another try.','','Click / tap to try again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---------- input ----------
+function hitTile(x,y){
+  const vis=tiles.filter(t=>t.slotIdx<0||t===dragging);
+  for(let i=vis.length-1;i>=0;i--){
+    const t=vis[i];const tw=tileW(t),th=TILE_H;
+    if(x>=t.x&&x<=t.x+tw&&y>=t.y&&y<=t.y+th)return t;
+  }
+  // also hit placed tiles
+  for(let i=slots.length-1;i>=0;i--){
+    const s=slots[i];
+    if(s.tile&&x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h)return s.tile;
+  }
+  return null;
+}
+
+function getP(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches)return{x:(e.touches[0].clientX-rect.left)*sx,y:(e.touches[0].clientY-rect.top)*sy};
+  return{x:(e.clientX-rect.left)*sx,y:(e.clientY-rect.top)*sy};
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state!=='playing'||game.paused)return;
+  // guard: ignore drag input while the win/line transition animation is in flight
+  if(game.correctAnim>0)return;
+  const{x,y}=getP(e);
+  const t=hitTile(x,y);
+  if(t){
+    dragging=t;dragOx=x-t.x;dragOy=y-t.y;
+    if(t.slotIdx>=0){slots[t.slotIdx].tile=null;t.slotIdx=-1;}
+  }
+}
+function onMove(e){
+  e.preventDefault();
+  if(!dragging)return;
+  const{x,y}=getP(e);
+  dragging.x=clamp(x-dragOx,0,W-tileW(dragging));
+  dragging.y=clamp(y-dragOy,0,H-TILE_H);
+}
+function onUp(e){
+  e.preventDefault();
+  if(!dragging)return;
+  const cx=dragging.x+tileW(dragging)/2,cy=dragging.y+TILE_H/2;
+  const si=nearestSlot(cx,cy);
+  if(si!==null){
+    snapToSlot(dragging,si);
+  }else{
+    repackPool();
+  }
+  dragging=null;
+}
+
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);canvas.addEventListener('mouseup',onUp);
+canvas.addEventListener('touchstart',onDown,{passive:false});canvas.addEventListener('touchmove',onMove,{passive:false});canvas.addEventListener('touchend',onUp,{passive:false});
+
+// ---------- on-screen controls ----------
+function togglePause(){
+  if(game.state!=='playing')return;
+  game.paused=!game.paused;
+  const b=document.getElementById('btnPause');
+  if(b){b.setAttribute('aria-pressed',game.paused?'true':'false');b.innerHTML=game.paused?'&#9654;':'&#10074;&#10074;';}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('haikuBuild_muted',game.muted?'1':'0');
+  const b=document.getElementById('btnMute');
+  if(b){b.setAttribute('aria-pressed',game.muted?'true':'false');b.innerHTML=game.muted?'&#128263;':'&#128266;';}
+  if(!game.muted)sndClick();
+}
+function doHint(){
+  if(game.state!=='playing'||game.paused||game.correctAnim>0)return;
+  const emptySlot=slots.find(s=>!s.tile);
+  if(!emptySlot)return;
+  game.hintSlot=emptySlot.line*100+emptySlot.pos;
+  game.hintT=1600;
+  game.hintCost+=5;
+  sndClick();
+}
+function doShuffle(){
+  if(game.state!=='playing'||game.paused||game.correctAnim>0)return;
+  const pool=tiles.filter(t=>t.slotIdx<0);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i].label,pool[j].label]=[pool[j].label,pool[i].label];}
+  // shuffle positions only conceptually swaps display order — keep as position shuffle instead to avoid confusion
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const tmp={x:pool[i].x,y:pool[i].y};pool[i].x=pool[j].x;pool[i].y=pool[j].y;pool[j].x=tmp.x;pool[j].y=tmp.y;}
+  sndClick();
+}
+
+(function initButtons(){
+  const bp=document.getElementById('btnPause');
+  const bm=document.getElementById('btnMute');
+  const bh=document.getElementById('btnHint');
+  const bs=document.getElementById('btnShuffle');
+  if(bm){bm.setAttribute('aria-pressed',game.muted?'true':'false');bm.innerHTML=game.muted?'&#128263;':'&#128266;';}
+  if(bp)bp.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();togglePause();});
+  if(bm)bm.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();toggleMute();});
+  if(bh)bh.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();doHint();});
+  if(bs)bs.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();doShuffle();});
+  ['pointerdown','mousedown','touchstart'].forEach(evt=>{
+    [bp,bm,bh,bs].forEach(b=>{if(b)b.addEventListener(evt,e=>e.stopPropagation());});
+  });
+})();
+
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='p'||e.key==='P')togglePause();
+  else if(e.key==='m'||e.key==='M')toggleMute();
+  else if(e.key==='h'||e.key==='H')doHint();
+  else if(e.key==='s'||e.key==='S')doShuffle();
+});
+
+// ---------- letterboxing: preserve internal 960x540 aspect ratio on any screen ----------
+function resize(){
+  const wrap=document.getElementById('wrap');
+  if(!wrap)return;
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.round(W*scale),ch=Math.round(H*scale);
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+// ---------- main loop ----------
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={
+  get game(){return game;},
+  get tiles(){return tiles;},
+  get slots(){return slots;},
+  get dragging(){return dragging;},
+  resetGame,buildHaiku,snapToSlot,nearestSlot,checkDone,hitTile,update,draw,
+  HAIKUS,LINE_COUNTS,togglePause,toggleMute,doHint,doShuffle,repackPool
+};
+</script>
+</body>
+</html>

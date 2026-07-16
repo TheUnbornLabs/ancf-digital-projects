@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Echo Dissolve</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#02030a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+canvas{width:100vw;height:100vh;display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrl{position:fixed;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrl button{width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(120,170,255,.35);background:rgba(2,4,14,.75);color:#cfe0ff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+#ctrl button:active{background:rgba(60,100,200,.35);}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrl">
+  <button id="btnMute" aria-label="Mute">🔊</button>
+  <button id="btnPause" aria-label="Pause">⏸</button>
+</div>
+<div id="hint">Click / tap echoes to dissolve them before they reach the centre &middot; 60 seconds</div>
+<script>
+'use strict';
+// Echo Dissolve (#59)
+// Pressure echoes (hurtful phrases) float inward toward a calm centre.
+// Click to dissolve each before it reaches the centre.
+// 60 seconds of survival, plus optional endless mode after winning.
+// Theme: dissolving internalized pressures before they take hold.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const PHRASES=['you should','be normal','just try','don\'t waste','grow up','settle down','be sensible','you\'ll regret','what will they think','not natural','immature','selfish','missing out','tick tock'];
+const INNER_R=60,MAX_R=260;
+const SPD_MAX=260;
+
+// ---- persistence helpers (never throw) ----
+function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
+function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
+
+const game={state:'title',time:0,survived:0,score:0,best:0,lives:3,shakeT:0,streak:0,bestStreak:0,endless:false,muted:false,paused:false};
+game.best=parseInt(lsGet('echoDissolve.best','0'),10)||0;
+game.muted=lsGet('echoDissolve.muted','0')==='1';
+
+let echoes=[],popups=[],rings=[],rng,spawnTimer=0,spawnInterval=1200;
+
+function resetGame(endless){
+  echoes=[];popups=[];rings=[];
+  game.survived=0;game.score=0;game.lives=3;game.shakeT=0;game.streak=0;
+  game.endless=!!endless;game.paused=false;
+  spawnTimer=0;spawnInterval=1200;
+  rng=seeded(Date.now()%99991);
+  game.state='playing';
+}
+
+function spawnEcho(){
+  const a=rng()*Math.PI*2;const r=MAX_R+40;
+  const phrase=PHRASES[Math.floor(rng()*PHRASES.length)];
+  echoes.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r,tx:CX,ty:CY,phrase,t:0,life:3000+rng()*1500,r:30+rng()*10,dissolved:false,warned:false});
+}
+
+function saveBest(){
+  if(game.score>game.best){
+    game.best=game.score;
+    lsSet('echoDissolve.best',String(game.best));
+  }
+}
+
+function addPopup(x,y,text,color){
+  popups.push({x,y,text,color:color||'#ffd580',t:0,life:700});
+}
+function addRing(x,y,color){
+  rings.push({x,y,t:0,life:450,color:color||'rgba(120,220,255,.8)'});
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);
+  game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  // popups/rings animate even briefly outside 'playing' isn't needed, but keep simple: only during playing/paused-frozen
+  if(game.state!=='playing'){return;}
+  if(game.paused)return;
+  const s=dt/1000;
+  game.survived+=s;
+  spawnTimer+=dt;
+  // late-game pressure: interval floors lower and can burst extra spawns in endless
+  const floor=game.endless?350:500;
+  if(spawnTimer>=spawnInterval){
+    spawnTimer=0;
+    spawnInterval=Math.max(floor,spawnInterval-30);
+    spawnEcho();
+    // late-game overlap: occasionally spawn a second echo for pressure
+    const pressureAt=game.endless?30:45;
+    if(game.survived>pressureAt&&rng()<0.35)spawnEcho();
+  }
+  game.score=Math.floor(game.survived*5)+game.score*0; // base time score computed separately below
+  // (time-based floor score; combo bonuses added directly to game.score elsewhere)
+  game.score=Math.max(game.score,Math.floor(game.survived*5));
+
+  for(let i=echoes.length-1;i>=0;i--){
+    const e=echoes[i];
+    e.t+=dt;
+    const dx=CX-e.x,dy=CY-e.y,d=Math.hypot(dx,dy)||1;
+    const spd=Math.min(SPD_MAX,40+game.survived*2);
+    e.x+=dx/d*spd*s;
+    e.y+=dy/d*spd*s;
+    const dist=Math.hypot(e.x-CX,e.y-CY);
+    const inward=1-clamp((dist-INNER_R)/(MAX_R-INNER_R),0,1);
+    if(!e.warned&&inward>=0.8){e.warned=true;}
+    if(dist<=INNER_R+e.r){
+      game.lives--;
+      game.streak=0;
+      game.shakeT=400;
+      sndBad();
+      echoes.splice(i,1);
+      if(game.lives<=0){
+        saveBest();
+        sndLose();
+        game.state='gameover';
+        return;
+      }
+      continue;
+    }
+    if(e.dissolved){echoes.splice(i,1);}
+  }
+
+  for(let i=popups.length-1;i>=0;i--){popups[i].t+=dt;if(popups[i].t>=popups[i].life)popups.splice(i,1);}
+  for(let i=rings.length-1;i>=0;i--){rings[i].t+=dt;if(rings[i].t>=rings[i].life)rings.splice(i,1);}
+
+  if(!game.endless&&game.survived>=60){
+    saveBest();
+    sndWin();
+    game.state='won';
+  }
+}
+
+function dissolveAt(mx,my){
+  for(let i=echoes.length-1;i>=0;i--){
+    const e=echoes[i];
+    if(Math.hypot(mx-e.x,my-e.y)<e.r+14&&!e.dissolved){
+      e.dissolved=true;
+      const dist=Math.hypot(e.x-CX,e.y-CY);
+      const threat=clamp((dist-INNER_R)/(MAX_R-INNER_R),0,1); // 1 = far/early, 0 = near/late
+      game.streak++;
+      if(game.streak>game.bestStreak)game.bestStreak=game.streak;
+      const base=20;
+      const earlyBonus=Math.round(threat*30);
+      const streakBonus=Math.min(50,(game.streak-1)*4);
+      const total=base+earlyBonus+streakBonus;
+      game.score+=total;
+      addPopup(e.x,e.y,'+'+total,'#ffd580');
+      addRing(e.x,e.y,'rgba(140,220,255,.85)');
+      sndDissolve();
+      return;
+    }
+  }
+}
+
+// ---- audio ----
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{
+    if(a.state==='suspended')a.resume();
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=t||'sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));
+    o.connect(g);g.connect(a.destination);
+    o.start();o.stop(a.currentTime+(d||0.15)+0.02);
+  }catch(e){}
+}
+const sndDissolve=()=>{tone(600+Math.random()*100,0.15,'sine',0.06);};
+const sndBad=()=>tone(180,0.35,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndLose=()=>{[392,330,262].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'sine',0.06),i*90));};
+
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(2,3,10,.18)';ctx.fillRect(0,0,W,H);}
+
+function drawCentre(){
+  const lowLife=game.lives<=1;
+  const pulse=lowLife?(0.5+0.5*Math.sin(game.time/160)):0;
+  const gc=ctx.createRadialGradient(CX,CY,4,CX,CY,INNER_R);
+  if(lowLife){
+    gc.addColorStop(0,`rgba(255,${Math.round(120-pulse*60)},${Math.round(120-pulse*60)},.3)`);
+    gc.addColorStop(0.5,`rgba(200,${Math.round(70-pulse*40)},${Math.round(70-pulse*40)},.14)`);
+  }else{
+    gc.addColorStop(0,'rgba(120,200,255,.25)');
+    gc.addColorStop(0.5,'rgba(60,100,200,.12)');
+  }
+  gc.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=gc;ctx.beginPath();ctx.arc(CX,CY,INNER_R,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=lowLife?`rgba(255,${Math.round(120-pulse*60)},${Math.round(120-pulse*60)},.3)`:'rgba(100,180,255,.15)';
+  ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(CX,CY,INNER_R,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=lowLife?'rgba(255,180,180,.5)':'rgba(120,180,255,.4)';
+  ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('CALM',CX,CY);
+}
+
+function drawEchoes(){
+  for(const e of echoes){
+    const d=Math.hypot(e.x-CX,e.y-CY);
+    const threat=1-clamp((d-INNER_R)/(MAX_R-INNER_R),0,1);
+    const alpha=e.dissolved?0.3:0.7+threat*0.2;
+    ctx.globalAlpha=alpha;
+    ctx.shadowColor='rgba(200,80,80,.4)';
+    ctx.shadowBlur=e.dissolved?0:8;
+    ctx.fillStyle='rgba(80,20,20,.8)';
+    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=e.dissolved?'rgba(100,80,80,.3)':`rgba(${Math.round(180+threat*60)},${Math.round(80-threat*60)},${Math.round(80-threat*60)},.6)`;
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+    // non-color threat cue: pulsing warning ring once inward >=80%
+    if(!e.dissolved&&e.warned){
+      const pulse=0.5+0.5*Math.sin(e.t/90);
+      ctx.strokeStyle=`rgba(255,180,60,${0.35+pulse*0.4})`;
+      ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(e.x,e.y,e.r+4+pulse*3,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.fillStyle=e.dissolved?'rgba(120,80,80,.4)':'rgba(220,160,160,.8)';
+    ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(e.phrase,e.x,e.y);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawFx(){
+  for(const p of popups){
+    const k=p.t/p.life;
+    ctx.globalAlpha=1-k;
+    ctx.fillStyle=p.color;
+    ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(p.text,p.x,p.y-k*24);
+    ctx.globalAlpha=1;
+  }
+  for(const r of rings){
+    const k=r.t/r.life;
+    ctx.globalAlpha=1-k;
+    ctx.strokeStyle=r.color;
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(r.x,r.y,8+k*30,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80b0ff';ctx.font='bold 13px Arial';
+  ctx.fillText(game.endless?'Echo Dissolve — Endless':'Echo Dissolve',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText(game.streak>1?('Streak x'+game.streak+' — click echoes to dissolve them'):'Click echoes to dissolve — stop them reaching the calm centre',18,28);
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('SCORE',W/2,8);
+  ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,22);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  const timeStr=game.endless?Math.floor(game.survived)+'s':(Math.max(0,60-Math.floor(game.survived)))+'s';
+  ctx.fillText('♥'.repeat(Math.max(0,game.lives))+'  '+timeStr,W-18,8);
+  ctx.restore();
+}
+
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.28,W/2,H/2,H*0.85);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(1,'rgba(0,0,0,.5)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=320,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(4,6,18,.97)'],[1,'rgba(3,4,12,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,140,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80b0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';
+  let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);
+    let sx=0,sy=0;
+    if(game.shakeT>0){
+      const k=game.shakeT/400;
+      sx=(Math.random()*2-1)*6*k;
+      sy=(Math.random()*2-1)*6*k;
+    }
+    ctx.translate(sx,sy);
+
+    if(game.state==='playing'){drawBg();}else{ctx.clearRect(-20,-20,W+40,H+40);}
+    if(game.state!=='title'){drawCentre();drawEchoes();drawFx();}
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='paused'){
+      drawHUD();
+      panelDraw('Paused',['Score: '+game.score,'','Click / tap the pause button to resume.']);
+    }
+    if(game.state==='title'){
+      ctx.fillStyle='rgba(2,3,10,.9)';ctx.fillRect(-20,-20,W+40,H+40);
+      panelDraw('Echo Dissolve',['Pressure phrases float toward your calm centre.','Click each one to dissolve it before it arrives.','Early dissolves & streaks score bigger.','Survive 60 seconds — 3 lives.','Best: '+game.best,'','Click / tap to begin.']);
+    }else if(game.state==='won'){
+      panelDraw('Calm Held! ✓',['Score: '+game.score+'  Best: '+game.best,'Best streak: '+game.bestStreak,'60 seconds of clarity.','','Click / tap to play again.','Press E for endless mode.']);
+    }else if(game.state==='gameover'){
+      panelDraw('Overwhelmed',['Score: '+game.score+'  Best: '+game.best,'','Dissolving takes practice.','','Click / tap to try again.']);
+    }
+    ctx.setTransform(1,0,0,1,0,0);
+  }catch(e){}
+}
+
+function hitCorner(px,py,cx,cy,rad){return Math.hypot(px-cx,py-cy)<=rad;}
+
+function toggleMute(){
+  game.muted=!game.muted;
+  lsSet('echoDissolve.muted',game.muted?'1':'0');
+  btnMute.textContent=game.muted?'🔇':'🔊';
+}
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';game.paused=true;btnPause.textContent='▶';}
+  else if(game.state==='paused'){game.state='playing';game.paused=false;btnPause.textContent='⏸';}
+}
+
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  let px,py;
+  if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
+  else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
+
+  if(game.state==='title'||game.state==='gameover'){resetGame(false);return;}
+  if(game.state==='won'){resetGame(false);return;}
+  if(game.state==='paused')return;
+  if(game.state!=='playing')return;
+  dissolveAt(px,py);
+}
+
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){
+    if(game.state==='playing'||game.state==='paused')togglePause();
+  }else if(e.key==='m'||e.key==='M'){
+    toggleMute();
+  }else if((e.key==='e'||e.key==='E')&&game.state==='won'){
+    resetGame(true);
+  }
+});
+
+const btnMute=document.getElementById('btnMute');
+const btnPause=document.getElementById('btnPause');
+btnMute.addEventListener('click',ev=>{ev.stopPropagation();toggleMute();});
+btnPause.addEventListener('click',ev=>{ev.stopPropagation();if(game.state==='playing'||game.state==='paused')togglePause();});
+btnMute.textContent=game.muted?'🔇':'🔊';
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={get game(){return game;},get echoes(){return echoes;},get popups(){return popups;},get rings(){return rings;},resetGame,spawnEcho,dissolveAt,update,draw,togglePause,toggleMute,PHRASES,INNER_R,MAX_R,SPD_MAX};
+</script>
+</body>
+</html>

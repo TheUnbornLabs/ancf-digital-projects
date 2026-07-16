@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Ripple Calm</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#020408;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+#stage{position:relative;}
+canvas{display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:absolute;top:8px;right:8px;display:flex;gap:8px;z-index:5;}
+#ctrls button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(120,200,255,.35);background:rgba(2,6,14,.75);color:#cfe8ff;font-size:18px;line-height:1;cursor:pointer;pointer-events:auto;}
+#ctrls button:active{background:rgba(80,160,255,.35);}
+#toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);background:rgba(2,6,14,.9);border:1px solid rgba(120,200,255,.35);color:#cfe8ff;font-size:13px;padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:6;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+<canvas id="game" width="960" height="540"></canvas>
+<div id="ctrls">
+<button id="btnPause" aria-label="Pause" title="Pause (Space)">&#10074;&#10074;</button>
+<button id="btnMute" aria-label="Mute" title="Mute">&#128266;</button>
+</div>
+<div id="toast"></div>
+</div></div>
+<div id="hint">Click / tap (or swipe) to send calming ripples &middot; dissolve all pressure waves before they reach centre &middot; Space to pause</div>
+<script>
+'use strict';
+// Ripple Calm (#82)
+// Pressure waves expand inward from the edges toward a calm centre orb.
+// Click anywhere to emit a calming ripple that dissolves pressure waves it crosses.
+// Survive 60 seconds. 3 lives.
+// Theme: one intentional calm response dissolves waves of noise.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const stage=document.getElementById('stage');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const ORB_R=30;
+const DURATION=60000;
+const PRESSURE_LABELS=['conform','obey','breed','rush','compare','regret','oblige','impress'];
+const LABEL_GLYPH={conform:'■',obey:'▲',breed:'●',rush:'◆',compare:'▶',regret:'◯',oblige:'✦',impress:'★'};
+
+// ---- persistence ----
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function loadBest(){const v=lsGet('ripplecalm_best');const n=parseInt(v,10);return isFinite(n)&&n>0?n:0;}
+function loadTotalDissolved(){const v=lsGet('ripplecalm_total_dissolved');const n=parseInt(v,10);return isFinite(n)&&n>0?n:0;}
+function loadAch(){try{const v=JSON.parse(lsGet('ripplecalm_ach')||'{}');return v&&typeof v==='object'?v:{};}catch(e){return {};}}
+function saveAch(){lsSet('ripplecalm_ach',JSON.stringify(achievements));}
+
+const game={state:'title',time:0,elapsed:0,score:0,best:loadBest(),lives:3,destroyed:0,streak:0,muted:false,shake:0,totalDissolved:loadTotalDissolved(),floorStart:0};
+let achievements=loadAch();
+let pressureWaves=[],calmRipples=[],particles=[],popups=[],toasts=[];
+let spawnTimer=0,spawnInterval=2800,waveSpeedBonus=0,rng;
+let emitCooldown=0;const EMIT_COOLDOWN_MAX=140;
+let lastTouch=null;
+
+function resetGame(){
+  pressureWaves=[];calmRipples=[];particles=[];popups=[];
+  spawnTimer=0;spawnInterval=2800;waveSpeedBonus=0;
+  emitCooldown=0;
+  game.elapsed=0;game.time=0;game.lives=3;game.score=0;game.destroyed=0;game.streak=0;game.shake=0;game.floorStart=0;
+  rng=seeded(42);
+  game.state='playing';
+}
+
+function spawnPressure(){
+  const ang=rng()*Math.PI*2;const startR=340;const x=CX+Math.cos(ang)*startR,y=CY+Math.sin(ang)*startR;
+  const boss=game.elapsed>0&&Math.floor(game.elapsed/20000)>0&&game.elapsed%20000<spawnInterval&&rng()<0.5;
+  pressureWaves.push({x,y,ang,r:0,maxR:startR,speed:55+waveSpeedBonus,label:PRESSURE_LABELS[Math.floor(rng()*PRESSURE_LABELS.length)],alpha:1,dissolved:false,wpx:x,wpy:y,boss:!!boss,hits:boss?3:1,maxHits:boss?3:1});
+}
+function emitCalm(px,py){
+  if(emitCooldown>0)return false;
+  calmRipples.push({x:px,y:py,r:0,speed:220,alpha:0.8,maxR:300});
+  emitCooldown=EMIT_COOLDOWN_MAX;
+  return true;
+}
+function spawnBurst(x,y,color){
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:420,maxLife:420,color:color||'120,200,255'});
+  }
+}
+function addPopup(x,y,text,color){popups.push({x,y,text,life:700,maxLife:700,color:color||'#bfe8ff'});}
+function addToast(text){toasts.push({text,life:2600,maxLife:2600});}
+function vibrate(ms){try{if(navigator.vibrate)navigator.vibrate(ms);}catch(e){}}
+
+function checkAchievements(){
+  const unlocked=[];
+  if(!achievements.dissolved50 && game.totalDissolved>=50){achievements.dissolved50=true;unlocked.push('Dissolved 50 waves total');}
+  if(!achievements.zeroHit && game.state==='won' && game.lives===3){achievements.zeroHit=true;unlocked.push('Zero-hit run');}
+  if(!achievements.floor10 && game.floorStart>0 && (game.elapsed-game.floorStart)>=10000){achievements.floor10=true;unlocked.push('Survived at max density for 10s');}
+  if(unlocked.length){saveAch();unlocked.forEach(u=>addToast('Achievement: '+u));}
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+  if(emitCooldown>0)emitCooldown=Math.max(0,emitCooldown-dt);
+  if(game.shake>0)game.shake=Math.max(0,game.shake-dt);
+  // particles/popups animate even off "playing" for a touch, but gate heavy logic
+  for(const p of particles){p.x+=p.vx*s;p.y+=p.vy*s;p.life-=dt;}
+  particles=particles.filter(p=>p.life>0);
+  for(const pu of popups){pu.y-=30*s;pu.life-=dt;}
+  popups=popups.filter(pu=>pu.life>0);
+  for(const t of toasts)t.life-=dt;
+  toasts=toasts.filter(t=>t.life>0);
+
+  if(game.state!=='playing')return;
+  game.elapsed+=dt;
+  // secondary difficulty lever: wave speed creeps up over elapsed time, clamped
+  waveSpeedBonus=Math.min(60,game.elapsed/2000);
+  spawnTimer+=dt;
+  if(spawnTimer>=spawnInterval){
+    spawnTimer=0;
+    const prevInterval=spawnInterval;
+    spawnInterval=Math.max(900,spawnInterval-80);
+    if(spawnInterval<=900){if(game.floorStart===0)game.floorStart=game.elapsed;}else{game.floorStart=0;}
+    spawnPressure();
+  }
+  // move pressure waves inward, compute polar->cartesian once per wave per frame
+  for(const pw of pressureWaves){
+    if(pw.dissolved)continue;
+    pw.r+=pw.speed*s;
+    pw.wpx=pw.x+Math.cos(Math.PI+pw.ang)*pw.r;
+    pw.wpy=pw.y+Math.sin(Math.PI+pw.ang)*pw.r;
+    if(Math.hypot(pw.wpx-CX,pw.wpy-CY)<ORB_R+8){
+      pw.dissolved=true;
+      game.lives=Math.max(0,game.lives-1);
+      game.streak=0;
+      game.shake=150;
+      sndHit();
+      vibrate(60);
+      if(game.lives<=0){
+        game.lives=0;
+        if(game.score>game.best){game.best=game.score;lsSet('ripplecalm_best',String(game.best));}
+        sndLose();
+        game.state='gameover_pending';
+        setTimeout(()=>{ if(game.lives<=0) game.state='gameover'; },400);
+      }
+    }
+  }
+  // move calm ripples
+  for(const cr of calmRipples){cr.r+=cr.speed*s;cr.alpha=Math.max(0,0.8*(1-cr.r/cr.maxR));}
+  // collision: calm ripple vs pressure wave (boss waves need multiple hits)
+  for(const cr of calmRipples){
+    if(cr.alpha<=0)continue;
+    for(const pw of pressureWaves){
+      if(pw.dissolved)continue;
+      if(Math.hypot(pw.wpx-cr.x,pw.wpy-cr.y)<cr.r+10){
+        pw.hits--;
+        spawnBurst(pw.wpx,pw.wpy,pw.boss?'255,160,160':'120,200,255');
+        if(pw.hits<=0){
+          pw.dissolved=true;
+          game.destroyed++;
+          game.totalDissolved++;
+          lsSet('ripplecalm_total_dissolved',String(game.totalDissolved));
+          game.streak++;
+          const mult=1+Math.floor(game.streak/5)*0.5;
+          const gained=Math.round(10*mult);
+          game.score+=gained;
+          addPopup(pw.wpx,pw.wpy,'+'+gained,pw.boss?'#ffd27a':'#bfe8ff');
+          sndDissolve();
+          vibrate(20);
+          checkAchievements();
+        }
+      }
+    }
+  }
+  // cull
+  pressureWaves=pressureWaves.filter(pw=>!pw.dissolved&&pw.r<pw.maxR+30);
+  calmRipples=calmRipples.filter(cr=>cr.alpha>0);
+  if(game.elapsed>=DURATION&&game.lives>0){
+    if(game.score>game.best){game.best=game.score;lsSet('ripplecalm_best',String(game.best));}
+    sndWin();
+    game.state='won';
+    checkAchievements();
+  }
+}
+// audio
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){if(game.muted)return;const a=AC();if(!a)return;try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}}
+const sndHit=()=>tone(200,0.2,'sawtooth',0.05);
+const sndDissolve=()=>tone(480,0.12,'sine',0.04);
+const sndLose=()=>tone(150,0.4,'sawtooth',0.06);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){ctx.fillStyle='rgba(2,4,8,1)';ctx.fillRect(0,0,W,H);}
+function drawOrb(){
+  const pulse=0.7+0.3*Math.sin(game.time/800);
+  const lowLife=game.lives===1;
+  const warn=lowLife?0.4+0.4*Math.sin(game.time/180):0;
+  const go=ctx.createRadialGradient(CX-6,CY-6,4,CX,CY,ORB_R);
+  if(lowLife){
+    go.addColorStop(0,`rgba(255,${200-warn*80|0},${200-warn*80|0},${pulse})`);
+    go.addColorStop(1,`rgba(220,${80-warn*40|0},${80-warn*40|0},${pulse*0.4})`);
+  }else{
+    go.addColorStop(0,`rgba(200,240,255,${pulse})`);
+    go.addColorStop(1,`rgba(60,140,220,${pulse*0.4})`);
+  }
+  ctx.shadowColor=lowLife?'rgba(255,120,120,.5)':'rgba(120,200,255,.4)';ctx.shadowBlur=16;
+  ctx.fillStyle=go;ctx.beginPath();ctx.arc(CX,CY,ORB_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+}
+function drawPressureWaves(){
+  for(const pw of pressureWaves){
+    if(pw.dissolved)continue;
+    const alpha=pw.alpha*(1-pw.r/pw.maxR)*0.8;
+    ctx.save();ctx.globalAlpha=Math.max(0,alpha);
+    ctx.strokeStyle=pw.boss?'rgba(255,140,60,.9)':'rgba(220,80,80,.8)';
+    ctx.lineWidth=pw.boss?11:6;ctx.lineCap='round';
+    const arcR=pw.r;
+    ctx.beginPath();ctx.arc(pw.x,pw.y,arcR,Math.PI+pw.ang-0.18,Math.PI+pw.ang+0.18);ctx.stroke();
+    ctx.fillStyle='rgba(255,190,190,.95)';
+    ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    const glyph=LABEL_GLYPH[pw.label]||'■';
+    ctx.fillText(glyph+' '+pw.label,pw.wpx,pw.wpy-10);
+    if(pw.boss){
+      ctx.font='bold 10px Arial';ctx.fillStyle='#ffd27a';
+      ctx.fillText('hits: '+pw.hits+'/'+pw.maxHits,pw.wpx,pw.wpy+8);
+    }
+    ctx.restore();
+  }
+}
+function drawCalmRipples(){for(const cr of calmRipples){ctx.save();ctx.globalAlpha=cr.alpha;ctx.strokeStyle='rgba(120,200,255,.7)';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cr.x,cr.y,cr.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+function drawParticles(){for(const p of particles){ctx.save();ctx.globalAlpha=Math.max(0,p.life/p.maxLife);ctx.fillStyle=`rgba(${p.color},0.9)`;ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);ctx.fill();ctx.restore();}}
+function drawPopups(){for(const pu of popups){ctx.save();ctx.globalAlpha=Math.max(0,pu.life/pu.maxLife);ctx.fillStyle=pu.color;ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillText(pu.text,pu.x,pu.y);ctx.restore();}}
+function drawToasts(){
+  if(!toasts.length)return;
+  const t=toasts[0];
+  ctx.save();ctx.globalAlpha=Math.min(1,t.life/300,1);
+  ctx.fillStyle='rgba(2,6,14,.9)';rr(W/2-160,54,320,30,8);ctx.fill();
+  ctx.strokeStyle='rgba(120,200,255,.4)';ctx.lineWidth=1;rr(W/2-160,54,320,30,8);ctx.stroke();
+  ctx.fillStyle='#cfe8ff';ctx.font='12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(t.text,W/2,54+15);
+  ctx.restore();
+}
+function drawHUD(){
+  ctx.save();ctx.fillStyle='rgba(1,2,5,.88)';rr(0,0,W,46,0);ctx.fill();
+  const sec=Math.max(0,Math.ceil((DURATION-game.elapsed)/1000));
+  ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';ctx.fillText('Ripple Calm',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Time: '+sec+'s  Lives: '+('♥').repeat(game.lives)+('♡').repeat(3-game.lives)+'  Dissolved: '+game.destroyed+(game.streak>1?'  Streak: '+game.streak:''),18,28);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('Score '+game.score+'  Best '+game.best,W-118,8);
+  // emit cooldown meter
+  const cw=90,ch=6,cx0=W-118,cy0=30;
+  ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(cx0-cw,cy0,cw,ch);
+  const pct=1-(emitCooldown/EMIT_COOLDOWN_MAX);
+  ctx.fillStyle='rgba(120,200,255,.85)';ctx.fillRect(cx0-cw,cy0,cw*clamp(pct,0,1),ch);
+  ctx.restore();
+}
+function vignette(){
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.6)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(game.state==='playing'&&game.lives===1){
+    const warn=0.15+0.15*Math.sin(game.time/180);
+    ctx.fillStyle=`rgba(200,30,30,${warn})`;ctx.fillRect(0,0,W,H);
+  }
+}
+function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(1,2,5,.78)';ctx.fillRect(0,0,W,H);const pw2=520,ph=320,px=(W-pw2)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(3,6,14,.97)'],[1,'rgba(2,4,10,.97)']]);rr(px,py,pw2,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,160,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw2-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#80c0ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+100;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}ctx.restore();}
+function drawPauseOverlay(){
+  ctx.save();ctx.fillStyle='rgba(1,2,5,.7)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#80c0ff';ctx.font='bold 30px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Paused',W/2,H/2-10);
+  ctx.fillStyle='rgba(234,242,246,.7)';ctx.font='14px Arial';
+  ctx.fillText('Press Space or tap Resume to continue',W/2,H/2+24);
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);ctx.save();
+    let sx=0,sy=0;
+    if(game.shake>0){const m=game.shake/150;sx=(Math.random()*2-1)*4*m;sy=(Math.random()*2-1)*4*m;}
+    ctx.translate(sx,sy);
+    drawBg();
+    if(game.state!=='title'){drawPressureWaves();drawCalmRipples();drawParticles();drawOrb();drawPopups();}
+    vignette();
+    if(game.state==='playing'||game.state==='gameover_pending'){drawHUD();drawToasts();}
+    if(game.state==='paused'){drawHUD();drawPauseOverlay();}
+    if(game.state==='title')panelDraw('Ripple Calm',['Pressure waves close in from the edges.','Click / tap or swipe to send calming ripples.','Ripples dissolve any pressure wave they touch.','3 lives — survive 60 seconds.','','One calm response changes the whole field.','','Click / tap to begin.']);
+    else if(game.state==='won')panelDraw('Calm Held! ✓',['Score: '+game.score+'  Best: '+game.best,'Dissolved: '+game.destroyed+' pressure waves','','60 seconds of intentional calm.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Overwhelmed',['Score: '+game.score+'  Best: '+game.best,'','The waves broke through. Try again.','','Click / tap to retry.']);
+    ctx.restore();
+  }catch(e){}
+}
+function pointFromEvent(e,rect){
+  const sx=W/rect.width,sy=H/rect.height;
+  if(e.touches&&e.touches.length){return{px:(e.touches[0].clientX-rect.left)*sx,py:(e.touches[0].clientY-rect.top)*sy};}
+  return{px:(e.clientX-rect.left)*sx,py:(e.clientY-rect.top)*sy};
+}
+function onDown(e){
+  e.preventDefault();
+  const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
+  const rect=canvas.getBoundingClientRect();
+  const{px,py}=pointFromEvent(e,rect);
+  lastTouch={px,py};
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='playing'&&game.lives>0){if(emitCalm(px,py))sndDissolve();}
+}
+function onMove(e){
+  if(game.state!=='playing'||game.lives<=0)return;
+  if(!e.touches||!e.touches.length)return;
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const{px,py}=pointFromEvent(e,rect);
+  if(!lastTouch||Math.hypot(px-lastTouch.px,py-lastTouch.py)>26){
+    if(emitCalm(px,py))sndDissolve();
+    lastTouch={px,py};
+  }
+}
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});
+canvas.addEventListener('touchmove',onMove,{passive:false});
+
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';}
+  else if(game.state==='paused'){game.state='playing';}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  document.getElementById('btnMute').textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+}
+document.getElementById('btnPause').addEventListener('click',(e)=>{e.stopPropagation();togglePause();document.getElementById('btnPause').textContent=game.state==='paused'?'▶':'❙❙';});
+document.getElementById('btnMute').addEventListener('click',(e)=>{e.stopPropagation();toggleMute();});
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){
+    e.preventDefault();
+    if(game.state==='playing'||game.state==='paused'){togglePause();document.getElementById('btnPause').textContent=game.state==='paused'?'▶':'❙❙';}
+  }
+  if(e.key==='m'||e.key==='M')toggleMute();
+});
+
+// letterbox resize preserving 960x540 aspect ratio
+function resize(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const scale=Math.min(vw/W,vh/H);
+  const cw=Math.floor(W*scale),ch=Math.floor(H*scale);
+  canvas.style.width=cw+'px';
+  canvas.style.height=ch+'px';
+  stage.style.width=cw+'px';
+  stage.style.height=ch+'px';
+}
+window.addEventListener('resize',resize);
+resize();
+
+let last=0;
+function loop(ts){
+  if(!last)last=ts;
+  const dt=ts-last;last=ts;
+  if(game.state!=='paused')update(dt);
+  else update(0);
+  draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+window.__cfq={get game(){return game;},get pressureWaves(){return pressureWaves;},get calmRipples(){return calmRipples;},get particles(){return particles;},get popups(){return popups;},resetGame,spawnPressure,emitCalm,update,draw,togglePause,toggleMute,CX,CY,ORB_R,DURATION};
+</script>
+</body>
+</html>

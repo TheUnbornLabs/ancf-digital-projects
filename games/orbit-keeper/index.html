@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>Orbit Keeper</title>
+<style>
+*{box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;}
+html,body{margin:0;height:100%;overflow:hidden;background:#01020a;font-family:Arial,Helvetica,sans-serif;}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+canvas{display:block;}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(234,242,246,.4);pointer-events:none;text-align:center;}
+#ctrls{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none;z-index:5;}
+.ctrlbtn{pointer-events:auto;width:44px;height:44px;border-radius:12px;background:rgba(6,10,24,.7);border:1.5px solid rgba(80,180,255,.35);color:#cfe8ff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.ctrlbtn:active{background:rgba(80,180,255,.25);}
+#leftBtns,#rightBtns{display:flex;gap:8px;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="ctrls">
+  <div id="leftBtns">
+    <button id="btnPause" class="ctrlbtn" title="Pause (P)">&#10073;&#10073;</button>
+  </div>
+  <div id="rightBtns">
+    <button id="btnMute" class="ctrlbtn" title="Mute (M)">&#128266;</button>
+  </div>
+</div>
+<div id="hint">Click / tap to add thrust in the radial direction &middot; keep the planet in orbit &middot; P pause &middot; M mute</div>
+<script>
+'use strict';
+// Orbit Keeper (#41)
+// A planet orbits a star. Gravity tugs it inward; pressure
+// debris drifts in from outside. Click to fire a tiny thrust
+// to correct the orbit. Keep the planet between two rings
+// for 60 seconds. Theme: maintaining your own orbit under pressure.
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=960,H=540;
+const CX=W/2,CY=H/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
+const INNER_R=120,OUTER_R=220,TARGET_R=170;
+const PLANET_R=10,STAR_R=22;
+const MAX_SPEED=900; // safety clamp against runaway velocity
+const WORDS=['pressure','guilt','should','fomo','nag'];
+
+// ---------- persistence ----------
+function lsGet(k){try{return window.localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{window.localStorage.setItem(k,v);}catch(e){}}
+let storedBest=0;
+try{const v=parseInt(lsGet('orbitkeeper_best')||'0',10);storedBest=isFinite(v)?v:0;}catch(e){storedBest=0;}
+
+const game={state:'title',time:0,survived:0,score:0,scoreAcc:0,best:storedBest,lives:3,shakeT:0,
+  muted:false,newBest:false,flareT:0,flareCd:0,combo:0,comboT:0,prevState:'playing'};
+let planet,debris=[],particles=[],popups=[],rng;
+
+function resetGame(){
+  game.survived=0;game.score=0;game.scoreAcc=0;game.lives=3;game.shakeT=0;game.newBest=false;
+  game.flareT=0;game.flareCd=14000+rng?0:0;game.combo=0;game.comboT=0;
+  debris=[];particles=[];popups=[];rng=seeded(Date.now()%99991);
+  game.flareCd=14000;
+  const a=Math.PI/4;planet={x:CX+Math.cos(a)*TARGET_R,y:CY+Math.sin(a)*TARGET_R,vx:-Math.sin(a)*90,vy:Math.cos(a)*90};
+  game.state='playing';
+}
+
+function addParticle(x,y,vx,vy,life,color,size){
+  particles.push({x,y,vx,vy,t:0,life:Math.max(50,life),color,size:size||2.5});
+}
+function burst(x,y,color,n){
+  n=n||14;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=40+Math.random()*160;
+    addParticle(x,y,Math.cos(a)*sp,Math.sin(a)*sp,300+Math.random()*300,color,2+Math.random()*2.5);
+  }
+}
+function addPopup(x,y,text,color){
+  popups.push({x,y,text,color:color||'#ffd580',t:0,life:900});
+}
+
+function thrust(){// push radially outward from star
+  if(game.state!=='playing')return;
+  const dx=planet.x-CX,dy=planet.y-CY;const d=Math.hypot(dx,dy)||1;
+  planet.vx+=dx/d*40;planet.vy+=dy/d*40;
+  // thrust exhaust trail (opposite direction of push)
+  for(let i=0;i<6;i++){
+    const spread=(Math.random()-0.5)*0.6;
+    const ex=-dx/d,ey=-dy/d;
+    const ca=Math.cos(spread),sa=Math.sin(spread);
+    const rvx=ex*ca-ey*sa,rvy=ex*sa+ey*ca;
+    addParticle(planet.x,planet.y,rvx*(60+Math.random()*60),rvy*(60+Math.random()*60),260+Math.random()*180,'rgba(120,200,255,ALPHA)',1.5+Math.random()*1.5);
+  }
+  sndThrust();
+}
+
+function difficultyFactor(){
+  // ramps 0..1 over the 60s run, clamped
+  return clamp(game.survived/60,0,1);
+}
+
+function update(dt){
+  dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
+  if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
+  if(game.comboT>0)game.comboT=Math.max(0,game.comboT-dt);else game.combo=0;
+
+  // particles/popups animate even when paused/menus, but keep simple: only update while not title
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.t+=dt;
+    if(p.t>=p.life){particles.splice(i,1);continue;}
+    p.x+=p.vx*s;p.y+=p.vy*s;p.vx*=0.96;p.vy*=0.96;
+  }
+  for(let i=popups.length-1;i>=0;i--){
+    const u=popups[i];u.t+=dt;if(u.t>=u.life){popups.splice(i,1);continue;}
+    u.y-=s*22;
+  }
+
+  if(game.state!=='playing')return;
+  game.survived+=s;
+
+  const diff=difficultyFactor();
+  // difficulty ramp: gravity strengthens gradually, clamped to max 1.6x
+  const gravMul=1+clamp(diff,0,1)*0.6;
+  const G=8000*gravMul;
+
+  // solar flare event: periodic temporary gravity spike
+  if(game.flareCd>0){game.flareCd=Math.max(0,game.flareCd-dt);}
+  else if(game.flareT<=0){game.flareT=2200;game.flareCd=Math.max(9000,16000-diff*6000);}
+  let flareMul=1;
+  if(game.flareT>0){game.flareT=Math.max(0,game.flareT-dt);flareMul=1.9;}
+
+  // gravity toward star
+  const dx=CX-planet.x,dy=CY-planet.y,d=Math.hypot(dx,dy)||1;
+  const gEff=G*flareMul;
+  planet.vx+=dx/d*gEff/(d*d)*s*d; // simplified: a=G/d^2 * unit * d = G/d * unit
+  planet.vy+=dy/d*gEff/(d*d)*s*d;
+
+  // damping (solar wind metaphor)
+  planet.vx*=0.9995;planet.vy*=0.9995;
+
+  // safety clamp: prevent runaway velocity from dt spikes / small-d compounding
+  const spd=Math.hypot(planet.vx,planet.vy);
+  if(spd>MAX_SPEED){const k=MAX_SPEED/spd;planet.vx*=k;planet.vy*=k;}
+
+  planet.x+=planet.vx*s;planet.y+=planet.vy*s;
+
+  // check orbit
+  const r=Math.hypot(planet.x-CX,planet.y-CY);
+  if(r<INNER_R||r>OUTER_R){
+    game.lives--;game.shakeT=400;sndBad();
+    game.combo=0;game.comboT=0;
+    burst(planet.x,planet.y,'rgba(255,90,90,ALPHA)',22);
+    // reset planet to orbit
+    const a=Math.atan2(planet.y-CY,planet.x-CX);
+    planet.x=CX+Math.cos(a)*TARGET_R;planet.y=CY+Math.sin(a)*TARGET_R;
+    planet.vx=-Math.sin(a)*90;planet.vy=Math.cos(a)*90;
+    if(game.lives<=0){
+      finishRun();
+      game.state='gameover';
+      return;
+    }
+  }else{
+    // precision-based scoring: reward proximity to TARGET_R (near-miss bonus)
+    const dist=Math.abs(r-TARGET_R);
+    const band=OUTER_R-INNER_R; // full safe width for normalization
+    const precision=clamp(1-dist/(band/2),0,1); // 1 at target line, 0 at edges
+    const base=s*5;
+    const bonus=base*(1+precision*3); // up to 4x at perfect line
+    game.combo=Math.min(game.combo+precision*s*2,20);
+    game.comboT=800;
+    const comboMul=1+game.combo*0.05;
+    const gained=bonus*comboMul;
+    game.scoreAcc+=gained;
+    game.score=Math.floor(game.scoreAcc);
+    if(precision>0.85&&rng()<0.02){
+      addPopup(planet.x,planet.y-16,'+precise',precision>0.95?'#8ef0a0':'#ffd580');
+    }
+  }
+
+  // spawn debris - rate increases slightly with difficulty, clamped
+  const spawnChance=clamp(0.04+diff*0.03,0.02,0.09);
+  if(rng()<spawnChance||(game.flareT>0&&rng()<0.08)){
+    const a2=rng()*Math.PI*2;const r2=OUTER_R+60+rng()*100;
+    const word=WORDS[(rng()*WORDS.length)|0];
+    debris.push({x:CX+Math.cos(a2)*r2,y:CY+Math.sin(a2)*r2,vx:(rng()-.5)*40,vy:(rng()-.5)*40,t:0,word,r:5});
+  }
+  for(let i=debris.length-1;i>=0;i--){
+    const d2=debris[i];
+    d2.x+=d2.vx*s;d2.y+=d2.vy*s;d2.t+=dt;
+    // debris collision with planet: pushes planet off orbit slightly, but scores a "deflect" bonus if hit while thrust-active window
+    const dd=Math.hypot(d2.x-planet.x,d2.y-planet.y);
+    if(dd<PLANET_R+d2.r&&!d2.hit){
+      d2.hit=true;
+      const dvx=(planet.x-d2.x)/(dd||1),dvy=(planet.y-d2.y)/(dd||1);
+      planet.vx+=dvx*30;planet.vy+=dvy*30;
+      game.score+=8;
+      addPopup(d2.x,d2.y,'deflected +8','#80c8ff');
+      burst(d2.x,d2.y,'rgba(200,140,255,ALPHA)',10);
+      sndDeflect();
+      d2.t=3500; // fade out fast after hit
+    }
+    if(d2.t>4000)debris.splice(i,1);
+  }
+
+  if(game.survived>=60){
+    finishRun();
+    sndWin();
+    game.state='won';
+  }
+}
+
+function finishRun(){
+  if(game.score>game.best){
+    game.best=game.score;
+    game.newBest=true;
+    lsSet('orbitkeeper_best',String(game.best));
+  }
+}
+
+// ---------- audio ----------
+let actx=null;
+function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
+function tone(f,d,t,v){
+  if(game.muted)return;
+  const a=AC();if(!a)return;
+  try{if(a.state==='suspended')a.resume();const o=a.createOscillator(),g=a.createGain();o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(v||0.06,a.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+(d||0.15));o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+(d||0.15)+0.02);}catch(e){}
+}
+const sndThrust=()=>tone(440,0.06,'sine',0.04);
+const sndBad=()=>tone(200,0.3,'sawtooth',0.06);
+const sndDeflect=()=>tone(660,0.1,'triangle',0.05);
+const sndWin=()=>{[528,660,792,1056].forEach((f,i)=>setTimeout(()=>tone(f,0.2,'sine',0.07),i*80));};
+const sndPause=()=>tone(330,0.08,'sine',0.04);
+const sndWarn=()=>tone(150,0.18,'sawtooth',0.05);
+
+// ---------- drawing helpers ----------
+function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);for(const s of stops)g.addColorStop(s[0],s[1]);return g;}
+function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawBg(){
+  ctx.fillStyle='#01020a';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<80;i++){const sx=((i*197+game.time*0.005)%W+W)%W,sy=((i*89)%H);ctx.fillStyle='rgba(200,220,255,'+(.05+.08*(i%3))+')';ctx.beginPath();ctx.arc(sx,sy,0.8,0,Math.PI*2);ctx.fill();}
+}
+function drawOrbit(){
+  // inner ring: dashed
+  ctx.strokeStyle='rgba(80,180,255,.16)';ctx.lineWidth=1.5;ctx.setLineDash([6,6]);
+  ctx.beginPath();ctx.arc(CX,CY,INNER_R,0,Math.PI*2);ctx.stroke();
+  // outer ring: dotted (distinct dash pattern for colorblind accessibility)
+  ctx.setLineDash([2,7]);
+  ctx.beginPath();ctx.arc(CX,CY,OUTER_R,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+  // target ring: tick-mark pattern, shape-distinct from inner/outer
+  ctx.strokeStyle='rgba(140,220,160,.35)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(CX,CY,TARGET_R,0,Math.PI*2);ctx.stroke();
+  const ticks=48;
+  for(let i=0;i<ticks;i++){
+    const a=(i/ticks)*Math.PI*2;
+    const r1=TARGET_R-4,r2=TARGET_R+4;
+    ctx.beginPath();
+    ctx.moveTo(CX+Math.cos(a)*r1,CY+Math.sin(a)*r1);
+    ctx.lineTo(CX+Math.cos(a)*r2,CY+Math.sin(a)*r2);
+    ctx.strokeStyle='rgba(140,220,160,.22)';
+    ctx.stroke();
+  }
+}
+function drawStar(){
+  const flareActive=game.flareT>0;
+  ctx.shadowColor=flareActive?'#ff8060':'#ffd060';ctx.shadowBlur=flareActive?46:30;
+  const gs=ctx.createRadialGradient(CX-4,CY-4,2,CX,CY,STAR_R);
+  gs.addColorStop(0,'rgba(255,255,200,.95)');gs.addColorStop(0.6,flareActive?'rgba(255,140,60,.85)':'rgba(255,200,80,.8)');gs.addColorStop(1,'rgba(200,100,20,.4)');
+  ctx.fillStyle=gs;ctx.beginPath();ctx.arc(CX,CY,STAR_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+}
+function drawPlanet(){
+  const gp=ctx.createRadialGradient(planet.x-3,planet.y-3,1,planet.x,planet.y,PLANET_R);
+  gp.addColorStop(0,'rgba(150,220,255,.9)');gp.addColorStop(0.5,'rgba(60,120,200,.8)');gp.addColorStop(1,'rgba(20,40,80,.5)');
+  ctx.shadowColor='rgba(100,180,255,.6)';ctx.shadowBlur=12;ctx.fillStyle=gp;ctx.beginPath();ctx.arc(planet.x,planet.y,PLANET_R,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+}
+function drawDebris(){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const d of debris){
+    const alpha=clamp(1-d.t/3500,0,1);
+    ctx.globalAlpha=alpha*0.75;
+    ctx.fillStyle=d.hit?'rgba(200,140,255,.8)':'rgba(200,80,80,.7)';
+    ctx.beginPath();ctx.arc(d.x,d.y,5,0,Math.PI*2);ctx.fill();
+    ctx.font='9px Arial';ctx.fillStyle='rgba(255,220,220,.85)';
+    if(!d.hit)ctx.fillText(d.word,d.x,d.y-10);
+  }
+  ctx.globalAlpha=1;
+}
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(1-p.t/p.life,0,1);
+    ctx.fillStyle=p.color.replace('ALPHA',(a*0.85).toFixed(3));
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size*a+0.4,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawPopups(){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const u of popups){
+    const a=clamp(1-u.t/u.life,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=u.color;ctx.font='bold 12px Arial';
+    ctx.fillText(u.text,u.x,u.y);
+  }
+  ctx.globalAlpha=1;
+}
+function drawHUD(){
+  ctx.save();
+  ctx.fillStyle='rgba(5,8,20,.88)';rr(0,0,W,46,0);ctx.fill();
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillStyle='#80c8ff';ctx.font='bold 13px Arial';ctx.fillText('Orbit Keeper',18,8);
+  ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Keep the planet between the rings for 60s',18,28);
+  ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('SCORE',W/2,8);
+  ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.score,W/2,22);
+  ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';
+  ctx.fillText('♥'.repeat(game.lives)+'  '+(Math.max(0,60-Math.floor(game.survived)))+'s',W-18,8);
+  if(game.combo>1){
+    ctx.textAlign='left';ctx.fillStyle='#8ef0a0';ctx.font='bold 11px Arial';
+    ctx.fillText('combo x'+(1+game.combo*0.05).toFixed(1),18,8+22);
+  }
+  ctx.restore();
+}
+function lowLifeVignette(){
+  if(game.lives!==1)return;
+  const pulse=0.25+0.2*Math.abs(Math.sin(game.time*0.005));
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.75);
+  g.addColorStop(0,'rgba(255,0,0,0)');g.addColorStop(1,'rgba(200,20,20,'+pulse.toFixed(3)+')');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.6)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function panelDraw(title,lines){
+  ctx.save();
+  ctx.fillStyle='rgba(5,8,20,.78)';ctx.fillRect(0,0,W,H);
+  const pw=520,ph=300,px=(W-pw)/2,py=(H-ph)/2;
+  ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(6,10,24,.97)'],[1,'rgba(3,6,16,.97)']]);
+  rr(px,py,pw,ph,22);ctx.fill();
+  ctx.strokeStyle='rgba(80,180,255,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#80c8ff';ctx.font='bold 34px Arial';ctx.fillText(title,W/2,py+62);
+  ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='15px Arial';let ly=py+98;
+  for(const l of lines){ctx.fillText(l,W/2,ly);ly+=26;}
+  ctx.restore();
+}
+function draw(){
+  try{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(game.shakeT>0){const m=game.shakeT/400*6;dx=Math.sin(game.time*.06)*m;dy=Math.cos(game.time*.08)*m;}
+    ctx.save();ctx.translate(dx,dy);
+    drawBg();
+    if(game.state!=='title'){
+      drawOrbit();
+      drawDebris();
+      drawStar();
+      drawPlanet();
+      drawParticles();
+      drawPopups();
+    }
+    lowLifeVignette();
+    vignette();
+    if(game.state==='playing')drawHUD();
+    if(game.state==='paused')drawHUD();
+    if(game.state==='title')panelDraw('Orbit Keeper',['Click to fire thrust and correct the orbit.','Keep the planet between the inner and outer rings.','Survive 60 seconds.','','Maintain your own orbit under pressure.','','Click / tap to begin.']);
+    else if(game.state==='paused')panelDraw('Paused',['Score: '+game.score,'','Press P / Esc or tap Resume to continue.']);
+    else if(game.state==='won')panelDraw('Orbit Held! ✓',['Score: '+game.score+'  Best: '+game.best+(game.newBest?'  ★ NEW BEST':''),'You maintained your orbit for 60 seconds.','','Steady, self-directed motion.','','Click / tap to play again.']);
+    else if(game.state==='gameover')panelDraw('Orbit Lost',['Score: '+game.score+'  Best: '+game.best+(game.newBest?'  ★ NEW BEST':''),'','Every orbit can be re-established.','','Click / tap to try again.']);
+    ctx.restore();
+  }catch(e){}
+}
+
+// ---------- pause / mute ----------
+function togglePause(){
+  if(game.state==='playing'){game.state='paused';sndPause();}
+  else if(game.state==='paused'){game.state='playing';sndPause();}
+}
+function toggleMute(){
+  game.muted=!game.muted;
+  const btn=document.getElementById('btnMute');
+  if(btn)btn.textContent=game.muted?'\u{1F507}':'\u{1F50A}';
+}
+
+// ---------- input ----------
+function primaryAction(){
+  const a2=AC();if(a2&&a2.state==='suspended'){try{a2.resume();}catch(ex){}}
+  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='paused')return;
+  thrust();
+}
+canvas.addEventListener('mousedown',e=>{e.preventDefault();primaryAction();});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();primaryAction();},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();primaryAction();}
+  else if(e.code==='KeyP'||e.code==='Escape'){e.preventDefault();if(game.state==='playing'||game.state==='paused')togglePause();}
+  else if(e.code==='KeyM'){e.preventDefault();toggleMute();}
+});
+const btnPause=document.getElementById('btnPause');
+const btnMute=document.getElementById('btnMute');
+if(btnPause)btnPause.addEventListener('click',e=>{e.stopPropagation();if(game.state==='playing'||game.state==='paused')togglePause();});
+if(btnMute)btnMute.addEventListener('click',e=>{e.stopPropagation();toggleMute();});
+
+// ---------- canvas sizing (DPR-aware, letterboxed to preserve aspect) ----------
+function resizeCanvas(){
+  try{
+    const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const scale=Math.min(vw/W,vh/H);
+    const cssW=Math.max(1,Math.floor(W*scale)),cssH=Math.max(1,Math.floor(H*scale));
+    canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
+    canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }catch(e){}
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+// ---------- main loop ----------
+let last=0;
+function loop(ts){
+  if(!last)last=ts;const dt=ts-last;last=ts;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+game.state='title';draw();requestAnimationFrame(loop);
+
+window.__cfq={get game(){return game;},get planet(){return planet;},get debris(){return debris;},get particles(){return particles;},resetGame,thrust,update,draw,togglePause,toggleMute,INNER_R,OUTER_R,TARGET_R,MAX_SPEED};
+</script>
+</body>
+</html>
