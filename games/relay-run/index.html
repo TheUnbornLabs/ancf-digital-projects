@@ -54,7 +54,7 @@ function saveMuted(v){try{localStorage.setItem('relayRunMuted',v?'1':'0');}catch
 const game={state:'title',time:0,round:0,score:0,best:loadBest(),lives:3,dist:0,
   streak:0,streakMult:1,gatesHit:0,hurdlesHit:0,hurdlesSeen:0,roundHurdleHits:0,
   muted:loadMuted(),paused:false,inputLock:0,roundStartTime:0,bestSplits:loadSplits(),
-  splits:[],dashCharge:0,dashReady:false,shakeT:0,shakeMag:0,flashT:0};
+  splits:[],dashCharge:0,dashReady:false,shakeT:0,shakeMag:0,flashT:0,roundEnding:false};
 let player,obstacles=[],particles=[],popups=[],spawnTimer=0,spawnInterval=1800,speed=200,speedBase=200,rng;
 
 function minGapPx(){ // safety floor: ensure horizontal gap covers obstacle width + reaction distance
@@ -72,6 +72,7 @@ function resetGame(){
   game.round=0;game.score=0;game.lives=3;game.streak=0;game.streakMult=1;
   game.gatesHit=0;game.hurdlesHit=0;game.hurdlesSeen=0;game.splits=[];
   game.dashCharge=0;game.dashReady=false;game.shakeT=0;game.flashT=0;
+  game.roundEnding=false; // must clear here too: a restart during a pending round transition would otherwise deadlock all future rounds
   buildRound(0);
 }
 function jump(){
@@ -174,7 +175,10 @@ function update(dt){
   // cull
   obstacles=obstacles.filter(o=>o.x>-100);
   // round win
-  if(game.dist>=DIST_PER_ROUND){
+  // roundEnding gates re-entry: dist stays >=DIST_PER_ROUND until buildRound() resets it 400ms later,
+  // so without this every frame in that window re-awards the bonus and queues another round++
+  if(game.dist>=DIST_PER_ROUND && !game.roundEnding){
+    game.roundEnding=true;
     game.score+=50;
     const roundTime=game.time-game.roundStartTime;
     game.splits[game.round]=roundTime;
@@ -182,6 +186,7 @@ function update(dt){
     if(cleanBonus){game.score+=25;addPopup(PLAYER_X,player.y-70,'+25 clean round!','rgba(160,255,180,.95)');}
     sndWin2();
     setTimeout(()=>{
+      game.roundEnding=false;
       game.round++;
       if(game.round>=TOTAL){
         if(game.score>game.best){game.best=game.score;saveBest(game.best);}

@@ -46,7 +46,11 @@ function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
 
 const game={state:'title',time:0,shots:0,score:0,best:loadBest(),hoopX:W/2,hoopVX:HOOP_VX_BASE,hoopW:HOOP_W_BASE,shakeT:0,streak:0,bestStreak:0,muted:false,prevState:'playing'};
 let ball=null,ballInFlight=false,dragStart=null,orb={x:BALL_X,y:BALL_Y};
-let scored=false,missAnim=0;
+// resolved: this shot has already been counted (made OR missed). Both branches in
+// update() must check it: ball/ballInFlight stay live until the between-shot reset
+// timeout fires (and on the final shot that timeout is never scheduled at all), so
+// without it the resolving condition re-fires every frame and re-counts the shot.
+let resolved=false,missAnim=0;
 let popups=[]; // floating score/label popups {x,y,text,life,maxLife,color}
 let particles=[]; // confetti burst {x,y,vx,vy,life,color}
 let streakPopupT=0,streakPopupN=0;
@@ -63,7 +67,7 @@ function resetGame(){
   game.shots=0;game.score=0;game.shakeT=0;game.streak=0;game.bestStreak=0;
   const d=difficultyFor(0);
   game.hoopX=W/2;game.hoopVX=d.vx;game.hoopW=d.w;
-  ball=null;ballInFlight=false;dragStart=null;orb={x:BALL_X,y:BALL_Y};scored=false;missAnim=0;
+  ball=null;ballInFlight=false;dragStart=null;orb={x:BALL_X,y:BALL_Y};resolved=false;missAnim=0;
   popups=[];particles=[];streakPopupT=0;
   game.state='playing';
 }
@@ -89,7 +93,9 @@ function flick(dx,dy){
   const power=clamp(Math.hypot(dx,dy)*3.2,0,1200);
   const a=Math.atan2(-dy,-dx);
   ball={x:orb.x,y:orb.y,vx:Math.cos(a)*power,vy:Math.sin(a)*power,t:0};
-  ballInFlight=true;scored=false;missAnim=0;sndThrow();
+  // cleared here, not in the reset timeout: flick() is the only place that sets
+  // ballInFlight=true, and the final shot never schedules that timeout.
+  ballInFlight=true;resolved=false;missAnim=0;sndThrow();
 }
 
 function togglePause(){
@@ -114,8 +120,8 @@ function update(dt){
     // check score
     const hx=game.hoopX,hy=HOOP_Y,hw=game.hoopW;
     const dx=ball.x-hx,dy=ball.y-hy;
-    if(Math.abs(dx)<hw/2&&Math.abs(dy)<HOOP_H+BALL_R*0.8&&ball.vy>0&&!scored){
-      scored=true;
+    if(Math.abs(dx)<hw/2&&Math.abs(dy)<HOOP_H+BALL_R*0.8&&ball.vy>0&&!resolved){
+      resolved=true;
       // accuracy/distance-based scoring: swish = near dead-center + steep fall
       const steep=ball.vy>420;
       const swish=Math.abs(dx)<BONUS_RING_R&&steep;
@@ -144,7 +150,9 @@ function update(dt){
       return;
     }
     // out of bounds -> miss
-    if(ball.x<-40||ball.x>W+40||ball.y>H+40){
+    // !resolved also stops a MADE ball, still falling off-screen, counting as a miss
+    if((ball.x<-40||ball.x>W+40||ball.y>H+40)&&!resolved){
+      resolved=true;
       missAnim=400;sndMiss();
       game.streak=0;
       addPopup(game.hoopX,HOOP_Y+20,'MISS','#ff6060');

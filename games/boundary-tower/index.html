@@ -119,17 +119,22 @@ const PRESSURES=[
 const BOSS_PRESSURE={name:'Unsolicited Advice',hp:900,speed:0.12,reward:120,color:'#ff5060',tier:5,boss:true};
 
 // ---- Tower types ----
+// rate is ms/shot and MUST stay well under an enemy's dwell time in range
+// (~950ms for a tower beside a straight run at PRESSURES[].speed), or a tower
+// gets <1 shot per enemy pass and can never kill anything. damage*shots-per-pass
+// has to clear the weakest enemy's hp (60) or the economy never bootstraps:
+// gold beyond the wave-clear bonus only comes from kills.
 const TOWER_TYPES=[
-  {name:'Boundary',letter:'B',cost:50,range:2.5,damage:8,rate:1200,color:'#40d090'},
-  {name:'Clarity',letter:'C',cost:80,range:2.0,damage:18,rate:1800,color:'#60a0ff'},
-  {name:'Calm',letter:'K',cost:120,range:3.5,damage:6,rate:800,color:'#c0a0ff'},
+  {name:'Boundary',letter:'B',cost:50,range:2.5,damage:24,rate:300,color:'#40d090'},
+  {name:'Clarity',letter:'C',cost:80,range:2.0,damage:54,rate:450,color:'#60a0ff'},
+  {name:'Calm',letter:'K',cost:120,range:3.5,damage:18,rate:200,color:'#c0a0ff'},
 ];
 let selectedTower=0;
 
 const game={
   state:'title',time:0,wave:0,lives:10,maxLives:10,gold:100,score:0,best:loadBest(),
   shakeT:0,waveTimer:0,spawning:false,combo:0,comboT:0,muted:false,speedMul:1,
-  waveBannerT:0,waveBannerText:'',livesLostThisWave:0,
+  waveBannerT:0,waveBannerText:'',livesLostThisWave:0,nextWaveT:0,
 };
 let towers=[],enemies=[],projectiles=[],particles=[],popups=[],rng,enQueue=[];
 let selectedPlacedTower=null; // for sell/upgrade panel
@@ -166,7 +171,7 @@ function resetGame(){
   towers=[]; enemies=[]; projectiles=[]; particles=[]; popups=[];
   game.wave=0; game.lives=10; game.maxLives=10; game.gold=100; game.score=0;
   game.state='playing'; game.time=0; game.spawning=false; game.shakeT=0;
-  game.combo=0; game.comboT=0; game.speedMul=1; game.waveBannerT=0;
+  game.combo=0; game.comboT=0; game.speedMul=1; game.waveBannerT=0; game.nextWaveT=0;
   selectedTower=0; selectedPlacedTower=null;
   startWave(1);
 }
@@ -236,7 +241,10 @@ function spawnEnemy(type){
 
 function moveEnemy(e,dt){
   if(e.dead||e.reached) return;
-  const spd=e.type.speed*(dt/16);
+  // progress is in PATH CELLS, not px: type.speed is authored on a px-ish scale,
+  // so /10 converts it. Enemy dwell time inside a tower's range must stay well
+  // above the tower's fire rate (800-1800ms) or no tower can ever land a kill.
+  const spd=e.type.speed*(dt/16)/10;
   e.progress+=spd;
   while(e.progress>=1 && e.pathIdx<WALKPATH.length-1){
     e.progress-=1; e.pathIdx++;
@@ -346,6 +354,15 @@ function update(dt){
   particlesUpdate(dt);
   if(game.state!=='playing') return;
 
+  // Inter-wave gap. Must be driven by update()'s dt, not a real-time timer:
+  // update() only runs while playing, so pausing suspends the countdown and
+  // resuming continues it. A wall-clock timer would elapse during a pause and
+  // drop the transition on the floor, stranding the run with spawning===false.
+  if(game.nextWaveT>0){
+    game.nextWaveT-=dt;
+    if(game.nextWaveT<=0){ game.nextWaveT=0; startWave(game.wave+1); }
+  }
+
   // spawn from queue
   game.waveTimer+=simDt;
   for(let i=enQueue.length-1;i>=0;i--){
@@ -367,7 +384,7 @@ function update(dt){
     game.score+=clearBonus;
     spawnPopup(W/2,H/2-40,`Wave clear +${clearBonus}`,'#8affd2');
     // next wave auto-starts after short pause
-    setTimeout(()=>{ if(game.state==='playing') startWave(game.wave+1); },2000);
+    game.nextWaveT=2000;
   }
 }
 

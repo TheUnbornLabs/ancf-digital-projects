@@ -150,7 +150,11 @@ function update2(dt){
 	spawnTimer+=dt;
 	const si=Math.max(300,1200-game.round*200);
 	const uncollected=stars.filter(st=>!st.collected).length;
-	if(uncollected<8&&spawnTimer>=si&&(uncollected+game.collected+game.misses)<PER_ROUND){
+	// spawn budget counts only stars still in play + already collected: a round is PER_ROUND
+	// *collected*, so misses must NOT consume the budget or a round with 1..MAX_MISSES-1
+	// misses could never reach either ending. Termination: keep spawning until collected
+	// hits PER_ROUND (round completes) or misses hits MAX_MISSES (gameover).
+	if(uncollected<8&&spawnTimer>=si&&(uncollected+game.collected)<PER_ROUND){
 		spawnTimer=0;
 		spawnStar();
 	}
@@ -177,11 +181,6 @@ function update2(dt){
 	}
 	bursts=bursts.filter(b=>b.life>0);
 	if(game.state==='gameover')return;
-	if(!roundDone&&(game.collected>=PER_ROUND||game.collected+game.misses>=PER_ROUND)){
-		if(game.collected<PER_ROUND){
-			// round ran out of stars without reaching target via misses alone; only complete on full collection
-		}
-	}
 	if(!roundDone&&game.collected>=PER_ROUND){
 		roundDone=true;
 		sndWin2();

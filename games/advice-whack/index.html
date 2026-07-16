@@ -200,6 +200,7 @@ function spawnMole(){
 function isBossRound(r){ return r>0 && r%5===0; }
 function startBoss(){
   game.state='boss';
+  game.roundTimer=ROUND_TIME; // HUD shows the clock during 'boss'; it would otherwise read a frozen 0
   game.bossMaxHP=5+game.round;
   game.bossHP=game.bossMaxHP;
   sndBoss();
@@ -440,8 +441,10 @@ function update(dt){
     if(achievePopups[i].t<=0) achievePopups.splice(i,1);
   }
 
-  // Round over?
-  if(game.roundTimer<=0){
+  // Round over? Only the timed round ends on the clock; a boss round ends via
+  // bossDefeated() only. update() also runs while state==='boss', and roundTimer
+  // is already 0 on entry to the boss, so an ungated check would bounce boss->shop.
+  if(game.state==='playing' && game.roundTimer<=0){
     save.totalRounds=Math.max(save.totalRounds,game.round);
     writeSave(save);
     if(game.perfectRound) checkAchieves('noMiss');

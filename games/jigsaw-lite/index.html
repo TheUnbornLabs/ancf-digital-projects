@@ -53,6 +53,7 @@ const game={state:'title',time:0,round:0,moves:0,best:Infinity,shakeT:0,
 let COLS=3,ROWS=3,CELL=110,GAP=6,SNAP_TOL=30,ROT_ENABLED=false;
 let BOARD_W=0,BOARD_H=0,BX=0,BY=0;
 let pieces=[],dragging=null,dragOx=0,dragOy=0,rng;
+let dragSX=0,dragSY=0,lastX=0,lastY=0;
 function layoutBoard(){BOARD_W=COLS*(CELL+GAP)-GAP;BOARD_H=ROWS*(CELL+GAP)-GAP;BX=(W-BOARD_W)/2;BY=(H-BOARD_H)/2+20;}
 function roundParams(rnd){
   // Difficulty curve: grid grows, snap tolerance shrinks, rotation unlocks late.
@@ -126,7 +127,10 @@ function drawPiece(p){const alpha=p===dragging?0.85:1;ctx.save();ctx.globalAlpha
   const g=ctx.createLinearGradient(p.x,p.y,p.x+CELL,p.y+CELL);g.addColorStop(0,p.col+'dd');g.addColorStop(1,p.col+'88');ctx.fillStyle=g;rr(p.x,p.y,CELL,CELL,12);ctx.fill();
   ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.5;rr(p.x,p.y,CELL,CELL,12);ctx.stroke();
   ctx.fillStyle='rgba(0,0,0,.82)';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.translate(cx,cy);if(p.rot)ctx.rotate(-p.rot*Math.PI/180*0);ctx.translate(-cx,-cy);
+  // The label deliberately rotates WITH the tile: the tile is a square, so its
+  // own rotation is near-invisible, and "label reads upright" is the player's
+  // only cue for rot===0 -- the one state tryPlace() accepts. Do not counter-
+  // rotate the label back level here; that hides the puzzle entirely.
   ctx.fillText(p.label||'',p.x+CELL/2,p.y+CELL/2);
   ctx.restore();}
 function drawPopupsAndParticles(){
@@ -135,7 +139,7 @@ function drawPopupsAndParticles(){
   for(const p of game.popups){const a=1-p.t/p.life;ctx.globalAlpha=Math.max(0,a);ctx.fillStyle=p.color;ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y);}
   ctx.globalAlpha=1;
 }
-function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,8,6,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#8affd2';ctx.font='bold 13px Arial';ctx.fillText('Round '+game.round+' / '+AFFIRMATIONS.length,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText((ROT_ENABLED?'Rotated pieces · ':'')+'Drag pieces to their outlines',18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('MOVES',W/2,8);ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.moves,W/2,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('BEST '+(game.bestMoves===Infinity?'—':game.bestMoves),W-18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('STREAK '+game.streak,W-18,26);ctx.restore();}
+function drawHUD(){ctx.save();ctx.fillStyle='rgba(4,8,6,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#8affd2';ctx.font='bold 13px Arial';ctx.fillText('Round '+game.round+' / '+AFFIRMATIONS.length,18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText((ROT_ENABLED?'Tap a piece to rotate · ':'')+'Drag pieces to their outlines',18,28);ctx.textAlign='center';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('MOVES',W/2,8);ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(game.moves,W/2,22);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('BEST '+(game.bestMoves===Infinity?'—':game.bestMoves),W-18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('STREAK '+game.streak,W-18,26);ctx.restore();}
 function vignette(){const g=ctx.createRadialGradient(W/2,H/2,H*0.38,W/2,H/2,H*0.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
 function panelDraw(title,lines){ctx.save();ctx.fillStyle='rgba(3,6,4,.78)';ctx.fillRect(0,0,W,H);const pw=560,ph=320,px=(W-pw)/2,py=(H-ph)/2;ctx.fillStyle=lgrad(px,py,px,py+ph,[[0,'rgba(10,20,14,.97)'],[1,'rgba(6,12,8,.97)']]);rr(px,py,pw,ph,22);ctx.fill();ctx.strokeStyle='rgba(80,220,140,.22)';ctx.lineWidth=1.5;rr(px+.5,py+.5,pw-1,ph-1,22);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#8affd2';ctx.font='bold 32px Arial';ctx.fillText(title,W/2,py+58);ctx.fillStyle='rgba(234,242,246,.88)';ctx.font='14px Arial';let ly=py+94;for(const l of lines){ctx.fillText(l,W/2,ly);ly+=24;}ctx.restore();}
 function starRating(moves,pieceCount){if(moves<=pieceCount)return 3;if(moves<pieceCount*1.6)return 2;return 1;}
@@ -170,14 +174,30 @@ function onDown(e){e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended
   if(game.state==='paused')return; // must use button/key to resume, not tap-anywhere (avoids accidental resume mid-drag)
   if(game.state!=='playing')return;
   const{x,y}=getPointer(e);const p=hitPiece(x,y);
-  if(p){dragging=p;dragOx=x-p.x;dragOy=y-p.y;pieces.splice(pieces.indexOf(p),1);pieces.push(p);}
+  if(p){dragging=p;dragOx=x-p.x;dragOy=y-p.y;dragSX=x;dragSY=y;lastX=x;lastY=y;pieces.splice(pieces.indexOf(p),1);pieces.push(p);}
 }
-function onMove(e){e.preventDefault();if(!dragging||game.state!=='playing')return;const{x,y}=getPointer(e);dragging.x=clamp(x-dragOx,0,W-CELL);dragging.y=clamp(y-dragOy,0,H-CELL);}
+function onMove(e){e.preventDefault();if(!dragging||game.state!=='playing')return;const{x,y}=getPointer(e);dragging.x=clamp(x-dragOx,0,W-CELL);dragging.y=clamp(y-dragOy,0,H-CELL);lastX=x;lastY=y;}
 function onUp(e){e.preventDefault();if(!dragging)return;
-  game.moves++;game.totalMoves++;
-  const placed=tryPlace(dragging);
-  if(!placed){game.totalMisses++;sndMiss();shake();}
-  dragging=null;
+  // Press with no drag = rotate 90deg. Rounds >=4 spawn pieces pre-rotated and
+  // tryPlace() only accepts rot===0, so a rotate control MUST exist or those
+  // rounds cannot be finished at all. Works for mouse and touch alike; onUp has
+  // no usable pointer of its own (touchend carries no touches[]), hence lastX/lastY.
+  // A rotate is neither a move nor a miss: it must not cost moves, or a perfect
+  // round (moves===pieces.length) would be unreachable once rotation unlocks.
+  const p=dragging;dragging=null;
+  if(ROT_ENABLED&&Math.abs(lastX-dragSX)<4&&Math.abs(lastY-dragSY)<4){
+    p.rot=(p.rot+90)%360;
+    // A piece rejected for its rotation stays lying on its own outline, so the
+    // follow-up rotate is the gesture that must complete it -- re-dragging it
+    // "home" would be a zero-distance move, i.e. another tap. Snap only when
+    // tryPlace() is certain to accept, so a rotate can never score as a miss
+    // (which would silently break the player's combo streak).
+    if(!(p.rot===0&&Math.abs(p.x-p.targetX)<SNAP_TOL&&Math.abs(p.y-p.targetY)<SNAP_TOL)){sndSnap();return;}
+    tryPlace(p);
+  }else{
+    game.moves++;game.totalMoves++;
+    if(!tryPlace(p)){game.totalMisses++;sndMiss();shake();}
+  }
   if(isDone()){
     const m=game.moves;
     if(m<game.best)game.best=m;

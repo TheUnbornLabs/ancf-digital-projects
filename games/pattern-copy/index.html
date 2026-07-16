@@ -69,6 +69,7 @@ function clickCell(idx){
     sndBad();game.shakeT=300;game.mistakes++;game.streak=0;
     const{x,y}=cellPos(idx);addBurst(x+CELL/2,y+CELL/2,'#ff6060');
     playerInput=[];
+    game.phase='celebrate';litCell=-1;// must leave 'input' synchronously: the pending setTimeout owns the round from here, and clickCell's guard is phase==='input'. update() ignores unknown phases, so this is inert until the timeout restores 'transition'.
     if(!game.endless){
       game.lives--;
       if(game.lives<=0){
@@ -104,6 +105,7 @@ function clickCell(idx){
     const{x,y}=cellPos(idx);
     addPopup('+'+gain,x+CELL/2,y,'#7CFFB2');
     addBurst(x+CELL/2,y+CELL/2,'#7CFFB2');
+    game.phase='celebrate';litCell=-1;// same: close the input window now, or strays during the 600ms celebration index past the finished sequence and score as misses
     setTimeout(()=>{
       game.round++;
       if(!game.endless&&game.round>=TOTAL){

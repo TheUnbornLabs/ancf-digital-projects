@@ -52,11 +52,11 @@ const HOLES=[
 const LS_BEST='golfputt_best_v1';
 function loadBest(){try{const v=parseInt(localStorage.getItem(LS_BEST),10);return isFinite(v)&&v>0?v:0;}catch(e){return 0;}}
 function saveBest(v){try{localStorage.setItem(LS_BEST,String(v));}catch(e){}}
-const game={state:'title',time:0,hole:0,strokes:0,totalStrokes:0,score:0,best:loadBest(),shakeT:0,paused:false,muted:false,onePuttStreak:0,bestStreak:0,holeStrokes:[],popup:null,popupT:0,particles:[]};
+const game={state:'title',time:0,hole:0,strokes:0,totalStrokes:0,score:0,best:loadBest(),shakeT:0,paused:false,muted:false,onePuttStreak:0,bestStreak:0,holeStrokes:[],popup:null,popupT:0,particles:[],sunk:false};
 let ball,holePos,walls,dragStart2=null,rng;
 function holeR(h){return h>=6?Math.max(10,HOLE_R_BASE-2):HOLE_R_BASE;} // holes 7-9 (index>=6) slightly tighter cup
 function frictionFor(h){return h>=6?Math.min(0.992,FRICTION_BASE+0.004):FRICTION_BASE;} // more friction on back nine tail
-function buildHole(h){rng=seeded(h*1999+7);const cfg=HOLES[h];ball={x:cfg.bx,y:cfg.by,vx:0,vy:0};holePos={x:cfg.hx,y:cfg.hy};walls=cfg.walls.map((w,i)=>({...w,label:NORMS[i%NORMS.length],icon:NORM_ICON[NORMS[i%NORMS.length]]}));game.strokes=0;dragStart2=null;game.state='playing';game.paused=false;}
+function buildHole(h){rng=seeded(h*1999+7);const cfg=HOLES[h];ball={x:cfg.bx,y:cfg.by,vx:0,vy:0};holePos={x:cfg.hx,y:cfg.hy};walls=cfg.walls.map((w,i)=>({...w,label:NORMS[i%NORMS.length],icon:NORM_ICON[NORMS[i%NORMS.length]]}));game.strokes=0;game.sunk=false;dragStart2=null;game.state='playing';game.paused=false;}// game.sunk must be cleared HERE, not in resetGame(): resetGame() delegates to buildHole(0), so this covers both hole->hole and won->restart; clearing it in resetGame() alone would leave the hole->hole path latched forever after the first sink.
 function resetGame(){game.hole=0;game.totalStrokes=0;game.score=0;game.shakeT=0;game.onePuttStreak=0;game.bestStreak=0;game.holeStrokes=[];game.popup=null;game.popupT=0;game.particles=[];buildHole(0);}
 function putt(dx,dy){if(Math.hypot(ball.vx,ball.vy)>2)return;const spd=clamp(Math.hypot(dx,dy)*3,0,MAX_POWER);const a=Math.atan2(dy,dx);ball.vx=Math.cos(a)*spd;ball.vy=Math.sin(a)*spd;game.strokes++;sndPutt();}
 function wallCollide(b,w){const nx=clamp(b.x,w.x,w.x+w.w),ny=clamp(b.y,w.y,w.y+w.h);let dx=b.x-nx,dy=b.y-ny,d=Math.hypot(dx,dy);if(d>=BALL_R)return;if(d===0){ // ball center inside wall (e.g. spawned overlapping): push from wall center to ball center
@@ -79,7 +79,7 @@ function update(dt){dt=clamp(dt,0,48);
   const FRICTION=frictionFor(game.hole),HOLE_R=holeR(game.hole);
   ball.x+=ball.vx*s;ball.y+=ball.vy*s;ball.vx*=Math.pow(FRICTION,dt/16);ball.vy*=Math.pow(FRICTION,dt/16);if(Math.hypot(ball.vx,ball.vy)<4){ball.vx=0;ball.vy=0;}// boundary
 if(ball.x<BALL_R){ball.x=BALL_R;ball.vx=Math.abs(ball.vx)*0.6;}if(ball.x>W-BALL_R){ball.x=W-BALL_R;ball.vx=-Math.abs(ball.vx)*0.6;}if(ball.y<BALL_R){ball.y=BALL_R;ball.vy=Math.abs(ball.vy)*0.6;}if(ball.y>H-BALL_R){ball.y=H-BALL_R;ball.vy=-Math.abs(ball.vy)*0.6;}for(const w of walls)wallCollide(ball,w);// hole check
-const dh=Math.hypot(ball.x-holePos.x,ball.y-holePos.y);if(dh<HOLE_R&&Math.hypot(ball.vx,ball.vy)<120){
+const dh=Math.hypot(ball.x-holePos.x,ball.y-holePos.y);if(!game.sunk&&dh<HOLE_R&&Math.hypot(ball.vx,ball.vy)<120){game.sunk=true;// one-shot: ball/holePos still describe the finished hole until buildHole() runs 600ms later, so without this latch a ball resting in the cup re-satisfies this test every tick
   const strokes=game.strokes;
   sndHole();
   game.totalStrokes+=strokes;

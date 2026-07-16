@@ -63,7 +63,7 @@ let storedMuted=lsGet('haikuBuild_muted','0')==='1';
 const game={state:'title',time:0,hIdx:0,score:0,best:storedBest,correctAnim:0,shakeT:0,
   paused:false,muted:storedMuted,wrongFlash:0,wrongCount:0,streak:0,bestStreak:0,
   lineFlash:[0,0,0],placedCorrect:0,placedWrong:0,hintCost:0,hintSlot:-1,hintT:0,
-  startTime:0,fails:0,maxFails:6,gameoverReason:''};
+  startTime:0,fails:0,maxFails:6,gameoverReason:'',pendingAdvance:false};
 let slots=[],tiles=[],dragging=null,dragOx=0,dragOy=0,rng;
 let particles=[];
 
@@ -79,6 +79,7 @@ function buildHaiku(h){
   const perRow=Math.max(1,Math.floor((W-100)/(MIN_TILE_W+10)));
   allWords.forEach((w,i)=>{tiles.push({label:w,x:60+(i%perRow)*(MIN_TILE_W+10),y:POOL_Y+Math.floor(i/perRow)*(TILE_H+10),slotIdx:-1,disposed:false});});
   game.correctAnim=0;
+  game.pendingAdvance=false; // must be false whenever a fresh board is shown: a stale true would skip this haiku
   game.wrongFlash=0;
   game.lineFlash=[0,0,0];
   game.state='playing';
@@ -191,6 +192,7 @@ function checkDone(){
     game.score+=Math.max(1,gained);
     game.placedWrong=0;game.hintCost=0;
     game.correctAnim=800;
+    game.pendingAdvance=true; // advanceIfDone() consumes this once the 800ms flash window elapses
     sndWin2();
   }
 }
@@ -247,8 +249,8 @@ function update(dt){
   for(let l=0;l<3;l++){if(game.lineFlash[l]>0)game.lineFlash[l]=Math.max(0,game.lineFlash[l]-dt);}
   if(game.correctAnim>0){
     game.correctAnim=Math.max(0,game.correctAnim-dt);
-    advanceIfDone();
   }
+  advanceIfDone(); // every frame: self-guarded, so a pending advance can never be stranded by a busy frame
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
     p.life-=dt;

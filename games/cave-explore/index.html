@@ -105,8 +105,12 @@ function resetGame(){
 }
 function buildLevel(r){
   buildSegs(r);
-  player={x:80,y:H/2,vy:0};
   game.scroll=0;game.crystals=0;game.noHit=true;
+  // must spawn on the centreline of the segment collision actually resolves to — segAt(scroll+x),
+  // not a fixed H/2. The tunnel is a random walk away from H/2 and the gap narrows each round,
+  // so a fixed spawn y can already be inside the wall on frame 0, with no reaction time.
+  // Keep the scroll reset above this: segAt must read the new level's scroll, not the old one's.
+  player={x:80,y:segAt(game.scroll+80).cy,vy:0};
   game.state='playing';
 }
 function segAt(worldX){const i=Math.floor(worldX/SEG_W);return segs[clamp(i,0,segs.length-1)];}

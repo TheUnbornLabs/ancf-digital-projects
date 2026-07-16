@@ -215,6 +215,10 @@ function loadGame(){
   let data=null;
   try{ data=JSON.parse(raw); }catch(e){ return; }
   if(!data) return;
+  // A save at/over WIN_TARGET is a finished run. total only ever grows, so resuming one leaves
+  // the next silenceBubble() re-tripping maybeWin() instantly. Leave the caller's fresh state;
+  // the round's first saveGame() overwrites the stale win. Best (BEST_KEY) is separate and kept.
+  if((Number(data.total)||0)>=WIN_TARGET) return;
   game.hours=Math.max(0,Number(data.hours)||0);
   game.total=Math.max(0,Number(data.total)||0);
   game.prestige=Math.max(0,Number(data.prestige)||0);

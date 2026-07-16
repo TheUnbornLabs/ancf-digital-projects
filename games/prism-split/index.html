@@ -45,22 +45,44 @@ const LS_KEY='prismSplit.best';
 function loadBest(){try{const v=localStorage.getItem(LS_KEY);return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
 function saveBest(v){try{localStorage.setItem(LS_KEY,String(v));}catch(e){}}
 const game={state:'title',time:0,round:0,score:0,best:loadBest(),paused:false,muted:false,puzzleTime:0,rotations:0,bonus:0};
-let mirrors=[],targets=[],beams=[],solved=false,rng,particles=[],flash=0,history=[];
+let mirrors=[],targets=[],beams=[],solved=false,rng,particles=[],flash=0,history=[],advTimer=null;
 const PRISM_X=180,PRISM_Y=H/2;
 // Simple puzzle: prism always at fixed spot, mirrors and targets are parameterised
-function buildPuzzle(r){rng=seeded(r*6007+23);solved=false;particles=[];flash=0;history=[];game.puzzleTime=0;game.rotations=0;
+// a pending round-advance belongs to the puzzle that scheduled it: rebuilding cancels it, or a
+// stale timer would advance the round of a puzzle that no longer exists.
+function buildPuzzle(r){if(advTimer){clearTimeout(advTimer);advTimer=null;}
+rng=seeded(r*6007+23);solved=false;particles=[];flash=0;history=[];game.puzzleTime=0;game.rotations=0;
 const numC=2+Math.min(4,Math.floor(r/2));// colours to use
 const cols=COLORS.slice(0,numC);// targets placed on right side in rows
 targets=cols.map((col,i)=>{const ty=80+i*(H-160)/(numC-1||1);return{x:W-60,y:ty,col,label:COLOR_NAMES[i],shape:SHAPES[i],hit:false};});// mirrors: one per colour beam, initially angled wrong
 const extra=r>=4?1:0;// harder puzzles get a second mirror stage per colour beam
 mirrors=[];
+// Solvability contract, enforced at build time rather than hoped for. Two things must hold or a
+// colour is unreachable by ANY click sequence and the whole puzzle is unwinnable:
+//  1. position — a 40px mirror only intercepts rays passing within 20px of its centre, so stage 1
+//     must sit ON its colour's fixed beam line out of the prism, and stage 2 on stage 1's aim.
+//  2. angle — a click is a whole PI/8 step, which swings the reflected beam by PI/4. So each
+//     initial angle must be a whole number of clicks off the angle that aims at the next
+//     waypoint; a continuous random angle leaves the 8 reachable beam directions on a 45-degree
+//     lattice that essentially never lands on the target.
+const STEP=Math.PI/8;
 cols.forEach((col,i)=>{
   const n=1+((extra&&i%2===0)?1:0);
-  for(let k=0;k<n;k++){
-    const mx=280+Math.floor(rng()*(W-480))+k*40;
-    const my=80+Math.floor(rng()*(H-200));
-    mirrors.push({x:mx,y:my,angle:rng()*Math.PI,col,label:k===0?COLOR_NAMES[i]:'',shape:SHAPES[i]});
-  }
+  const sa=-0.3+(i/(numC-1||1))*0.6;
+  const tt=210+i*70+rng()*40;// distinct radial band per colour, so mirrors stay clickably apart
+  const chain=[{x:PRISM_X+Math.cos(sa)*tt,y:PRISM_Y+Math.sin(sa)*tt}];
+  // stage 2 gets its own column past every stage-1 mirror (max x ~690) and its own y slot: no two
+  // mirrors may sit within mirrorAt()'s 32px pick radius or the earlier-indexed one swallows the
+  // click and the later one can never be rotated. Being further along x also keeps stage 1 the
+  // first hit on the prism ray, so the intended stage1 -> stage2 -> target order always holds.
+  if(n>1)chain.push({x:750+rng()*40,y:90+(i/2)*180});
+  let inAng=sa;
+  for(let k=0;k<chain.length;k++){const p=chain[k],nx=chain[k+1]||targets[i];
+    const outAng=Math.atan2(nx.y-p.y,nx.x-p.x);
+    const sol=(outAng+inAng-Math.PI)/2;// inverts reflAng=2*angle-inAng+PI
+    const off=1+Math.floor(rng()*7);// start 1-7 clicks away: wrong, but always clickable back to sol
+    mirrors.push({x:p.x,y:p.y,angle:sol-off*STEP,col,label:k===0?COLOR_NAMES[i]:'',shape:SHAPES[i]});
+    inAng=outAng;}
 });
 beams=[];game.state='playing';}
 function resetGame(){game.round=0;game.score=0;buildPuzzle(0);}
@@ -81,10 +103,18 @@ function segHit(sx,sy,ang,m){const dx=Math.cos(ang),dy=Math.sin(ang);
   if(t<=0.001||u<0||u>1)return null;
   return{t,x:sx+dx*t,y:sy+dy*t};
 }
+// a target counts as hit if the beam SEGMENT passes within 30px of it — not just where the
+// segment happens to end. Must be called for every segment pushed to beams[], including ones
+// that terminate on a mirror, or a beam that crosses its target before reflecting scores nothing.
+function hitTargets(x1,y1,x2,y2,col){const ex=x2-x1,ey=y2-y1,L2=ex*ex+ey*ey;
+  for(const t of targets){if(t.col!==col||t.hit)continue;
+    let u=L2>0?((t.x-x1)*ex+(t.y-y1)*ey)/L2:0;u=clamp(u,0,1);
+    if(Math.hypot(x1+ex*u-t.x,y1+ey*u-t.y)<30){t.hit=true;spawnBurst(t.x,t.y,t.col);sndHit();}}}
 function castBeam(sx,sy,ang,col,depth){if(depth>8)return;// find first mirror of matching colour
 let hit=null,hp=null,minDist=Infinity;
 for(const m of mirrors){if(m.col!==col)continue;const r=segHit(sx,sy,ang,m);if(r&&r.t<minDist){minDist=r.t;hit=m;hp=r;}}
 if(hit){beams.push({x1:sx,y1:sy,x2:hp.x,y2:hp.y,col});
+hitTargets(sx,sy,hp.x,hp.y,col);
 const reflAng=2*hit.angle-ang+Math.PI;
 castBeam(hp.x,hp.y,reflAng,col,depth+1);
 }else{
@@ -92,7 +122,7 @@ const clip=Math.min((W-sx)/Math.max(0.001,Math.cos(ang)),(H-sy)/Math.max(0.001,M
 const dist=Math.max(10,Math.min(1200,Math.abs(clip)));
 const ex=sx+Math.cos(ang)*dist,ey=sy+Math.sin(ang)*dist;
 beams.push({x1:sx,y1:sy,x2:ex,y2:ey,col});
-for(const t of targets){if(t.col===col&&!t.hit&&Math.hypot(ex-t.x,ey-t.y)<30){t.hit=true;spawnBurst(t.x,t.y,t.col);sndHit();}}
+hitTargets(sx,sy,ex,ey,col);
 }}
 function checkSolve(){if(solved)return;beams=[];for(const t of targets)t.hit=false;// cast beams from prism
 const numC=targets.length;for(let i=0;i<numC;i++){const spreadAng=-0.3+(i/(numC-1||1))*0.6;castBeam(PRISM_X,PRISM_Y,spreadAng,COLORS[i],0);}
@@ -102,7 +132,7 @@ game.bonus=speedBonus+efficiencyBonus;
 game.score+=1+Math.floor(game.bonus/50);
 if(game.score>game.best){game.best=game.score;saveBest(game.best);}
 flash=1;
-setTimeout(()=>{game.round++;if(game.round>=TOTAL){sndWin();game.state='won';flash=1;}else{buildPuzzle(game.round);}},700);}}
+advTimer=setTimeout(()=>{advTimer=null;game.round++;if(game.round>=TOTAL){sndWin();game.state='won';flash=1;}else{buildPuzzle(game.round);}},700);}}
 function update(dt){dt=clamp(dt,0,48);game.time+=dt;
 if(game.state==='playing'&&!game.paused){game.puzzleTime+=dt;if(beams.length===0)checkSolve();}
 if(flash>0)flash=Math.max(0,flash-dt/600);

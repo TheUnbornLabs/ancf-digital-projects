@@ -120,7 +120,10 @@ function clearLines(){
     game.flashRows=rowsToFlash;game.flashT=140;
     // remove flashed rows now (visual flash handled via a short freeze-then-clear look using flashT window on next draw pass is complex;
     // keep gameplay responsive: clear immediately but keep flash state for a brief overlay pulse)
-    for(const r of rowsToFlash){grid.splice(r,1);grid.unshift(Array(COLS).fill(null));}
+    // must remove ascending: splice(r)+unshift shifts rows ABOVE r down by one, so only
+    // indices > r stay valid. rowsToFlash is gathered descending, so copy-and-sort (the copy
+    // keeps game.flashRows on the original pre-clear indices the overlay draws against).
+    for(const r of [...rowsToFlash].sort((a,b)=>a-b)){grid.splice(r,1);grid.unshift(Array(COLS).fill(null));}
     game.lines+=cleared;
     const base=[0,100,300,500,800][cleared]*game.level;
     let bonus=0;

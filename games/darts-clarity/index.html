@@ -122,7 +122,9 @@ function throwDart(ax,ay){
   const wx=ax+(Math.random()-.5)*wob*2,wy=ay+(Math.random()-.5)*wob*2;
   const d=Math.hypot(wx-CX,wy-CY);
   let pts=0,label='Miss',ringIdx=-1;
-  for(let i=RINGS.length-1;i>=0;i--){
+  // RINGS must stay sorted by ascending radius: scanning inward-out, the first ring
+  // containing d IS the innermost one, so the smallest/highest-value ring wins.
+  for(let i=0;i<RINGS.length;i++){
     if(d<=RINGS[i].r){pts=RINGS[i].pts;label=RINGS[i].label;ringIdx=i;break;}
   }
   const isHighValue=ringIdx>=0&&ringIdx<=STREAK_RING_IDX;

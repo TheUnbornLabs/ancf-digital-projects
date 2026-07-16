@@ -44,6 +44,10 @@ function timeForRound(r){
   return clamp(Math.round(t),TIME_MIN,TIME_MAX);
 }
 const REVEAL_MS=900; // answer-reveal delay (skippable via tap)
+// At most one reveal timer may ever be pending: a stray one fires on whatever round is live
+// when it comes due, silently eating a puzzle. Every schedule site must go through this.
+let revealTimer=null;
+function scheduleAdvance(){clearTimeout(revealTimer);revealTimer=setTimeout(advanceRound,REVEAL_MS);}
 
 const PUZZLES=[
   {left:'FREE',right:'SPIRIT',answer:'WILD',wrong:['CAGE','RULE','BIND'],why:'A "wild spirit" pairs naturally with freedom, not confinement.'},
@@ -92,6 +96,7 @@ function buildRound(r){
 }
 
 function resetGame(){
+  clearTimeout(revealTimer);revealTimer=null; // no timer from the old session may land in the new one
   game.round=0;game.score=0;game.shakeT=0;game.streak=0;game.bestStreak=0;
   game.correctCount=0;game.answered=0;game.popups=[];
   game.order=buildOrder(Date.now()^Math.floor(Math.random()*1e9));
@@ -99,6 +104,7 @@ function resetGame(){
 }
 
 function advanceRound(){
+  clearTimeout(revealTimer);revealTimer=null; // every advance route funnels here (tap-skip, reveal timer, timeout)
   game.round++;
   if(game.round>=TOTAL){
     sndWin();game.state='won';
@@ -137,7 +143,7 @@ function choose(i){
     addPopup('MISS','rgba(240,120,120,.95)');
   }
   if(game.score>game.best){game.best=game.score;lsSet('wordbridge_best',String(game.best));}
-  setTimeout(advanceRound,REVEAL_MS);
+  scheduleAdvance();
 }
 
 function update(dt){
@@ -149,7 +155,9 @@ function update(dt){
     const pu=game.popups[i];pu.t+=dt;if(pu.t>=pu.life)game.popups.splice(i,1);
   }
   if(game.state!=='playing')return;
-  if(game.chosen<0){
+  // -1 = unanswered; -2 = timed out; >=0 = picked. Only -1 is still counting down: -2 also
+  // satisfies <0, which would re-run the timeout branch every frame of the reveal window.
+  if(game.chosen===-1){
     game.phaseT+=dt;
     const timePer=timeForRound(game.round);
     // low-time warning tick (soft cue) in last ~2s
@@ -165,7 +173,7 @@ function update(dt){
       game.answered++;
       sndBad();
       addPopup("TIME'S UP",'rgba(255,150,80,.95)');
-      setTimeout(advanceRound,REVEAL_MS);
+      scheduleAdvance();
     }
   }
 }

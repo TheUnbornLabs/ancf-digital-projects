@@ -100,12 +100,15 @@ function carveMaze(r,c,rng){
   for(const[dr,dc]of dirs){
     const nr=r+dr,nc=c+dc;
     if(nr<0||nr>=mazeRows||nc<0||nc>=mazeCols||maze[nr][nc].visited) continue;
-    // carve wall between
+    // carve wall between. (r,c) and (nr,nc) are 2 apart, so this opens TWO shared edges via
+    // the corridor cell (mr,mc): origin<->corridor and corridor<->destination. Both sides of
+    // each edge must be cleared - movePlayer() only reads the wall of the cell it stands in,
+    // so a one-sided clear yields a one-way passage.
     const mr=r+dr/2,mc=c+dc/2;
-    if(dr<0){maze[r][c].top=false;maze[mr][mc].bottom=false;maze[nr][nc].bottom=false;}
-    if(dr>0){maze[r][c].bottom=false;maze[mr][mc].top=false;maze[nr][nc].top=false;}
-    if(dc<0){maze[r][c].left=false;maze[mr][mc].right=false;maze[nr][nc].right=false;}
-    if(dc>0){maze[r][c].right=false;maze[mr][mc].left=false;maze[nr][nc].left=false;}
+    if(dr<0){maze[r][c].top=false;maze[mr][mc].bottom=false;maze[mr][mc].top=false;maze[nr][nc].bottom=false;}
+    if(dr>0){maze[r][c].bottom=false;maze[mr][mc].top=false;maze[mr][mc].bottom=false;maze[nr][nc].top=false;}
+    if(dc<0){maze[r][c].left=false;maze[mr][mc].right=false;maze[mr][mc].left=false;maze[nr][nc].right=false;}
+    if(dc>0){maze[r][c].right=false;maze[mr][mc].left=false;maze[mr][mc].right=false;maze[nr][nc].left=false;}
     carveMaze(nr,nc,rng);
   }
 }

@@ -45,14 +45,14 @@ const BEST_KEY='balance-beam-best';
 function loadBest(){try{const v=localStorage.getItem(BEST_KEY);return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
 function saveBest(v){try{localStorage.setItem(BEST_KEY,String(v));}catch(e){}}
 
-const game={state:'title',time:0,survived:0,score:0,best:loadBest(),lives:3,shakeT:0,muted:false,combo:0,bestCombo:0,endless:false,popups:[],flashT:0,dangerFlashT:0,lowLifeFlashT:0};
+const game={state:'title',time:0,survived:0,score:0,best:loadBest(),lives:3,shakeT:0,muted:false,combo:0,bestCombo:0,endless:false,popups:[],flashT:0,dangerFlashT:0,lowLifeFlashT:0,tipCd:0};
 let angle=0,angleV=0,weights=[],falling=null,spawnT=0,SPAWN_MS=2800,rng;
 let seedOverride=null; // window.__cfq test hook can set a deterministic seed
 
 function resetGame(endless){
   angle=0;angleV=0;weights=[];falling=null;spawnT=0;SPAWN_MS=2800;
   game.score=0;game.survived=0;game.lives=3;game.shakeT=0;game.combo=0;game.bestCombo=0;
-  game.endless=!!endless;game.popups=[];game.flashT=0;game.dangerFlashT=0;game.lowLifeFlashT=0;
+  game.endless=!!endless;game.popups=[];game.flashT=0;game.dangerFlashT=0;game.lowLifeFlashT=0;game.tipCd=0;
   const seed=(seedOverride!=null)?seedOverride:(Date.now()%99997);
   rng=seeded(seed);
   game.state='playing';
@@ -73,10 +73,9 @@ function placeFalling(left){
   const side=left?-1:1;
   const dx=side*(40+Math.floor(rng()*BEAM_LEN*0.45));
   const accuracy=1-Math.abs(dx)/(BEAM_LEN*0.45+40); // near-center placements score higher
+  // the weight is on the beam now; update()'s totalTorque accounts for it every
+  // frame. Do NOT also kick angleV here — that double-counts and isn't dt-scaled.
   weights.push({...falling,dx,placed:true});
-  const torque=falling.val*dx*0.00015;
-  angleV+=torque;
-  angleV=clamp(angleV,-0.05,0.05);
   sndPlace();
   const good=falling.val>0;
   let pts;
@@ -108,6 +107,7 @@ function update(dt){
   if(game.flashT>0)game.flashT=Math.max(0,game.flashT-dt);
   if(game.dangerFlashT>0)game.dangerFlashT=Math.max(0,game.dangerFlashT-dt);
   if(game.lowLifeFlashT>0)game.lowLifeFlashT=Math.max(0,game.lowLifeFlashT-dt);
+  if(game.tipCd>0)game.tipCd=Math.max(0,game.tipCd-dt);
   for(let i=game.popups.length-1;i>=0;i--){const p=game.popups[i];p.t+=dt;p.y-=dt*0.03;if(p.t>=p.life)game.popups.splice(i,1);}
   if(game.state!=='playing')return;
   game.survived+=s;
@@ -120,7 +120,12 @@ function update(dt){
   }
   // physics
   const totalTorque=weights.reduce((acc,w)=>acc+w.val*w.dx*0.0001,0);
-  angleV+=totalTorque*s;
+  // the -angle*RESTORE spring is what gives the beam an equilibrium: without it
+  // damping alone leaves angleV at a nonzero steady state, so any imbalance
+  // makes angle run away to MAX_ANGLE and stay there. Steady-state angle is
+  // totalTorque/RESTORE, so RESTORE also sets how much a placement tilts you.
+  const RESTORE=0.25;
+  angleV+=(totalTorque-angle*RESTORE)*s;
   angleV*=0.98; // damping
   angleV=clamp(angleV,-0.05,0.05); // clamp per-frame angular velocity to prevent violent overshoot
   angle+=angleV;
@@ -131,17 +136,24 @@ function update(dt){
   }
 
   if(Math.abs(angle)>MAX_ANGLE){
-    game.lives--;
-    game.combo=0;
-    game.shakeT=400;
-    game.flashT=250;
     angle=clamp(angle,-MAX_ANGLE,MAX_ANGLE);
     angleV=-angleV*0.3;
-    sndBad();
-    if(game.lives===1)game.lowLifeFlashT=1200;
-    if(game.lives<=0){
-      if(game.score>game.best){game.best=game.score;saveBest(game.best);}
-      game.state='gameover';
+    // One tip costs one life. The beam settles at totalTorque/RESTORE, so while an imbalance
+    // outweighs the spring the angle stays pinned past MAX_ANGLE and this branch re-fires every
+    // frame — without the cooldown a single tip drained all three lives in ~50ms, before the
+    // player could drop a counter-weight to correct it.
+    if(game.tipCd<=0){
+      game.lives--;
+      game.combo=0;
+      game.shakeT=400;
+      game.flashT=250;
+      game.tipCd=700;
+      sndBad();
+      if(game.lives===1)game.lowLifeFlashT=1200;
+      if(game.lives<=0){
+        if(game.score>game.best){game.best=game.score;saveBest(game.best);}
+        game.state='gameover';
+      }
     }
   }
   if(falling){

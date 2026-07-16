@@ -92,6 +92,10 @@ game.best=parseInt(lsGet('cfq_best','0'),10)||0;
 game.muted=lsGet('cfq_muted','0')==='1';
 
 let current=null,typed='',barT=0,rng,queue=[],correctAnim=0,failAnim=0;
+// True once the current prompt has been settled (answered or timed out) and its
+// hand-off timer is pending. Must gate every path that scores, drains the bar or
+// schedules nextPrompt(), or one prompt resolves twice and skips the next one.
+let resolved=false;
 let timePer=TIME_PER_BASE;
 let popups=[]; // floating score text {x,y,t,text,color}
 let particles=[]; // {x,y,vx,vy,t,color}
@@ -117,7 +121,7 @@ function startRound(){
   game.lives=LIVES; game.idx=0; game.total=0; game.state='playing'; game.shakeT=0;
   game.streak=0;
   timePer=Math.max(TIME_PER_MIN, TIME_PER_BASE - (game.round-1)*700);
-  typed=''; ti.value='';
+  typed=''; ti.value=''; resolved=false;
   roundStartScore=game.score; roundKeystrokes=0; roundErrors=0; roundStartTime=game.time;
   nextPrompt();
 }
@@ -126,7 +130,7 @@ function resetGame(){game.time=0;game.score=0;game.round=1;game.streak=0;game.be
 function nextPrompt(){
   if(game.idx>=queue.length){ onRoundOver(); return; }
   current=queue[game.idx]; game.idx++;
-  typed=''; ti.value=''; barT=0;
+  typed=''; ti.value=''; barT=0; resolved=false;
   correctAnim=0; failAnim=0;
   lastReactionMs=0;
 }
@@ -142,10 +146,14 @@ function onGameOver(){
 }
 
 function checkTyped(){
-  if(!current) return;
+  if(!current || resolved) return;
   const target=current.r.toLowerCase().replace(/[^a-z0-9 ']/g,'');
   const t=typed.toLowerCase().replace(/[^a-z0-9 ']/g,'');
-  if(t===target){
+  // The normalizer drops punctuation, so the prefix missing only the closing '.'
+  // normalizes equal to the target too. Require the full length so the match
+  // fires on the last keystroke, not one keystroke early.
+  if(t===target && typed.length>=current.r.length){
+    resolved=true;
     game.correctCount++;
     game.streak++; if(game.streak>game.bestStreak) game.bestStreak=game.streak;
     const comboMult=1+Math.floor(game.streak/3)*0.5; // +50% per 3-streak tier
@@ -162,6 +170,8 @@ function checkTyped(){
 }
 
 function onTimeout(){
+  if(resolved) return;
+  resolved=true;
   const brokenIdx=Math.max(0,LIVES-game.lives); // heart index about to break
   game.lives=Math.max(0,game.lives-1);
   game.streak=0;
@@ -196,7 +206,7 @@ function update(dt){
     const p=particles[i]; p.t-=dt; p.x+=p.vx*dt/1000; p.y+=p.vy*dt/1000; p.vy+=dt*0.25;
     if(p.t<=0) particles.splice(i,1);
   }
-  if(game.state!=='playing') return;
+  if(game.state!=='playing' || resolved) return; // bar must not overflow during a hand-off
   barT=Math.min(timePer, barT+dt);
   if(barT>=timePer){ barT=0; onTimeout(); }
 }

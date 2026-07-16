@@ -21,19 +21,25 @@ canvas{width:100vw;height:100vh;display:block;}
 <button id="btnMute" aria-label="Mute">&#128266;</button>
 <button id="btnPause" aria-label="Pause">&#10074;&#10074;</button>
 </div>
-<div id="hint">Click / tap empty space to plant crystal seeds &middot; grow your garden to fill 60% of the space</div>
+<div id="hint">Click / tap empty space to plant crystal seeds</div>
 <script>
 'use strict';
 // Crystal Grow (#62)
 // Click to plant crystal seeds. Each grows outward in branches.
-// Fill 60% of the canvas with crystal to win. Obstacle: void patches that shrink crystals.
+// Fill TARGET_FILL of the canvas with crystal to win. Obstacle: void patches that shrink crystals.
 // Theme: growing in your own unique shape — no two crystals are the same.
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
 const W=960,H=540;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function seeded(s){let n=s>>>0||1;return()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296;};}
-const MAX_SEEDS=8,TARGET_FILL=0.60;
+// TARGET_FILL must stay within what the growth model can actually paint in the ~STALL_LIMIT
+// window: MAX_SEEDS crystals x the fork rate/cap in update() x maxLen bound total coverage.
+// Measured: 8 seeds in open space reach ~10.2% and win; 8 seeds jammed on an edge (growth
+// wasted off-canvas) plateau ~7.3% and stall out. That gap is the game. Raising this much
+// above 0.10 makes it unwinnable again; lowering it makes the stall ending unreachable.
+// #hint is written from this constant at boot — keep it derived, never hardcode the number.
+const MAX_SEEDS=8,TARGET_FILL=0.10;
 const COLORS=['#60a0ff','#a060ff','#60e0c0','#ff80a0','#80e060','#ffcc40'];
 const STALL_LIMIT=9000; // ms with no coverage growth once seeds exhausted -> gameover
 
@@ -67,7 +73,7 @@ function plantCrystal(mx,my){
   for(const v of voids){if(Math.hypot(mx-v.x,my-v.y)<v.r+10){rejectFeedback();return;}}
   const col=COLORS[crystals.length%COLORS.length];
   const ang=rng()*Math.PI*2;
-  crystals.push({x:mx,y:my,branches:[{a:ang,len:0,maxLen:40+rng()*60,speed:30+rng()*20}],col,age:0,r:rng()*Math.PI*2,idx:crystals.length});
+  crystals.push({x:mx,y:my,branches:[{ox:0,oy:0,a:ang,len:0,maxLen:70+rng()*90,speed:60+rng()*40}],col,age:0,r:rng()*Math.PI*2,idx:crystals.length});
   game.seedsUsed++;
   spawnBurst(mx,my,col);
   game.shakeT=Math.max(game.shakeT,80);
@@ -78,7 +84,11 @@ function rejectFeedback(){
   sndReject();
 }
 
-function addBranch(c){const last=c.branches[c.branches.length-1];const spread=(rng()-.5)*1.2;c.branches.push({a:last.a+spread,len:0,maxLen:30+rng()*50,speed:20+rng()*25});}
+// Branches fork from a random existing branch's CURRENT tip (offset frozen at fork time), not
+// from the crystal origin — that is what makes growth spread over area instead of a starburst,
+// and it is what puts TARGET_FILL in reach. ox/oy are relative to c.x/c.y; every geometry path
+// (drawCrystal + drawCrystalOC) must honour them or the HUD % diverges from what's drawn.
+function addBranch(c){const p=c.branches[(rng()*c.branches.length)|0];const spread=(rng()-.5)*1.2;c.branches.push({ox:p.ox+Math.cos(p.a)*p.len,oy:p.oy+Math.sin(p.a)*p.len,a:p.a+spread,len:0,maxLen:50+rng()*70,speed:20+rng()*25});}
 
 // --- particles ---
 let particles=[];
@@ -107,12 +117,18 @@ function update(dt){
   for(const c of crystals){
     c.age+=s;
     for(const b of c.branches){b.len=Math.min(b.len+b.speed*s,b.maxLen);}
-    if(c.age>1.5&&c.branches.length<12&&rng()<s*0.8)addBranch(c);
+    // Fork rate, not the branch cap, is what bounds a crystal: a garden only lives ~STALL_LIMIT
+    // after the last seed, so at 0.8 forks/sec a crystal never got past ~6 branches and the
+    // canvas could never reach TARGET_FILL. 6/sec fills the cap inside that window.
+    if(c.age>1.5&&c.branches.length<60&&rng()<s*6)addBranch(c);
   }
 
   coverTimer+=dt;
   if(coverTimer>200){coverTimer=0;calcCoverage();}
-  game.score=Math.floor(coverage*100);
+  // Only while playing: calcCoverage() may have just won the round and written the final score
+  // (coverage + time + efficiency bonuses). Re-deriving it from coverage here would clobber
+  // those bonuses in the same frame and leave the win panel showing less than game.best.
+  if(game.state==='playing')game.score=Math.floor(coverage*100);
 
   // stall / loss condition
   if(crystals.length>=MAX_SEEDS&&coverage<TARGET_FILL){
@@ -151,7 +167,7 @@ function calcCoverage(){
     game.state='won';
   }
 }
-function drawCrystalOC(oc,c){oc.strokeStyle='#fff';oc.lineWidth=3;oc.lineCap='round';for(const b of c.branches){const bx=c.x+Math.cos(b.a)*b.len,by=c.y+Math.sin(b.a)*b.len;oc.beginPath();oc.moveTo(c.x,c.y);oc.lineTo(bx,by);oc.stroke();
+function drawCrystalOC(oc,c){oc.strokeStyle='#fff';oc.lineWidth=3;oc.lineCap='round';for(const b of c.branches){const sx=c.x+b.ox,sy=c.y+b.oy;const bx=sx+Math.cos(b.a)*b.len,by=sy+Math.sin(b.a)*b.len;oc.beginPath();oc.moveTo(sx,sy);oc.lineTo(bx,by);oc.stroke();
 if(b.len>15){const facetLen=b.len*0.4,fl=b.a+Math.PI*0.25;const fx=bx+Math.cos(fl)*facetLen,fy=by+Math.sin(fl)*facetLen;oc.beginPath();oc.moveTo(bx,by);oc.lineTo(fx,fy);oc.stroke();}}}
 
 // audio
@@ -167,7 +183,7 @@ function lgrad(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);
 function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function drawBg(){ctx.fillStyle=lgrad(0,0,0,H,[[0,'#020408'],[1,'#010306']]);ctx.fillRect(0,0,W,H);}
 function drawVoids(){for(const v of voids){ctx.fillStyle='rgba(0,0,0,.8)';ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(120,40,40,.4)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(v.x,v.y,v.r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(180,80,80,.3)';ctx.font='7px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('void',v.x,v.y);}}
-function drawCrystal(c){ctx.save();ctx.shadowColor=c.col+'60';ctx.shadowBlur=6;ctx.strokeStyle=c.col;ctx.lineWidth=2.5;ctx.lineCap='round';for(const b of c.branches){const bx=c.x+Math.cos(b.a)*b.len,by=c.y+Math.sin(b.a)*b.len;ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(bx,by);ctx.stroke();if(b.len>15){ctx.lineWidth=1.5;const facetLen=b.len*0.4,fl=b.a+Math.PI*0.25;const fx=bx+Math.cos(fl)*facetLen,fy=by+Math.sin(fl)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx,fy);ctx.stroke();const fl2=b.a-Math.PI*0.25;const fx2=bx+Math.cos(fl2)*facetLen,fy2=by+Math.sin(fl2)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx2,fy2);ctx.stroke();ctx.lineWidth=2.5;}}ctx.shadowBlur=0;ctx.restore();
+function drawCrystal(c){ctx.save();ctx.shadowColor=c.col+'60';ctx.shadowBlur=6;ctx.strokeStyle=c.col;ctx.lineWidth=2.5;ctx.lineCap='round';for(const b of c.branches){const sx=c.x+b.ox,sy=c.y+b.oy;const bx=sx+Math.cos(b.a)*b.len,by=sy+Math.sin(b.a)*b.len;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(bx,by);ctx.stroke();if(b.len>15){ctx.lineWidth=1.5;const facetLen=b.len*0.4,fl=b.a+Math.PI*0.25;const fx=bx+Math.cos(fl)*facetLen,fy=by+Math.sin(fl)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx,fy);ctx.stroke();const fl2=b.a-Math.PI*0.25;const fx2=bx+Math.cos(fl2)*facetLen,fy2=by+Math.sin(fl2)*facetLen;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(fx2,fy2);ctx.stroke();ctx.lineWidth=2.5;}}ctx.shadowBlur=0;ctx.restore();
 // secondary shape cue: numbered label near origin, angle-spread varies by idx already via rng
 ctx.save();ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='9px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String((c.idx||0)+1),c.x,c.y-12);ctx.restore();}
 function drawHUD(){ctx.save();ctx.fillStyle='rgba(1,3,5,.88)';rr(0,0,W,46,0);ctx.fill();ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#80c0ff';ctx.font='bold 13px Arial';ctx.fillText('Crystal Grow',18,8);ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Seeds: '+crystals.length+' / '+MAX_SEEDS+'  Crystals grow on their own',18,28);ctx.textAlign='center';ctx.fillStyle='#ffd580';ctx.font='bold 22px Arial';ctx.fillText(Math.floor(coverage*100)+'%',W/2,10);ctx.fillStyle='rgba(234,242,246,.3)';ctx.font='10px Arial';ctx.fillText('target: '+(TARGET_FILL*100)+'%',W/2,30);ctx.textAlign='right';ctx.fillStyle='rgba(234,242,246,.5)';ctx.font='11px Arial';ctx.fillText('Best: '+game.best+'%',W-18,8);ctx.restore();}
@@ -237,6 +253,7 @@ window.addEventListener('keydown',e=>{
 });
 
 let last=0;function loop(ts){if(!last)last=ts;const dt=ts-last;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+{const h=document.getElementById('hint');if(h)h.textContent='Click / tap empty space to plant crystal seeds · grow your garden to fill '+Math.floor(TARGET_FILL*100)+'% of the space';}
 game.state='title';draw();requestAnimationFrame(loop);
 window.__cfq={get game(){return game;},get crystals(){return crystals;},get voids(){return voids;},get coverage(){return coverage;},get particles(){return particles;},resetGame,plantCrystal,addBranch,calcCoverage,update,draw,togglePause,toggleMute,MAX_SEEDS,TARGET_FILL,COLORS};
 </script>

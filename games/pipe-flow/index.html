@@ -103,6 +103,10 @@ function bfsConnected(g,rows,cols,sr,sc){
 function currentFlowSet(g,rows,cols,sr,sc){return bfsConnected(g,rows,cols,sr,sc);}
 
 function buildLevel(lv){
+  // game.level must track the level actually built: every caller (resetGame,
+  // continueGame, and both 'won'->next advance paths) relies on this rather
+  // than assigning it themselves, and the seeded rng below keys off lv.
+  lv=clamp(lv,1,9999);game.level=lv;
   const dims=gridForLevel(lv);GCOLS=dims.cols;GROWS=dims.rows;
   const geom=gridGeom();GX=geom.GX;GY=geom.GY;
   const types=pipeTypesForLevel(lv);
@@ -135,11 +139,21 @@ function buildLevel(lv){
         // fallback: step directly toward dest
         if(c<destC)dir='E';else if(c>destC)dir='W';else if(r<destR)dir='S';else dir='N';
         const[dr2,dc2]=DIR_DELTA[dir];nr=r+dr2;nc=c+dc2;
-        if(nr<0||nr>=GROWS||nc<0||nc>=GCOLS)continue;
+        // must honour `visited` too: a repeated cell would appear twice in path,
+        // and the second copy's exit bits overwrite the first's below, silently
+        // breaking the carved solution. Stall instead and let the attempt reseed.
+        if(nr<0||nr>=GROWS||nc<0||nc>=GCOLS||visited.has(nr+','+nc))continue;
       }
       visited.add(nr+','+nc);path.push([nr,nc]);r=nr;c=nc;
     }
     if(r!==destR||c!==destC){attempt++;continue;}
+    // source/dest masks get force-overwritten to single fixed bits below (E-only /
+    // W-only), which silently discards whatever exits the carve gave them. So the
+    // carved solution only survives if the path actually leaves source eastward and
+    // enters dest from the west; any other approach yields an UNSOLVABLE level.
+    // Reseed instead of shipping one.
+    const[p1r,p1c]=path[1]||[-1,-1];const[pnr,pnc]=path[path.length-2]||[-1,-1];
+    if(p1r!==sourceR||p1c!==sourceC+1||pnr!==destR||pnc!==destC-1){attempt++;continue;}
     // set required bits along the path
     for(let i=0;i<path.length;i++){
       const[pr,pc]=path[i];let need=0;
@@ -390,7 +404,7 @@ function pointerDown(e){
     if(lastWonBtn&&!(px>=lastWonBtn.x&&px<=lastWonBtn.x+lastWonBtn.w&&py>=lastWonBtn.y&&py<=lastWonBtn.y+lastWonBtn.h)){
       // tapping outside the explicit button still advances (keeps old full-tap affordance)
     }
-    buildLevel(Math.min(game.level+1,9999));game.level=Math.min(game.level+1,9999)===game.level?game.level:game.level; // level already incremented in buildLevel call below
+    buildLevel(game.level+1);
     return;
   }
   if(game.state!=='playing')return;

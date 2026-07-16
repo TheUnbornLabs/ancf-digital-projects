@@ -43,7 +43,9 @@ const LS_BEST='kiteSoar_best',LS_MUTE='kiteSoar_muted';
 function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
 function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
 
-const game={state:'title',time:0,round:0,score:0,best:0,lives:3,collected:0,streak:0,muted:false,shake:0,prevState:'title'};
+// advanceT/gameoverT are deferred-transition countdowns in game-loop ms, NOT wall clock: update()
+// early-returns while paused, so a pause defers them instead of dropping them. Never use setTimeout here.
+const game={state:'title',time:0,round:0,score:0,best:0,lives:3,collected:0,streak:0,muted:false,shake:0,prevState:'title',advanceT:0,advanceRound:0,gameoverT:0};
 game.best=parseInt(lsGet(LS_BEST,'0'),10)||0;
 game.muted=lsGet(LS_MUTE,'0')==='1';
 
@@ -82,12 +84,15 @@ function buildRound(r){
   tail=Array(TAIL_LEN).fill(null).map(()=>({x:W/2,y:H/2}));
   game.collected=0;
   game.streak=0;
+  game.advanceT=0;game.advanceRound=0;
   invulT=0;
   particles=[];popups=[];
   gust={active:false,t:0,dur:0,ang:0,mag:0,nextAt:game.time+Math.max(3000,9000-r*700)};
   game.state='playing';
 }
-function resetGame(){game.round=0;game.score=0;game.lives=3;game.shake=0;buildRound(0);}
+// gameoverT is cleared here and not in buildRound(): a gameover pending when a round-advance lands
+// must survive into the new round, but a restart must never inherit one.
+function resetGame(){game.round=0;game.score=0;game.lives=3;game.shake=0;game.gameoverT=0;buildRound(0);}
 
 function addPopup(x,y,text,color){popups.push({x,y,text,color:color||'rgba(180,230,255,.95)',t:0,life:700});}
 function addBurst(x,y,color){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:400+Math.random()*200,color:color||'180,230,255'});}}
@@ -96,6 +101,30 @@ function update(dt){
   dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
   if(game.shake>0)game.shake=Math.max(0,game.shake-dt*0.006);
   if(game.state!=='playing')return;
+
+  // deferred transitions. gameover ticks first and returns, so a pending round-advance can never
+  // land on top of it — the ordering the old paired state guards were there to enforce.
+  if(game.gameoverT>0){
+    game.gameoverT-=dt;
+    if(game.gameoverT<=0){game.gameoverT=0;game.state='gameover';return;}
+  }
+  if(game.advanceT>0){
+    game.advanceT-=dt;
+    if(game.advanceT<=0){
+      game.advanceT=0;
+      const lifeBonus=game.lives*5;
+      if(lifeBonus>0){game.score+=lifeBonus;}
+      game.round=game.advanceRound+1;
+      if(game.round>=TOTAL){
+        sndWin();
+        if(game.score>game.best){game.best=game.score;lsSet(LS_BEST,String(game.best));}
+        game.state='won';
+        return;
+      }
+      buildRound(game.round);
+    }
+  }
+
   if(invulT>0)invulT=Math.max(0,invulT-dt);
 
   // wind gust lifecycle (kicks in from round index >=2, scales in later)
@@ -132,20 +161,7 @@ function update(dt){
       sndCollect();
       if(game.collected>=STARS_NEEDED){
         sndWin2();
-        const roundNo=game.round;
-        setTimeout(()=>{
-          if(game.state!=='playing')return; // guard: avoid racing a life-loss/gameover timeout
-          const lifeBonus=game.lives*5;
-          if(lifeBonus>0){game.score+=lifeBonus;}
-          game.round=roundNo+1;
-          if(game.round>=TOTAL){
-            sndWin();
-            if(game.score>game.best){game.best=game.score;lsSet(LS_BEST,String(game.best));}
-            game.state='won';
-          }else{
-            buildRound(game.round);
-          }
-        },500);
+        game.advanceRound=game.round;game.advanceT=500;
         break;
       }
     }
@@ -168,10 +184,7 @@ function update(dt){
       if(game.lives<=0){
         game.lives=0;sndLose();
         if(game.score>game.best){game.best=game.score;lsSet(LS_BEST,String(game.best));}
-        setTimeout(()=>{
-          if(game.state!=='playing')return; // guard: avoid racing a round-advance timeout
-          game.state='gameover';
-        },400);
+        game.gameoverT=400;
       }
     }
   }

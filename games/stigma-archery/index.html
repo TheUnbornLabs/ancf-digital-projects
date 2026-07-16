@@ -40,7 +40,9 @@ function saveBest(v){try{localStorage.setItem('stigmaArchery_best',String(v));}c
 const game={state:'title',time:0,round:0,score:0,best:loadBest(),shots:0,hits:0,misses:0,shakeT:0,streak:0,bestStreak:0,roundShots:0,muted:false,paused:false};
 let bubbles=[],arrow,chargeT=0,charging=false,rng,roundOver=false,popups=[],particles=[];
 function difficultyFor(rnd){const t=clamp((rnd-1)/(ROUNDS-1),0,1);return{rMin:30-14*t,rMax:52-20*t,spdMin:60+80*t,spdMax:120+140*t,vyMul:1+1.4*t};}
-function spawnBubbles(rnd){rng=seeded(rnd*8123+5);const d=difficultyFor(rnd);bubbles=Array.from({length:BUBBLES_PER},(_,i)=>{const r=Math.max(16,Math.floor(d.rMin+rng()*(d.rMax-d.rMin)));const y=80+Math.floor(rng()*(H-200));const spd=Math.max(30,Math.floor(d.spdMin+rng()*(d.spdMax-d.spdMin)))*(rng()>0.5?1:-1);return{x:W+r+i*140,y,vy:(rng()-.5)*40*d.vyMul,r,spd,label:STIGMAS[Math.floor(rng()*STIGMAS.length)],popped:false,popT:0,missed:false};});}
+// spd must stay >0: update() does x-=spd, and bubbles spawn right of the arrow's live
+// boundary (x>W+10), so a bubble with negative spd drifts away and can never be hit.
+function spawnBubbles(rnd){rng=seeded(rnd*8123+5);const d=difficultyFor(rnd);bubbles=Array.from({length:BUBBLES_PER},(_,i)=>{const r=Math.max(16,Math.floor(d.rMin+rng()*(d.rMax-d.rMin)));const y=80+Math.floor(rng()*(H-200));const spd=Math.max(30,Math.floor(d.spdMin+rng()*(d.spdMax-d.spdMin)));return{x:W+r+i*140,y,vy:(rng()-.5)*40*d.vyMul,r,spd,label:STIGMAS[Math.floor(rng()*STIGMAS.length)],popped:false,popT:0,missed:false};});}
 function startRound(rnd){game.round=rnd;roundOver=false;arrow=null;charging=false;chargeT=0;game.roundShots=0;spawnBubbles(rnd);game.state='playing';}
 function resetGame(){game.score=0;game.shots=0;game.hits=0;game.misses=0;game.shakeT=0;game.streak=0;game.bestStreak=0;popups=[];particles=[];startRound(1);}
 function spawnParticles(x,y,color){for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*160;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0,maxLife:300+Math.random()*200,color});}}

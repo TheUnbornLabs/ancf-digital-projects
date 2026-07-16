@@ -54,13 +54,16 @@ let tiltAccum=0,tiltSamples=0,crossingMaxAbsTilt=0;
 let popups=[]; // score popups {x,y,text,life,maxLife}
 let shakeTime=0,shakeMag=0; // screen shake
 let graceTimer=0; // post-fall invulnerability window (ms)
+// true while a deferred round-advance / gameover setTimeout is pending. state stays 'playing'
+// during that window, so update() must not run again or it re-scores the same crossing.
+let transitioning=false;
 let prevStateBeforePause='title';
 
 function buildRound(r){rng=seeded(r*6007+31);tilt=0;tiltV=0;progress=0;gusts=[];gustTimer=0;
  let spd=60+r*5;spd=Math.min(spd,110); // clamp player speed
  player={x:80,y:ROPE_Y-20,speed:spd};
  tiltAccum=0;tiltSamples=0;crossingMaxAbsTilt=0;
- game.state='playing';}
+ game.state='playing';transitioning=false;} // sole entry to any playable round -> sole clear point
 function resetGame(){game.round=0;game.score=0;game.lives=3;game.streak=0;input.left=false;input.right=false;buildRound(0);}
 
 function addPopup(x,y,text,color){popups.push({x,y,text,life:900,maxLife:900,color:color||'rgba(160,220,255,.95)'});}
@@ -71,6 +74,7 @@ function update(dt){dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
  if(graceTimer>0){graceTimer=Math.max(0,graceTimer-dt);}
  for(let i=popups.length-1;i>=0;i--){popups[i].life-=dt;popups[i].y-=dt*0.02;if(popups[i].life<=0)popups.splice(i,1);}
  if(game.state!=='playing')return;
+ if(transitioning)return;
  // gusts
  gustTimer+=dt;const gi=Math.max(1500,3000-game.round*150);
  // milestone boss-gust rope every 5th crossing (round index divisible by 5, and round>0)
@@ -102,7 +106,7 @@ function update(dt){dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
   game.lives--;tilt=0;tiltV=0;game.streak=0;sndFall();
   triggerShake(10);
   graceTimer=500; // grace window
-  if(game.lives<=0){game.lives=0;if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndLose();setTimeout(()=>game.state='gameover',400);}
+  if(game.lives<=0){game.lives=0;if(game.score>game.best){game.best=game.score;saveBest(game.best);}sndLose();transitioning=true;setTimeout(()=>game.state='gameover',400);}
   else{buildRound(game.round);}
   return;
  }
@@ -129,6 +133,7 @@ function update(dt){dt=clamp(dt,0,48);const s=dt/1000;game.time+=dt;
   if(game.score>game.best){game.best=game.score;saveBest(game.best);}
   addPopup(player.x,ROPE_Y-30,'+'+scoreGain,'rgba(160,220,255,.95)');
   sndWin2();
+  transitioning=true;
   setTimeout(()=>{game.round++;if(game.round>=TOTAL){sndWin();game.state='won';}else{buildRound(game.round);}},400);
  }
  // cull gusts

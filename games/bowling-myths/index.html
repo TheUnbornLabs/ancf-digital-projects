@@ -63,6 +63,10 @@ const game={
   perfect:false
 };
 let pins=[],ball=null,ballMoving=false,dragStart=null,aimX=W/2,rng;
+// true from the moment a roll ends a frame until the next rack exists. endFrame() defers
+// newFrame() by 600ms (and on frame 10 never calls it at all), so for that window the rack is
+// already scored and must accept no further roll and no second endBall() for the same roll.
+let frameEnding=false;
 let frameLog=[];// {k1,k2, bonusApplied}
 let popups=[];// score/text popups {x,y,text,life,vy}
 let particles=[];// {x,y,vx,vy,life,color}
@@ -79,7 +83,7 @@ function laneBounds(){
   return {x0:LANE_X+wShrink/2,x1:LANE_X+LANE_W-wShrink/2};
 }
 
-function newFrame(){pins=pinLayout();ball=null;ballMoving=false;game.ball1=true;aimX=W/2;}
+function newFrame(){frameEnding=false;pins=pinLayout();ball=null;ballMoving=false;game.ball1=true;aimX=W/2;}
 function resetGame(){
   game.frame=1;game.pins=0;game.score=0;game.shakeT=0;game.shakeMag=0;
   game.streak=0;game.maxStreak=0;game.ballsThrown=0;game.pinsHitTotal=0;game.perfect=false;
@@ -91,7 +95,7 @@ function addPopup(x,y,text,color){popups.push({x,y,text,life:900,maxLife:900,vy:
 function addParticles(x,y,color,n){for(let i=0;i<(n||10);i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*160;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,life:500+Math.random()*300,maxLife:800,color:color||'#e0c060'});}}
 
 function releaseBall(){
-  if(ballMoving||game.state!=='playing'||game.paused)return;
+  if(ballMoving||frameEnding||game.state!=='playing'||game.paused)return;
   const {speedBoost}=laneDifficulty();
   const speed=580+speedBoost;
   const dx=aimX-W/2,dy=PIN_TOP_Y-RELEASE_Y;
@@ -144,13 +148,14 @@ function update(dt){
 }
 
 function endBall(){
+  if(frameEnding)return;// update() keeps ticking after a stalled ball; only the first call scores it
   const knocked=pins.filter(p=>p.fallen).length;
   if(game.ball1){
     frameLog.push({k1:knocked,k2:0,frameIdx:game.frame});
     game.pins+=knocked;
     if(knocked===0){addPopup(W/2,H/2,'GUTTER',' #7788aa');sndGutter();}
     else if(knocked===10){game.streak++;game.maxStreak=Math.max(game.maxStreak,game.streak);triggerShake(10);addPopup(W/2,H*0.4,'STRIKE!','#ff5a7a');sndStrikeCall();}
-    if(knocked===10||game.frame>=TOTAL_FRAMES){endFrame();}
+    if(knocked===10||game.frame>=TOTAL_FRAMES){frameEnding=true;ball=null;ballMoving=false;endFrame();}
     else{game.ball1=false;ball=null;ballMoving=false;aimX=W/2;}
   }else{
     const prev=frameLog[frameLog.length-1];
@@ -160,6 +165,7 @@ function endBall(){
     if(prev.k1+newK===0){addPopup(W/2,H/2,'GUTTER','#7788aa');sndGutter();}
     else if(prev.k1+newK===10){triggerShake(6);addPopup(W/2,H*0.4,'SPARE!','#5ad0ff');sndSpareCall();game.streak=0;}
     else{game.streak=0;}
+    frameEnding=true;ball=null;ballMoving=false;
     endFrame();
   }
 }

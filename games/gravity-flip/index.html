@@ -108,7 +108,9 @@ game.state='won';
 function die(){game.deaths++;game.levelDeaths++;game.shakeT=300;sndDie();
 spawnParticles(player.x+PLAYER_W/2,player.y+PLAYER_H/2,'255,110,110',22);
 if(game.levelDeaths>=MAX_DEATHS_PER_LEVEL){game.state='gameover';return;}
-buildLevel(game.level);}
+// buildLevel() zeroes levelDeaths (correct for a fresh level); a retry is NOT a
+// fresh level, so the tally must survive the rebuild or the >=MAX check never fires.
+const d=game.levelDeaths;buildLevel(game.level);game.levelDeaths=d;}
 // audio
 let actx=null;
 function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}
