@@ -60,7 +60,7 @@ function slotW(){const raw=(TIMELINE_X2-TIMELINE_X1)/Math.max(1,SLOTS-0.5);const
 function buildRound(rnd){rng=seeded(rnd*5003+7);const s=SETS[(rnd-1)%SETS.length];// shuffle cards
 const order=s.events.map((e,i)=>({label:e,correct:i}));const shuffled=[...order].sort(()=>rng()-.5);const sw=slotW();slots=Array.from({length:SLOTS},(_, i)=>({x:TIMELINE_X1+i*sw,y:TIMELINE_Y,card:null,correct:i}));// scatter cards above timeline
 cards=shuffled.map((c,i)=>({...c,x:80+i*(CARD_W+18),y:100,placed:false,slotIdx:-1,justChecked:false}));game.moves=0;game.selected=null;if(game.state!=='paused')game.state='playing';}
-function resetGame(){game.round=1;game.score=0;game.shakeT=0;game.misses=0;game.streak=0;game.roundResults=[];game.popups=[];game.particles=[];buildRound(1);}
+function resetGame(){clearTimeout(game.nextT);game.nextT=0;game.round=1;game.score=0;game.shakeT=0;game.misses=0;game.streak=0;game.roundResults=[];game.popups=[];game.particles=[];buildRound(1);}
 // strictly-nearest slot pick, radius tied to half slot width so adjacent dots never overlap-catch
 function nearestSlot(cx,cy){const sw=slotW();// difficulty curve: catch radius tightens slightly in later rounds (min 70% of base)
 const diffMul=Math.max(0.7,1-((game.round||1)-1)*0.06);const radius=Math.min(sw/2,CARD_W/2)*diffMul;let best=null,bestD=Infinity;for(let i=0;i<slots.length;i++){const s=slots[i];const d=Math.hypot(cx-s.x,cy-TIMELINE_Y);if(d<bestD){bestD=d;best=i;}}return bestD<radius?best:null;}
@@ -70,8 +70,13 @@ function snapToSlot(card,si){if(slots[si].card===card)return;// no-op same-slot 
 if(slots[si].card&&slots[si].card!==card){const old=slots[si].card;old.placed=false;old.slotIdx=-1;old.x=card.x;old.y=card.y;}if(card.slotIdx>=0)slots[card.slotIdx].card=null;slots[si].card=card;card.placed=true;card.slotIdx=si;card.x=slots[si].x-CARD_W/2;card.y=TIMELINE_Y-CARD_H-10;game.moves++;const cx=slots[si].x,cy=TIMELINE_Y-CARD_H/2-10;if(card.slotIdx===card.correct){sndSnap();spawnPopup(cx,cy,'+10','#8affd2');spawnParticles(cx,cy,'128,220,170',10);}else{sndWrong();game.misses++;game.shakeT=180;spawnPopup(cx,cy,'wrong slot','#ff8a8a');}checkDone();}
 function checkDone(){if(!cards.every(c=>c.placed))return;// check order
 let correct=0;for(const c of cards){if(c.slotIdx===c.correct)correct++;}const perfect=correct===cards.length;game.score+=correct*10;if(perfect){game.streak++;if(game.streak>1)game.score+=(game.streak-1)*15;// streak bonus
-if(game.streak>game.bestStreak)game.bestStreak=game.streak;}else{game.streak=0;}if(game.score>game.best){game.best=game.score;saveLS();}game.roundResults.push({round:game.round,correct,total:cards.length});if(perfect)sndWin();else sndPartial();if(game.misses>=MISS_LIMIT){game.state='gameover';return;}if(game.round>=MAX_ROUNDS){game.state='won';}else{game.round++;setTimeout(()=>{if(game.state==='playing')buildRound(game.round);},900);}}
-function retryRound(){if(game.state!=='playing')return;game.roundResults.pop();buildRound(game.round);}
+if(game.streak>game.bestStreak)game.bestStreak=game.streak;}else{game.streak=0;}if(game.score>game.best){game.best=game.score;saveLS();}game.roundResults.push({round:game.round,correct,total:cards.length});if(perfect)sndWin();else sndPartial();if(game.misses>=MISS_LIMIT){game.state='gameover';return;}if(game.round>=MAX_ROUNDS){game.state='won';}else{game.round++;game.nextT=setTimeout(()=>{game.nextT=0;if(game.state==='playing')buildRound(game.round);},900);}}
+// Only the round being rebuilt may lose its result: checkDone() pushes a result and THEN round++,
+// so a retried round has usually pushed nothing of its own and the last entry belongs to an earlier,
+// genuinely completed round — popping it unguarded would erase real history.
+// Must also kill any pending round-transition timer, or it fires later and rebuilds the round a
+// second time, wiping whatever the player placed in the meantime.
+function retryRound(){if(game.state!=='playing')return;clearTimeout(game.nextT);game.nextT=0;const rr=game.roundResults;if(rr.length&&rr[rr.length-1].round===game.round)rr.pop();buildRound(game.round);}
 // audio
 let actx=null;
 function AC(){if(actx)return actx;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;actx=new A();}catch(e){actx=null;}return actx;}

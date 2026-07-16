@@ -49,7 +49,10 @@ let STEPS=STEPS_BASE;
 function bestKey(){return 'musicCompose.best';}
 function loadBest(){try{const v=localStorage.getItem(bestKey());return v?parseInt(v,10)||0:0;}catch(e){return 0;}}
 function saveBest(v){try{localStorage.setItem(bestKey(),String(v));}catch(e){}}
-const game={state:'title',time:0,round:1,score:0,best:loadBest(),lives:3,playHead:-1,playing:false,paused:false,muted:false,
+// locked: true only during the 700ms post-success transition, before buildRound() has swapped in
+// the next round. submit() must refuse while set, or a second submit re-scores the same unchanged
+// grid and schedules a second round-advance (skipped round + inflated score).
+const game={state:'title',time:0,round:1,score:0,best:loadBest(),lives:3,playHead:-1,playing:false,paused:false,muted:false,locked:false,
   correctAnim:0,wrongAnim:0,shakeT:0,streak:0,bestStreak:0,roundsPerfect:0,roundsPassed:0,hintsUsed:0,
   popups:[],particles:[],roundTimer:0,firstTry:true,lowLifePulse:0};
 let grid=[],target=[],rng,playInterval=null;
@@ -82,7 +85,7 @@ function matchThreshold(r){return clamp(0.75+Math.floor((r-1)/3)*0.03,0.75,0.85)
 function resetGame(){
   game.round=1;game.score=0;game.shakeT=0;game.lives=3;game.streak=0;game.bestStreak=0;
   game.roundsPerfect=0;game.roundsPassed=0;game.hintsUsed=0;game.popups=[];game.particles=[];
-  game.state='playing';game.paused=false;
+  game.state='playing';game.paused=false;game.locked=false; // a restart must never inherit a pending transition's lock
   buildRound(1);
 }
 function toggleCell(row,col){
@@ -130,7 +133,7 @@ function useHint(){
   }
 }
 function submit(){
-  if(game.playing||game.paused||game.state!=='playing')return;
+  if(game.playing||game.paused||game.locked||game.state!=='playing')return;
   let correct=0,total=0;
   for(let r=0;r<ROWS;r++)for(let s=0;s<STEPS;s++){if(target[r][s])total++;if(target[r][s]&&grid[r][s])correct++;}
   const pct=total>0?correct/total:0;
@@ -144,10 +147,11 @@ function submit(){
     const mult=1+Math.min(game.streak,5)*0.1;
     const gained=Math.round(base*mult);
     game.score+=gained;
-    game.correctAnim=700;
+    game.correctAnim=700;game.locked=true;
     spawnPopup('+'+gained,W/2,GY-30,true);
     sndWin2();
     setTimeout(()=>{
+      game.locked=false;
       if(game.round>=TOTAL){
         if(game.score>game.best){game.best=game.score;saveBest(game.best);}
         sndWin();

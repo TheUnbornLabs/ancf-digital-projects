@@ -41,7 +41,12 @@ const GX=(W-COLS*CELL)/2,GY=(H-ROWS*CELL)/2;
 const CLOUD_LABELS=['doubt','noise','compare','rush','obey','conform','regret','hustle'];
 const TOTAL=10;
 const MAX_HITS=3;
-const PAR_MOVES=14;
+// Par must clear the worst level's floor, else the title screen advertises a
+// bonus nobody can earn. player.col is always 0 and goal.col always COLS-1, so
+// every level costs >= COLS-1 + |row delta| moves; across rounds 0-9 that floor
+// peaks at 23 (round 2). 24 leaves every level earnable but only by walking a
+// near-shortest line — drifting clouds punish any wandering.
+const PAR_MOVES=24;
 
 // --- localStorage helpers (private browsing safe) ---
 function lsGet(k,def){try{const v=localStorage.getItem(k);return v===null?def:v;}catch(e){return def;}}
@@ -51,6 +56,8 @@ const game={
   state:'title',time:0,round:0,score:0,
   best:parseInt(lsGet('cw_best','0'),10)||0,
   moves:0,hits:0,hitsThisLevel:0,cleanStreak:0,bestStreak:0,
+  bonusPoints:0, // separate from score: score doubles as the level counter (X / TOTAL)
+
   totalMoves:0,cleanLevels:0,totalHits:0,
   muted:lsGet('cw_muted','0')==='1',
   paused:false,
@@ -83,7 +90,7 @@ function buildLevel(r){
   game.state='playing';
 }
 function resetGame(){
-  game.round=0;game.score=0;game.hits=0;game.hitsThisLevel=0;
+  game.round=0;game.score=0;game.bonusPoints=0;game.hits=0;game.hitsThisLevel=0;
   game.cleanStreak=0;game.bestStreak=0;game.totalMoves=0;game.cleanLevels=0;game.totalHits=0;
   particles=[];popups=[];game.shake=0;game.flash=0;
   buildLevel(0);
@@ -107,8 +114,7 @@ function movePlayer(dc,dr){
   player.col=nc;player.row=nr;game.moves++;game.totalMoves++;sndStep();
   if(player.col===goal.col&&player.row===goal.row){
     game.score++;
-    let bonus=0;
-    if(game.moves<=PAR_MOVES){bonus+=1;spawnPopup(GX+goal.col*CELL+CELL/2,GY+goal.row*CELL+CELL/2-10,'+1 par bonus!','255,214,120');}
+    if(game.moves<=PAR_MOVES){game.bonusPoints++;spawnPopup(GX+goal.col*CELL+CELL/2,GY+goal.row*CELL+CELL/2-10,'+1 par bonus!','255,214,120');}
     if(game.hitsThisLevel===0){
       game.cleanLevels++;game.cleanStreak++;
       if(game.cleanStreak>game.bestStreak)game.bestStreak=game.cleanStreak;
@@ -337,9 +343,9 @@ function draw(){
     if(game.state==='title'){
       panelDraw('Compass Walk',['Use arrow keys / WASD / swipe to move.','The needle always points to your goal.','Pressure clouds cost you a hit — 3 hits ends the run.','10 levels — clouds multiply and quicken.','Reach the goal in '+PAR_MOVES+' moves or fewer for a bonus.','','Trust your inner compass.','','Click / tap or press any key to begin.']);
     }else if(game.state==='won'){
-      panelDraw('Goal Reached! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Total moves: '+game.totalMoves,'Clean levels: '+game.cleanLevels+' / '+game.score,'Best streak: '+game.bestStreak,'Hits taken: '+game.totalHits,'','Your compass never lied.','','Click / tap to play again.']);
+      panelDraw('Goal Reached! ✓',['Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Total moves: '+game.totalMoves,'Par bonuses: '+game.bonusPoints+' / '+TOTAL,'Clean levels: '+game.cleanLevels+' / '+game.score,'Best streak: '+game.bestStreak,'Hits taken: '+game.totalHits,'','Your compass never lied.','','Click / tap to play again.']);
     }else if(game.state==='gameover'){
-      panelDraw('Overwhelmed',['You took '+MAX_HITS+' hits from the pressure clouds.','Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Total moves: '+game.totalMoves,'Clean levels: '+game.cleanLevels,'Best streak: '+game.bestStreak,'','The noise got loud — but you can start again.','','Click / tap to try again.']);
+      panelDraw('Overwhelmed',['You took '+MAX_HITS+' hits from the pressure clouds.','Score: '+game.score+' / '+TOTAL,'Best: '+game.best,'','Total moves: '+game.totalMoves,'Par bonuses: '+game.bonusPoints,'Clean levels: '+game.cleanLevels,'Best streak: '+game.bestStreak,'','The noise got loud — but you can start again.','','Click / tap to try again.']);
     }else if(game.state==='paused'){
       panelDraw('Paused',['Game is paused.','','Press P or Esc to resume.','','Click / tap the pause button to resume.']);
     }

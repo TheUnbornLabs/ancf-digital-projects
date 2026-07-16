@@ -101,7 +101,7 @@ function buildMaze(lv){
   // every 3rd level (index 2,5) becomes a single-axis mirror level for variety
   flipAxis=(lv>0&&lv%3===2)?(((lv/3)|0)%2===0?'x':'y'):null;
 }
-function resetGame(){game.level=0;game.score=0;game.shakeT=0;buildMaze(0);}
+function resetGame(){transitioning=false;game.level=0;game.score=0;game.shakeT=0;buildMaze(0);}
 
 function pushTrail(r,c){
   trail.push({r,c});
@@ -115,8 +115,11 @@ function spawnParticles(px,py,color){
   }
 }
 
+// true from touching the exit until the level-advance timeout fires; state stays 'playing'
+// across that window, so this is the only thing stopping a re-entry from scoring twice.
+let transitioning=false;
 function tryMove(dr,dc){
-  if(game.state!=='playing')return;
+  if(game.state!=='playing'||transitioning)return;
   // mirror the controls (respecting single-axis flip levels)
   let mr,mc;
   if(flipAxis==='x'){mr=dr;mc=-dc;}
@@ -152,7 +155,10 @@ function tryMove(dr,dc){
     game.popup={text:'+'+pts+(cleanBonus?' (clean run!)':'')+(speedBonus?' (+'+speedBonus+' speed)':''),t:1400,x:GX+exit2.c*CELL+CELL/2,y:GY+exit2.r*CELL};
     spawnParticles(GX+exit2.c*CELL+CELL/2,GY+exit2.r*CELL+CELL/2,'rgba(120,240,160,');
     sndWin2();
+    transitioning=true;
     setTimeout(()=>{
+      // clear first: this callback has two exits ('won' skips buildMaze), both must unlatch
+      transitioning=false;
       game.level++;
       if(game.level>=TOTAL){sndWin();game.state='won';}
       else{buildMaze(game.level);}

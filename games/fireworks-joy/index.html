@@ -65,7 +65,8 @@ const WORDS=WORD_SETS[paletteIdx%WORD_SETS.length];
 const COLORS=COLOR_SETS[paletteIdx%COLOR_SETS.length];
 
 const TARGET=20;
-const game={state:'title',time:0,count:0,shakeT:0,muted:false,paused:false,startMs:0,streak:0,lastPopGood:0,cooldownT:0};
+// round: bumped by every resetGame(); deferred callbacks must re-check it before mutating state/save
+const game={state:'title',time:0,count:0,shakeT:0,muted:false,paused:false,startMs:0,streak:0,lastPopGood:0,cooldownT:0,round:0};
 let rockets=[],particles=[];
 
 function shapeFor(i){return SHAPES[i%SHAPES.length];}
@@ -91,7 +92,9 @@ function launchFirework(tx,ty){
   if(game.count>=TARGET){
     sndWin();
     game.startedWinAt=game.time;
+    const r=game.round;
     setTimeout(()=>{
+      if(game.round!==r)return; // round was restarted during the pause -- stale callback, drop it
       game.state='won';
       save.completions++;
       const elapsed=game.time-game.startMs;
@@ -329,6 +332,7 @@ function draw(){
 }
 
 function resetGame(){
+  game.round++;
   game.state='playing';
   game.count=0;
   game.paused=false;

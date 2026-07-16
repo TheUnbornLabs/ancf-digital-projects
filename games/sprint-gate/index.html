@@ -70,7 +70,7 @@ const inLeft=runner.x<W/2-20;const inRight=runner.x>W/2+20;const inCenter=!inLef
 if(hitGreen){game.score++;game.cleared++;game.streak++;if(game.streak>game.bestStreak)game.bestStreak=game.streak;sndGood();speed=Math.min(speed+3,MAX_SPEED);addPopup('+1','#8de08a');addParticles('rgba(120,220,140,.9)',10);
 if(game.streak>0&&game.streak%STREAK_BONUS_EVERY===0){game.score+=STREAK_BONUS;addPopup('Flow +'+STREAK_BONUS,'#ffd580');}
 }else{game.lives--;game.streak=0;game.shakeT=400;sndBad();addPopup('Missed','#ff8a8a');addParticles('rgba(220,100,100,.9)',14);
-if(game.lives<=0){finalizeRun();game.state='gameover';return;}}
+if(game.lives<=0){gate=null;finalizeRun();game.state='gameover';return;}}// this return skips the gate=null below, so clear it here or the fatal gate stays drawn behind the panel
 gate=null;
 if(game.cleared>=TOTAL){if(!game.endless){finalizeRun();sndWin();game.state='won';return;}}
 setTimeout(()=>{buildGate(game.cleared);runner.x=W/2;runner.dispX=W/2;},400);}else if(gate.y>H+80){// missed gate
@@ -80,7 +80,12 @@ function goEndless(){game.endless=true;setTimeout(()=>{buildGate(game.cleared);r
 function togglePause(){if(game.state==='playing')game.state='paused';else if(game.state==='paused')game.state='playing';}
 function toggleMute(){game.muted=!game.muted;lsSet('sprintgate_muted',game.muted?'1':'0');}
 // keyboard
-document.addEventListener('keydown',e=>{if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(game.state==='playing'||game.state==='paused'){togglePause();return;}}if(game.state!=='playing')return;if(e.key==='ArrowLeft'||e.key==='a')steer(-1);if(e.key==='ArrowRight'||e.key==='d')steer(1);});
+// steer keys must also ENTER the game from the non-playing panels (title/won/gameover say so on screen).
+// This must run before the !=='playing' guard, and can't be done by deleting that guard: steer() re-checks
+// the same condition itself. Resume audio here like every other entry point, or a keyboard-only start stays muted.
+document.addEventListener('keydown',e=>{if(e.key==='Escape'||e.key==='p'||e.key==='P'){if(game.state==='playing'||game.state==='paused'){togglePause();return;}}
+if((e.key==='ArrowLeft'||e.key==='a'||e.key==='ArrowRight'||e.key==='d')&&game.state!=='playing'){const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}if(game.state==='title'||game.state==='gameover'){resetGame();return;}if(game.state==='won'){goEndless();return;}}
+if(game.state!=='playing')return;if(e.key==='ArrowLeft'||e.key==='a')steer(-1);if(e.key==='ArrowRight'||e.key==='d')steer(1);});
 // touch swipe
 let touchX=null;
 canvas.addEventListener('touchstart',e=>{touchX=e.touches[0].clientX;},{passive:true});

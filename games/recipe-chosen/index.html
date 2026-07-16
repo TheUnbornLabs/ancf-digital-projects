@@ -205,7 +205,9 @@ function update(dt){
   }
   if(recipe){
     game.roundTime=Math.max(0,game.roundTime+dt);
-    if(game.roundLimit>0 && game.roundTime>=game.roundLimit){
+    // roundTimeoutId is non-null only while completeRound()'s 700ms advance is pending;
+    // the clock keeps ticking through that celebration, so the buzzer must not fail a round already won.
+    if(game.roundLimit>0 && game.roundTime>=game.roundLimit && !roundTimeoutId){
       finishFail();
     }
   }

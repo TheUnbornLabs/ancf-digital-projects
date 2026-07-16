@@ -43,7 +43,7 @@ const SPD_MAX=260;
 function lsGet(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(e){return fallback;}}
 function lsSet(key,val){try{localStorage.setItem(key,val);}catch(e){}}
 
-const game={state:'title',time:0,survived:0,score:0,best:0,lives:3,shakeT:0,streak:0,bestStreak:0,endless:false,muted:false,paused:false};
+const game={state:'title',time:0,survived:0,score:0,bonus:0,best:0,lives:3,shakeT:0,streak:0,bestStreak:0,endless:false,muted:false,paused:false};
 game.best=parseInt(lsGet('echoDissolve.best','0'),10)||0;
 game.muted=lsGet('echoDissolve.muted','0')==='1';
 
@@ -51,7 +51,7 @@ let echoes=[],popups=[],rings=[],rng,spawnTimer=0,spawnInterval=1200;
 
 function resetGame(endless){
   echoes=[];popups=[];rings=[];
-  game.survived=0;game.score=0;game.lives=3;game.shakeT=0;game.streak=0;
+  game.survived=0;game.score=0;game.bonus=0;game.lives=3;game.shakeT=0;game.streak=0;
   game.endless=!!endless;game.paused=false;
   spawnTimer=0;spawnInterval=1200;
   rng=seeded(Date.now()%99991);
@@ -98,9 +98,8 @@ function update(dt){
     const pressureAt=game.endless?30:45;
     if(game.survived>pressureAt&&rng()<0.35)spawnEcho();
   }
-  game.score=Math.floor(game.survived*5)+game.score*0; // base time score computed separately below
-  // (time-based floor score; combo bonuses added directly to game.score elsewhere)
-  game.score=Math.max(game.score,Math.floor(game.survived*5));
+  // score is recomputed every tick, so dissolve bonuses must live in game.bonus (never in game.score)
+  game.score=Math.floor(game.survived*5)+game.bonus;
 
   for(let i=echoes.length-1;i>=0;i--){
     const e=echoes[i];
@@ -152,7 +151,8 @@ function dissolveAt(mx,my){
       const earlyBonus=Math.round(threat*30);
       const streakBonus=Math.min(50,(game.streak-1)*4);
       const total=base+earlyBonus+streakBonus;
-      game.score+=total;
+      game.bonus+=total;
+      game.score=Math.floor(game.survived*5)+game.bonus; // same formula as update(): HUD reflects the click before the next tick
       addPopup(e.x,e.y,'+'+total,'#ffd580');
       addRing(e.x,e.y,'rgba(140,220,255,.85)');
       sndDissolve();

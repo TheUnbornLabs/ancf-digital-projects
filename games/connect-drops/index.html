@@ -82,6 +82,16 @@ const game={
 };
 let grid,animCol,animY,animTarget,animPiece,dropQueue;
 let lastMoveSnapshot=null; // {grid, turn} for undo
+// The AI reply is a pending timer, so it must be cancellable: undo/reset can revoke the AI's
+// turn after it was armed, and a stale fire would move for a player who never played.
+let aiTimer=null;
+function cancelAiTimer(){if(aiTimer!==null){clearTimeout(aiTimer);aiTimer=null;}}
+// Arm the AI reply. Re-checks the turn on fire (it can change while pending) and is a no-op if
+// one is already armed or a disc is mid-drop, so resume/reset may call it unconditionally.
+function armAiReply(){
+  if(game.state!=='playing'||game.turn!==AI||animCol!==null||aiTimer!==null)return;
+  aiTimer=setTimeout(()=>{aiTimer=null;if(game.state==='playing'&&game.turn===AI)aiMove();},300);
+}
 
 const DIFF_DEPTH={easy:2,normal:3,hard:4};
 function aiDepth(){
@@ -93,6 +103,7 @@ function aiDepth(){
 
 function makeGrid(){return Array.from({length:GROWS},()=>Array(GCOLS).fill(0));}
 function resetGame(){
+  cancelAiTimer();
   grid=makeGrid();game.turn=PLAYER;animCol=null;animPiece=null;dropQueue=null;
   game.state='playing';game.hintCol=-1;game.hintUsedThisTurn=false;
   game.undoAvailable=false;game.undoUsedThisRound=false;lastMoveSnapshot=null;
@@ -163,6 +174,7 @@ function spawnBurst(x,y,col){
 function spawnPopup(text,x,y,col){game.popups.push({text,x,y,age:0,life:1100,col});}
 function undoLastDrop(){
   if(!game.undoAvailable||game.undoUsedThisRound||!lastMoveSnapshot||animCol!==null||game.state!=='playing')return;
+  cancelAiTimer();
   grid=lastMoveSnapshot.grid.map(row=>[...row]);
   game.turn=lastMoveSnapshot.turn;
   game.undoUsedThisRound=true;game.undoAvailable=false;lastMoveSnapshot=null;
@@ -210,10 +222,10 @@ function update(dt){
         return;
       }
       if(isDraw()){game.draws++;game.streak=0;game.state='won';game.lastWinner=0;saveProgress();return;}
-      game.turn=game.turn===PLAYER?AI:PLAYER;
+      game.turn=player===PLAYER?AI:PLAYER; // whoever's disc just landed, not whoever game.turn says
       game.hintCol=-1;game.hintUsedThisTurn=false;
       game.threatCols=game.turn===PLAYER?threatColumns():[];
-      if(game.turn===AI){setTimeout(()=>{if(game.state==='playing')aiMove();},300);}
+      armAiReply();
     }
   }
 }
@@ -347,7 +359,7 @@ canvas.addEventListener('mousedown',e=>{
   e.preventDefault();const a2=AC();if(a2&&a2.state==='suspended')try{a2.resume();}catch(ex){}
   if(game.state==='title'){resetGame();return;}
   if(game.state==='won'){resetGame();return;}
-  if(game.state==='paused'){game.state='playing';return;}
+  if(game.state==='paused'){resumePlay();return;}
   const r2=canvas.getBoundingClientRect();const px2=(e.clientX-r2.left)*W/r2.width;clickCol(px2);
 });
 canvas.addEventListener('touchstart',e=>{
@@ -355,7 +367,7 @@ canvas.addEventListener('touchstart',e=>{
   const t=e.touches[0];const p=pointerXY(t.clientX,t.clientY);
   if(game.state==='title'){resetGame();return;}
   if(game.state==='won'){resetGame();return;}
-  if(game.state==='paused'){game.state='playing';return;}
+  if(game.state==='paused'){resumePlay();return;}
   touchHoverCol=clamp(Math.floor((p.x-GX)/CELL),0,GCOLS-1);
   clickCol(p.x);
 },{passive:false});
@@ -375,8 +387,11 @@ window.addEventListener('keydown',e=>{
 });
 function togglePause(){
   if(game.state==='playing')game.state='paused';
-  else if(game.state==='paused')game.state='playing';
+  else if(game.state==='paused')resumePlay();
 }
+// Every resume path must go through this: a pending AI reply that fires while paused is
+// swallowed by its own state guard, so without re-arming the turn would stay stuck on AI.
+function resumePlay(){game.state='playing';armAiReply();}
 function toggleMute(){game.muted=!game.muted;saveProgress();updateCtrlUI();}
 function updateCtrlUI(){
   const bm=document.getElementById('btnMute');if(bm)bm.textContent=game.muted?'🔇':'🔊';

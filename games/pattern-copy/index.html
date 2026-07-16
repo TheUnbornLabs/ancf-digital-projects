@@ -110,6 +110,9 @@ function clickCell(idx){
       game.round++;
       if(!game.endless&&game.round>=TOTAL){
         game.endless=true; // after round 10, sequence keeps growing until first mistake
+        buildRound(game.round);// build BEFORE 'won' so the resume already has a sequence ready
+        game.state='won';// campaign cleared: show the acknowledgment panel. update() early-returns while state!=='playing', so the fresh round's transition timer stays frozen behind the panel and starts clean on resume.
+        return;
       }
       buildRound(game.round);
     },600);
@@ -257,7 +260,8 @@ function onDown(e){
   let px,py;
   if(e.touches){px=(e.touches[0].clientX-rect.left)*sx;py=(e.touches[0].clientY-rect.top)*sy;}
   else{px=(e.clientX-rect.left)*sx;py=(e.clientY-rect.top)*sy;}
-  if(game.state==='title'||game.state==='won'||game.state==='gameover'){resetGame();return;}
+  if(game.state==='won'){game.state='playing';return;}// 'won' resumes, it does NOT restart: the panel promises the unlocked endless run continues, so resetGame() here would wipe the score/round/sequence it just congratulated
+  if(game.state==='title'||game.state==='gameover'){resetGame();return;}
   if(game.state==='paused'){return;}
   if(game.state!=='playing')return;
   // find clicked cell

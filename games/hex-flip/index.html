@@ -100,6 +100,11 @@ function buildLevel(lv){
   }
   // record the solution (self-inverse: same sequence undoes the scramble) for hint use
   game.solution=seq.slice();
+  // hintQueue: the remaining steps, consumed tail-first as the player plays them. Must stay in
+  // step with the board — doFlip pops, undo restores it from history — or the hint chain skips
+  // a required move and can never recover.
+  game.hintQueue=seq.slice();
+  game.hintCell=null; // otherwise the previous level's highlight leaks onto the new board
   game.moves=0;game.levelMoves=0;game.shakeT=0;game.stars=0;game.winDelay=0;
   history=[];
   game.state='playing';
@@ -124,8 +129,11 @@ function doFlipRaw(c,r){
 function doFlip(c,r){
   if(game.state!=='playing')return; // freeze input during win-delay/transition
   const cell=grid[c]?.[r];if(!cell)return;
-  history.push(snapshotGrid());
+  history.push({snap:snapshotGrid(),hq:(game.hintQueue||[]).slice()});
   if(history.length>200)history.shift();
+  const q=game.hintQueue;
+  if(q&&q.length){const t=q[q.length-1];if(t[0]===c&&t[1]===r)q.pop();}
+  game.hintCell=null;
   doFlipRaw(c,r);
   sndFlip();
   checkWin();
@@ -134,7 +142,10 @@ function doFlip(c,r){
 function undo(){
   if(game.state!=='playing')return;
   if(!history.length)return;
-  restoreGrid(history.pop());
+  const h=history.pop();
+  restoreGrid(h.snap);
+  game.hintQueue=h.hq.slice(); // roll the queue back with the board, else the hint skips a step
+  game.hintCell=null;
   game.moves=Math.max(0,game.moves-1);
   game.levelMoves=Math.max(0,game.levelMoves-1);
   tone(220,0.08,'triangle',0.05);
@@ -148,8 +159,9 @@ function mismatchCount(){
 
 function hint(){
   if(game.state!=='playing')return;
-  if(!game.solution||!game.solution.length){game.hintCell=null;return;}
-  const[c,r]=game.solution[game.solution.length-1];
+  const q=game.hintQueue;
+  if(!q||!q.length){game.hintCell=null;return;}
+  const[c,r]=q[q.length-1];
   game.hintCell={c,r,t:1500};
   tone(500,0.1,'sine',0.04);
 }

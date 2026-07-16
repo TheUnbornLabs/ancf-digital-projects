@@ -46,7 +46,7 @@ function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 let muted=lsGet('lockdecode_muted','0')==='1';
 
 const game={state:'title',time:0,round:0,score:0,best:parseInt(lsGet('lockdecode_best','0'),10)||0,
-  unlockAnim:0,wrongAnim:0,shakeT:0,paused:false,
+  unlockAnim:0,wrongAnim:0,shakeT:0,paused:false,resolving:false,
   tumCount:4,spins:0,mistakes:0,streak:0,bestStreak:0,hintsLeft:3,hintFlash:-1,hintFlashT:0,
   totalSpins:0,totalMistakes:0,roundStartSpins:0,popups:[],particles:[]};
 let tumblers=[],target=[],rng,pop2=0;
@@ -62,7 +62,7 @@ function buildRound(r){
   const pool=symPoolForRound(r);
   target=Array.from({length:game.tumCount},()=>Math.floor(rng()*pool));
   tumblers=Array.from({length:game.tumCount},(_,i)=>{let v;do{v=Math.floor(rng()*pool);}while(v===target[i]);return v;});
-  game.round=r;game.state='playing';game.unlockAnim=0;game.wrongAnim=0;
+  game.round=r;game.state='playing';game.resolving=false;game.unlockAnim=0;game.wrongAnim=0;
   game.spins=0;game.roundStartSpins=game.totalSpins;game.hintFlash=-1;game.hintFlashT=0;
   game._pool=pool;
 }
@@ -95,8 +95,12 @@ function useHint(){
   game.hintFlashT=900;
 }
 function tryUnlock(){
+  // resolving===true means a solve is already banked and its advance is pending; state stays
+  // 'playing' for those 800ms, so without this both callers (pointer + keydown auto-repeat) re-enter.
+  if(game.state!=='playing'||game.resolving)return;
   const ok=tumblers.every((v,i)=>v===target[i]);
   if(ok){
+    game.resolving=true;
     const spinsUsed=game.spins;
     const minSpins=game.tumCount; // theoretical min: 1 spin per mismatched tumbler in easiest case
     let bonus=0;
@@ -108,11 +112,12 @@ function tryUnlock(){
     game.unlockAnim=900;
     sndWin2();
     spawnParticles(W/2,TY,'rgba(255,220,120,1)',26);
+    const r=game.round; // capture: the advance must target the round that was solved, not a live read
     setTimeout(()=>{
-      if(game.round>=TOTAL){
+      if(r>=TOTAL){
         if(game.score>game.best){game.best=game.score;lsSet('lockdecode_best',String(game.best));}
-        sndWin();game.state='won';
-      }else buildRound(game.round+1);
+        sndWin();game.state='won';game.resolving=false;
+      }else buildRound(r+1); // buildRound clears resolving
     },800);
   }else{
     game.wrongAnim=500;game.shakeT=300;game.mistakes++;game.totalMistakes++;game.streak=0;sndBad();

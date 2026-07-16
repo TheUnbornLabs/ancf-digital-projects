@@ -251,6 +251,10 @@ function swapGems(r1,c1,r2,c2){
     // cascade: each chained match increases the multiplier
     let more=findMatches();
     while(more.size>0){ mult++; removeMatches(more,mult); dropGems(); more=findMatches(); }
+    // dropGems() refills with random gems and can leave a dead board; buildGrid() guarantees a
+    // move at round start, so restore that guarantee here. Must run only once the cascade has
+    // settled (more.size===0) — reshuffling mid-cascade would eat pending matches.
+    ensureSolvable();
     game.combo=mult;
     game.hintT=0;
     return true;
