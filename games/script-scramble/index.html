@@ -105,8 +105,14 @@ function startLevel(lv){
     const a=Math.floor(rng()*N);
     const ac=a%GRID_COLS,ar=Math.floor(a/GRID_COLS);
     const dirs=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dc,dr])=>{
-      const nc=ac+dc,nr=ar+dr;return nc>=0&&nc<GRID_COLS&&nr>=0&&nr<GRID_ROWS;
+      const nc=ac+dc,nr=ar+dr;
+      // A level's tile count need not fill the grid rectangle (13 tiles in a 4x4, say), so the
+      // last row is partly empty and a neighbour inside the rectangle can still sit past the
+      // final tile. Swapping with it writes undefined into grid[], which the arrange step below
+      // then dereferences as tiles[undefined]. swapTiles() bounds player moves the same way.
+      return nc>=0&&nc<GRID_COLS&&nr>=0&&nr<GRID_ROWS&&nr*GRID_COLS+nc<N;
     });
+    if(!dirs.length) continue;
     const [dc,dr]=dirs[Math.floor(rng()*dirs.length)];
     const b=(ar+dr)*GRID_COLS+(ac+dc);
     [grid[a],grid[b]]=[grid[b],grid[a]];
