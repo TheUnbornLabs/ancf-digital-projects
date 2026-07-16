@@ -1,0 +1,12 @@
+{
+  "name": "ancf-100-html-games-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "jsdom test harness for the ANCF HTML games",
+  "scripts": {
+    "test": "node test_game.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
