@@ -769,7 +769,7 @@ function drawAnimal(a){
 function drawCrow(c){
   const t=game.time, flap=Math.sin(t*9+c.phase), cx=c.x+18, cy=c.y+13;
   // Sprite is authored facing right; crows travel left (vx<0), so mirror to lead with the beak.
-  const face=(c.vx>0)?-1:1;
+  const face=(c.vx>0)?1:-1;
   ctx.save(); ctx.translate(cx,cy); ctx.scale(face,1);
   ctx.fillStyle='#15161c';
   // body
