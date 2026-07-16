@@ -193,7 +193,7 @@
   });
 
   /* ── Choose Your Path clicks ────────────────────────────────────────── */
-  var pathCards = [].slice.call(document.querySelectorAll('.path-card[data-cat]'));
+  var pathCards = [].slice.call(document.querySelectorAll('.path-card'));
   pathCards.forEach(function (pc) {
     pc.addEventListener('click', function (e) {
       var cat = pc.dataset.cat;
