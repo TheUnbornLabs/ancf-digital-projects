@@ -22,6 +22,20 @@ To present antinatalism and childfree life respectfully and rationally — as ri
 - Each project has a working interactive feature (quizzes, calculators with visible formulas, generators with copy-to-clipboard, lightweight games, collapsible guides, checklists, and more).
 - All user input stays in the browser (localStorage) — nothing is uploaded.
 
+## 100 Biases of Natalism
+
+A companion collection at `/biases/`: one hundred pages, one per bias, covering the
+mechanisms — cognitive, biological, cultural, religious, economic, rhetorical,
+philosophical, and gendered — that make having children feel like the default rather
+than a decision. Each page carries an expandable twelve-chapter map of the argument
+(including the chapter that states the strongest case *against* the volume's own
+thesis), key-term flashcards, a ten-question comprehension check with the reasoning
+shown, private reflection prompts, and the sources the volume relies on.
+
+The stance is the same as the rest of the site: the target is the bias, never the
+people. Nothing in the collection argues that having children is a mistake, or that
+the childfree chose more wisely.
+
 ## Folder structure
 
 ```
@@ -34,6 +48,14 @@ ancf-digital-projects/
 ├── README.md
 ├── LICENSE
 ├── 404.html
+├── education/          # The Antinatalist Education — primer in ten disciplines
+├── biases/             # 100 Biases of Natalism — interactive field guide
+│   ├── index.html      # hub: search, part filters, progress
+│   ├── biases.css      # section styles (layered on the root design system)
+│   ├── store.js        # shared progress store (localStorage, device-only)
+│   ├── hub.js          # hub logic
+│   ├── bias.js         # per-bias page logic (flashcards, quiz, reflection)
+│   └── 001-default-bias/ … 100-reclaiming-choice/
 └── projects/
     ├── 001-antinatalism-intro-guide/
     │   ├── index.html
