@@ -121,7 +121,11 @@ function tryPlace(book,px,py){
     addBurst(book.x+book.w/2,book.y+book.h/2,s.col);
     game.hintBook=null;game.hintMisses=0;
     const placedCount=books.filter(b=>b.placed).length;
-    if(placedCount>=books.length){
+    // Only the numbered 5-round game advances here. Rush deals its own batches from
+    // onUp() and ends on its timer; without this gate, clearing a Rush batch ran
+    // game.round++ past TOTAL (startRush leaves it at 5) and flipped state to 'won',
+    // killing Rush after one batch with the whole 45s still on the clock.
+    if(game.state==='playing'&&placedCount>=books.length){
       if(game.roundMisses===0){game.score+=3;addPopup(W/2,H/2-40,'Perfect round +3','#ffd27a');}
       sndWin2();
       setTimeout(()=>{
