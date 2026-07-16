@@ -85,7 +85,9 @@ function resetGame(){
 }
 function addPopup(text,color){game.popups.push({text,color,t:0,life:900});}
 function choose(i){
-  if(game.chosen>=0||game.state!=='playing')return;
+  // -1 = unresolved. Anything else (a pick, or -2 from a timeout) means this round
+  // is already decided; `>=0` let a timed-out round still be answered for points.
+  if(game.chosen!==-1||game.state!=='playing')return;
   game.chosen=i;
   const s=SCENARIOS[game.round%SCENARIOS.length];
   const ok=options[i]===s.answer;
@@ -114,7 +116,10 @@ function choose(i){
 }
 function timeExpire(){
   // treat as a miss with no selection
-  if(game.chosen>=0||game.state!=='playing')return;
+  // Must test !== -1, not >= 0: this function sets chosen = -2 below, so a `>=0`
+  // guard never blocks re-entry and it fires again on every frame until the round
+  // advances — stacking ~60 popups and ~60 overlapping sounds per timeout.
+  if(game.chosen!==-1||game.state!=='playing')return;
   game.chosen=-2; // -2 = timed out, no option highlighted as chosen
   game.streak=0;game.missed.push(game.round%SCENARIOS.length);game.shakeT=260;
   addPopup('TIME UP','#f0c080');sndBad();
@@ -134,7 +139,7 @@ function update(dt){
   if(game.shakeT>0)game.shakeT=Math.max(0,game.shakeT-dt);
   for(const p of game.popups)p.t+=dt;
   game.popups=game.popups.filter(p=>p.t<p.life);
-  if(game.state==='playing'&&game.chosen<0){
+  if(game.state==='playing'&&game.chosen===-1){
     game.timeLeft=Math.max(0,game.timeLeft-dt/1000);
     if(game.timeLeft<=0)timeExpire();
   }
@@ -156,7 +161,7 @@ const mx=60,my=70,mw=W-120,mh=100;ctx.fillStyle='rgba(80,40,40,.6)';rr(mx,my,mw,
 if(game.state==='playing'){
   const tw=mw,tx=mx,ty=my+mh+8,th=6;
   const frac=clamp(game.timeLeft/game.timeMax,0,1);
-  const lowTime=game.timeLeft<=2&&game.chosen<0;
+  const lowTime=game.timeLeft<=2&&game.chosen===-1;
   ctx.fillStyle='rgba(255,255,255,.08)';rr(tx,ty,tw,th,3);ctx.fill();
   let barColor=lowTime?'rgba(255,90,90,.9)':'rgba(120,180,255,.8)';
   if(lowTime){const pulse=0.6+0.4*Math.sin(game.time/90);ctx.globalAlpha=pulse;}
@@ -278,7 +283,7 @@ function onDown(e){
     if(wonBtnRect&&px>=wonBtnRect.x&&px<=wonBtnRect.x+wonBtnRect.w&&py>=wonBtnRect.y&&py<=wonBtnRect.y+wonBtnRect.h){resetGame();return;}
     resetGame();return; // whole-panel click still restarts too
   }
-  if(game.state!=='playing'||game.paused||game.chosen>=0)return;
+  if(game.state!=='playing'||game.paused||game.chosen!==-1)return;
   const i=optionAt(px,py);if(i>=0)choose(i);
 }
 canvas.addEventListener('mousedown',onDown);canvas.addEventListener('touchstart',e=>{e.preventDefault();onDown(e);},{passive:false});

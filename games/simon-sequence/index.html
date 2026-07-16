@@ -67,6 +67,10 @@ function resetGame(){
   sequence=[];playerSeq=[];game.level=0;game.shakeT=0;game.resolving=false;game.paused=false;
   game.popupT=0;game.popupText='';game.peekUsed=false;
   litIdx=-1;prevLit=-1;wrongIdx=-1;wrongT=0;particles=[];waitingInput=false;showing=false;
+  // Both callers (pointer and key) come straight from the title or gameover screen and
+  // expect a live round; without this the gameover state persisted and the player was
+  // stuck watching "Sequence Broken" forever.
+  game.state='playing';
   seededRng();nextRound();
 }
 function nextRound(){game.level++;playerSeq=[];sequence.push(Math.floor(rng()*VALUES.length));updateSpeedForLevel();showSequence();}
